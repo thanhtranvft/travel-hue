@@ -6,11 +6,10 @@ import {districts,getDistrict} from '../routes/districts.js';
 import {damp,wrapAngle} from '../vehicle/BicycleMotion.js';
 import {TrafficSystem} from '../traffic/TrafficSystem.js';
 import {CITY,BRIDGE} from '../world/cityLayout.js';
-import {CityAudio} from '../audio/CityAudio.js';
 
 export class CityGame {
   constructor(canvas){
-    this.audio=new CityAudio();this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,.1,450);
+    this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,.1,450);
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));this.renderer.setSize(innerWidth,innerHeight);
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.05;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     this.input=new InputController(canvas);this.world=new HueWorld(this.scene);this.world.build();this.scene.traverse(object=>{if(object.isSprite)object.visible=false;});this.bike=new TouringBike();this.scene.add(this.bike);this.traffic=new TrafficSystem(this.scene,this.world);this.collisionCooldown=0;this.stun=0;this.crashCount=0;this.noticeTime=0;
@@ -65,12 +64,11 @@ export class CityGame {
     const label=actor.type==='car'?'ô tô':actor.type==='scooter'?'xe máy':'người đi bộ';const headOn=Math.cos(this.bike.motion.heading-actor.heading)<-.4;
     document.querySelector('#collision-message').textContent=`${headOn?'Bạn đã đi đối đầu và va chạm với':'Bạn vừa va chạm với'} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector('#collision-toast').hidden=false;
-    this.audio.collision();
   }
   frame(){
     const dt=Math.min(this.clock.getDelta(),.1);this.elapsed+=dt;this.accumulator+=dt;
     while(this.accumulator>=1/120){this.step(1/120);this.accumulator-=1/120;}
-    this.world.update(this.elapsed);if(this.impact.visible){const age=1-this.stun;this.impact.scale.setScalar(1+age*1.4);this.impact.children.forEach(mesh=>mesh.material.opacity=Math.max(0,1-age));if(this.stun===0)this.impact.visible=false;}this.updateCamera(dt);this.audio.update(this.bike,this.traffic.actors,this.cameraYaw+this.input.drag.yaw);this.updateHud();this.drawMap();this.renderer.render(this.scene,this.camera);
+    this.world.update(this.elapsed);if(this.impact.visible){const age=1-this.stun;this.impact.scale.setScalar(1+age*1.4);this.impact.children.forEach(mesh=>mesh.material.opacity=Math.max(0,1-age));if(this.stun===0)this.impact.visible=false;}this.updateCamera(dt);this.updateHud();this.drawMap();this.renderer.render(this.scene,this.camera);
   }
   updateCamera(dt){
     this.cameraYaw+=wrapAngle(this.bike.motion.heading-this.cameraYaw)*(1-Math.exp(-7.5*dt));
@@ -82,7 +80,6 @@ export class CityGame {
   }
   updateHud(){
     this.hud.district.textContent=this.district.title;this.hud.speed.textContent=Math.round(Math.abs(this.bike.motion.speed)*3.6);this.hud.distance.textContent=this.completed?'Đã hoàn thành tuyến':this.auto?`${Math.round((1-this.routeU)*this.routeLength)} m trên tuyến`:'Tự do khám phá';this.hud.progress.style.width=`${this.completed?100:this.routeU*100}%`;
-    const soundLocation=document.querySelector('#sound-location');if(soundLocation)soundLocation.textContent=this.audio.venueLevel>.07?`Nhạc ven quán · ${this.audio.nearbyVenue.title}`:'Giai điệu bên sông Hương';
     let near=null,distance=Infinity;for(const lm of this.world.landmarks.values()){const d=Math.hypot(lm.position.x-this.bike.position.x,lm.position.z-this.bike.position.z);if(d<distance&&d<lm.radius){distance=d;near=lm;}}
     this.hud.card.classList.toggle('visible',!!near);if(near){this.hud.card.querySelector('h2').textContent=near.title;this.hud.card.querySelector('p').textContent=near.description;}
   }

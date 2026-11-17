@@ -1,4 +1,9 @@
 import {defineConfig} from 'vite';
 export default defineConfig({
-  server:{watch:{ignored:['**/tool/**','**/dist/**']}},
+  server:{
+    host:'0.0.0.0',
+    port:3000,
+    allowedHosts:true,
+    watch:{ignored:['**/tool/**','**/dist/**']}
+  },
 });

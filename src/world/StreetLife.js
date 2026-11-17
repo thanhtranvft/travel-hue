@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import {box,mat} from '../landmarks/shared.js';
 import {makePerson} from './People.js';
-import {restaurantZones} from './streetVenues.js';
 
 function sign(text){const canvas=document.createElement('canvas');canvas.width=768;canvas.height=160;const ctx=canvas.getContext('2d');ctx.fillStyle='#602e24';ctx.fillRect(0,0,768,160);ctx.strokeStyle='#e1bd6d';ctx.lineWidth=8;ctx.strokeRect(8,8,752,144);ctx.fillStyle='#ffedbf';ctx.font='bold 45px sans-serif';ctx.textAlign='center';ctx.fillText(text,384,85);ctx.font='19px sans-serif';ctx.fillText('HƯƠNG VỊ HUẾ · MỜI BẠN GHÉ CHƠI',384,125);const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;const mesh=new THREE.Mesh(new THREE.PlaneGeometry(6.8,1.4),new THREE.MeshStandardMaterial({map:texture,roughness:.8,side:THREE.DoubleSide}));mesh.position.set(0,3.25,.05);return mesh;}
 export function addStreetLife(scene,obstacles){
-  for(const [index,venue]of restaurantZones.entries()){
-    const {x,side,title}=venue,group=new THREE.Group(),color=['#b06a42','#5f8a78','#b99959'][index%3];group.add(sign(title.toLocaleUpperCase('vi-VN')));
+  const names=['BÚN BÒ HUẾ','CƠM HẾN','CÀ PHÊ SÔNG HƯƠNG','NHÀ HÀNG AN NHIÊN'];
+  const xs=[-105,-85,-15,35,55,95];
+  for(const side of [-1,1])for(let index=0;index<xs.length;index++){
+    const x=xs[index],group=new THREE.Group(),color=['#b06a42','#5f8a78','#b99959'][index%3];group.add(sign(names[index%names.length]));
     for(let stripe=0;stripe<12;stripe++){const awning=box([.58,.1,3.5],stripe%2?'#e6d8b7':color,[-3.2+stripe*.58,2.5,1.7]);awning.rotation.x=.12;group.add(awning);}
     group.add(box([6.8,.5,.15],color,[0,2.05,3.4]));
     for(const tx of [-1.8,1.8]){
