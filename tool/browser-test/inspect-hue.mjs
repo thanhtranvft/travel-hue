@@ -18,7 +18,7 @@ try{
   await shot('hue-city-bridge.png');
   await page.keyboard.down('w');await page.waitForTimeout(150);await page.keyboard.up('w');assert.equal(await page.locator('#mode-label').innerText(),'Đạp tự do');
   await page.locator('#expand-map').click();assert.ok(await page.locator('#map-panel').evaluate(e=>e.classList.contains('expanded')));
-  await page.locator('#expand-map').click();await page.setViewportSize({width:390,height:844});await page.locator('[data-district="quoc-hoc"]').click();await page.waitForTimeout(400);await shot('hue-city-mobile.png');
+  await page.locator('#expand-map').click();await page.setViewportSize({width:390,height:844});await page.locator('#toggle-districts').click();await page.locator('[data-district="quoc-hoc"]').click();await page.waitForTimeout(400);await shot('hue-city-mobile.png');
   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth);assert.equal(overflow,false);
   const tours=await page.evaluate(async()=>{const {game}=await import(document.querySelector('script[src*="/src/main.js"]').src);game.renderer.setAnimationLoop(null);const results=[];for(const id of ['quoc-hoc','south-bank','truong-tien','north-bank','imperial-city']){game.travelTo(id);game.toggleAutopilot();for(let i=0;i<6000&&game.auto;i++)game.step(1/120);results.push({id,complete:game.completed,u:game.routeU,speed:game.bike.motion.speed});}return results;});
   assert.ok(tours.every(t=>t.complete),JSON.stringify(tours));

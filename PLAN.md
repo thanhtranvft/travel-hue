@@ -1,5 +1,9 @@
 # Plan
 
+## Mobile gọn và âm thanh — 2026-11-17
+
+Người dùng yêu cầu trực tiếp thu gọn danh sách khu vực, tùy chọn chơi ngang, nhạc thơ mộng và hiệu ứng xe/va chạm, nhạc khi đi qua quán. Đã triển khai MobileUI, CityAudio/music/spatial, chia sẻ vị trí quán qua streetVenues. Nhạc là bản tổng hợp ngũ cung mới lấy cảm hứng Huế. Kiểm chứng 12 unit test và browser audio/menu/landscape/fallback; 5 tour và thao tác cũ vẫn đạt. Khóa ngang thực tế tùy trình duyệt và chưa thử trên máy điện thoại vật lý.
+
 ## Mở rộng cầu/đường và sinh hoạt đô thị — 2026-11-17
 
 Người dùng xác nhận trực tiếp 5 hạng mục: cầu lớn/rộng/cao, đường rộng, quán ăn/nhà hàng nhộn nhịp, NPC người/ô tô/xe máy, hiệu ứng tông xe và cảnh báo. Đã triển khai trong các module cityLayout, StreetLife, People, TrafficSystem và collision; giữ nội dung kiến trúc landmark độc lập. Đã chạy 9 unit test và browser test va chạm/phục hồi, desktop/mobile, 5 tour có giao thông. Phạm vi gameplay này hoàn thành; yêu cầu bản đồ thật toàn bộ Huế vẫn còn.

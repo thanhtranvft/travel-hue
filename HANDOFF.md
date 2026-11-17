@@ -1,5 +1,16 @@
 # Handoff
 
+## Mobile và âm thanh — 2026-11-17
+
+- Danh sách khu vực thu gọn mặc định ở màn nhỏ/ngang thấp. Nút Khu vực mở/đóng; chọn xong tự đóng, bấm ra cảnh hoặc Escape cũng đóng. Trên desktop vẫn mở mặc định.
+- Nút Chơi ngang yêu cầu fullscreen và khóa landscape khi API hỗ trợ. Khi không hỗ trợ, hiện hướng dẫn bật Tự động xoay và xoay máy; không giả vờ khóa ngang thành công. Bố cục landscape phân lại vị trí minimap, tốc độ và cụm điều khiển, có hỗ trợ safe-area.
+- Nút Bật nhạc bắt đầu AudioContext sau thao tác người dùng; có chỉnh âm lượng và tắt toàn bộ âm. Chuyển tab/ẩn trang tạm dừng audio.
+- Nhạc được tổng hợp bằng Web Audio: giai điệu ngũ cung sáng tác mới lấy cảm hứng Huế, dây gảy và sáo. Đây không phải bản thu Ca Huế hoặc một bài truyền thống xác định. Score nằm trong src/audio/music.js để thay thế độc lập sau này.
+- Tiếng lăn bánh, nhịp đạp, tiếng động cơ ô tô/xe máy theo khoảng cách và hướng camera, tiếng va chạm. Không tải file âm thanh bên ngoài.
+- Nhạc ven quán lấy cùng vị trí/tên quán trong streetVenues.js với scene; nghe trong bán kính 25 m, gần lên/xa xuống, crossfade nhạc nền và pan trái/phải. Quán là địa điểm prototype, không phải các nhà hàng thật đã đo GPS.
+- Kiểm chứng: 12/12 unit test; browser menu chọn/đóng, portrait và landscape 844×390 không tràn/đè nút, fallback orientation và contract lock/unlock bằng mock, audio running sau click và suspended sau mute, tín hiệu analyser RMS > 0, render offline nhạc không im, gain nhạc quán gần > xa, hiệu ứng va chạm được phát. Chưa kiểm thử khóa ngang trên thiết bị iOS/Android vật lý.
+- Script: tool/browser-test/inspect-mobile-audio.mjs; ảnh hue-mobile-collapsed.png và hue-mobile-landscape.png. Hồi quy điều khiển và 5 tour có giao thông vẫn đạt.
+
 ## Đường rộng và giao thông — 2026-11-17
 
 - Đường chính rộng 14 m (trước 6 m), hai chiều xe chạy riêng; vỉa hè 5 m. Dời tuyến, quán/nhà, cây và vị trí landmark theo cùng bố cục mở rộng; không đổi kiến trúc các landmark khác.
@@ -54,11 +65,11 @@ Thêm khu vực bằng một cấu hình mới trong src/routes/districts.js g�
 
 ## Giới hạn hiện tại
 
-Bố cục và tỷ lệ vẫn là prototype, chưa nhập OSM/GPS. Ba landmark được dựng hình học dựa ảnh tham khảo; chưa đạt mô hình kiến trúc đo đạc hoặc chất lượng tổng thể của game gốc. Chưa có âm thanh. Trạng thái ý tưởng tiếp tục Implementing cho tới khi hoàn thành yêu cầu thành phố thật.
+Bố cục và tỷ lệ vẫn là prototype, chưa nhập OSM/GPS. Ba landmark được dựng hình học dựa ảnh tham khảo; chưa đạt mô hình kiến trúc đo đạc hoặc chất lượng tổng thể của game gốc. Trạng thái ý tưởng tiếp tục Implementing cho tới khi hoàn thành yêu cầu thành phố thật.
 
 ## Kết quả kiểm tra
 
-- `npm test`: đạt 9/9, gồm tăng tốc/phanh, độ ổn định giữa 60/120 Hz, trả lái, khu vực, registry, va chạm liên tục và dốc cầu.
+- `npm test`: đạt 12/12, gồm audio spatial, tăng tốc/phanh, độ ổn định giữa 60/120 Hz, trả lái, khu vực, registry, va chạm liên tục và dốc cầu.
 - Playwright/Chromium: chọn đủ 5 khu vực, tốc độ đạp tay đạt 20 km/h trong ca thử, phanh về 0, tự lái trên cầu, WASD giành lại điều khiển, GLB tải đủ, mobile 390×844 không tràn ngang; không có pageerror.
 - Chạy chính bộ mô phỏng game ở fixed step: cả 5 tuyến tự lái đến cuối và dừng thành công.
 - Ảnh kiểm chứng: tool/browser-test/hue-city-initial.png, hue-city-bridge.png, hue-city-mobile.png. Script: node tool/browser-test/inspect-hue.mjs (cần dev server port 5173 và Chromium ở đường dẫn cấu hình trong script).
