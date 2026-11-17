@@ -1,5 +1,15 @@
 # Handoff
 
+## Sửa entry mobile/audio và kiểm chứng production — 2026-11-17
+
+Nguyên nhân đã xác nhận: main.js/CityGame/styles/viewport đang ở bản trước tích hợp, dù MobileUI và CityAudio vẫn có trên đĩa. Unit test module riêng không phát hiện được việc không nối chúng vào app. Đã khôi phục import/khởi tạo MobileUI và CityAudio, nối update/collision âm thanh, bổ sung markup điều khiển và tách CSS mobile vào src/mobile.css.
+
+Giữ nguyên dev host 0.0.0.0 và port 3000 hiện có. Chạy bản dist bằng `npm run preview` tại port 4173. Mở từ điện thoại cùng mạng bằng địa chỉ Network do Vite in ra; AudioContext cần thao tác Bật nhạc và môi trường trình duyệt cho phép. Khóa ngang tùy khả năng trình duyệt.
+
+Kiểm chứng cuối: npm test đạt 12/12, npm run build thành công (33 module). `npm run test:production` đạt trên http://127.0.0.1:4173, xác minh entry /assets/index-*.js, menu mobile/desktop, layout ngang, fallback xoay màn hình, AudioContext running và tín hiệu RMS > 0 sau nhấn bật, nhạc quán gần/xa và mute suspended. Không pageerror, không asset JS/CSS/GLB lỗi. Test này chỉ thao tác bundle thực, không import src/main.js trong production.
+
+Để chạy lại: `npm run build`, `npm run preview` ở terminal thứ nhất; `npm run test:production` ở terminal thứ hai. Script dùng Chromium ở đường dẫn máy hiện tại; có thể đặt CHROME_PATH và TEST_BASE_URL để thay đổi. Ảnh: tool/browser-test/production-mobile-portrait.png và production-mobile-landscape.png.
+
 ## Đường rộng và giao thông — 2026-11-17
 
 - Đường chính rộng 14 m (trước 6 m), hai chiều xe chạy riêng; vỉa hè 5 m. Dời tuyến, quán/nhà, cây và vị trí landmark theo cùng bố cục mở rộng; không đổi kiến trúc các landmark khác.
