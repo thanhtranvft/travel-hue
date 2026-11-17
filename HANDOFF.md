@@ -1,5 +1,15 @@
 # Handoff
 
+## Điều khiển hai tay trên điện thoại — 2026-11-17
+
+- Thay D-pad bằng joystick analog bên trái. Kéo lên để đạp, chéo/ngang để vừa đạp vừa cua, kéo xuống để lùi. Có deadzone, giới hạn độ kéo; thả cần thì ngừng đạp và xe trôi theo quán tính.
+- Tay phải vuốt pad Vuốt nhìn để xoay camera; nút Phanh riêng bên phải. Vẫn có thể kéo trực tiếp trên cảnh và dùng WASD/Space trên desktop.
+- TouchControls quản lý pointerId độc lập cho cần lái/camera/phanh, pointer capture khi kéo ngoài pad, nhả theo pointerup/cancel/lostcapture, reset khi blur/ẩn trang/chuyển khu vực. Không để thả tay này xóa input của tay kia.
+- Chặn user-select, WebKit touch-callout, selectstart/contextmenu trên vùng chơi và điều khiển; giữ input âm lượng hoạt động. Bố trí minimap lên trên tay trái và tốc độ giữa hai tay.
+- Kiểm chứng: 14/14 unit test, build thành công. Chromium multi-touch thật qua CDP trên dev và dist: hai ngón đồng thời, analog throttle/steer và camera yaw đều đổi, thả trái vẫn xoay phải, không chọn chữ khi giữ >1 giây, kéo vượt pad/cancel/blur nhả đúng, phanh về 0. Portrait không tràn, minimap không đè joystick. Chưa thử bằng thiết bị Android/iOS vật lý.
+- npm run test:production đạt trên bundle /assets/index-CnyxMH4y.js; menu/nhạc/nhạc quán/mute vẫn đạt, không pageerror/asset lỗi.
+- Script: node tool/browser-test/inspect-two-thumb.mjs http://127.0.0.1:4173/; ảnh two-thumb-production.png.
+
 ## Sửa entry mobile/audio và kiểm chứng production — 2026-11-17
 
 Nguyên nhân đã xác nhận: main.js/CityGame/styles/viewport đang ở bản trước tích hợp, dù MobileUI và CityAudio vẫn có trên đĩa. Unit test module riêng không phát hiện được việc không nối chúng vào app. Đã khôi phục import/khởi tạo MobileUI và CityAudio, nối update/collision âm thanh, bổ sung markup điều khiển và tách CSS mobile vào src/mobile.css.
@@ -54,7 +64,7 @@ npm run build
 - `T`: bật/tắt tự lái tham quan khu vực đang chọn.
 - `M`: mở rộng/thu nhỏ minimap.
 - `R`: về đầu khu vực hiện tại.
-- Trên mobile: các nút chạm tiến/lùi/rẽ/phanh ở cạnh dưới.
+- Trên mobile: joystick bên trái để đạp/rẽ/lùi, vùng vuốt camera và nút phanh bên phải.
 
 ## Mở rộng địa điểm
 

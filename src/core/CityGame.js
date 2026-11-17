@@ -22,7 +22,7 @@ export class CityGame {
     addEventListener('keydown',e=>{if(e.repeat)return;if(e.key.toLowerCase()==='m')document.querySelector('#map-panel').classList.toggle('expanded');if(e.key.toLowerCase()==='t')this.toggleAutopilot();if(e.key.toLowerCase()==='r')this.reset();});
   }
   travelTo(id){
-    const district=getDistrict(id);if(!district)return;this.district=district;this.auto=false;this.completed=false;this.input.keys.clear();this.input.drag.yaw=0;this.collisionCooldown=2;this.stun=0;this.noticeTime=0;this.impact.visible=false;document.querySelector('#collision-toast').hidden=true;
+    const district=getDistrict(id);if(!district)return;this.district=district;this.auto=false;this.completed=false;this.input.reset();this.input.drag.yaw=0;this.collisionCooldown=2;this.stun=0;this.noticeTime=0;this.impact.visible=false;document.querySelector('#collision-toast').hidden=true;
     const {x,z,heading}=district.spawn;this.bike.reset(x,z,heading);this.bike.position.y=this.world.groundAt(x,z);
     this.traffic.clearSpawn(this.bike.position);
     this.curve=new THREE.CatmullRomCurve3(district.path.map(([px,pz])=>new THREE.Vector3(px,0,pz)),false,'centripetal');this.routeLength=this.curve.getLength();this.routeU=0;
@@ -37,7 +37,7 @@ export class CityGame {
   step(dt){
     this.collisionCooldown=Math.max(0,this.collisionCooldown-dt);this.stun=Math.max(0,this.stun-dt);this.noticeTime=Math.max(0,this.noticeTime-dt);if(this.noticeTime===0)document.querySelector('#collision-toast').hidden=true;
     this.traffic.step(dt,this.bike);
-    let throttle=this.input.throttle,steer=this.input.steer,brake=this.input.keys.has(' ');
+    let throttle=this.input.throttle,steer=this.input.steer,brake=this.input.brake;
     if(this.auto&&(throttle||steer||brake)){this.auto=false;this.syncMode();}
     if(this.auto){
       let nearest=Infinity,best=this.routeU;

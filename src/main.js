@@ -1,5 +1,6 @@
 import './styles.css';
 import './mobile.css';
+import './touch-layout.css';
 import { CityGame as Game } from './core/CityGame.js';
 import { districts } from './routes/districts.js';
 import {initializeMobileUI,initializeAudioUI} from './ui/MobileUI.js';
@@ -17,7 +18,7 @@ document.querySelector('#app').innerHTML = `
     <div class="utility-toolbar"><div class="utility-buttons"><button id="audio-toggle" aria-pressed="false">♫ Bật nhạc</button><button id="landscape-toggle" aria-pressed="false">↔ Chơi ngang</button></div><div id="sound-settings" hidden><label>Âm lượng <input id="audio-volume" type="range" min="0" max="100" value="45" aria-label="Âm lượng game"></label><span id="sound-location">Giai điệu bên sông Hương</span></div><span id="audio-status" role="status"></span></div>
     <div class="bottom">
       <section class="map-panel" id="map-panel"><button id="expand-map" title="Mở rộng bản đồ [M]">M · BẢN ĐỒ KHU VỰC ↗</button><canvas id="minimap" width="240" height="170" aria-label="Sơ đồ tuyến và vị trí xe"></canvas><span>Sơ đồ thử nghiệm</span></section>
-      <div class="mobile-controls"><button data-key="w" aria-label="Đạp tới">▲</button><button data-key="a" aria-label="Rẽ trái">◀</button><button data-key="s" aria-label="Lùi">▼</button><button data-key="d" aria-label="Rẽ phải">▶</button><button data-key=" " aria-label="Phanh">■</button></div>
+      <div class="touch-controls"><div class="thumbstick" id="move-stick" role="group" aria-label="Cần lái bên trái: kéo để đạp và rẽ, kéo xuống để lùi"><span class="stick-arrows" aria-hidden="true">＋</span><span id="stick-thumb" aria-hidden="true"></span><span class="touch-caption">ĐẠP / RẼ</span></div><div class="camera-pad" id="look-pad" role="group" aria-label="Vùng vuốt bên phải để xoay góc nhìn"><span aria-hidden="true">⌖</span><span class="touch-caption">VUỐT NHÌN</span></div><button id="touch-brake" type="button" aria-label="Giữ để phanh">■<span>PHANH</span></button></div>
       <div class="ride-panel"><div class="status"><strong id="destination">Quốc Học · Lê Lợi</strong><div id="distance">Tự do khám phá</div><div class="progress"><i id="progress"></i></div></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span></div><div class="guide"><b>WASD</b> đạp xe · <b>Space</b> phanh · <b>kéo chuột</b> ngắm cảnh</div></div>
     </div>
   </div>
