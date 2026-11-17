@@ -1,0 +1,20 @@
+export const wrapAngle = angle => Math.atan2(Math.sin(angle),Math.cos(angle));
+export const damp = (from,to,rate,dt) => from+(to-from)*(1-Math.exp(-rate*dt));
+
+export class BicycleMotion {
+  constructor(){this.reset();}
+  reset(heading=0){this.speed=0;this.steering=0;this.heading=heading;this.lean=0;this.distance=0;}
+  step(dt,throttle,steer,brake=false){
+    const targetSteering=steer*.55/(1+Math.abs(this.speed)*.07);
+    this.steering=damp(this.steering,targetSteering,8,dt);
+    let acceleration=throttle*3.4-this.speed*.32;
+    if(brake)acceleration=-Math.sign(this.speed)*Math.min(Math.abs(this.speed)/dt,8);
+    this.speed=Math.max(-2.3,Math.min(9,this.speed+acceleration*dt));
+    if(Math.abs(this.speed)<.025&&!throttle)this.speed=0;
+    const yawRate=this.speed*Math.tan(this.steering)/1.18;
+    this.heading=wrapAngle(this.heading+yawRate*dt);
+    this.lean=damp(this.lean,Math.max(-.33,Math.min(.33,-Math.atan(this.speed*yawRate/9.81)*.55)),7,dt);
+    const distance=this.speed*dt;this.distance+=Math.abs(distance);
+    return {dx:Math.sin(this.heading)*distance,dz:Math.cos(this.heading)*distance};
+  }
+}
