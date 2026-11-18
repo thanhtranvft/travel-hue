@@ -1,0 +1,15 @@
+import {readFile,writeFile} from 'node:fs/promises';
+import {roads,sites,features,pointsOf} from '../src/geography/map.js';
+import {project,unproject,nearestPoint,inside} from '../src/geography/geometry.js';
+import {hull} from '../src/geography/parcelGeometry.js';
+const path=new URL('../src/data/property-enclosures.json',import.meta.url),data=JSON.parse(await readFile(path,'utf8')),leLoi=roads.filter(r=>r.tags.name==='Lê Lợi'),closest=p=>leLoi.map(r=>({...nearestPoint(p,r.points),road:r})).sort((a,b)=>a.distance-b.distance)[0];
+const schoolOffsets=sites.filter(s=>s.kind==='school').map(s=>{const points=pointsOf(s.feature);return Math.min(...points.map(p=>closest(p).distance));}),offset=Math.max(8,schoolOffsets.reduce((s,v)=>s+v,0)/schoolOffsets.length);
+const buildings=features.filter(f=>f.type==='way'&&f.tags?.building&&f.geometry?.length>3).map(f=>({id:f.id,points:pointsOf(f)}));let aligned=0,blocked=0;
+for(const property of data.properties){if(property.managedExternally)continue;const original=property.originalRings||property.rings,ring=original[0].map(project),center=ring.reduce((p,q)=>({x:p.x+q.x/ring.length,z:p.z+q.z/ring.length}),{x:0,z:0}),hit=closest(center);if(hit.distance>135)continue;
+ const own=Number(property.sourceOSM.split('/')[1]),others=buildings.filter(b=>b.id!==own&&!ring.some(p=>inside(p,b.points)));
+ let hidden=false;for(let i=1;i<15;i++){const t=i/15,p={x:center.x+(hit.x-center.x)*t,z:center.z+(hit.z-center.z)*t};if(others.some(b=>inside(p,b.points))){hidden=true;break;}}if(hidden){blocked++;continue;}
+ const dx=Math.sin(hit.heading),dz=Math.cos(hit.heading),side=(center.x-hit.x)*-dz+(center.z-hit.z)*dx>=0?1:-1,along=ring.map(p=>(p.x-hit.x)*dx+(p.z-hit.z)*dz),ends=[Math.min(...along),Math.max(...along)].map(t=>{const p=closest({x:hit.x+dx*t,z:hit.z+dz*t});return {x:p.x-Math.cos(p.heading)*offset*side,z:p.z+Math.sin(p.heading)*offset*side};}),gateCenter={x:(ends[0].x+ends[1].x)/2,z:(ends[0].z+ends[1].z)/2};
+ const alignedRing=hull([...ring,...ends]),candidates=[];for(let i=0;i<alignedRing.length;i++){const a=alignedRing[i],b=alignedRing[(i+1)%alignedRing.length],length=Math.hypot(b.x-a.x,b.z-a.z);for(let d=0;d<=length;d+=1.5){const t=d/(length||1),p={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t},road=closest(p);if(p.x< -349||p.x>1699||p.z< -1899||p.z>199||road.distance>15||road.distance<8)continue;if(buildings.some(b=>inside(p,b.points)||nearestPoint(p,b.points).distance<.5))continue;candidates.push({p,score:road.distance+Math.hypot(p.x-gateCenter.x,p.z-gateCenter.z)*.025});}}
+ candidates.sort((a,b)=>a.score-b.score);if(!candidates.length){delete property.frontage;property.rings=original;blocked++;continue;}const gate=candidates[0].p;property.originalRings=original;property.rings=[alignedRing.map(unproject)];property.frontage={road:'Lê Lợi',offset,gate:unproject(gate),confidence:'aligned-simulation',originalBoundaryPreserved:true};aligned++;
+}
+await writeFile(path,JSON.stringify(data,null,2)+'\n');console.log(JSON.stringify({schoolOffsets,offset,aligned,blockedBehindOtherBuildings:blocked}));

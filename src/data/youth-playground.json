@@ -1,0 +1,11 @@
+{
+  "campusOSM": 695775607,
+  "buildingOSM": 118541971,
+  "entranceWidth": 8,
+  "fenceHeight": 1.7,
+  "fenceColor": "#3f747b",
+  "equipmentCount": 10,
+  "equipmentRadius": 4.5,
+  "types": ["swings", "slide", "seesaw", "carousel", "sandbox"],
+  "placementStatus": "simulated-inside-OSM-campus"
+}

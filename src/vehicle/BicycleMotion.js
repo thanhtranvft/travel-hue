@@ -6,8 +6,11 @@ export class BicycleMotion {
   reset(heading=0){this.speed=0;this.steering=0;this.heading=heading;this.lean=0;this.distance=0;}
   step(dt,throttle,steer,brake=false){
     const targetSteering=steer*.55/(1+Math.abs(this.speed)*.07);
-    this.steering=damp(this.steering,targetSteering,8,dt);
-    let acceleration=throttle*3.4-this.speed*.32;
+    // Do not retain left lock for several frames after a new right command.
+    if(steer*this.steering<0)this.steering=0;
+    this.steering=damp(this.steering,targetSteering,steer?24:18,dt);
+    let acceleration=throttle*4.5-this.speed*.32;
+    if(throttle*this.speed<0)acceleration=throttle*7-this.speed*.32;
     if(brake)acceleration=-Math.sign(this.speed)*Math.min(Math.abs(this.speed)/dt,8);
     this.speed=Math.max(-2.3,Math.min(9,this.speed+acceleration*dt));
     if(Math.abs(this.speed)<.025&&!throttle)this.speed=0;

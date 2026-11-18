@@ -1,0 +1,4 @@
+{
+  "quoc-hoc-school": {"title":"TRƯỜNG QUỐC HỌC HUẾ", "address":"12 Lê Lợi", "color":"#a73d30", "trim":"#efd9aa", "width":10, "style":"tiled", "wallHeight":2.2, "wallThickness":0.4},
+  "hai-ba-trung": {"title":"TRƯỜNG HAI BÀ TRƯNG", "address":"14 Lê Lợi", "color":"#e5cb84", "wallColor":"#a73d30", "trim":"#fff1ce", "width":10, "style":"colonial", "wallHeight":2.2, "wallThickness":0.4}
+}

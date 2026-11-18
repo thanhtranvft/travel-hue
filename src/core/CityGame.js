@@ -8,6 +8,7 @@ import {GeographicTraffic as TrafficSystem} from '../traffic/GeographicTraffic.j
 import {CITY,BRIDGE} from '../world/cityLayout.js';
 import {CityAudio} from '../audio/CityAudio.js';
 import {unproject} from '../geography/geometry.js';
+import collisionDialogue from '../data/collision-dialogue.json' with {type:'json'};
 const getDistrict=id=>districts.find(d=>d.id===id);
 
 export class CityGame {
@@ -65,9 +66,9 @@ export class CityGame {
     this.bike.position.x=oldX;this.bike.position.z=oldZ;this.bike.motion.speed=0;this.auto=false;this.completed=false;this.syncMode();this.collisionCooldown=3;this.stun=1;this.noticeTime=4;this.crashCount++;actor.pause=1.4;
     this.impact.position.copy(this.bike.position);this.impact.position.y+=.12;this.impact.visible=true;
     const label=actor.type==='car'?'ô tô':actor.type==='scooter'?'xe máy':'người đi bộ';const headOn=Math.cos(this.bike.motion.heading-actor.heading)<-.4;
-    document.querySelector('#collision-message').textContent=`${headOn?'Bạn đã đi đối đầu và va chạm với':'Bạn vừa va chạm với'} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
+    document.querySelector('#collision-message').textContent=collisionDialogue[actor.type]||`${headOn?'Bạn đã đi đối đầu và va chạm với':'Bạn vừa va chạm với'} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector('#collision-toast').hidden=false;
-    this.audio.collision();
+    this.audio.collision();this.audio.speakCollision(actor.type);
   }
   frame(){
     const dt=Math.min(this.clock.getDelta(),.1);this.elapsed+=dt;this.accumulator+=dt;
@@ -75,12 +76,13 @@ export class CityGame {
     this.world.update(this.elapsed,this.bike.position);if(this.impact.visible){const age=1-this.stun;this.impact.scale.setScalar(1+age*1.4);this.impact.children.forEach(mesh=>mesh.material.opacity=Math.max(0,1-age));if(this.stun===0)this.impact.visible=false;}this.updateCamera(dt);this.audio.update(this.bike,this.traffic.actors,this.cameraYaw+this.input.drag.yaw);this.updateHud();this.drawMap();this.renderer.render(this.scene,this.camera);
   }
   updateCamera(dt){
-    this.cameraYaw+=wrapAngle(this.bike.motion.heading-this.cameraYaw)*(1-Math.exp(-7.5*dt));
+    const recenter=!!this.input.recenterRequested;if(recenter){this.cameraYaw=this.bike.motion.heading;this.input.recenterRequested=false;}
+    this.cameraYaw+=wrapAngle(this.bike.motion.heading-this.cameraYaw)*(1-Math.exp(-12*dt));
     const yaw=this.cameraYaw+this.input.drag.yaw,speed=Math.abs(this.bike.motion.speed),distance=5.3+speed*.07,p=this.bike.position;
     this.desired.set(p.x-Math.sin(yaw)*distance,p.y+2.0+(this.input.drag.pitch-.38)*3,p.z-Math.cos(yaw)*distance);
     this.cameraTarget.set(p.x,p.y+1.25,p.z);this.rayDirection.copy(this.desired).sub(this.cameraTarget);const maxDistance=this.rayDirection.length();this.ray.set(this.cameraTarget,this.rayDirection.normalize());this.ray.far=maxDistance;
     const hit=this.ray.intersectObjects([...this.world.cameraObstacles,...this.traffic.cameraObstacles(p)],false)[0];if(hit)this.desired.copy(this.cameraTarget).addScaledVector(this.rayDirection,Math.max(.8,hit.distance-.35));
-    if(this.stun>0)this.desired.x+=Math.sin(this.elapsed*46)*this.stun*.08;this.camera.position.lerp(this.desired,1-Math.exp(-10*dt));this.cameraTarget.set(p.x+Math.sin(yaw)*1.8,p.y+1.1,p.z+Math.cos(yaw)*1.8);this.look.lerp(this.cameraTarget,1-Math.exp(-12*dt));this.camera.lookAt(this.look);
+    if(this.stun>0)this.desired.x+=Math.sin(this.elapsed*46)*this.stun*.08;if(recenter)this.camera.position.copy(this.desired);else this.camera.position.lerp(this.desired,1-Math.exp(-10*dt));this.cameraTarget.set(p.x+Math.sin(yaw)*1.8,p.y+1.1,p.z+Math.cos(yaw)*1.8);if(recenter)this.look.copy(this.cameraTarget);else this.look.lerp(this.cameraTarget,1-Math.exp(-12*dt));this.camera.lookAt(this.look);
   }
   updateHud(){
     const osmLink=document.querySelector('#open-osm');if(osmLink){const gps=unproject(this.bike.position);osmLink.href=`https://www.openstreetmap.org/#map=18/${gps.lat.toFixed(7)}/${gps.lon.toFixed(7)}`;}

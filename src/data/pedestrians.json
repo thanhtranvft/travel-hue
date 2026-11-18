@@ -1,0 +1,6 @@
+{
+  "sidewalkWalkers": 400,
+  "peoplePerPark": 24,
+  "visibleDistance": 140,
+  "colors": ["#bb795c", "#729a99", "#a784a5", "#c6af71", "#6487ad", "#8d9d68"]
+}

@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {CityAudio} from '../src/audio/CityAudio.js';
+import lines from '../src/data/collision-dialogue.json' with {type:'json'};
+test('collision dispatch selects the correct recording and respects mute',()=>{const played=[],audio=Object.create(CityAudio.prototype);Object.assign(audio,{enabled:true,ctx:{state:'running'},collisionVoice:{play:type=>{played.push(type);return true;}}});assert.ok(audio.speakCollision('pedestrian'));assert.ok(audio.speakCollision('scooter'));assert.deepEqual(played,['pedestrian','scooter']);assert.equal(lines.pedestrian,'Đi đứng kiểu chi rứa hả?');assert.equal(lines.scooter,'Bị đui hay răng mà không thấy?');audio.enabled=false;assert.equal(audio.speakCollision('pedestrian'),false);assert.equal(played.length,2);});

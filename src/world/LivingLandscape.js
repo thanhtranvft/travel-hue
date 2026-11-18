@@ -17,6 +17,10 @@ export class LivingGrass{
  constructor(world){this.world=world;this.center={x:Infinity,z:Infinity};const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute([-.05,0,0,.05,0,0,.01,.45,0,0,0,-.05,0,0,.05,0,.35,.01],3));geometry.computeVertexNormals();const material=new THREE.MeshStandardMaterial({color:'#668745',side:THREE.DoubleSide,roughness:1});this.mesh=new THREE.InstancedMesh(geometry,material,18000);this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);this.mesh.frustumCulled=false;this.mesh.receiveShadow=true;world.scene.add(this.mesh);this.dummy=new THREE.Object3D();}
  update(position){if(Math.hypot(position.x-this.center.x,position.z-this.center.z)<20)return;this.center={x:position.x,z:position.z};const world=this.world;let count=0,seed=71;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<18000;i++){const p={x:position.x+(random()-.5)*160,z:position.z+(random()-.5)*160},road=world.nearestRoad(p.x,p.z);if(road.road&&road.distance<roadWidth(road.road)/2+2.2)continue;if(world.riverRings.some(r=>inside(p,r))||world.buildingPolygons.some(b=>p.x>b.minX&&p.x<b.maxX&&p.z>b.minZ&&p.z<b.maxZ&&inside(p,b.points)))continue;
+   if(world.entranceClearances?.some(g=>{const dx=p.x-g.x,dz=p.z-g.z,lateral=dx*Math.cos(g.heading)-dz*Math.sin(g.heading),forward=dx*Math.sin(g.heading)+dz*Math.cos(g.heading);return Math.abs(lateral)<g.width/2&&forward>-15&&forward<5;}))continue;
+   if(world.parkingAreas?.some(r=>inside(p,r)))continue;
+   if(world.playgroundAreas?.some(a=>Math.hypot(p.x-a.x,p.z-a.z)<a.radius+.2))continue;
+   if(world.schoolGates?.some(g=>{const dx=p.x-g.x,dz=p.z-g.z,lateral=dx*Math.cos(g.heading)-dz*Math.sin(g.heading),forward=dx*Math.sin(g.heading)+dz*Math.cos(g.heading);return Math.abs(lateral)<5&&forward>-18&&forward<4;}))continue;
    this.dummy.position.set(p.x,.055,p.z);this.dummy.rotation.y=random()*Math.PI;this.dummy.scale.setScalar(.5+random()*1.1);this.dummy.updateMatrix();this.mesh.setMatrixAt(count++,this.dummy.matrix);
   }this.mesh.count=count;this.mesh.instanceMatrix.needsUpdate=true;
  }

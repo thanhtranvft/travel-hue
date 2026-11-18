@@ -1,0 +1,2 @@
+import data from '../src/data/property-enclosures.json' with {type:'json'};import {roads} from '../src/geography/map.js';import {project,nearestPoint} from '../src/geography/geometry.js';
+for(const p of data.properties.filter(p=>p.frontage)){const gate=project(p.frontage.gate),ring=p.rings[0].map(project),boundary=nearestPoint(gate,[...ring,ring[0]]).distance,road=Math.min(...roads.filter(r=>r.tags.name==='Lê Lợi').map(r=>nearestPoint(gate,r.points).distance));if(boundary>.1||road>15)console.log(JSON.stringify({id:p.id,boundary,road}));}

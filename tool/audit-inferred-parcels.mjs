@@ -1,0 +1,2 @@
+import data from '../src/data/property-enclosures.json' with {type:'json'};import {byId,pointsOf} from '../src/geography/map.js';import {project,inside,nearestPoint} from '../src/geography/geometry.js';
+const bad=[];for(const p of data.properties.filter(p=>p.source==='inferred-parcel')){const ring=p.rings[0].map(project),f=byId(Number(p.sourceOSM.split('/')[1]));if(pointsOf(f).some(v=>!inside(v,ring)&&nearestPoint(v,[...ring,ring[0]]).distance>.25))bad.push(p.id);}console.log(JSON.stringify({badCount:bad.length,bad:bad.slice(0,15)}));
