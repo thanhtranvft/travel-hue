@@ -1,5 +1,21 @@
 # Handoff
 
+## Sửa cách diễn giải vị trí OSM — 2026-11-18
+
+Không yêu cầu người dùng cung cấp lại tọa độ. Đã lấy thêm cổng/đèn không tên từ OSM, dùng node entrance=main cho Ga và barrier=gate cho Quốc Học. Tách điểm/cổng được map với nhãn khuôn viên chưa xác nhận cổng; sửa centroid bệnh viện nhiều vùng và lấy đèn từ node thay cho offset thủ công. Đường nhánh trong bounds đã được đưa vào scene. Nút Đối chiếu OSM mở vị trí xe trực tiếp trên nguồn.
+
+Kiểm toán và ID xem src/geography/README.md. 23/23 unit test; production /assets/index-C-4KKLUK.js không lỗi asset/JS; 5 tour đi đến cuối. Kiến trúc/chiều rộng thiếu tag/cao độ/cây vẫn là ước lượng, không tuyên bố đã tái hiện đúng hiện trạng toàn bộ.
+
+## Chuyển sang tuyến GPS/OSM thật — 2026-11-18
+
+Entry hiện dùng GeographicWorld, GeographicTraffic và geoDistricts (src/geography/map.js). Snapshot OSM 7.423 đối tượng đã tải thành công, dùng offline. Đường/sông/footprint/biển và minimap dùng chung phép chiếu từ GPS; không còn dùng bố cục hai đường thẳng prototype trong luồng chính.
+
+Lê Lợi từ phía ga tới Hà Nội/đầu Phú Xuân khoảng 1,16 km. Có biển Ga Huế, Quốc Học, Bia Quốc Học, Hai Bà Trưng, UBND, bệnh viện, Phú Xuân, Gỗ Lim, Trường Tiền, Kỳ Đài, Ngọ Môn; cùng biển giao Lê Lợi × Hà Nội và cột đèn minh họa. Các tuyến bờ Bắc/cầu/Hoàng thành cũng lấy từ đường OSM. Footprint 370 công trình, cây và mặt đứng dựng ước lượng.
+
+Đọc src/geography/README.md để biết ID, nguồn, giới hạn và cách bổ sung. Dữ liệu tọa độ không đồng nghĩa mô hình kiến trúc chính xác; chiều rộng thiếu tag, cao độ, cây/cổng/mặt đứng và đèn vẫn là ước lượng. Không đánh dấu toàn bộ ý tưởng hoàn tất.
+
+Kiểm chứng: 19/19 unit test, build thành công. 5 tour địa lý chạy đến đích (tắt traffic để kiểm hình học), production smoke audio/mobile và CDP two-thumb đều đạt. Ảnh hue-osm-station.png và hue-osm-quoc-hoc.png. Các script kiểm thử prototype cũ có vị trí/hành trình ngắn không còn đại diện cho world mới; dùng inspect-geography.mjs và inspect-production.mjs.
+
 ## Điều khiển hai tay trên điện thoại — 2026-11-17
 
 - Thay D-pad bằng joystick analog bên trái. Kéo lên để đạp, chéo/ngang để vừa đạp vừa cua, kéo xuống để lùi. Có deadzone, giới hạn độ kéo; thả cần thì ngừng đạp và xe trôi theo quán tính.

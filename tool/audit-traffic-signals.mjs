@@ -1,0 +1,2 @@
+import {mappedSignals,roads} from '../src/geography/map.js';import {nearestPoint} from '../src/geography/geometry.js';
+for(const signal of mappedSignals){const hits=roads.filter(r=>r.tags.name&&['primary','secondary','tertiary'].includes(r.tags.highway)).map(r=>({...nearestPoint(signal,r.points),road:r})).sort((a,b)=>a.distance-b.distance);console.log(JSON.stringify({signal,road:hits[0]?.road.tags.name,distance:hits[0]?.distance,heading:hits[0]?.heading}));}

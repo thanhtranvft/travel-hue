@@ -5,14 +5,14 @@ import {CITY,BRIDGE} from '../world/cityLayout.js';
 import {sweptContact} from './collision.js';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 
-function car(color){
+export function car(color){
   const g=new THREE.Group();g.add(box([1.8,.65,3.8],color,[0,.8,0]));
   const cabin=new THREE.Mesh(new THREE.CapsuleGeometry(.7,1.1,4,12),mat(color,.3,.3));cabin.rotation.x=Math.PI/2;cabin.scale.set(1,.8,.8);cabin.position.set(0,1.16,-.1);g.add(cabin);
   g.add(box([1.45,.65,1.55],'#506d78',[0,1.27,-.08]),box([1.65,.08,1.6],color,[0,1.64,-.1]));
   for(const x of [-.9,.9])for(const z of [-1.15,1.15]){const wheel=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.16,16),mat('#242a28'));wheel.rotation.z=Math.PI/2;wheel.position.set(x,.42,z);g.add(wheel);}
   for(const x of [-.6,.6]){g.add(box([.38,.18,.06],'#fff0bf',[x,.87,1.93]),box([.38,.18,.06],'#a73f32',[x,.87,-1.93]));}g.add(box([1.55,.12,.12],'#919b95',[0,.55,1.97]));g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;
 }
-function scooter(color){const g=new THREE.Group();g.add(box([.55,.5,1.3],color,[0,.6,0]),box([.5,.16,.7],'#333936',[0,.95,-.25]),box([.48,.8,.2],color,[0,.95,.5]));for(const z of [-.6,.6]){const wheel=new THREE.Mesh(new THREE.TorusGeometry(.25,.065,8,16),mat('#252b29'));wheel.rotation.y=Math.PI/2;wheel.position.set(0,.3,z);g.add(wheel);}g.add(box([.8,.07,.1],'#434b45',[0,1.35,.45]));const rider=makePerson('#718c8e',true);rider.position.set(0,.38,-.15);rider.scale.setScalar(.85);g.add(rider);const helmet=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),mat('#e6d0a4'));helmet.position.set(0,1.72,-.15);g.add(helmet);return g;}
+export function scooter(color){const g=new THREE.Group();g.add(box([.55,.5,1.3],color,[0,.6,0]),box([.5,.16,.7],'#333936',[0,.95,-.25]),box([.48,.8,.2],color,[0,.95,.5]));for(const z of [-.6,.6]){const wheel=new THREE.Mesh(new THREE.TorusGeometry(.25,.065,8,16),mat('#252b29'));wheel.rotation.y=Math.PI/2;wheel.position.set(0,.3,z);g.add(wheel);}g.add(box([.8,.07,.1],'#434b45',[0,1.35,.45]));const rider=makePerson('#718c8e',true);rider.position.set(0,.38,-.15);rider.scale.setScalar(.85);g.add(rider);const helmet=new THREE.Mesh(new THREE.SphereGeometry(.16,12,8),mat('#e6d0a4'));helmet.position.set(0,1.72,-.15);g.add(helmet);return g;}
 
 export class TrafficSystem{
   constructor(scene,world){this.scene=scene;this.world=world;this.actors=[];this.time=0;this.enabled=true;

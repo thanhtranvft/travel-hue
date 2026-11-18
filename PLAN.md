@@ -1,5 +1,9 @@
 # Plan
 
+## Tuyến đường thực tế theo tọa độ — 2026-11-18
+
+Người dùng yêu cầu trục Ga Huế–Lê Lợi theo đúng bờ sông và thứ tự Quốc Học/Bia, Hai Bà Trưng, UBND, bệnh viện, Phú Xuân/Hà Nội, biển từng địa điểm và tương tự các tuyến khác. Đã lấy được OSM thật, thay lớp world/traffic/district trong entry bằng dữ liệu GPS chung; thêm biển 11 địa điểm, giao lộ và đèn minh họa. Đã kiểm vị trí đối diện, thứ tự dọc tuyến, 5 tuyến OSM, production/mobile/nhạc/hai tay. Còn mô hình kiến trúc chi tiết, khảo sát cao độ và giao thông theo luật đầy đủ.
+
 ## Mở rộng cầu/đường và sinh hoạt đô thị — 2026-11-17
 
 Người dùng xác nhận trực tiếp 5 hạng mục: cầu lớn/rộng/cao, đường rộng, quán ăn/nhà hàng nhộn nhịp, NPC người/ô tô/xe máy, hiệu ứng tông xe và cảnh báo. Đã triển khai trong các module cityLayout, StreetLife, People, TrafficSystem và collision; giữ nội dung kiến trúc landmark độc lập. Đã chạy 9 unit test và browser test va chạm/phục hồi, desktop/mobile, 5 tour có giao thông. Phạm vi gameplay này hoàn thành; yêu cầu bản đồ thật toàn bộ Huế vẫn còn.

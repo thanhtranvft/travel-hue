@@ -1,19 +1,21 @@
 import * as THREE from 'three';
 import {InputController} from './InputController.js';
-import {HueWorld} from '../world/DetailedWorld.js';
+import {GeographicWorld as HueWorld} from '../world/GeographicWorld.js';
 import {TouringBike} from '../vehicle/TouringBike.js';
-import {districts,getDistrict} from '../routes/districts.js';
+import {geoDistricts as districts} from '../geography/map.js';
 import {damp,wrapAngle} from '../vehicle/BicycleMotion.js';
-import {TrafficSystem} from '../traffic/TrafficSystem.js';
+import {GeographicTraffic as TrafficSystem} from '../traffic/GeographicTraffic.js';
 import {CITY,BRIDGE} from '../world/cityLayout.js';
 import {CityAudio} from '../audio/CityAudio.js';
+import {unproject} from '../geography/geometry.js';
+const getDistrict=id=>districts.find(d=>d.id===id);
 
 export class CityGame {
   constructor(canvas){
-    this.audio=new CityAudio();this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,.1,450);
+    this.audio=new CityAudio();this.scene=new THREE.Scene();this.camera=new THREE.PerspectiveCamera(57,innerWidth/innerHeight,.1,5000);
     this.renderer=new THREE.WebGLRenderer({canvas,antialias:true});this.renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));this.renderer.setSize(innerWidth,innerHeight);
     this.renderer.toneMapping=THREE.ACESFilmicToneMapping;this.renderer.toneMappingExposure=1.05;this.renderer.shadowMap.enabled=true;this.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
-    this.input=new InputController(canvas);this.world=new HueWorld(this.scene);this.world.build();this.scene.traverse(object=>{if(object.isSprite)object.visible=false;});this.bike=new TouringBike();this.scene.add(this.bike);this.traffic=new TrafficSystem(this.scene,this.world);this.collisionCooldown=0;this.stun=0;this.crashCount=0;this.noticeTime=0;
+    this.input=new InputController(canvas);this.world=new HueWorld(this.scene);this.world.build();this.audio.venues=this.world.venues;this.scene.traverse(object=>{if(object.isSprite)object.visible=false;});this.bike=new TouringBike();this.scene.add(this.bike);this.traffic=new TrafficSystem(this.scene,this.world);this.collisionCooldown=0;this.stun=0;this.crashCount=0;this.noticeTime=0;
     this.impact=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(.85,.035,6,32),new THREE.MeshBasicMaterial({color:'#ffb55d',transparent:true}));ring.rotation.x=Math.PI/2;this.impact.add(ring);for(let i=0;i<8;i++){const spark=new THREE.Mesh(new THREE.OctahedronGeometry(.075),new THREE.MeshBasicMaterial({color:'#ffe1a0',transparent:true}));spark.position.set(Math.cos(i*Math.PI/4)*.8,.4,Math.sin(i*Math.PI/4)*.8);this.impact.add(spark);}this.impact.visible=false;this.scene.add(this.impact);
     this.clock=new THREE.Clock();this.accumulator=0;this.auto=false;this.elapsed=0;this.cameraYaw=0;this.look=new THREE.Vector3();this.desired=new THREE.Vector3();this.cameraTarget=new THREE.Vector3();this.ray=new THREE.Raycaster();this.rayDirection=new THREE.Vector3();
     this.map=document.querySelector('#minimap').getContext('2d');this.hud={district:document.querySelector('#destination'),speed:document.querySelector('#speed'),distance:document.querySelector('#distance'),progress:document.querySelector('#progress'),mode:document.querySelector('#mode-label'),auto:document.querySelector('#autopilot'),card:document.querySelector('#landmark-card')};
@@ -25,7 +27,7 @@ export class CityGame {
     const district=getDistrict(id);if(!district)return;this.district=district;this.auto=false;this.completed=false;this.input.reset();this.input.drag.yaw=0;this.collisionCooldown=2;this.stun=0;this.noticeTime=0;this.impact.visible=false;document.querySelector('#collision-toast').hidden=true;
     const {x,z,heading}=district.spawn;this.bike.reset(x,z,heading);this.bike.position.y=this.world.groundAt(x,z);
     this.traffic.clearSpawn(this.bike.position);
-    this.curve=new THREE.CatmullRomCurve3(district.path.map(([px,pz])=>new THREE.Vector3(px,0,pz)),false,'centripetal');this.routeLength=this.curve.getLength();this.routeU=0;
+    this.curve=new THREE.CurvePath();for(let i=1;i<district.path.length;i++)this.curve.add(new THREE.LineCurve3(new THREE.Vector3(district.path[i-1][0],0,district.path[i-1][1]),new THREE.Vector3(district.path[i][0],0,district.path[i][1])));this.routeLength=this.curve.getLength();this.routeU=0;
     let nearest=Infinity;for(let i=0;i<=100;i++){const p=this.curve.getPointAt(i/100),d=Math.hypot(p.x-x,p.z-z);if(d<nearest){nearest=d;this.routeU=i/100;}}
     this.cameraYaw=heading;this.camera.position.set(x-Math.sin(heading)*5.6,3,z-Math.cos(heading)*5.6);this.look.set(x+Math.sin(heading)*2,1.3,z+Math.cos(heading)*2);this.camera.lookAt(this.look);
     document.querySelectorAll('[data-district]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.district===id)));this.syncMode();this.updateHud();
@@ -55,7 +57,7 @@ export class CityGame {
     if(this.stun>0){throttle=0;steer=0;brake=true;}
     this.bike.update(dt,throttle,steer,brake);
     if(!this.world.canRide(this.bike.position.x,this.bike.position.z)) {this.bike.position.x=oldX;this.bike.position.z=oldZ;this.bike.motion.speed=0;}
-    this.bike.position.y=damp(this.bike.position.y,this.world.groundAt(this.bike.position.x,this.bike.position.z),15,dt);
+    this.bike.position.y=damp(this.bike.position.y,this.world.groundAt(this.bike.position.x,this.bike.position.z,this.bike.position.y),15,dt);
     if(this.collisionCooldown===0){const actor=this.traffic.contact({x:oldX,z:oldZ},this.bike);if(actor&&Math.abs(this.bike.motion.speed)+actor.speed>.5)this.crash(actor,oldX,oldZ);}
     if(this.stun>0)this.bike.rotation.z+=Math.sin(this.stun*8)*.28;
   }
@@ -70,7 +72,7 @@ export class CityGame {
   frame(){
     const dt=Math.min(this.clock.getDelta(),.1);this.elapsed+=dt;this.accumulator+=dt;
     while(this.accumulator>=1/120){this.step(1/120);this.accumulator-=1/120;}
-    this.world.update(this.elapsed);if(this.impact.visible){const age=1-this.stun;this.impact.scale.setScalar(1+age*1.4);this.impact.children.forEach(mesh=>mesh.material.opacity=Math.max(0,1-age));if(this.stun===0)this.impact.visible=false;}this.updateCamera(dt);this.audio.update(this.bike,this.traffic.actors,this.cameraYaw+this.input.drag.yaw);this.updateHud();this.drawMap();this.renderer.render(this.scene,this.camera);
+    this.world.update(this.elapsed,this.bike.position);if(this.impact.visible){const age=1-this.stun;this.impact.scale.setScalar(1+age*1.4);this.impact.children.forEach(mesh=>mesh.material.opacity=Math.max(0,1-age));if(this.stun===0)this.impact.visible=false;}this.updateCamera(dt);this.audio.update(this.bike,this.traffic.actors,this.cameraYaw+this.input.drag.yaw);this.updateHud();this.drawMap();this.renderer.render(this.scene,this.camera);
   }
   updateCamera(dt){
     this.cameraYaw+=wrapAngle(this.bike.motion.heading-this.cameraYaw)*(1-Math.exp(-7.5*dt));
@@ -81,12 +83,14 @@ export class CityGame {
     if(this.stun>0)this.desired.x+=Math.sin(this.elapsed*46)*this.stun*.08;this.camera.position.lerp(this.desired,1-Math.exp(-10*dt));this.cameraTarget.set(p.x+Math.sin(yaw)*1.8,p.y+1.1,p.z+Math.cos(yaw)*1.8);this.look.lerp(this.cameraTarget,1-Math.exp(-12*dt));this.camera.lookAt(this.look);
   }
   updateHud(){
+    const osmLink=document.querySelector('#open-osm');if(osmLink){const gps=unproject(this.bike.position);osmLink.href=`https://www.openstreetmap.org/#map=18/${gps.lat.toFixed(7)}/${gps.lon.toFixed(7)}`;}
     this.hud.district.textContent=this.district.title;this.hud.speed.textContent=Math.round(Math.abs(this.bike.motion.speed)*3.6);this.hud.distance.textContent=this.completed?'Đã hoàn thành tuyến':this.auto?`${Math.round((1-this.routeU)*this.routeLength)} m trên tuyến`:'Tự do khám phá';this.hud.progress.style.width=`${this.completed?100:this.routeU*100}%`;
     const soundLocation=document.querySelector('#sound-location');if(soundLocation)soundLocation.textContent=this.audio.venueLevel>.07?`Nhạc ven quán · ${this.audio.nearbyVenue.title}`:'Giai điệu bên sông Hương';
     let near=null,distance=Infinity;for(const lm of this.world.landmarks.values()){const d=Math.hypot(lm.position.x-this.bike.position.x,lm.position.z-this.bike.position.z);if(d<distance&&d<lm.radius){distance=d;near=lm;}}
     this.hud.card.classList.toggle('visible',!!near);if(near){this.hud.card.querySelector('h2').textContent=near.title;this.hud.card.querySelector('p').textContent=near.description;}
   }
   drawMap(){
+    if(this.world.drawMap){this.world.drawMap(this.map,this.bike,districts,this.district.id,this.traffic.actors);return;}
     const ctx=this.map,w=240,h=170,toX=x=>(x+85)/125*w,toY=z=>(z+82)/145*h;
     ctx.fillStyle='#102420';ctx.fillRect(0,0,w,h);ctx.fillStyle='#326d78';ctx.fillRect(0,toY(-CITY.riverHalfWidth),w,toY(CITY.riverHalfWidth)-toY(-CITY.riverHalfWidth));
     ctx.strokeStyle='#829183';ctx.lineWidth=CITY.roadWidth/145*h;for(const z of [-CITY.roadCenter,CITY.roadCenter]){ctx.beginPath();ctx.moveTo(0,toY(z));ctx.lineTo(w,toY(z));ctx.stroke();}ctx.lineWidth=BRIDGE.width/125*w;ctx.beginPath();ctx.moveTo(toX(BRIDGE.x),toY(-34));ctx.lineTo(toX(BRIDGE.x),toY(34));ctx.stroke();

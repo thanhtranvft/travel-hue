@@ -1,0 +1,6329 @@
+{
+  "schemaVersion": 1,
+  "buildings": [
+    {
+      "code": "TN-0001",
+      "number": 1,
+      "osmKey": "way/39413728",
+      "coordinates": {
+        "lat": 16.470910597118408,
+        "lon": 107.58776211378726
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trường Tiền Plaza",
+        "houseNumber": "6",
+        "street": "Trần Hưng Đạo"
+      }
+    },
+    {
+      "code": "TN-0002",
+      "number": 2,
+      "osmKey": "way/118540998",
+      "coordinates": {
+        "lat": 16.466971148127772,
+        "lon": 107.58955858277281
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trung tâm Nghệ thuật Điềm Phùng Thị",
+        "houseNumber": "17",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0003",
+      "number": 3,
+      "osmKey": "way/118541035",
+      "coordinates": {
+        "lat": 16.465134119458963,
+        "lon": 107.58889798441818
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0004",
+      "number": 4,
+      "osmKey": "way/118541130",
+      "coordinates": {
+        "lat": 16.4648406,
+        "lon": 107.5911042
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0005",
+      "number": 5,
+      "osmKey": "way/118541181",
+      "coordinates": {
+        "lat": 16.462788138982393,
+        "lon": 107.58806571302298
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0006",
+      "number": 6,
+      "osmKey": "way/118541234",
+      "coordinates": {
+        "lat": 16.46476765606617,
+        "lon": 107.58839939885529
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0007",
+      "number": 7,
+      "osmKey": "way/118541326",
+      "coordinates": {
+        "lat": 16.46276634639785,
+        "lon": 107.58877157077245
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0008",
+      "number": 8,
+      "osmKey": "way/118541414",
+      "coordinates": {
+        "lat": 16.457917379039145,
+        "lon": 107.58052751813922
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0009",
+      "number": 9,
+      "osmKey": "way/118541426",
+      "coordinates": {
+        "lat": 16.46450750919848,
+        "lon": 107.59121693248493
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0010",
+      "number": 10,
+      "osmKey": "way/118541430",
+      "coordinates": {
+        "lat": 16.466320836478122,
+        "lon": 107.58887490027786
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Không Gian Sách Và Văn Hóa Huế",
+        "houseNumber": "23-25",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0011",
+      "number": 11,
+      "osmKey": "way/118541439",
+      "coordinates": {
+        "lat": 16.463119862632517,
+        "lon": 107.58916629575542
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0012",
+      "number": 12,
+      "osmKey": "way/118541542",
+      "coordinates": {
+        "lat": 16.463063628965827,
+        "lon": 107.58925064235495
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0013",
+      "number": 13,
+      "osmKey": "way/118541549",
+      "coordinates": {
+        "lat": 16.46439749269049,
+        "lon": 107.5921614345968
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0014",
+      "number": 14,
+      "osmKey": "way/118541587",
+      "coordinates": {
+        "lat": 16.467383915823554,
+        "lon": 107.59196065982037
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0015",
+      "number": 15,
+      "osmKey": "way/118541640",
+      "coordinates": {
+        "lat": 16.46944241787192,
+        "lon": 107.59391248697706
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0016",
+      "number": 16,
+      "osmKey": "way/118541788",
+      "coordinates": {
+        "lat": 16.46242065,
+        "lon": 107.59267849999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0017",
+      "number": 17,
+      "osmKey": "way/118541860",
+      "coordinates": {
+        "lat": 16.46595255658402,
+        "lon": 107.59014654448566
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0018",
+      "number": 18,
+      "osmKey": "way/118541920",
+      "coordinates": {
+        "lat": 16.467484547365068,
+        "lon": 107.59128773729964
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0019",
+      "number": 19,
+      "osmKey": "way/118541971",
+      "coordinates": {
+        "lat": 16.459260741491928,
+        "lon": 107.58223954657142
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trung tâm Thanh thiếu nhi Huế",
+        "houseNumber": "8",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0020",
+      "number": 20,
+      "osmKey": "way/118541985",
+      "coordinates": {
+        "lat": 16.468850467010878,
+        "lon": 107.59395100482462
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0021",
+      "number": 21,
+      "osmKey": "way/118542003",
+      "coordinates": {
+        "lat": 16.467036280665127,
+        "lon": 107.59153522276432
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0022",
+      "number": 22,
+      "osmKey": "way/118542120",
+      "coordinates": {
+        "lat": 16.46310854700951,
+        "lon": 107.59278642596549
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0023",
+      "number": 23,
+      "osmKey": "way/118542146",
+      "coordinates": {
+        "lat": 16.46396033630732,
+        "lon": 107.59211282781683
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Giáo xứ Phanxicô Xavier",
+        "houseNumber": "18",
+        "street": "Nguyễn Tri Phương"
+      }
+    },
+    {
+      "code": "TN-0024",
+      "number": 24,
+      "osmKey": "way/118542224",
+      "coordinates": {
+        "lat": 16.463252155952592,
+        "lon": 107.59359165643775
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0025",
+      "number": 25,
+      "osmKey": "way/118542275",
+      "coordinates": {
+        "lat": 16.463865984073664,
+        "lon": 107.59238111580434
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0026",
+      "number": 26,
+      "osmKey": "way/118542281",
+      "coordinates": {
+        "lat": 16.456513371828187,
+        "lon": 107.57881322200606
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0027",
+      "number": 27,
+      "osmKey": "way/118542304",
+      "coordinates": {
+        "lat": 16.465084796919044,
+        "lon": 107.5888398869068
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0028",
+      "number": 28,
+      "osmKey": "way/118542313",
+      "coordinates": {
+        "lat": 16.457546879897006,
+        "lon": 107.58107306629
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0029",
+      "number": 29,
+      "osmKey": "way/118542346",
+      "coordinates": {
+        "lat": 16.464736831739724,
+        "lon": 107.5868262553728
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0030",
+      "number": 30,
+      "osmKey": "way/118542372",
+      "coordinates": {
+        "lat": 16.47075856676888,
+        "lon": 107.59332374886657
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0031",
+      "number": 31,
+      "osmKey": "way/118542407",
+      "coordinates": {
+        "lat": 16.462916168195875,
+        "lon": 107.59209808611412
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0032",
+      "number": 32,
+      "osmKey": "way/118542427",
+      "coordinates": {
+        "lat": 16.460709181410216,
+        "lon": 107.5835643302008
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0033",
+      "number": 33,
+      "osmKey": "way/118542431",
+      "coordinates": {
+        "lat": 16.46580285,
+        "lon": 107.5904494
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0034",
+      "number": 34,
+      "osmKey": "way/118542465",
+      "coordinates": {
+        "lat": 16.462564910946654,
+        "lon": 107.59357526863565
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0035",
+      "number": 35,
+      "osmKey": "way/118542501",
+      "coordinates": {
+        "lat": 16.469121899419907,
+        "lon": 107.59302353327926
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0036",
+      "number": 36,
+      "osmKey": "way/118542669",
+      "coordinates": {
+        "lat": 16.463284064534303,
+        "lon": 107.59293905018437
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0037",
+      "number": 37,
+      "osmKey": "way/118542706",
+      "coordinates": {
+        "lat": 16.46675154122638,
+        "lon": 107.59160614474025
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0038",
+      "number": 38,
+      "osmKey": "way/118542864",
+      "coordinates": {
+        "lat": 16.464606273409718,
+        "lon": 107.5881979032748
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0039",
+      "number": 39,
+      "osmKey": "way/118542887",
+      "coordinates": {
+        "lat": 16.464711024040533,
+        "lon": 107.59329512195848
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0040",
+      "number": 40,
+      "osmKey": "way/118542893",
+      "coordinates": {
+        "lat": 16.46344509563458,
+        "lon": 107.58748086154577
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Phuc Long Coffee & Tea",
+        "houseNumber": null,
+        "street": "Hà Nội"
+      }
+    },
+    {
+      "code": "TN-0041",
+      "number": 41,
+      "osmKey": "way/118542959",
+      "coordinates": {
+        "lat": 16.46331230941778,
+        "lon": 107.59196191222647
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0042",
+      "number": 42,
+      "osmKey": "way/118542961",
+      "coordinates": {
+        "lat": 16.462877520407794,
+        "lon": 107.58937130764185
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0043",
+      "number": 43,
+      "osmKey": "way/118543054",
+      "coordinates": {
+        "lat": 16.465045203311906,
+        "lon": 107.58878046715813
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0044",
+      "number": 44,
+      "osmKey": "way/172641246",
+      "coordinates": {
+        "lat": 16.472539049999998,
+        "lon": 107.588673
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0045",
+      "number": 45,
+      "osmKey": "way/174759689",
+      "coordinates": {
+        "lat": 16.46926697634534,
+        "lon": 107.58537680100727
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà Văn hóa Huế",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0046",
+      "number": 46,
+      "osmKey": "way/174759690",
+      "coordinates": {
+        "lat": 16.4694399,
+        "lon": 107.58514025000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0047",
+      "number": 47,
+      "osmKey": "way/175063593",
+      "coordinates": {
+        "lat": 16.45645340696252,
+        "lon": 107.57804825284848
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Ga Huế",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0048",
+      "number": 48,
+      "osmKey": "way/210098952",
+      "coordinates": {
+        "lat": 16.457928584677617,
+        "lon": 107.58114383347225
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0049",
+      "number": 49,
+      "osmKey": "way/218427614",
+      "coordinates": {
+        "lat": 16.46632905717507,
+        "lon": 107.58027070092146
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Kỳ Đài",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0050",
+      "number": 50,
+      "osmKey": "way/239449133",
+      "coordinates": {
+        "lat": 16.47162284830105,
+        "lon": 107.58786317585988
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0051",
+      "number": 51,
+      "osmKey": "way/239449135",
+      "coordinates": {
+        "lat": 16.471896911083075,
+        "lon": 107.58805980636951
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0052",
+      "number": 52,
+      "osmKey": "way/239568223",
+      "coordinates": {
+        "lat": 16.46803325,
+        "lon": 107.5855685
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Thương Bạc",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0053",
+      "number": 53,
+      "osmKey": "way/239568224",
+      "coordinates": {
+        "lat": 16.46479800528459,
+        "lon": 107.58139831689907
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nghênh Lương Đình",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0054",
+      "number": 54,
+      "osmKey": "way/239972922",
+      "coordinates": {
+        "lat": 16.4652793799375,
+        "lon": 107.58771868196096
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trung Tâm Văn Hóa Phật Giáo Liễu Quán",
+        "houseNumber": "15A",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0055",
+      "number": 55,
+      "osmKey": "way/239972926",
+      "coordinates": {
+        "lat": 16.46633510115015,
+        "lon": 107.59078614853631
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0056",
+      "number": 56,
+      "osmKey": "way/239972927",
+      "coordinates": {
+        "lat": 16.466306393531216,
+        "lon": 107.58853716336837
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0057",
+      "number": 57,
+      "osmKey": "way/239972929",
+      "coordinates": {
+        "lat": 16.466089344778258,
+        "lon": 107.5903132145787
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0058",
+      "number": 58,
+      "osmKey": "way/239972930",
+      "coordinates": {
+        "lat": 16.46599975587112,
+        "lon": 107.59043676632324
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0059",
+      "number": 59,
+      "osmKey": "way/239972931",
+      "coordinates": {
+        "lat": 16.465760366728627,
+        "lon": 107.58823984923998
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "15",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0060",
+      "number": 60,
+      "osmKey": "way/239972932",
+      "coordinates": {
+        "lat": 16.46605675,
+        "lon": 107.5886526
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0061",
+      "number": 61,
+      "osmKey": "way/239972933",
+      "coordinates": {
+        "lat": 16.465428179694552,
+        "lon": 107.58790064133933
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0062",
+      "number": 62,
+      "osmKey": "way/239972934",
+      "coordinates": {
+        "lat": 16.46653358784291,
+        "lon": 107.5890781884858
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0063",
+      "number": 63,
+      "osmKey": "way/239973089",
+      "coordinates": {
+        "lat": 16.465349293323868,
+        "lon": 107.5898771886559
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0064",
+      "number": 64,
+      "osmKey": "way/239974513",
+      "coordinates": {
+        "lat": 16.464837269705434,
+        "lon": 107.58980460417182
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0065",
+      "number": 65,
+      "osmKey": "way/239974515",
+      "coordinates": {
+        "lat": 16.465133940154896,
+        "lon": 107.58958898639324
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0066",
+      "number": 66,
+      "osmKey": "way/239974516",
+      "coordinates": {
+        "lat": 16.464911999999998,
+        "lon": 107.5893818
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0067",
+      "number": 67,
+      "osmKey": "way/239974518",
+      "coordinates": {
+        "lat": 16.465284099999998,
+        "lon": 107.58942215
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0068",
+      "number": 68,
+      "osmKey": "way/239976497",
+      "coordinates": {
+        "lat": 16.465522620134507,
+        "lon": 107.58912936645444
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0069",
+      "number": 69,
+      "osmKey": "way/239976499",
+      "coordinates": {
+        "lat": 16.464852016323132,
+        "lon": 107.59030115135796
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Buu dien hue",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0070",
+      "number": 70,
+      "osmKey": "way/240252008",
+      "coordinates": {
+        "lat": 16.4634194193186,
+        "lon": 107.58699581785552
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0071",
+      "number": 71,
+      "osmKey": "way/240252012",
+      "coordinates": {
+        "lat": 16.464371051250065,
+        "lon": 107.58777768356755
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trung Tâm Học Liệu - Đại Học Huế",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0072",
+      "number": 72,
+      "osmKey": "way/240266283",
+      "coordinates": {
+        "lat": 16.459086648883076,
+        "lon": 107.5801368787931
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "La Résidence",
+        "houseNumber": "5",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0073",
+      "number": 73,
+      "osmKey": "way/240266284",
+      "coordinates": {
+        "lat": 16.45962493324466,
+        "lon": 107.58110825102413
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Bảo tàng Hồ Chí Minh",
+        "houseNumber": "7",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0074",
+      "number": 74,
+      "osmKey": "way/240266285",
+      "coordinates": {
+        "lat": 16.45975665,
+        "lon": 107.58051545000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0075",
+      "number": 75,
+      "osmKey": "way/240266286",
+      "coordinates": {
+        "lat": 16.459952474940323,
+        "lon": 107.58051061258641
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0076",
+      "number": 76,
+      "osmKey": "way/240267335",
+      "coordinates": {
+        "lat": 16.45835500884306,
+        "lon": 107.57957237249438
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Đại học Huế",
+        "houseNumber": "3",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0077",
+      "number": 77,
+      "osmKey": "way/251616147",
+      "coordinates": {
+        "lat": 16.457612957190285,
+        "lon": 107.58016291511181
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Silk Path Grand Hue Hotel",
+        "houseNumber": "2",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0078",
+      "number": 78,
+      "osmKey": "way/354775345",
+      "coordinates": {
+        "lat": 16.458909300000002,
+        "lon": 107.58165345
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Trung tâm Công nghệ thông tin tỉnh Thừa Thiên Huế (HueCIT)",
+        "houseNumber": "6",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0079",
+      "number": 79,
+      "osmKey": "way/436420481",
+      "coordinates": {
+        "lat": 16.458968627517354,
+        "lon": 107.57974317292599
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0080",
+      "number": 80,
+      "osmKey": "way/436420482",
+      "coordinates": {
+        "lat": 16.458785731417656,
+        "lon": 107.57946117107934
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà làm việc Đại học Huế",
+        "houseNumber": "3",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0081",
+      "number": 81,
+      "osmKey": "way/531031520",
+      "coordinates": {
+        "lat": 16.465502914711085,
+        "lon": 107.58089252961778
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Phu Văn Lâu",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0082",
+      "number": 82,
+      "osmKey": "way/531031593",
+      "coordinates": {
+        "lat": 16.466316084908136,
+        "lon": 107.58029210941274
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0083",
+      "number": 83,
+      "osmKey": "way/617991227",
+      "coordinates": {
+        "lat": 16.465095550000004,
+        "lon": 107.5799657
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Miếu Long Thuyền",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0084",
+      "number": 84,
+      "osmKey": "way/618551466",
+      "coordinates": {
+        "lat": 16.456553623904924,
+        "lon": 107.57994475487459
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0085",
+      "number": 85,
+      "osmKey": "way/618551467",
+      "coordinates": {
+        "lat": 16.456418128075935,
+        "lon": 107.5797919483849
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0086",
+      "number": 86,
+      "osmKey": "way/618551468",
+      "coordinates": {
+        "lat": 16.4565299638507,
+        "lon": 107.57958136810988
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0087",
+      "number": 87,
+      "osmKey": "way/618551469",
+      "coordinates": {
+        "lat": 16.457330922553595,
+        "lon": 107.57948655558707
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0088",
+      "number": 88,
+      "osmKey": "way/632173178",
+      "coordinates": {
+        "lat": 16.463984127030855,
+        "lon": 107.59164590977176
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0089",
+      "number": 89,
+      "osmKey": "way/695770474",
+      "coordinates": {
+        "lat": 16.46134145,
+        "lon": 107.58525175
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0090",
+      "number": 90,
+      "osmKey": "way/695770475",
+      "coordinates": {
+        "lat": 16.461668855416924,
+        "lon": 107.58550426554785
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0091",
+      "number": 91,
+      "osmKey": "way/695770476",
+      "coordinates": {
+        "lat": 16.461935951481255,
+        "lon": 107.585244364465
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Ủy ban nhân dân thành phố Huế",
+        "houseNumber": "16",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0092",
+      "number": 92,
+      "osmKey": "way/695770483",
+      "coordinates": {
+        "lat": 16.461505443372573,
+        "lon": 107.58449467488613
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà hiệu bộ",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0093",
+      "number": 93,
+      "osmKey": "way/695770484",
+      "coordinates": {
+        "lat": 16.46110556480193,
+        "lon": 107.5838842424046
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Phòng truyền thống",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0094",
+      "number": 94,
+      "osmKey": "way/695770485",
+      "coordinates": {
+        "lat": 16.46097085,
+        "lon": 107.58398615
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0095",
+      "number": 95,
+      "osmKey": "way/695770486",
+      "coordinates": {
+        "lat": 16.460372299999996,
+        "lon": 107.5839819
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0096",
+      "number": 96,
+      "osmKey": "way/695770487",
+      "coordinates": {
+        "lat": 16.460149427051192,
+        "lon": 107.58385759774536
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0097",
+      "number": 97,
+      "osmKey": "way/695770488",
+      "coordinates": {
+        "lat": 16.460582480502357,
+        "lon": 107.58411703032854
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà xe số 2",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0098",
+      "number": 98,
+      "osmKey": "way/695770502",
+      "coordinates": {
+        "lat": 16.46524890000001,
+        "lon": 107.5805903
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0099",
+      "number": 99,
+      "osmKey": "way/695775616",
+      "coordinates": {
+        "lat": 16.458314584258158,
+        "lon": 107.57931090500742
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0100",
+      "number": 100,
+      "osmKey": "way/695775617",
+      "coordinates": {
+        "lat": 16.45869465586946,
+        "lon": 107.5812204632558
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Khoa Quốc tế, Đại học Huế",
+        "houseNumber": "4",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0101",
+      "number": 101,
+      "osmKey": "way/695775618",
+      "coordinates": {
+        "lat": 16.459066069205587,
+        "lon": 107.58276968235488
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0102",
+      "number": 102,
+      "osmKey": "way/695775619",
+      "coordinates": {
+        "lat": 16.459294454326617,
+        "lon": 107.58273973523666
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0103",
+      "number": 103,
+      "osmKey": "way/695775635",
+      "coordinates": {
+        "lat": 16.459859745130338,
+        "lon": 107.58253603251362
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0104",
+      "number": 104,
+      "osmKey": "way/695775636",
+      "coordinates": {
+        "lat": 16.459962560223605,
+        "lon": 107.58262777314296
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0105",
+      "number": 105,
+      "osmKey": "way/695775637",
+      "coordinates": {
+        "lat": 16.4602851,
+        "lon": 107.58288745
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0106",
+      "number": 106,
+      "osmKey": "way/695775638",
+      "coordinates": {
+        "lat": 16.46051916658393,
+        "lon": 107.58316114730003
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0107",
+      "number": 107,
+      "osmKey": "way/695775640",
+      "coordinates": {
+        "lat": 16.45958830238396,
+        "lon": 107.58321051900434
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0108",
+      "number": 108,
+      "osmKey": "way/695775641",
+      "coordinates": {
+        "lat": 16.459486613135073,
+        "lon": 107.58298428938492
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0109",
+      "number": 109,
+      "osmKey": "way/731095036",
+      "coordinates": {
+        "lat": 16.46974815,
+        "lon": 107.59298115
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0110",
+      "number": 110,
+      "osmKey": "way/731095037",
+      "coordinates": {
+        "lat": 16.470112949999997,
+        "lon": 107.5927748
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0111",
+      "number": 111,
+      "osmKey": "way/731095038",
+      "coordinates": {
+        "lat": 16.4698702,
+        "lon": 107.5932344
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "45",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0112",
+      "number": 112,
+      "osmKey": "way/731095039",
+      "coordinates": {
+        "lat": 16.470027450000003,
+        "lon": 107.59345435
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0113",
+      "number": 113,
+      "osmKey": "way/731095046",
+      "coordinates": {
+        "lat": 16.470683546441307,
+        "lon": 107.59358834681741
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0114",
+      "number": 114,
+      "osmKey": "way/731095047",
+      "coordinates": {
+        "lat": 16.47122460192129,
+        "lon": 107.59390726521048
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0115",
+      "number": 115,
+      "osmKey": "way/732290029",
+      "coordinates": {
+        "lat": 16.462619204629988,
+        "lon": 107.59326796123521
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0116",
+      "number": 116,
+      "osmKey": "way/732290031",
+      "coordinates": {
+        "lat": 16.462787617142013,
+        "lon": 107.59393527003333
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0117",
+      "number": 117,
+      "osmKey": "way/732290034",
+      "coordinates": {
+        "lat": 16.462905004939156,
+        "lon": 107.5937402654494
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0118",
+      "number": 118,
+      "osmKey": "way/732290035",
+      "coordinates": {
+        "lat": 16.462934200000003,
+        "lon": 107.5938222
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0119",
+      "number": 119,
+      "osmKey": "way/732290036",
+      "coordinates": {
+        "lat": 16.46309045,
+        "lon": 107.59349470000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0120",
+      "number": 120,
+      "osmKey": "way/732290037",
+      "coordinates": {
+        "lat": 16.463122856528706,
+        "lon": 107.59362832482132
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0121",
+      "number": 121,
+      "osmKey": "way/732290038",
+      "coordinates": {
+        "lat": 16.463052670354074,
+        "lon": 107.59376717619939
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0122",
+      "number": 122,
+      "osmKey": "way/732290039",
+      "coordinates": {
+        "lat": 16.462931274625458,
+        "lon": 107.59354363632612
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0123",
+      "number": 123,
+      "osmKey": "way/732290040",
+      "coordinates": {
+        "lat": 16.46301455,
+        "lon": 107.59334675
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0124",
+      "number": 124,
+      "osmKey": "way/732290041",
+      "coordinates": {
+        "lat": 16.463107038033893,
+        "lon": 107.59313479806838
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0125",
+      "number": 125,
+      "osmKey": "way/732290042",
+      "coordinates": {
+        "lat": 16.46401056595152,
+        "lon": 107.59300108264163
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0126",
+      "number": 126,
+      "osmKey": "way/732290043",
+      "coordinates": {
+        "lat": 16.46411861777575,
+        "lon": 107.59293500350134
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0127",
+      "number": 127,
+      "osmKey": "way/732290044",
+      "coordinates": {
+        "lat": 16.464060800000002,
+        "lon": 107.5929621
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0128",
+      "number": 128,
+      "osmKey": "way/732290045",
+      "coordinates": {
+        "lat": 16.464012000000004,
+        "lon": 107.59284695000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0129",
+      "number": 129,
+      "osmKey": "way/732290046",
+      "coordinates": {
+        "lat": 16.463983349999996,
+        "lon": 107.592784
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0130",
+      "number": 130,
+      "osmKey": "way/732290047",
+      "coordinates": {
+        "lat": 16.463966550000002,
+        "lon": 107.5927437
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0131",
+      "number": 131,
+      "osmKey": "way/732290048",
+      "coordinates": {
+        "lat": 16.46383579223867,
+        "lon": 107.59270621509447
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0132",
+      "number": 132,
+      "osmKey": "way/732290049",
+      "coordinates": {
+        "lat": 16.46407615,
+        "lon": 107.5926903
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0133",
+      "number": 133,
+      "osmKey": "way/732290050",
+      "coordinates": {
+        "lat": 16.464189150000003,
+        "lon": 107.5927906
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0134",
+      "number": 134,
+      "osmKey": "way/732290051",
+      "coordinates": {
+        "lat": 16.464407799999996,
+        "lon": 107.5928309
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0135",
+      "number": 135,
+      "osmKey": "way/732290052",
+      "coordinates": {
+        "lat": 16.464314,
+        "lon": 107.59282515000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0136",
+      "number": 136,
+      "osmKey": "way/732290053",
+      "coordinates": {
+        "lat": 16.464275517037308,
+        "lon": 107.59266389740827
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0137",
+      "number": 137,
+      "osmKey": "way/732290054",
+      "coordinates": {
+        "lat": 16.464226830471173,
+        "lon": 107.59257760747174
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0138",
+      "number": 138,
+      "osmKey": "way/732290055",
+      "coordinates": {
+        "lat": 16.46431236715376,
+        "lon": 107.5925878490537
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0139",
+      "number": 139,
+      "osmKey": "way/732290056",
+      "coordinates": {
+        "lat": 16.464282810246836,
+        "lon": 107.59247847017362
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0140",
+      "number": 140,
+      "osmKey": "way/732290057",
+      "coordinates": {
+        "lat": 16.4644232,
+        "lon": 107.5925305
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0141",
+      "number": 141,
+      "osmKey": "way/732290058",
+      "coordinates": {
+        "lat": 16.4645758,
+        "lon": 107.5924696
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0142",
+      "number": 142,
+      "osmKey": "way/732290059",
+      "coordinates": {
+        "lat": 16.464724784326002,
+        "lon": 107.59262013865201
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0143",
+      "number": 143,
+      "osmKey": "way/732290067",
+      "coordinates": {
+        "lat": 16.46460901850321,
+        "lon": 107.59317728632232
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0144",
+      "number": 144,
+      "osmKey": "way/732290068",
+      "coordinates": {
+        "lat": 16.464645359287008,
+        "lon": 107.59334748678616
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0145",
+      "number": 145,
+      "osmKey": "way/732290069",
+      "coordinates": {
+        "lat": 16.464619863301145,
+        "lon": 107.59340759184043
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0146",
+      "number": 146,
+      "osmKey": "way/732290070",
+      "coordinates": {
+        "lat": 16.46442467556241,
+        "lon": 107.59336016382387
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0147",
+      "number": 147,
+      "osmKey": "way/732290071",
+      "coordinates": {
+        "lat": 16.464403402403228,
+        "lon": 107.5932203202399
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0148",
+      "number": 148,
+      "osmKey": "way/732290072",
+      "coordinates": {
+        "lat": 16.464475600000004,
+        "lon": 107.5932237
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0149",
+      "number": 149,
+      "osmKey": "way/732290073",
+      "coordinates": {
+        "lat": 16.464452149211994,
+        "lon": 107.59302641515114
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0150",
+      "number": 150,
+      "osmKey": "way/732290074",
+      "coordinates": {
+        "lat": 16.464391848632665,
+        "lon": 107.59305651463752
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0151",
+      "number": 151,
+      "osmKey": "way/732290075",
+      "coordinates": {
+        "lat": 16.4643082,
+        "lon": 107.59306615
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0152",
+      "number": 152,
+      "osmKey": "way/732290076",
+      "coordinates": {
+        "lat": 16.464153850000002,
+        "lon": 107.59311135000002
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0153",
+      "number": 153,
+      "osmKey": "way/732290077",
+      "coordinates": {
+        "lat": 16.464232450000004,
+        "lon": 107.59311430000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0154",
+      "number": 154,
+      "osmKey": "way/732290078",
+      "coordinates": {
+        "lat": 16.463885416771323,
+        "lon": 107.59296953344361
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0155",
+      "number": 155,
+      "osmKey": "way/732290079",
+      "coordinates": {
+        "lat": 16.4640442,
+        "lon": 107.59334115
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0156",
+      "number": 156,
+      "osmKey": "way/732290080",
+      "coordinates": {
+        "lat": 16.46451395,
+        "lon": 107.59346395
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0157",
+      "number": 157,
+      "osmKey": "way/732290081",
+      "coordinates": {
+        "lat": 16.464439349999996,
+        "lon": 107.5935074
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0158",
+      "number": 158,
+      "osmKey": "way/732290082",
+      "coordinates": {
+        "lat": 16.464363746471744,
+        "lon": 107.59357029330278
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0159",
+      "number": 159,
+      "osmKey": "way/732290083",
+      "coordinates": {
+        "lat": 16.4643232594442,
+        "lon": 107.59369623242827
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0160",
+      "number": 160,
+      "osmKey": "way/732290084",
+      "coordinates": {
+        "lat": 16.464252833467295,
+        "lon": 107.5937549528111
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0161",
+      "number": 161,
+      "osmKey": "way/732290085",
+      "coordinates": {
+        "lat": 16.464108099999997,
+        "lon": 107.59353755
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0162",
+      "number": 162,
+      "osmKey": "way/732290086",
+      "coordinates": {
+        "lat": 16.464122784832195,
+        "lon": 107.59374994595738
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0163",
+      "number": 163,
+      "osmKey": "way/732290087",
+      "coordinates": {
+        "lat": 16.463954405525975,
+        "lon": 107.59367728628833
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0164",
+      "number": 164,
+      "osmKey": "way/732290088",
+      "coordinates": {
+        "lat": 16.463997300000006,
+        "lon": 107.5936125
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0165",
+      "number": 165,
+      "osmKey": "way/732290089",
+      "coordinates": {
+        "lat": 16.464072569462175,
+        "lon": 107.59366850843726
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0166",
+      "number": 166,
+      "osmKey": "way/732290090",
+      "coordinates": {
+        "lat": 16.464012003589616,
+        "lon": 107.59383533484672
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0167",
+      "number": 167,
+      "osmKey": "way/732290091",
+      "coordinates": {
+        "lat": 16.464115100000008,
+        "lon": 107.59393050000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0168",
+      "number": 168,
+      "osmKey": "way/732290092",
+      "coordinates": {
+        "lat": 16.46374105,
+        "lon": 107.59373465
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0169",
+      "number": 169,
+      "osmKey": "way/732290094",
+      "coordinates": {
+        "lat": 16.4637124,
+        "lon": 107.59390624999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0170",
+      "number": 170,
+      "osmKey": "way/732290110",
+      "coordinates": {
+        "lat": 16.46465205031482,
+        "lon": 107.59392357078748
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0171",
+      "number": 171,
+      "osmKey": "way/732290111",
+      "coordinates": {
+        "lat": 16.464576463061476,
+        "lon": 107.59392623860369
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0172",
+      "number": 172,
+      "osmKey": "way/732304140",
+      "coordinates": {
+        "lat": 16.4632824397566,
+        "lon": 107.5913731475491
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0173",
+      "number": 173,
+      "osmKey": "way/732304142",
+      "coordinates": {
+        "lat": 16.462515957257963,
+        "lon": 107.5917260204654
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0174",
+      "number": 174,
+      "osmKey": "way/732304143",
+      "coordinates": {
+        "lat": 16.4626385705584,
+        "lon": 107.59169099111188
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0175",
+      "number": 175,
+      "osmKey": "way/732304144",
+      "coordinates": {
+        "lat": 16.46271805,
+        "lon": 107.59166005
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0176",
+      "number": 176,
+      "osmKey": "way/732304145",
+      "coordinates": {
+        "lat": 16.462664920223382,
+        "lon": 107.59150179789806
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0177",
+      "number": 177,
+      "osmKey": "way/732304149",
+      "coordinates": {
+        "lat": 16.46331762265535,
+        "lon": 107.59181333122567
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0178",
+      "number": 178,
+      "osmKey": "way/732304150",
+      "coordinates": {
+        "lat": 16.4632494,
+        "lon": 107.59187495
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0179",
+      "number": 179,
+      "osmKey": "way/732304151",
+      "coordinates": {
+        "lat": 16.463188,
+        "lon": 107.59168774999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0180",
+      "number": 180,
+      "osmKey": "way/732304152",
+      "coordinates": {
+        "lat": 16.4630638,
+        "lon": 107.5917661
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0181",
+      "number": 181,
+      "osmKey": "way/732304153",
+      "coordinates": {
+        "lat": 16.463121057257677,
+        "lon": 107.5920621695783
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0182",
+      "number": 182,
+      "osmKey": "way/732304154",
+      "coordinates": {
+        "lat": 16.463084369615032,
+        "lon": 107.59196138945804
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0183",
+      "number": 183,
+      "osmKey": "way/732304155",
+      "coordinates": {
+        "lat": 16.462942729916197,
+        "lon": 107.59195276206188
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0184",
+      "number": 184,
+      "osmKey": "way/732304156",
+      "coordinates": {
+        "lat": 16.462929020067428,
+        "lon": 107.59188664322802
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0185",
+      "number": 185,
+      "osmKey": "way/732304157",
+      "coordinates": {
+        "lat": 16.46266139886439,
+        "lon": 107.59185066308913
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0186",
+      "number": 186,
+      "osmKey": "way/732304158",
+      "coordinates": {
+        "lat": 16.462836250209534,
+        "lon": 107.59177018367608
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0187",
+      "number": 187,
+      "osmKey": "way/732304159",
+      "coordinates": {
+        "lat": 16.462899166859174,
+        "lon": 107.59179501516022
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0188",
+      "number": 188,
+      "osmKey": "way/732304160",
+      "coordinates": {
+        "lat": 16.462533899999997,
+        "lon": 107.59197044999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0189",
+      "number": 189,
+      "osmKey": "way/732304161",
+      "coordinates": {
+        "lat": 16.4625801725968,
+        "lon": 107.59201663259206
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0190",
+      "number": 190,
+      "osmKey": "way/732304162",
+      "coordinates": {
+        "lat": 16.462592700000002,
+        "lon": 107.59205750000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0191",
+      "number": 191,
+      "osmKey": "way/732304163",
+      "coordinates": {
+        "lat": 16.462723633721883,
+        "lon": 107.59209351173963
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0192",
+      "number": 192,
+      "osmKey": "way/732304164",
+      "coordinates": {
+        "lat": 16.462852732983535,
+        "lon": 107.59221360068568
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0193",
+      "number": 193,
+      "osmKey": "way/732304165",
+      "coordinates": {
+        "lat": 16.462909435824432,
+        "lon": 107.59228344557897
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0194",
+      "number": 194,
+      "osmKey": "way/732304172",
+      "coordinates": {
+        "lat": 16.46239465,
+        "lon": 107.5916588
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0195",
+      "number": 195,
+      "osmKey": "way/732304173",
+      "coordinates": {
+        "lat": 16.46239973421597,
+        "lon": 107.59172692825769
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0196",
+      "number": 196,
+      "osmKey": "way/732304180",
+      "coordinates": {
+        "lat": 16.462336391910913,
+        "lon": 107.59200403455725
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0197",
+      "number": 197,
+      "osmKey": "way/732304181",
+      "coordinates": {
+        "lat": 16.462438300000002,
+        "lon": 107.5921081
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0198",
+      "number": 198,
+      "osmKey": "way/732304182",
+      "coordinates": {
+        "lat": 16.46248616091465,
+        "lon": 107.59218015784143
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0199",
+      "number": 199,
+      "osmKey": "way/732304183",
+      "coordinates": {
+        "lat": 16.462547955718623,
+        "lon": 107.5922731339873
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0200",
+      "number": 200,
+      "osmKey": "way/732304184",
+      "coordinates": {
+        "lat": 16.462580139517325,
+        "lon": 107.5925675600584
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0201",
+      "number": 201,
+      "osmKey": "way/732304185",
+      "coordinates": {
+        "lat": 16.46253056601699,
+        "lon": 107.59249615198341
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0202",
+      "number": 202,
+      "osmKey": "way/732304186",
+      "coordinates": {
+        "lat": 16.462689666586808,
+        "lon": 107.59261719763113
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0203",
+      "number": 203,
+      "osmKey": "way/732304187",
+      "coordinates": {
+        "lat": 16.46264208436356,
+        "lon": 107.59268349517357
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0204",
+      "number": 204,
+      "osmKey": "way/732304188",
+      "coordinates": {
+        "lat": 16.4627045,
+        "lon": 107.5924407
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0205",
+      "number": 205,
+      "osmKey": "way/732304189",
+      "coordinates": {
+        "lat": 16.462823299999993,
+        "lon": 107.59238364999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0206",
+      "number": 206,
+      "osmKey": "way/732304190",
+      "coordinates": {
+        "lat": 16.463024556146774,
+        "lon": 107.59209872842499
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0207",
+      "number": 207,
+      "osmKey": "way/732304191",
+      "coordinates": {
+        "lat": 16.463028350000002,
+        "lon": 107.59220195
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0208",
+      "number": 208,
+      "osmKey": "way/732304192",
+      "coordinates": {
+        "lat": 16.462993380135416,
+        "lon": 107.59234191249648
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0209",
+      "number": 209,
+      "osmKey": "way/732304193",
+      "coordinates": {
+        "lat": 16.46311145,
+        "lon": 107.59230945
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0210",
+      "number": 210,
+      "osmKey": "way/732304194",
+      "coordinates": {
+        "lat": 16.463109931248905,
+        "lon": 107.592166111561
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0211",
+      "number": 211,
+      "osmKey": "way/732304195",
+      "coordinates": {
+        "lat": 16.463225350000002,
+        "lon": 107.5922249
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0212",
+      "number": 212,
+      "osmKey": "way/732304196",
+      "coordinates": {
+        "lat": 16.4633223,
+        "lon": 107.5922484
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0213",
+      "number": 213,
+      "osmKey": "way/732304197",
+      "coordinates": {
+        "lat": 16.463319750000004,
+        "lon": 107.59243475000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0214",
+      "number": 214,
+      "osmKey": "way/732304198",
+      "coordinates": {
+        "lat": 16.46331855,
+        "lon": 107.5926039
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0215",
+      "number": 215,
+      "osmKey": "way/732304200",
+      "coordinates": {
+        "lat": 16.462865150000003,
+        "lon": 107.5933852
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0216",
+      "number": 216,
+      "osmKey": "way/732304201",
+      "coordinates": {
+        "lat": 16.462721253677728,
+        "lon": 107.59388523377608
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0217",
+      "number": 217,
+      "osmKey": "way/732304203",
+      "coordinates": {
+        "lat": 16.462751449999995,
+        "lon": 107.59278269999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0218",
+      "number": 218,
+      "osmKey": "way/732304204",
+      "coordinates": {
+        "lat": 16.46284641782072,
+        "lon": 107.59258011488177
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0219",
+      "number": 219,
+      "osmKey": "way/732304205",
+      "coordinates": {
+        "lat": 16.462912550000002,
+        "lon": 107.59267645
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0220",
+      "number": 220,
+      "osmKey": "way/732304206",
+      "coordinates": {
+        "lat": 16.462835229977532,
+        "lon": 107.59267471116398
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0221",
+      "number": 221,
+      "osmKey": "way/732304207",
+      "coordinates": {
+        "lat": 16.4628598,
+        "lon": 107.59277125
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0222",
+      "number": 222,
+      "osmKey": "way/732304208",
+      "coordinates": {
+        "lat": 16.462959799999982,
+        "lon": 107.59265374999995
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0223",
+      "number": 223,
+      "osmKey": "way/732304209",
+      "coordinates": {
+        "lat": 16.462996649999997,
+        "lon": 107.59252635
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0224",
+      "number": 224,
+      "osmKey": "way/732304210",
+      "coordinates": {
+        "lat": 16.463070749999996,
+        "lon": 107.59251859999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0225",
+      "number": 225,
+      "osmKey": "way/732304211",
+      "coordinates": {
+        "lat": 16.463121200000003,
+        "lon": 107.59240780000002
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0226",
+      "number": 226,
+      "osmKey": "way/732304212",
+      "coordinates": {
+        "lat": 16.463157106872533,
+        "lon": 107.59257837295648
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0227",
+      "number": 227,
+      "osmKey": "way/732304213",
+      "coordinates": {
+        "lat": 16.46305143048034,
+        "lon": 107.59264122627042
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0228",
+      "number": 228,
+      "osmKey": "way/732304214",
+      "coordinates": {
+        "lat": 16.463057749999997,
+        "lon": 107.59269984999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0229",
+      "number": 229,
+      "osmKey": "way/732304215",
+      "coordinates": {
+        "lat": 16.463173153642938,
+        "lon": 107.5926716600775
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0230",
+      "number": 230,
+      "osmKey": "way/732304216",
+      "coordinates": {
+        "lat": 16.46300070402549,
+        "lon": 107.59297412605412
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0231",
+      "number": 231,
+      "osmKey": "way/732304217",
+      "coordinates": {
+        "lat": 16.462828476524983,
+        "lon": 107.59289683258159
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0232",
+      "number": 232,
+      "osmKey": "way/732304218",
+      "coordinates": {
+        "lat": 16.462867569967027,
+        "lon": 107.59296934769317
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0233",
+      "number": 233,
+      "osmKey": "way/732304219",
+      "coordinates": {
+        "lat": 16.462880422634374,
+        "lon": 107.59303497027506
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0234",
+      "number": 234,
+      "osmKey": "way/732304220",
+      "coordinates": {
+        "lat": 16.462876337297413,
+        "lon": 107.59311983019613
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0235",
+      "number": 235,
+      "osmKey": "way/732304221",
+      "coordinates": {
+        "lat": 16.462896881697827,
+        "lon": 107.59320786587232
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0236",
+      "number": 236,
+      "osmKey": "way/732304224",
+      "coordinates": {
+        "lat": 16.464580100000003,
+        "lon": 107.59295315
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0237",
+      "number": 237,
+      "osmKey": "way/732304225",
+      "coordinates": {
+        "lat": 16.464535833879744,
+        "lon": 107.59303257396172
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0238",
+      "number": 238,
+      "osmKey": "way/732304226",
+      "coordinates": {
+        "lat": 16.4645444,
+        "lon": 107.59270565
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0239",
+      "number": 239,
+      "osmKey": "way/732304227",
+      "coordinates": {
+        "lat": 16.46438605,
+        "lon": 107.592771
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0240",
+      "number": 240,
+      "osmKey": "way/732304228",
+      "coordinates": {
+        "lat": 16.464057691615206,
+        "lon": 107.59258271379848
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0241",
+      "number": 241,
+      "osmKey": "way/732304229",
+      "coordinates": {
+        "lat": 16.46418205,
+        "lon": 107.59242355
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0242",
+      "number": 242,
+      "osmKey": "way/732304230",
+      "coordinates": {
+        "lat": 16.46405115,
+        "lon": 107.592505
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0243",
+      "number": 243,
+      "osmKey": "way/732304231",
+      "coordinates": {
+        "lat": 16.464009965521825,
+        "lon": 107.59243705176968
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0244",
+      "number": 244,
+      "osmKey": "way/732304232",
+      "coordinates": {
+        "lat": 16.463936150000006,
+        "lon": 107.59252320000002
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0245",
+      "number": 245,
+      "osmKey": "way/732304233",
+      "coordinates": {
+        "lat": 16.463811516930054,
+        "lon": 107.5925903496839
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0246",
+      "number": 246,
+      "osmKey": "way/762760989",
+      "coordinates": {
+        "lat": 16.469936184641085,
+        "lon": 107.59384315081645
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "02",
+        "street": "Phạm Ngũ Lão"
+      }
+    },
+    {
+      "code": "TN-0247",
+      "number": 247,
+      "osmKey": "way/942532235",
+      "coordinates": {
+        "lat": 16.46294357325923,
+        "lon": 107.58767493667943
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0248",
+      "number": 248,
+      "osmKey": "way/1033691526",
+      "coordinates": {
+        "lat": 16.4685817019566,
+        "lon": 107.5927977488729
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0249",
+      "number": 249,
+      "osmKey": "way/1033691527",
+      "coordinates": {
+        "lat": 16.467924958136802,
+        "lon": 107.59267825465611
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0250",
+      "number": 250,
+      "osmKey": "way/1033691528",
+      "coordinates": {
+        "lat": 16.468276251803726,
+        "lon": 107.59325296550782
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0251",
+      "number": 251,
+      "osmKey": "way/1033691529",
+      "coordinates": {
+        "lat": 16.467957665314913,
+        "lon": 107.59206972678153
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0252",
+      "number": 252,
+      "osmKey": "way/1033691530",
+      "coordinates": {
+        "lat": 16.468824907367658,
+        "lon": 107.59327441462467
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0253",
+      "number": 253,
+      "osmKey": "way/1050228468",
+      "coordinates": {
+        "lat": 16.47267316655706,
+        "lon": 107.58759968422906
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0254",
+      "number": 254,
+      "osmKey": "way/1050232924",
+      "coordinates": {
+        "lat": 16.473154134735918,
+        "lon": 107.58862315173266
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0255",
+      "number": 255,
+      "osmKey": "way/1050232925",
+      "coordinates": {
+        "lat": 16.473018138313915,
+        "lon": 107.58872607578823
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0256",
+      "number": 256,
+      "osmKey": "way/1050232926",
+      "coordinates": {
+        "lat": 16.47289624691853,
+        "lon": 107.58897823645131
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0257",
+      "number": 257,
+      "osmKey": "way/1050232927",
+      "coordinates": {
+        "lat": 16.472833899999994,
+        "lon": 107.5889209
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0258",
+      "number": 258,
+      "osmKey": "way/1050232928",
+      "coordinates": {
+        "lat": 16.4730416,
+        "lon": 107.58884979999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0259",
+      "number": 259,
+      "osmKey": "way/1050232929",
+      "coordinates": {
+        "lat": 16.472078336333066,
+        "lon": 107.58839050421783
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0260",
+      "number": 260,
+      "osmKey": "way/1050232930",
+      "coordinates": {
+        "lat": 16.472526888749385,
+        "lon": 107.58900484729861
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0261",
+      "number": 261,
+      "osmKey": "way/1050232931",
+      "coordinates": {
+        "lat": 16.47216229999999,
+        "lon": 107.58748109999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0262",
+      "number": 262,
+      "osmKey": "way/1050232932",
+      "coordinates": {
+        "lat": 16.47297900000001,
+        "lon": 107.58852895000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0263",
+      "number": 263,
+      "osmKey": "way/1050232933",
+      "coordinates": {
+        "lat": 16.472926400000013,
+        "lon": 107.58850195000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0264",
+      "number": 264,
+      "osmKey": "way/1050232934",
+      "coordinates": {
+        "lat": 16.47287379999999,
+        "lon": 107.58847494999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0265",
+      "number": 265,
+      "osmKey": "way/1050232935",
+      "coordinates": {
+        "lat": 16.47282120000001,
+        "lon": 107.58844795
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0266",
+      "number": 266,
+      "osmKey": "way/1050232936",
+      "coordinates": {
+        "lat": 16.47259745580039,
+        "lon": 107.58832958163929
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0267",
+      "number": 267,
+      "osmKey": "way/1050232937",
+      "coordinates": {
+        "lat": 16.47254589421845,
+        "lon": 107.5883031183575
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0268",
+      "number": 268,
+      "osmKey": "way/1050232938",
+      "coordinates": {
+        "lat": 16.47249435580037,
+        "lon": 107.58827668163927
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0269",
+      "number": 269,
+      "osmKey": "way/1050232939",
+      "coordinates": {
+        "lat": 16.472768564016107,
+        "lon": 107.58842097426844
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0270",
+      "number": 270,
+      "osmKey": "way/1050232940",
+      "coordinates": {
+        "lat": 16.4724427625731,
+        "lon": 107.58825022272988
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0271",
+      "number": 271,
+      "osmKey": "way/1050232941",
+      "coordinates": {
+        "lat": 16.47349941404364,
+        "lon": 107.58795732429465
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0272",
+      "number": 272,
+      "osmKey": "way/1050232942",
+      "coordinates": {
+        "lat": 16.473389461084523,
+        "lon": 107.58799669929655
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0273",
+      "number": 273,
+      "osmKey": "way/1050232943",
+      "coordinates": {
+        "lat": 16.473384965901296,
+        "lon": 107.58777356555841
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0274",
+      "number": 274,
+      "osmKey": "way/1050232944",
+      "coordinates": {
+        "lat": 16.473238398771453,
+        "lon": 107.58766056749675
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0275",
+      "number": 275,
+      "osmKey": "way/1050232945",
+      "coordinates": {
+        "lat": 16.473117800000004,
+        "lon": 107.58767065
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0276",
+      "number": 276,
+      "osmKey": "way/1050232946",
+      "coordinates": {
+        "lat": 16.472796274477087,
+        "lon": 107.58781078570813
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0277",
+      "number": 277,
+      "osmKey": "way/1050232947",
+      "coordinates": {
+        "lat": 16.472843549999993,
+        "lon": 107.5877035
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0278",
+      "number": 278,
+      "osmKey": "way/1050232948",
+      "coordinates": {
+        "lat": 16.472891450000024,
+        "lon": 107.58740440000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0279",
+      "number": 279,
+      "osmKey": "way/1050232949",
+      "coordinates": {
+        "lat": 16.47284130295475,
+        "lon": 107.58750031343068
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0280",
+      "number": 280,
+      "osmKey": "way/1050232950",
+      "coordinates": {
+        "lat": 16.472617518561393,
+        "lon": 107.58770654347795
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0281",
+      "number": 281,
+      "osmKey": "way/1050232951",
+      "coordinates": {
+        "lat": 16.472352899999997,
+        "lon": 107.58752444999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0282",
+      "number": 282,
+      "osmKey": "way/1050232952",
+      "coordinates": {
+        "lat": 16.47253878239325,
+        "lon": 107.58742789486966
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0283",
+      "number": 283,
+      "osmKey": "way/1050232953",
+      "coordinates": {
+        "lat": 16.472637799999983,
+        "lon": 107.58726259999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0284",
+      "number": 284,
+      "osmKey": "way/1050232954",
+      "coordinates": {
+        "lat": 16.472509504200023,
+        "lon": 107.58734208235643
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0285",
+      "number": 285,
+      "osmKey": "way/1050232955",
+      "coordinates": {
+        "lat": 16.472308550000022,
+        "lon": 107.58721335000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0286",
+      "number": 286,
+      "osmKey": "way/1050232956",
+      "coordinates": {
+        "lat": 16.47235710000001,
+        "lon": 107.58711075000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0287",
+      "number": 287,
+      "osmKey": "way/1050232957",
+      "coordinates": {
+        "lat": 16.472144282356492,
+        "lon": 107.58715061508163
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0288",
+      "number": 288,
+      "osmKey": "way/1050232958",
+      "coordinates": {
+        "lat": 16.47201731757008,
+        "lon": 107.58704325840537
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0289",
+      "number": 289,
+      "osmKey": "way/1050232959",
+      "coordinates": {
+        "lat": 16.471988949999997,
+        "lon": 107.5871156
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0290",
+      "number": 290,
+      "osmKey": "way/1050232960",
+      "coordinates": {
+        "lat": 16.47176584999999,
+        "lon": 107.5868721
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0291",
+      "number": 291,
+      "osmKey": "way/1050232961",
+      "coordinates": {
+        "lat": 16.471794569000267,
+        "lon": 107.58697134361972
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0292",
+      "number": 292,
+      "osmKey": "way/1050232962",
+      "coordinates": {
+        "lat": 16.471767145313013,
+        "lon": 107.58702901829733
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0293",
+      "number": 293,
+      "osmKey": "way/1050232963",
+      "coordinates": {
+        "lat": 16.471509799999993,
+        "lon": 107.58712969999999
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0294",
+      "number": 294,
+      "osmKey": "way/1050232964",
+      "coordinates": {
+        "lat": 16.47168445693371,
+        "lon": 107.58686943350622
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0295",
+      "number": 295,
+      "osmKey": "way/1050232965",
+      "coordinates": {
+        "lat": 16.471451450000018,
+        "lon": 107.58683335
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0296",
+      "number": 296,
+      "osmKey": "way/1050232966",
+      "coordinates": {
+        "lat": 16.471123150000018,
+        "lon": 107.58689925000002
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0297",
+      "number": 297,
+      "osmKey": "way/1050232967",
+      "coordinates": {
+        "lat": 16.47116903732436,
+        "lon": 107.58680837609491
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0298",
+      "number": 298,
+      "osmKey": "way/1050232968",
+      "coordinates": {
+        "lat": 16.471358066911066,
+        "lon": 107.58701358178703
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0299",
+      "number": 299,
+      "osmKey": "way/1050232969",
+      "coordinates": {
+        "lat": 16.471456392246672,
+        "lon": 107.58707061784003
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0300",
+      "number": 300,
+      "osmKey": "way/1050232970",
+      "coordinates": {
+        "lat": 16.471872750000003,
+        "lon": 107.587103
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0301",
+      "number": 301,
+      "osmKey": "way/1050232971",
+      "coordinates": {
+        "lat": 16.471906263497306,
+        "lon": 107.58728422121712
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0302",
+      "number": 302,
+      "osmKey": "way/1050232972",
+      "coordinates": {
+        "lat": 16.47223685,
+        "lon": 107.5874874
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0303",
+      "number": 303,
+      "osmKey": "way/1050232973",
+      "coordinates": {
+        "lat": 16.472316007834955,
+        "lon": 107.58746963426982
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0304",
+      "number": 304,
+      "osmKey": "way/1050232974",
+      "coordinates": {
+        "lat": 16.472431450590424,
+        "lon": 107.58750081616346
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0305",
+      "number": 305,
+      "osmKey": "way/1050232975",
+      "coordinates": {
+        "lat": 16.472604149999988,
+        "lon": 107.58759845
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0306",
+      "number": 306,
+      "osmKey": "way/1050232976",
+      "coordinates": {
+        "lat": 16.472576852323403,
+        "lon": 107.58751716450573
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0307",
+      "number": 307,
+      "osmKey": "way/1050232977",
+      "coordinates": {
+        "lat": 16.47309961223865,
+        "lon": 107.58793407233857
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0308",
+      "number": 308,
+      "osmKey": "way/1050232978",
+      "coordinates": {
+        "lat": 16.4731448080847,
+        "lon": 107.58795533140012
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0309",
+      "number": 309,
+      "osmKey": "way/1050232979",
+      "coordinates": {
+        "lat": 16.473236283718116,
+        "lon": 107.58777253674518
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0310",
+      "number": 310,
+      "osmKey": "way/1050232983",
+      "coordinates": {
+        "lat": 16.473485400000037,
+        "lon": 107.58821520000002
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0311",
+      "number": 311,
+      "osmKey": "way/1050232984",
+      "coordinates": {
+        "lat": 16.473279400000003,
+        "lon": 107.58797635
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0312",
+      "number": 312,
+      "osmKey": "way/1050232985",
+      "coordinates": {
+        "lat": 16.47302520064091,
+        "lon": 107.58790703288177
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0313",
+      "number": 313,
+      "osmKey": "way/1167997485",
+      "coordinates": {
+        "lat": 16.469102083512812,
+        "lon": 107.59097262908263
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà hàng nổi Sông Hương",
+        "houseNumber": "3/2",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0314",
+      "number": 314,
+      "osmKey": "way/1169292365",
+      "coordinates": {
+        "lat": 16.46472567207335,
+        "lon": 107.59156975778674
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0315",
+      "number": 315,
+      "osmKey": "way/1169292367",
+      "coordinates": {
+        "lat": 16.463546567049793,
+        "lon": 107.58764967530006
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0316",
+      "number": 316,
+      "osmKey": "way/1192697528",
+      "coordinates": {
+        "lat": 16.464817000962558,
+        "lon": 107.58819178353235
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0317",
+      "number": 317,
+      "osmKey": "way/1192697529",
+      "coordinates": {
+        "lat": 16.465161415884765,
+        "lon": 107.58846149550635
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0318",
+      "number": 318,
+      "osmKey": "way/1192697530",
+      "coordinates": {
+        "lat": 16.465308052506426,
+        "lon": 107.58869946683159
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0319",
+      "number": 319,
+      "osmKey": "way/1192697531",
+      "coordinates": {
+        "lat": 16.465683643081782,
+        "lon": 107.58896087445709
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0320",
+      "number": 320,
+      "osmKey": "way/1210477658",
+      "coordinates": {
+        "lat": 16.462823199999995,
+        "lon": 107.5863316
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0321",
+      "number": 321,
+      "osmKey": "way/1280448911",
+      "coordinates": {
+        "lat": 16.467145800000004,
+        "lon": 107.59199485
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0322",
+      "number": 322,
+      "osmKey": "way/1280448912",
+      "coordinates": {
+        "lat": 16.467461962670114,
+        "lon": 107.5923540385851
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0323",
+      "number": 323,
+      "osmKey": "way/1280448913",
+      "coordinates": {
+        "lat": 16.467782250000003,
+        "lon": 107.59281045
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0324",
+      "number": 324,
+      "osmKey": "way/1280448914",
+      "coordinates": {
+        "lat": 16.466839085598856,
+        "lon": 107.59184436839793
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0325",
+      "number": 325,
+      "osmKey": "way/1330955745",
+      "coordinates": {
+        "lat": 16.467668000000003,
+        "lon": 107.5833149
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0326",
+      "number": 326,
+      "osmKey": "way/1330955746",
+      "coordinates": {
+        "lat": 16.46763031453943,
+        "lon": 107.58326007501077
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0327",
+      "number": 327,
+      "osmKey": "way/1332014327",
+      "coordinates": {
+        "lat": 16.456440096767775,
+        "lon": 107.57857567498503
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0328",
+      "number": 328,
+      "osmKey": "way/1332014338",
+      "coordinates": {
+        "lat": 16.456568116237467,
+        "lon": 107.57758059498829
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0329",
+      "number": 329,
+      "osmKey": "way/1332014347",
+      "coordinates": {
+        "lat": 16.45645588036869,
+        "lon": 107.57841024101172
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0330",
+      "number": 330,
+      "osmKey": "way/1332014349",
+      "coordinates": {
+        "lat": 16.456460041849116,
+        "lon": 107.57772565312823
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0331",
+      "number": 331,
+      "osmKey": "way/1343922561",
+      "coordinates": {
+        "lat": 16.462486218092224,
+        "lon": 107.58895690286207
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0332",
+      "number": 332,
+      "osmKey": "way/1377444120",
+      "coordinates": {
+        "lat": 16.464204973722985,
+        "lon": 107.59095872981472
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0333",
+      "number": 333,
+      "osmKey": "way/1377444121",
+      "coordinates": {
+        "lat": 16.464527039146446,
+        "lon": 107.590902768202
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0334",
+      "number": 334,
+      "osmKey": "way/1377444123",
+      "coordinates": {
+        "lat": 16.46404876051426,
+        "lon": 107.59038622098697
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0335",
+      "number": 335,
+      "osmKey": "way/1377444124",
+      "coordinates": {
+        "lat": 16.458095453953174,
+        "lon": 107.58054228213527
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0336",
+      "number": 336,
+      "osmKey": "way/1377444125",
+      "coordinates": {
+        "lat": 16.45739972295714,
+        "lon": 107.57757821488796
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0337",
+      "number": 337,
+      "osmKey": "way/1377444126",
+      "coordinates": {
+        "lat": 16.457935000000003,
+        "lon": 107.5791746
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0338",
+      "number": 338,
+      "osmKey": "way/1377444127",
+      "coordinates": {
+        "lat": 16.45772827362421,
+        "lon": 107.58063728685117
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0339",
+      "number": 339,
+      "osmKey": "way/1377450378",
+      "coordinates": {
+        "lat": 16.465897198955897,
+        "lon": 107.58969924011866
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0340",
+      "number": 340,
+      "osmKey": "way/1377450379",
+      "coordinates": {
+        "lat": 16.46404456936022,
+        "lon": 107.5880638144175
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0341",
+      "number": 341,
+      "osmKey": "way/1379319488",
+      "coordinates": {
+        "lat": 16.463930245848708,
+        "lon": 107.59328318531776
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0342",
+      "number": 342,
+      "osmKey": "way/1379319489",
+      "coordinates": {
+        "lat": 16.464727084059778,
+        "lon": 107.58980440756027
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0343",
+      "number": 343,
+      "osmKey": "way/1379987223",
+      "coordinates": {
+        "lat": 16.464106407755505,
+        "lon": 107.5905564319163
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0344",
+      "number": 344,
+      "osmKey": "way/1379987224",
+      "coordinates": {
+        "lat": 16.463921124317842,
+        "lon": 107.59042692862167
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0345",
+      "number": 345,
+      "osmKey": "way/1379987225",
+      "coordinates": {
+        "lat": 16.463978558270835,
+        "lon": 107.59015291703787
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0346",
+      "number": 346,
+      "osmKey": "way/1379987226",
+      "coordinates": {
+        "lat": 16.46421144767272,
+        "lon": 107.59024614938416
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0347",
+      "number": 347,
+      "osmKey": "way/1379987227",
+      "coordinates": {
+        "lat": 16.464272246089934,
+        "lon": 107.59127973205017
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0348",
+      "number": 348,
+      "osmKey": "way/1383761305",
+      "coordinates": {
+        "lat": 16.459553400096805,
+        "lon": 107.58010242277763
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0349",
+      "number": 349,
+      "osmKey": "way/1389832833",
+      "coordinates": {
+        "lat": 16.460435067146083,
+        "lon": 107.58444344578537
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Dãy phòng học",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0350",
+      "number": 350,
+      "osmKey": "way/1389832834",
+      "coordinates": {
+        "lat": 16.460914867146098,
+        "lon": 107.58500394578536
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Dãy phòng học",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0351",
+      "number": 351,
+      "osmKey": "way/1416879538",
+      "coordinates": {
+        "lat": 16.458111333466555,
+        "lon": 107.57928680271199
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0352",
+      "number": 352,
+      "osmKey": "way/1443199965",
+      "coordinates": {
+        "lat": 16.46872993851843,
+        "lon": 107.58461550314394
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0353",
+      "number": 353,
+      "osmKey": "way/1443199966",
+      "coordinates": {
+        "lat": 16.46851137865654,
+        "lon": 107.58461800043933
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0354",
+      "number": 354,
+      "osmKey": "way/1443199967",
+      "coordinates": {
+        "lat": 16.468669712341114,
+        "lon": 107.58488091374058
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0355",
+      "number": 355,
+      "osmKey": "way/1457743268",
+      "coordinates": {
+        "lat": 16.4612370925544,
+        "lon": 107.58488250828565
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Nhà xe số 1",
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0356",
+      "number": 356,
+      "osmKey": "way/1464534904",
+      "coordinates": {
+        "lat": 16.4663925,
+        "lon": 107.59113895
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0357",
+      "number": 357,
+      "osmKey": "way/1464534910",
+      "coordinates": {
+        "lat": 16.463185857704275,
+        "lon": 107.59333922530759
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0358",
+      "number": 358,
+      "osmKey": "way/1464534911",
+      "coordinates": {
+        "lat": 16.47194710447168,
+        "lon": 107.58868561581318
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0359",
+      "number": 359,
+      "osmKey": "way/1464534912",
+      "coordinates": {
+        "lat": 16.4676668832261,
+        "lon": 107.58358080300253
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0360",
+      "number": 360,
+      "osmKey": "way/1464534913",
+      "coordinates": {
+        "lat": 16.467529250000002,
+        "lon": 107.58368045
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "ACB",
+        "houseNumber": "1",
+        "street": "Trần Hưng Đạo"
+      }
+    },
+    {
+      "code": "TN-0361",
+      "number": 361,
+      "osmKey": "way/1473289704",
+      "coordinates": {
+        "lat": 16.463812086993986,
+        "lon": 107.58572041031893
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0362",
+      "number": 362,
+      "osmKey": "way/1492149825",
+      "coordinates": {
+        "lat": 16.46306245,
+        "lon": 107.5754834
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0363",
+      "number": 363,
+      "osmKey": "way/1493443033",
+      "coordinates": {
+        "lat": 16.469239302974096,
+        "lon": 107.58643206153754
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0364",
+      "number": 364,
+      "osmKey": "way/1498945470",
+      "coordinates": {
+        "lat": 16.469906647405622,
+        "lon": 107.59379148448608
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "58",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0365",
+      "number": 365,
+      "osmKey": "way/1548803284",
+      "coordinates": {
+        "lat": 16.455964448995623,
+        "lon": 107.57812972395456
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0366",
+      "number": 366,
+      "osmKey": "way/1548803285",
+      "coordinates": {
+        "lat": 16.455935554314994,
+        "lon": 107.57924017527895
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0367",
+      "number": 367,
+      "osmKey": "way/1570130260",
+      "coordinates": {
+        "lat": 16.469415159167337,
+        "lon": 107.59352470561574
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": "Muong thanh Hue",
+        "houseNumber": "40",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0368",
+      "number": 368,
+      "osmKey": "way/1570130363",
+      "coordinates": {
+        "lat": 16.46315414680464,
+        "lon": 107.58858067251478
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0369",
+      "number": 369,
+      "osmKey": "way/1570130374",
+      "coordinates": {
+        "lat": 16.46772755,
+        "lon": 107.58386795000001
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    },
+    {
+      "code": "TN-0370",
+      "number": 370,
+      "osmKey": "way/1570130377",
+      "coordinates": {
+        "lat": 16.469874279493613,
+        "lon": 107.59390785739319
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "4",
+        "street": "Phạm Ngũ Lão"
+      }
+    },
+    {
+      "code": "TN-0371",
+      "number": 371,
+      "osmKey": "way/1570130378",
+      "coordinates": {
+        "lat": 16.46969955,
+        "lon": 107.59366275
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": "48",
+        "street": "Lê Lợi"
+      }
+    },
+    {
+      "code": "TN-0372",
+      "number": 372,
+      "osmKey": "way/1575707749",
+      "coordinates": {
+        "lat": 16.464168284888807,
+        "lon": 107.58867348099976
+      },
+      "name": null,
+      "houseNumber": null,
+      "street": null,
+      "osm": {
+        "name": null,
+        "houseNumber": null,
+        "street": null
+      }
+    }
+  ]
+}

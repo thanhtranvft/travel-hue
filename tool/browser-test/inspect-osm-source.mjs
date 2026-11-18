@@ -1,0 +1,3 @@
+import {chromium} from 'playwright';
+const browser=await chromium.launch({headless:true,executablePath:'C:/Users/Admin/AppData/Local/ms-playwright/chromium-1200/chrome-win64/chrome.exe'});
+try{const page=await browser.newPage({viewport:{width:1400,height:900}});await page.goto('https://www.openstreetmap.org/#map=17/16.4622/107.5844',{waitUntil:'domcontentloaded',timeout:45000});await page.waitForTimeout(2500);console.log((await page.locator('body').innerText()).slice(0,5000));await page.screenshot({path:new URL('osm-source-le-loi.png',import.meta.url).pathname.replace(/^\/(\w:)/,'$1')});}finally{await browser.close();}

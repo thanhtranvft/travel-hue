@@ -1,0 +1,3 @@
+import {features,centroid,roads} from '../src/geography/map.js';
+for(const f of features.filter(f=>/Công nghệ|HueCIT|thanh thiếu|thiếu nhi|Hồ Chí Minh|Phan Bội Châu|Nguyễn Trường Tộ|Lê Lai/i.test(f.tags?.name||'')))console.log(JSON.stringify({id:f.id,type:f.type,tags:f.tags,center:centroid(f)}));
+for(const name of ['Phan Bội Châu','Nguyễn Trường Tộ','Lê Lai','Hà Nội'])for(const r of roads.filter(r=>r.tags.name===name))for(const l of roads.filter(r=>r.tags.name==='Lê Lợi'))for(const p of r.points)if(l.points.some(q=>Math.hypot(p.x-q.x,p.z-q.z)<.1))console.log('JUNCTION',name,r.id,JSON.stringify(p));

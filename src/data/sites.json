@@ -1,0 +1,103 @@
+{
+  "schemaVersion": 1,
+  "sites": [
+    {
+      "id": "station",
+      "osm": 175063593,
+      "title": "Ga Huế",
+      "address": "Khu vực ga Huế",
+      "kind": "station"
+    },
+    {
+      "id": "ho-chi-minh-museum",
+      "osm": 240266284,
+      "title": "Bảo tàng Hồ Chí Minh",
+      "address": "7 Lê Lợi · phía bờ sông",
+      "kind": "museum"
+    },
+    {
+      "id": "hue-cit",
+      "osm": 354775345,
+      "title": "HueCIT · Trung tâm CNTT",
+      "address": "6 Lê Lợi",
+      "kind": "office"
+    },
+    {
+      "id": "youth-center",
+      "osm": 118541971,
+      "title": "Trung tâm Thanh thiếu nhi Huế",
+      "address": "8 Lê Lợi",
+      "kind": "youth"
+    },
+    {
+      "id": "quoc-hoc-school",
+      "osm": 695775622,
+      "title": "Trường Quốc Học Huế",
+      "address": "12 Lê Lợi",
+      "kind": "school"
+    },
+    {
+      "id": "quoc-hoc",
+      "osm": 5299153429,
+      "title": "Bia Quốc Học",
+      "address": "Bờ sông · đối diện Quốc Học",
+      "kind": "memorial"
+    },
+    {
+      "id": "hai-ba-trung",
+      "osm": 695770482,
+      "title": "Trường Hai Bà Trưng",
+      "address": "14 Lê Lợi",
+      "kind": "school"
+    },
+    {
+      "id": "ubnd",
+      "osm": 695770476,
+      "title": "UBND thành phố Huế",
+      "address": "16 Lê Lợi",
+      "kind": "government"
+    },
+    {
+      "id": "hospital",
+      "osm": 21912794,
+      "title": "Bệnh viện Trung ương Huế",
+      "address": "Mặt tiếp giáp đường Lê Lợi",
+      "kind": "hospital"
+    },
+    {
+      "id": "phu-xuan",
+      "osm": 39420686,
+      "title": "Cầu Phú Xuân",
+      "address": "Đầu cầu phía Lê Lợi – Hà Nội",
+      "kind": "bridge"
+    },
+    {
+      "id": "wooden-walk",
+      "osm": 683633953,
+      "title": "Cầu Gỗ Lim · bờ Nam",
+      "address": "Tuyến đi bộ ven sông · nối các đoạn OSM",
+      "kind": "boardwalk"
+    },
+    {
+      "id": "truong-tien",
+      "osm": 174759688,
+      "title": "Cầu Trường Tiền",
+      "address": "Nối hai bờ sông Hương",
+      "kind": "bridge"
+    },
+    {
+      "id": "ky-dai",
+      "osm": 218427614,
+      "title": "Kỳ Đài",
+      "address": "Phía trước Ngọ Môn",
+      "kind": "monument"
+    },
+    {
+      "id": "ngo-mon",
+      "osm": 172657562,
+      "title": "Ngọ Môn",
+      "address": "Hoàng thành Huế",
+      "kind": "gate"
+    }
+  ]
+}

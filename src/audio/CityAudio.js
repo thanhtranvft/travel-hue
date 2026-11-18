@@ -34,7 +34,7 @@ export class CityAudio {
     }
   }
   update(bike,actors,cameraHeading){
-    const nearby=nearestAudibleSource(bike.position,restaurantZones,25);this.nearbyVenue=nearby?.source||null;this.venueLevel=nearby?.gain||0;
+    const nearby=nearestAudibleSource(bike.position,this.venues||restaurantZones,25);this.nearbyVenue=nearby?.source||null;this.venueLevel=nearby?.gain||0;
     if(!this.enabled||!this.ctx||this.ctx.state!=='running')return;const ctx=this.ctx,t=ctx.currentTime,speed=Math.abs(bike.motion.speed);
     this.background.gain.setTargetAtTime(.65-this.venueLevel*.4,t,.7);this.venue.gain.setTargetAtTime(this.venueLevel*.9,t,.45);
     this.venuePan.pan.setTargetAtTime(nearby?sourcePan(nearby.source.x-bike.position.x,nearby.source.z-bike.position.z,cameraHeading):0,t,.2);
