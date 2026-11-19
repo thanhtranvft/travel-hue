@@ -1,0 +1,210 @@
+import * as THREE from "three";
+import {
+  inside,
+  nearestPoint,
+} from "../../../../core/shared/geography/geometry.js";
+import { car } from "../../../../core/traffic/TrafficSystem.js";
+import { mat, box } from "../../../../core/shared/architecture/shared.js";
+
+function clear(world, ring, p, margin = 1.5) {
+  return (
+    inside(p, ring) &&
+    nearestPoint(p, [...ring, ring[0]]).distance >= margin &&
+    !world.buildingPolygons.some(
+      (b) => inside(p, b.points) || nearestPoint(p, b.points).distance < margin,
+    )
+  );
+}
+export function parkingGate(world, ring, fallback) {
+  const center = ring.reduce(
+    (p, q) => ({ x: p.x + q.x / ring.length, z: p.z + q.z / ring.length }),
+    { x: 0, z: 0 },
+  );
+  let best = fallback,
+    score = -Infinity;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i],
+      b = ring[(i + 1) % ring.length],
+      length = Math.hypot(b.x - a.x, b.z - a.z);
+    for (let d = 4; d < length - 4; d += 2) {
+      const p = {
+          x: a.x + ((b.x - a.x) * d) / length,
+          z: a.z + ((b.z - a.z) * d) / length,
+        },
+        dx = center.x - p.x,
+        dz = center.z - p.z,
+        l = Math.hypot(dx, dz) || 1,
+        inner = { x: p.x + (dx / l) * 4, z: p.z + (dz / l) * 4 };
+      if (!clear(world, ring, inner, 1.5)) continue;
+      let value = 0;
+      for (let j = 0; j < 16; j++) {
+        const angle = (j * Math.PI) / 8;
+        if (
+          clear(
+            world,
+            ring,
+            {
+              x: inner.x + Math.sin(angle) * 7,
+              z: inner.z + Math.cos(angle) * 7,
+            },
+            1.5,
+          )
+        )
+          value++;
+      }
+      value -= world.nearestRoad(p.x, p.z).distance * 0.05;
+      if (value > score) {
+        score = value;
+        best = p;
+      }
+    }
+  }
+  return best;
+}
+export function parkingPlan(world, property) {
+  const ring = property.rings[0],
+    step = 1.4,
+    minX = Math.min(...ring.map((p) => p.x)),
+    minZ = Math.min(...ring.map((p) => p.z)),
+    maxX = Math.max(...ring.map((p) => p.x)),
+    maxZ = Math.max(...ring.map((p) => p.z)),
+    nodes = [];
+  const byKey = new Map();
+  for (let x = minX; x <= maxX; x += step)
+    for (let z = minZ; z <= maxZ; z += step) {
+      const p = { x, z };
+      if (clear(world, ring, p, 2)) {
+        const node = {
+          ...p,
+          key: `${Math.round((x - minX) / step)},${Math.round((z - minZ) / step)}`,
+        };
+        nodes.push(node);
+        byKey.set(node.key, node);
+      }
+    }
+  if (!nodes.length) return { slots: [], path: [] };
+  const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z),
+    start = nodes
+      .slice()
+      .sort(
+        (a, b) => distance(a, property.gate) - distance(b, property.gate),
+      )[0],
+    queue = [start],
+    previous = new Map([[start.key, null]]);
+  for (let i = 0; i < queue.length; i++) {
+    const p = queue[i],
+      [x, z] = p.key.split(",").map(Number);
+    for (const [dx, dz] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
+      const q = byKey.get(`${x + dx},${z + dz}`);
+      if (q && !previous.has(q.key)) {
+        previous.set(q.key, p.key);
+        queue.push(q);
+      }
+    }
+  }
+  const slots = [];
+  for (const p of queue
+    .slice()
+    .sort((a, b) => distance(b, start) - distance(a, start)))
+    if (slots.every((q) => distance(p, q) > 5.6) && distance(p, start) > 7) {
+      slots.push(p);
+      if (slots.length === property.parking.spaces) break;
+    }
+  const path = [];
+  if (slots[0])
+    for (let key = slots[0].key; key; key = previous.get(key))
+      path.unshift(byKey.get(key));
+  const parked = slots.slice(0, 1);
+  for (const p of queue
+    .slice()
+    .sort((a, b) => distance(b, start) - distance(a, start)))
+    if (
+      parked.every((q) => distance(p, q) > 5.6) &&
+      path.every((q) => distance(p, q) > 3.5)
+    ) {
+      parked.push(p);
+      if (parked.length === property.parking.spaces) break;
+    }
+  return { slots: parked, path: [property.gate, ...path] };
+}
+export class CITParking {
+  constructor(world, property) {
+    this.plan = parkingPlan(world, property);
+    this.cars = [];
+    this.property = property;
+    const ring = property.rings[0],
+      shape = new THREE.Shape(ring.map((p) => new THREE.Vector2(p.x, -p.z))),
+      geometry = new THREE.ShapeGeometry(shape);
+    geometry.rotateX(-Math.PI / 2);
+    const yard = new THREE.Mesh(geometry, mat("#858b84"));
+    yard.position.y = 0.075;
+    yard.receiveShadow = true;
+    world.scene.add(yard);
+    world.parkingAreas = [ring];
+    const center = ring.reduce(
+        (p, q) => ({ x: p.x + q.x / ring.length, z: p.z + q.z / ring.length }),
+        { x: 0, z: 0 },
+      ),
+      heading = Math.atan2(
+        center.x - property.gate.x,
+        center.z - property.gate.z,
+      );
+    for (const [i, p] of this.plan.slots.entries()) {
+      const mesh = car(["#eee8d7", "#789ca8", "#a96f59"][i % 3]);
+      mesh.position.set(p.x, 0.17, p.z);
+      mesh.rotation.y = heading;
+      world.scene.add(mesh);
+      this.cars.push(mesh);
+      const outline = new THREE.Group();
+      outline.add(box([2.7, 0.02, 0.1], "#eee9d7", [0, 0.1, -2.7]));
+      for (const side of [-1, 1])
+        outline.add(box([0.08, 0.02, 5.4], "#eee9d7", [side * 1.35, 0.1, 0]));
+      outline.position.set(p.x, 0, p.z);
+      outline.rotation.y = heading;
+      world.scene.add(outline);
+    }
+    this.travelSegments = [];
+    this.length = 0;
+    for (let i = 1; i < this.plan.path.length; i++) {
+      const a = this.plan.path[i - 1],
+        b = this.plan.path[i],
+        length = Math.hypot(b.x - a.x, b.z - a.z);
+      if (length < 0.001) continue;
+      this.travelSegments.push({ a, b, start: this.length, length });
+      this.length += length;
+    }
+    world.treePositions = world.treePositions.filter((p) => !inside(p, ring));
+  }
+  update(time) {
+    if (!this.cars[0] || this.length < 1) return;
+    const travel = this.length / 1.7,
+      cycle = travel * 2 + 15,
+      t = time % cycle,
+      u =
+        t < travel
+          ? t / travel
+          : t < travel + 10
+            ? 1
+            : t < travel * 2 + 10
+              ? 1 - (t - travel - 10) / travel
+              : 0,
+      distance = Math.max(0, Math.min(this.length, u * this.length)),
+      segment =
+        this.travelSegments.find((s) => s.start + s.length >= distance) ||
+        this.travelSegments.at(-1),
+      v = Math.max(0, Math.min(1, (distance - segment.start) / segment.length));
+    this.cars[0].position.set(
+      segment.a.x + (segment.b.x - segment.a.x) * v,
+      0.17,
+      segment.a.z + (segment.b.z - segment.a.z) * v,
+    );
+    this.cars[0].rotation.y =
+      Math.atan2(segment.b.x - segment.a.x, segment.b.z - segment.a.z) +
+      (t >= travel + 10 && t < travel * 2 + 10 ? Math.PI : 0);
+  }
+}

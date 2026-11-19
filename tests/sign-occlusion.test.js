@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';import * as THREE from 'three';
-import {mountSignPanel} from '../src/world/TrafficBoard.js';
+import {mountSignPanel} from '../src/core/world/TrafficBoard.js';
 test('a support cannot hide the text when viewed from front or back at any rotation',()=>{
  for(const yaw of [0,.7,Math.PI,-1.8]){
   const panel=new THREE.Mesh(new THREE.PlaneGeometry(3.6,3.6),new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));const sign=mountSignPanel(panel);sign.rotation.y=yaw;sign.updateMatrixWorld(true);

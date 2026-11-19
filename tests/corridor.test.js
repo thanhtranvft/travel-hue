@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {sites,corridorCrossings,roads,pointsOf,geoDistricts,intersection,leLoiTruongTienJunction} from '../src/geography/map.js';
-import {nearestPoint} from '../src/geography/geometry.js';
-import {siteForBuilding} from '../src/landmarks/CorridorArchitecture.js';
-import {ringsOf} from '../src/geography/map.js';
+import {sites,corridorCrossings,roads,pointsOf,geoDistricts,intersection,leLoiTruongTienJunction} from '../src/core/shared/geography/map.js';
+import {nearestPoint} from '../src/core/shared/geography/geometry.js';
+import {siteForBuilding} from '../src/core/shared/architecture/CorridorArchitecture.js';
+import {ringsOf} from '../src/core/shared/geography/map.js';
 test('Le Loi tour passes Phu Xuan and continues to the Truong Tien area',()=>{const route=geoDistricts.find(d=>d.id==='quoc-hoc').path;assert.ok(route.some(([x,z])=>Math.hypot(x-intersection.x,z-intersection.z)<.1));const end=route.at(-1);assert.ok(Math.hypot(end[0]-leLoiTruongTienJunction.x,end[1]-leLoiTruongTienJunction.z)<.1);assert.ok(Math.hypot(end[0]-intersection.x,end[1]-intersection.z)>500);});
 test('four corridor crossings share actual vertices of both named roads',()=>{
   assert.equal(corridorCrossings.length,4);

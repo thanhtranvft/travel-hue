@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {roads} from '../src/geography/map.js';
-import {roadSurfaceHeight,SIDEWALK_Y} from '../src/world/roadSurface.js';
-import {isFootway} from '../src/world/roadProfile.js';
+import {roads} from '../src/core/shared/geography/map.js';
+import {roadSurfaceHeight,SIDEWALK_Y} from '../src/core/world/roadSurface.js';
+import {isFootway} from '../src/core/world/roadProfile.js';
 test('every flat carriageway stays above all flat paths and sidewalks',()=>{
  const paths=roads.filter(r=>isFootway(r)&&!r.tags.bridge&&r.tags.layer!=='2');
  const maxPath=Math.max(SIDEWALK_Y,...paths.map(r=>roadSurfaceHeight(r,0)));

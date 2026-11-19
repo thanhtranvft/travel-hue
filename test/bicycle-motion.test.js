@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {BicycleMotion,wrapAngle} from '../src/vehicle/BicycleMotion.js';
-import {districts} from '../src/routes/districts.js';
+import {BicycleMotion,wrapAngle} from '../src/core/vehicle/BicycleMotion.js';
+import {districts} from '../src/legacy/routes/districts.js';
 
 test('tăng tốc có giới hạn và phanh dừng mà không đổi chiều',()=>{
   const bike=new BicycleMotion();for(let i=0;i<2400;i++)bike.step(1/120,1,0);

@@ -1,11 +1,13 @@
-import './styles.css';
-import './mobile.css';
-import './touch-layout.css';
-import { CityGame as Game } from './core/CityGame.js';
-import {geoDistricts as districts} from './geography/map.js';
-import {initializeMobileUI,initializeAudioUI} from './ui/MobileUI.js';
+import "./styles.css";
+import "./mobile.css";
+import "./touch-layout.css";
+import { GamePresenter as Game } from "./app/GamePresenter.js";
+import { geoDistricts as districts } from "./core/shared/geography/map.js";
+import { initializeMobileUI, initializeAudioUI } from "./ui/MobileUI.js";
+import { loadGeography } from "./modules/areas/AreaModel.js";
+import { defaultArea } from "./app/catalog.js";
 
-document.querySelector('#app').innerHTML = `
+document.querySelector("#app").innerHTML = `
   <canvas id="game"></canvas>
   <aside id="collision-toast" role="alert" hidden><strong>⚠ Va chạm giao thông!</strong><p id="collision-message"></p><span>Space để phanh · Quan sát và đi bên phải</span></aside>
   <div id="scene-loading" role="status">Đang chuẩn bị hành trình bên sông Hương…</div><div id="asset-notice" role="status" hidden>Một số cảnh vật chưa tải được. Đang dùng mô hình dự phòng.</div>
@@ -14,7 +16,7 @@ document.querySelector('#app').innerHTML = `
       <div class="brand"><small>Huế · City Ride</small><h1>Cún con đi dạo</h1><div class="map-note">Tọa độ OSM · kiến trúc ước lượng</div></div>
       <div class="tour-toolbar"><button id="free-roam" class="mode-pill"><span id="mode-label">Đạp tự do</span></button><button id="autopilot">T · Tham quan</button><button id="reset" title="Về đầu khu vực [R]">↺</button></div>
     </div>
-    <nav class="destinations" aria-label="Chọn khu vực"><button id="toggle-districts" aria-expanded="true" aria-controls="district-list">☰ Khu vực <span aria-hidden="true">⌄</span></button><div id="district-list">${districts.map((p,i)=>`<button data-district="${p.id}" aria-pressed="false" style="--district-color:${p.color}"><small>0${i+1}</small><span>${p.title}<em>${p.subtitle}</em></span><b>↗</b></button>`).join('')}<p>Chọn để đến ngay · T để tự lái</p></div></nav>
+    <nav class="destinations" aria-label="Chọn khu vực"><button id="toggle-districts" aria-expanded="true" aria-controls="district-list">☰ Khu vực <span aria-hidden="true">⌄</span></button><div id="district-list">${districts.map((p, i) => `<button data-district="${p.id}" aria-pressed="false" style="--district-color:${p.color}"><small>0${i + 1}</small><span>${p.title}<em>${p.subtitle}</em></span><b>↗</b></button>`).join("")}<p>Chọn để đến ngay · T để tự lái</p></div></nav>
     <div class="utility-toolbar"><div class="utility-buttons"><button id="audio-toggle" aria-pressed="false">♫ Bật nhạc</button><button id="landscape-toggle" aria-pressed="false">↔ Chơi ngang</button></div><div id="sound-settings" hidden><label>Âm lượng <input id="audio-volume" type="range" min="0" max="100" value="45" aria-label="Âm lượng game"></label><span id="sound-location">Giai điệu bên sông Hương</span></div><span id="audio-status" role="status"></span></div>
     <div class="bottom">
       <section class="map-panel" id="map-panel"><button id="expand-map" title="Mở rộng bản đồ [M]">M · BẢN ĐỒ HUẾ ↗</button><canvas id="minimap" width="240" height="170" aria-label="Tuyến OSM và vị trí xe"></canvas><a id="open-osm" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Đối chiếu OSM ↗</a></section>
@@ -25,11 +27,42 @@ document.querySelector('#app').innerHTML = `
   <article class="card" id="landmark-card"><span>Di sản bên đường</span><h2></h2><p></p></article>
   <aside id="orientation-hint" role="status" hidden><p id="orientation-message"></p><button id="dismiss-orientation">Đã hiểu</button></aside><a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors · ODbL</a>`;
 
-export const game = new Game(document.querySelector('#game'));
-game.start();
-document.querySelector('#autopilot').addEventListener('click', () => game.toggleAutopilot());
-document.querySelector('#free-roam').addEventListener('click', () => {game.auto=false;game.syncMode();});
-document.querySelector('#reset').addEventListener('click', () => game.reset());
-document.querySelectorAll('[data-district]').forEach(button=>button.addEventListener('click',()=>game.travelTo(button.dataset.district)));
-document.querySelector('#expand-map').addEventListener('click',()=>document.querySelector('#map-panel').classList.toggle('expanded'));
-initializeMobileUI();initializeAudioUI(game.audio);
+if (defaultArea) await loadGeography(defaultArea.id);
+document.querySelector("#district-list p").textContent =
+  "Chọn khu để tải · Di chuyển trong khu đã chọn";
+export const game = defaultArea
+  ? await Game.create(document.querySelector("#game"))
+  : null;
+if (game) {
+  game.start();
+  document
+    .querySelector("#autopilot")
+    .addEventListener("click", () => game.toggleAutopilot());
+  document.querySelector("#free-roam").addEventListener("click", () => {
+    game.auto = false;
+    game.syncMode();
+  });
+  document
+    .querySelector("#reset")
+    .addEventListener("click", () => game.reset());
+  document
+    .querySelectorAll("[data-district]")
+    .forEach((button) =>
+      button.addEventListener("click", () =>
+        game.travelTo(button.dataset.district),
+      ),
+    );
+  document
+    .querySelector("#expand-map")
+    .addEventListener("click", () =>
+      document.querySelector("#map-panel").classList.toggle("expanded"),
+    );
+  initializeMobileUI();
+  initializeAudioUI(game.audio);
+} else {
+  document.querySelector("#scene-loading").textContent =
+    "Hiện chưa có khu vực tham quan được mở.";
+  document
+    .querySelectorAll("button")
+    .forEach((button) => (button.disabled = true));
+}

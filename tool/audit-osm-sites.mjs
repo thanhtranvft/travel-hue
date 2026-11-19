@@ -1,6 +1,6 @@
-import entrances from '../src/geography/osm-entrances.json' with {type:'json'};
-import {sites,roads,ringsOf} from '../src/geography/map.js';
-import {unproject,inside,project,nearestPoint} from '../src/geography/geometry.js';
+import entrances from '../src/assets/maps/source/osm-entrances.json' with {type:'json'};
+import {sites,roads,ringsOf} from '../src/core/shared/geography/map.js';
+import {unproject,inside,project,nearestPoint} from '../src/core/shared/geography/geometry.js';
 const area=ring=>Math.abs(ring.reduce((s,p,i)=>{const q=ring[(i+1)%ring.length];return s+p.x*q.z-q.x*p.z;},0)/2);
 for(const site of sites.filter(s=>['school','government','hospital','station'].includes(s.kind))){
  const rings=ringsOf(site.feature),boundaryIds=new Set(site.feature.nodes||[]),candidates=entrances.elements.filter(n=>n.type==='node'&&n.tags&&(n.tags.entrance||n.tags.barrier==='gate')).map(n=>({...n,p:project(n)})).filter(n=>boundaryIds.has(n.id)||rings.some(r=>inside(n.p,r)||nearestPoint(n.p,r).distance<2));

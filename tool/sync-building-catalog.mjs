@@ -1,6 +1,6 @@
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
-import {features,centroid,mainRoads} from '../src/geography/map.js';
-import {nearestPoint,unproject} from '../src/geography/geometry.js';
+import {features,centroid,mainRoads} from '../src/core/shared/geography/map.js';
+import {nearestPoint,unproject} from '../src/core/shared/geography/geometry.js';
 const directory=new URL('../src/data/',import.meta.url),path=new URL('buildings.json',directory);await mkdir(directory,{recursive:true});
 let catalog={schemaVersion:1,buildings:[]};try{catalog=JSON.parse(await readFile(path,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}
 const known=new Set(catalog.buildings.map(b=>b.osmKey));let next=Math.max(0,...catalog.buildings.map(b=>b.number))+1;

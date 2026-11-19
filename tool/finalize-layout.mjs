@@ -1,0 +1,5 @@
+import {mkdir,rename,unlink,stat,writeFile} from 'node:fs/promises';import path from 'node:path';import {fileURLToPath} from 'node:url';
+const root=path.resolve(fileURLToPath(new URL('../',import.meta.url))),archive=path.join(root,'tool/migrations/2026-11-19');await mkdir(archive,{recursive:true});
+for(const name of ['create-app-catalog.mjs','extract-mvp.mjs','organize-mvp-source.mjs']){const from=path.join(root,'tool',name),to=path.join(archive,name);if(!from.startsWith(root+path.sep)||!to.startsWith(root+path.sep))throw new Error('Outside project');await rename(from,to);}
+const obsolete=path.join(root,'src/data/music-tracks.json');if(!obsolete.startsWith(root+path.sep))throw new Error('Outside project');await unlink(obsolete);
+await writeFile(path.join(archive,'README.md'),'# Migrations đã thực hiện\n\nCác script này ghi lại thao tác chuyển cấu trúc ngày 2026-11-19; không chạy lặp lại. Cấu hình hiện tại: src/data/app-config.json.\n');console.log('ARCHIVED one-time migrations; removed obsolete music-only config');

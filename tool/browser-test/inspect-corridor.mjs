@@ -5,7 +5,7 @@ try{
  const page=await browser.newPage({viewport:{width:1440,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
  await page.goto('http://127.0.0.1:5174/',{waitUntil:'networkidle'});await page.locator('#scene-loading').waitFor({state:'hidden',timeout:60000});
  const report=await page.evaluate(async()=>{
-  const {game}=await import(document.querySelector('script[src*="/src/main.js"]').src),{sites,roads}=await import('/src/geography/map.js'),{nearestPoint}=await import('/src/geography/geometry.js');
+  const {game}=await import(document.querySelector('script[src*="/src/main.js"]').src),{sites,roads}=await import('/src/core/shared/geography/map.js'),{nearestPoint}=await import('/src/core/shared/geography/geometry.js');
   game.renderer.setAnimationLoop(null);const site=sites.find(s=>s.id==='hue-cit'),hit=roads.filter(r=>r.tags.name==='Lê Lợi').map(r=>nearestPoint(site.center,r.points)).sort((a,b)=>a.distance-b.distance)[0];
   game.bike.reset(hit.x,hit.z,hit.heading);game.bike.position.y=.23;game.camera.position.set(hit.x-20,13,hit.z-20);game.camera.lookAt(site.center.x,6,site.center.z);game.world.update(0,game.bike.position);game.renderer.render(game.scene,game.camera);
   const counts=game.traffic.actors.reduce((a,v)=>(a[v.type]=(a[v.type]||0)+1,a),{});for(let i=0;i<120;i++)game.traffic.step(1/120,game.bike);

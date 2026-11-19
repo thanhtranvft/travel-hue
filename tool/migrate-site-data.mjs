@@ -1,10 +1,10 @@
 import {readFile,writeFile} from 'node:fs/promises';
-const path=new URL('../src/geography/map.js',import.meta.url),source=await readFile(path,'utf8');
+const path=new URL('../src/core/shared/geography/map.js',import.meta.url),source=await readFile(path,'utf8');
 const start=source.indexOf('const siteDefinitions=['),end=source.indexOf('\n];',start)+3;
 if(start<0||end<start)throw new Error('Missing site definitions');
 const literal=source.slice(start+'const siteDefinitions='.length,end-1);
 const sites=Function(`"use strict";return (${literal});`)();
 if(sites.length!==14||sites.some(s=>!s.id||!s.osm||!s.title))throw new Error('Invalid migration');
-await writeFile(new URL('../src/data/sites.json',import.meta.url),JSON.stringify({schemaVersion:1,sites},null,2)+'\n');
+await writeFile(new URL('../src/data/world/sites.json',import.meta.url),JSON.stringify({schemaVersion:1,sites},null,2)+'\n');
 await writeFile(path,"import siteCatalog from '../data/sites.json' with {type:'json'};\n"+source.slice(0,start)+'const siteDefinitions=siteCatalog.sites;'+source.slice(end));
 console.log(`MIGRATED ${sites.length} sites`);

@@ -1,11 +1,11 @@
 import {readFile,writeFile} from 'node:fs/promises';
-import {buildings} from '../src/data/buildingCatalog.js';
-import {features,byId,pointsOf,ringsOf,centroid,roads,sites} from '../src/geography/map.js';
-import {inside,nearestPoint,unproject,project} from '../src/geography/geometry.js';
-import {bufferedHull,clipPolygon} from '../src/geography/parcelGeometry.js';
-import {isFootway,roadWidth} from '../src/world/roadProfile.js';
-import {ringArea} from '../src/geography/siteAnchors.js';
-const file=new URL('../src/data/property-enclosures.json',import.meta.url);let previous={properties:[]};try{previous=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}const old=new Map(previous.properties.map(p=>[p.id,p]));
+import {buildings} from '../src/core/shared/data/buildingCatalog.js';
+import {features,byId,pointsOf,ringsOf,centroid,roads,sites} from '../src/core/shared/geography/map.js';
+import {inside,nearestPoint,unproject,project} from '../src/core/shared/geography/geometry.js';
+import {bufferedHull,clipPolygon} from '../src/core/shared/geography/parcelGeometry.js';
+import {isFootway,roadWidth} from '../src/core/world/roadProfile.js';
+import {ringArea} from '../src/core/shared/geography/siteAnchors.js';
+const file=new URL('../src/data/world/property-enclosures.json',import.meta.url);let previous={properties:[]};try{previous=JSON.parse(await readFile(file,'utf8'));}catch(e){if(e.code!=='ENOENT')throw e;}const old=new Map(previous.properties.map(p=>[p.id,p]));
 const known=[{id:'quoc-hoc-school',osm:695775622,external:true},{id:'hai-ba-trung',osm:695770482,external:true},{id:'youth-center',osm:695775607,external:true},{id:'hospital',osm:21912794,external:false}];
 const containers=known.map(c=>({...c,feature:byId(c.osm)}));
 for(const f of features.filter(f=>f.type==='way'&&!f.tags?.building&&['school','hospital'].includes(f.tags?.amenity)&&f.geometry?.length>3))if(!containers.some(c=>c.osm===f.id))containers.push({id:`campus-${f.id}`,osm:f.id,feature:f,external:false});

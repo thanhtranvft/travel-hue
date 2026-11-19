@@ -1,8 +1,8 @@
 import {readFile,writeFile} from 'node:fs/promises';
-import {roads,sites,features,pointsOf} from '../src/geography/map.js';
-import {project,unproject,nearestPoint,inside} from '../src/geography/geometry.js';
-import {hull} from '../src/geography/parcelGeometry.js';
-const path=new URL('../src/data/property-enclosures.json',import.meta.url),data=JSON.parse(await readFile(path,'utf8')),leLoi=roads.filter(r=>r.tags.name==='Lê Lợi'),closest=p=>leLoi.map(r=>({...nearestPoint(p,r.points),road:r})).sort((a,b)=>a.distance-b.distance)[0];
+import {roads,sites,features,pointsOf} from '../src/core/shared/geography/map.js';
+import {project,unproject,nearestPoint,inside} from '../src/core/shared/geography/geometry.js';
+import {hull} from '../src/core/shared/geography/parcelGeometry.js';
+const path=new URL('../src/data/world/property-enclosures.json',import.meta.url),data=JSON.parse(await readFile(path,'utf8')),leLoi=roads.filter(r=>r.tags.name==='Lê Lợi'),closest=p=>leLoi.map(r=>({...nearestPoint(p,r.points),road:r})).sort((a,b)=>a.distance-b.distance)[0];
 const schoolOffsets=sites.filter(s=>s.kind==='school').map(s=>{const points=pointsOf(s.feature);return Math.min(...points.map(p=>closest(p).distance));}),offset=Math.max(8,schoolOffsets.reduce((s,v)=>s+v,0)/schoolOffsets.length);
 const buildings=features.filter(f=>f.type==='way'&&f.tags?.building&&f.geometry?.length>3).map(f=>({id:f.id,points:pointsOf(f)}));let aligned=0,blocked=0;
 for(const property of data.properties){if(property.managedExternally)continue;const original=property.originalRings||property.rings,ring=original[0].map(project),center=ring.reduce((p,q)=>({x:p.x+q.x/ring.length,z:p.z+q.z/ring.length}),{x:0,z:0}),hit=closest(center);if(hit.distance>135)continue;

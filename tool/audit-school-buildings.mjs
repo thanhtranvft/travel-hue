@@ -1,3 +1,3 @@
-import {buildings} from '../src/data/buildingCatalog.js';import {sites,ringsOf} from '../src/geography/map.js';import {inside,project} from '../src/geography/geometry.js';
+import {buildings} from '../src/core/shared/data/buildingCatalog.js';import {sites,ringsOf} from '../src/core/shared/geography/map.js';import {inside,project} from '../src/core/shared/geography/geometry.js';
 for(const code of ['TN-0103','TN-0104','TN-0032']){const b=buildings.find(b=>b.code===code);console.log(JSON.stringify({code,osm:b?.osmKey,schools:b?sites.filter(s=>s.kind==='school'&&ringsOf(s.feature).some(r=>inside(project(b.coordinates),r))).map(s=>s.id):[]}));}
 for(const school of sites.filter(s=>s.kind==='school'))console.log(JSON.stringify({school:school.id,members:buildings.filter(b=>ringsOf(school.feature).some(r=>inside(project(b.coordinates),r))).map(b=>b.code)}));

@@ -24,6 +24,6 @@ try{
   await page.locator('#audio-volume').fill('20');await page.locator('#audio-volume').dispatchEvent('input');
   assert.equal(await page.evaluate(async()=>{const {game}=await import(document.querySelector('script[src*="/src/main.js"]').src);return game.audio.volume;}),.2);
   await page.locator('#audio-toggle').click();assert.deepEqual(await gameModule(),{enabled:false,context:'suspended'});
-  const offlineRms=await page.evaluate(async()=>{const {pluck,flute}=await import('/src/audio/music.js');const ctx=new OfflineAudioContext(1,48000*3,48000);pluck(ctx,ctx.destination,62,0,.1);flute(ctx,ctx.destination,74,.5,.05);const buffer=await ctx.startRendering(),data=buffer.getChannelData(0);return Math.sqrt(data.reduce((s,x)=>s+x*x,0)/data.length);});assert.ok(offlineRms>.001);assert.deepEqual(errors,[]);
+  const offlineRms=await page.evaluate(async()=>{const {pluck,flute}=await import('/src/core/audio/music.js');const ctx=new OfflineAudioContext(1,48000*3,48000);pluck(ctx,ctx.destination,62,0,.1);flute(ctx,ctx.destination,74,.5,.05);const buffer=await ctx.startRendering(),data=buffer.getChannelData(0);return Math.sqrt(data.reduce((s,x)=>s+x*x,0)/data.length);});assert.ok(offlineRms>.001);assert.deepEqual(errors,[]);
   console.log(JSON.stringify({menu:'collapsed/select/close pass',orientationFallback:'pass',orientationApiContract:'mock pass',landscapeViewport:layout,audioOutputRms:output,near,far,offlineRms,mute:'suspended',pageErrors:errors}));
 }finally{await browser.close();}

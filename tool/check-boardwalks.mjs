@@ -1,2 +1,2 @@
-import {features,centroid,pointsOf} from '../src/geography/map.js';
+import {features,centroid,pointsOf} from '../src/core/shared/geography/map.js';
 for(const feature of features.filter(f=>f.type==='way'&&f.tags?.highway==='footway'&&f.tags?.bridge)){const p=centroid(feature);if(p.x>650&&p.x<1400&&p.z< -650&&p.z>-1400){const points=pointsOf(feature);let length=0;for(let i=1;i<points.length;i++)length+=Math.hypot(points[i].x-points[i-1].x,points[i].z-points[i-1].z);console.log(JSON.stringify({id:feature.id,tags:feature.tags,center:p,length,first:feature.geometry[0],last:feature.geometry.at(-1)}));}}

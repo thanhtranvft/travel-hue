@@ -1,5 +1,13 @@
 # Handoff
 
+## Kiến trúc MVP, lazy loading và mobile — 2026-11-19
+
+Hướng dẫn hiện hành: [ARCHITECTURE.md](ARCHITECTURE.md). Entry: `src/main.js` → `src/app/GamePresenter.js`. Code chung ở `src/core/`, từng khu ở `src/modules/areas/<id>/`, tài nguyên ở `src/assets/`. Các đường dẫn source trong ghi chép cũ bên dưới có thể đã chuyển; dùng cấu trúc mới trong ARCHITECTURE.md.
+
+Danh sách nhạc/khu duy nhất: `src/data/app-config.json`. `enabled: false` hoặc `disabled: true` ẩn và ngăn tải; production cần build lại. Chọn khu chỉ tải dữ liệu khu đó, giới hạn di chuyển, giải phóng scene trước khi chuyển xong. Tối ưu mobile bằng instancing, batching, culling, DPR và cập nhật theo khoảng cách.
+
+Kiểm chứng: 63/63 unit test, production build, chuyển 5 khu/quay lại, tắt cấu hình, hai tay mobile và hai MP3 local đều đạt. Profile cảnh khởi đầu trên Chromium mô phỏng mobile khoảng 92 → 7 ms/frame; chưa đo điện thoại thật.
+
 ## Sửa cách diễn giải vị trí OSM — 2026-11-18
 
 Không yêu cầu người dùng cung cấp lại tọa độ. Đã lấy thêm cổng/đèn không tên từ OSM, dùng node entrance=main cho Ga và barrier=gate cho Quốc Học. Tách điểm/cổng được map với nhãn khuôn viên chưa xác nhận cổng; sửa centroid bệnh viện nhiều vùng và lấy đèn từ node thay cho offset thủ công. Đường nhánh trong bounds đã được đưa vào scene. Nút Đối chiếu OSM mở vị trí xe trực tiếp trên nguồn.

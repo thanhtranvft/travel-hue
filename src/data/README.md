@@ -1,5 +1,11 @@
 # Dữ liệu địa điểm và tòa nhà
 
+## Cấu trúc hiện hành — 19/11/2026
+
+Các file địa điểm/tòa nhà/người đi bộ nêu dưới đây hiện nằm trong `world/`. Danh sách bật/tắt khu và nhạc dùng chung một file `app-config.json`; xem [hướng dẫn kiến trúc](../../ARCHITECTURE.md). Metadata âm thanh nằm trong `audio/`, dữ liệu OSM từng khu nằm trong `../modules/areas/<id>/model/`.
+
+Ghi chú người đi bộ bên dưới là lịch sử: người đi bộ cảnh quan hiện đã tham gia va chạm và lời thoại; số lượng/khoảng cách lấy theo cấu hình và chất lượng thiết bị hiện hành.
+
 `pedestrians.json` cấu hình số người vỉa hè, số người mỗi công viên, khoảng cách hiển thị và màu áo. PedestrianLife thêm 160 người hai bên lối đi và 238 người tại 10 polygon công viên OSM trong bounds. Nhóm đứng trò chuyện/vận động đơn giản, có người lớn/trẻ nhỏ bằng tỷ lệ mô hình. Kiểm tra browser tại 4 mốc thời gian: không lọt vào nhà, nước hoặc lòng đường; người xa 140 m tạm ẩn. Các nhóm cảnh quan này chưa tham gia hệ va chạm của TrafficSystem; 58 pedestrian giao thông cũ vẫn giữ hành vi cũ. Chưa đo FPS trên điện thoại thật.
 
 - `sites.json`: 14 địa điểm chính; sửa `title` (tên hiển thị), `address` (địa chỉ). Giữ `id`, `osm`, `kind` khi chỉ đổi tên để không đổi vị trí/module.
