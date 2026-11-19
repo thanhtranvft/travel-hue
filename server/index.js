@@ -20,11 +20,10 @@ const types = {
   ".wav": "audio/wav",
   ".woff2": "font/woff2",
 };
-export async function createGameServer({
-  dist = resolve(root, "dist"),
-  now,
-  reconnectMs,
-} = {}) {
+export async function attachOnlineServer(
+  server,
+  { now, reconnectMs, rejectUnknownUpgrade = false } = {},
+) {
   const catalog = JSON.parse(
     await readFile(resolve(root, "src/data/app-config.json"), "utf8"),
   );
@@ -48,82 +47,44 @@ export async function createGameServer({
     now,
     reconnectMs: reconnectMs ?? config.reconnectSeconds * 1000,
   });
-  const server = createServer(async (req, res) => {
-    try {
-      const path = decodeURIComponent(
-        new URL(req.url, "http://local").pathname,
-      );
-      if (path === "/health") {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true, players: room.players.size }));
-        return;
-      }
-      if (!["GET", "HEAD"].includes(req.method)) {
-        res.writeHead(405);
-        res.end();
-        return;
-      }
-      let file = resolve(dist, "." + (path === "/" ? "/index.html" : path));
-      if (!file.startsWith(resolve(dist) + sep)) {
-        res.writeHead(403);
-        res.end();
-        return;
-      }
-      let info;
-      try {
-        info = await stat(file);
-      } catch {
-        if (extname(path)) {
-          res.writeHead(404);
-          res.end();
-          return;
-        }
-        file = resolve(dist, "index.html");
-        info = await stat(file);
-      }
-      if (!info.isFile()) {
-        res.writeHead(404);
-        res.end();
-        return;
-      }
-      res.writeHead(200, {
-        "Content-Type": types[extname(file)] || "application/octet-stream",
-        "Content-Length": info.size,
-        "Cache-Control":
-          extname(file) === ".html" ? "no-cache" : "public, max-age=3600",
-        "X-Content-Type-Options": "nosniff",
-      });
-      if (req.method === "HEAD") res.end();
-      else
-        createReadStream(file)
-          .on("error", () => res.destroy())
-          .pipe(res);
-    } catch {
-      res.writeHead(404);
-      res.end("Build frontend first: npm run build");
-    }
-  });
   const wss = new WebSocketServer({
     noServer: true,
     maxPayload: 2048,
     perMessageDeflate: false,
   });
   server.on("upgrade", (req, socket, head) => {
+    let pathname = "/";
+    try {
+      pathname = new URL(req.url, "http://local").pathname;
+    } catch {
+      if (rejectUnknownUpgrade) {
+        socket.end("HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n");
+      }
+      return;
+    }
+    if (pathname !== config.path) {
+      if (rejectUnknownUpgrade) {
+        socket.end("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
+      }
+      return;
+    }
     const origin = req.headers.origin;
     let validOrigin = true;
     try {
-      if (origin)
+      if (origin) {
+        const originHost = new URL(origin).host;
+        const forwardedHost = String(req.headers["x-forwarded-host"] || "")
+          .split(",")[0]
+          .trim();
         validOrigin =
-          new URL(origin).host === req.headers.host ||
+          originHost === req.headers.host ||
+          (Boolean(forwardedHost) && originHost === forwardedHost) ||
           config.allowedOrigins?.includes(origin);
+      }
     } catch {
       validOrigin = false;
     }
-    if (
-      !config.enabled ||
-      !validOrigin ||
-      new URL(req.url, "http://local").pathname !== config.path
-    ) {
+    if (!config.enabled || !validOrigin) {
       socket.end("HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n");
       return;
     }
@@ -195,13 +156,90 @@ export async function createGameServer({
     }
   }, 5000);
   return {
-    server,
     room,
+    wss,
     async close() {
       clearInterval(tick);
       clearInterval(heartbeat);
       for (const ws of wss.clients) ws.terminate();
       await new Promise((r) => wss.close(r));
+    },
+  };
+}
+
+export async function createGameServer({
+  dist = resolve(root, "dist"),
+  now,
+  reconnectMs,
+} = {}) {
+  let online;
+  const server = createServer(async (req, res) => {
+    try {
+      const path = decodeURIComponent(
+        new URL(req.url, "http://local").pathname,
+      );
+      if (path === "/health") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(
+          JSON.stringify({ ok: true, players: online?.room.players.size ?? 0 }),
+        );
+        return;
+      }
+      if (!["GET", "HEAD"].includes(req.method)) {
+        res.writeHead(405);
+        res.end();
+        return;
+      }
+      let file = resolve(dist, "." + (path === "/" ? "/index.html" : path));
+      if (!file.startsWith(resolve(dist) + sep)) {
+        res.writeHead(403);
+        res.end();
+        return;
+      }
+      let info;
+      try {
+        info = await stat(file);
+      } catch {
+        if (extname(path)) {
+          res.writeHead(404);
+          res.end();
+          return;
+        }
+        file = resolve(dist, "index.html");
+        info = await stat(file);
+      }
+      if (!info.isFile()) {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
+      res.writeHead(200, {
+        "Content-Type": types[extname(file)] || "application/octet-stream",
+        "Content-Length": info.size,
+        "Cache-Control":
+          extname(file) === ".html" ? "no-cache" : "public, max-age=3600",
+        "X-Content-Type-Options": "nosniff",
+      });
+      if (req.method === "HEAD") res.end();
+      else
+        createReadStream(file)
+          .on("error", () => res.destroy())
+          .pipe(res);
+    } catch {
+      res.writeHead(404);
+      res.end("Build frontend first: npm run build");
+    }
+  });
+  online = await attachOnlineServer(server, {
+    now,
+    reconnectMs,
+    rejectUnknownUpgrade: true,
+  });
+  return {
+    server,
+    room: online.room,
+    async close() {
+      await online.close();
       await new Promise((r) => server.close(r));
     },
   };
@@ -211,7 +249,7 @@ if (
   resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 ) {
   const app = await createGameServer();
-  app.server.listen(Number(process.env.PORT) || 8080, "0.0.0.0", () =>
+  app.server.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () =>
     console.log(
       `Hue game + online: http://localhost:${app.server.address().port}`,
     ),

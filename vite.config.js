@@ -1,6 +1,25 @@
 import { defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
+import { attachOnlineServer } from "./server/index.js";
+
+function onlineWebSocketPlugin() {
+  return {
+    name: "hue-online-ws",
+    async configureServer(server) {
+      if (!server.httpServer) return;
+      const online = await attachOnlineServer(server.httpServer);
+      server.httpServer.once("close", () => online.close());
+    },
+    async configurePreviewServer(server) {
+      if (!server.httpServer) return;
+      const online = await attachOnlineServer(server.httpServer);
+      server.httpServer.once("close", () => online.close());
+    },
+  };
+}
+
 export default defineConfig({
+  plugins: [onlineWebSocketPlugin()],
   resolve: {
     alias: [
       {
@@ -23,7 +42,6 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 3000,
     allowedHosts: true,
-    proxy: { "/online": { target: "http://127.0.0.1:8080", ws: true } },
     watch: { ignored: ["**/tool/**", "**/dist/**"] },
   },
 });

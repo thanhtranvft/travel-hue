@@ -2,6 +2,6 @@
   "enabled": true,
   "path": "/online",
   "endpoint": "",
-  "allowedOrigins": [],
+  "allowedOrigins": ["https://travel-hue.ai.studio"],
   "reconnectSeconds": 15
 }

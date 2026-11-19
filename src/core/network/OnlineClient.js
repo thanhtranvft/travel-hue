@@ -28,8 +28,10 @@ export class OnlineClient extends EventTarget {
       config.endpoint ||
       `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}${config.path}`;
     const socket = (this.socket = new WebSocket(endpoint));
-    const timeout = setTimeout(() => socket.close(), 8000);
-    socket.onopen = () =>
+    let timeout = setTimeout(() => socket.close(), 15000);
+    socket.onopen = () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => socket.close(), 8000);
       this.send({
         type: "join",
         version: PROTOCOL_VERSION,
@@ -37,6 +39,7 @@ export class OnlineClient extends EventTarget {
         region: this.region,
         token: this.token,
       });
+    };
     socket.onmessage = (event) => {
       let message;
       try {
@@ -61,6 +64,16 @@ export class OnlineClient extends EventTarget {
     socket.onclose = () => {
       clearTimeout(timeout);
       if (this.stopped) return;
+      if (!this.token && this.attempt >= 3) {
+        this.stopped = true;
+        this.setStatus("error");
+        this.emit("error", {
+          type: "error",
+          code: "UNAVAILABLE",
+          message: "Không kết nối được máy chủ Online.",
+        });
+        return;
+      }
       this.setStatus("reconnecting");
       this.retry = setTimeout(
         () => this.connect(),

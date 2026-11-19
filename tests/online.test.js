@@ -220,3 +220,41 @@ test("real WebSocket: 10 joins, client 11 rejected, leaving frees slot, resume w
     await app.close();
   }
 });
+test("WebSocket accepts proxied X-Forwarded-Host and configured allowedOrigins, rejects foreign origin", async () => {
+  const app = await createGameServer();
+  await new Promise((r) => app.server.listen(0, "127.0.0.1", r));
+  const url = `ws://127.0.0.1:${app.server.address().port}/online`;
+  try {
+    const proxied = new WebSocket(url, {
+      headers: {
+        host: "localhost:3000",
+        origin: "https://preview.example.run.app",
+        "x-forwarded-host": "preview.example.run.app",
+      },
+    });
+    await once(proxied, "open");
+    const welcome = nextMessage(proxied, "welcome");
+    proxied.send(
+      JSON.stringify({
+        type: "join",
+        version: PROTOCOL_VERSION,
+        name: "ProxyUser",
+        region: "quoc-hoc",
+      }),
+    );
+    assert.ok((await welcome).id);
+    proxied.close(1000);
+
+    const rejected = new WebSocket(url, {
+      headers: {
+        host: "localhost:3000",
+        origin: "https://evil.example",
+        "x-forwarded-host": "preview.example.run.app",
+      },
+    });
+    const [err] = await once(rejected, "error");
+    assert.ok(err);
+  } finally {
+    await app.close();
+  }
+});
