@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { enterExplore } from './enter-explore.mjs';
 const browser = await chromium.launch({
   headless: true,
   executablePath:
@@ -11,10 +12,11 @@ try {
     isMobile: true,
     hasTouch: true,
   });
-  await page.goto("http://127.0.0.1:5174/", {
+  await page.goto(process.argv[2] || "http://127.0.0.1:5174/", {
     waitUntil: "networkidle",
     timeout: 120000,
   });
+  await enterExplore(page);
   await page
     .locator("#scene-loading")
     .waitFor({ state: "hidden", timeout: 120000 });

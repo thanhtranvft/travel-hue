@@ -34,6 +34,7 @@ import {
   hitsCampusWall,
 } from "../shared/architecture/CampusWalls.js";
 import { YouthPlayground } from "../../modules/areas/quoc-hoc/view/YouthPlayground.js";
+import { HueStation } from "../../modules/areas/quoc-hoc/view/HueStation.js";
 import { PropertyEnclosures } from "./PropertyEnclosures.js";
 import { campusWallIndex, nearbyWalls } from "./CampusWallIndex.js";
 import { regionContains, byId } from "../../modules/areas/AreaModel.js";
@@ -438,7 +439,7 @@ export class GeographicWorld {
         sign.position.y = Math.min(45, height) + 2;
         sign.scale.setScalar(1.7);
       }
-      if (site.kind === "school") {
+      if (site.kind === "school" || site.kind === "station") {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
       }
@@ -584,6 +585,7 @@ export class GeographicWorld {
     }
     this.youthPlayground = byId(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
+    this.station = byId(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
@@ -643,6 +645,7 @@ export class GeographicWorld {
       : this.campusWallSegments || [];
   }
   canRide(x, z) {
+    if (this.station?.blocks(x, z)) return false;
     if (!regionContains(this.region, x, z)) return false;
     if (
       x < this.bounds.minX ||
@@ -727,7 +730,7 @@ export class GeographicWorld {
     ctx.fillStyle = "#163429";
     ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = "#387987";
-    for (const ring of river) {
+    for (const ring of this.riverRings || river) {
       ctx.beginPath();
       ring.forEach((p, i) =>
         i ? ctx.lineTo(px(p.x), pz(p.z)) : ctx.moveTo(px(p.x), pz(p.z)),

@@ -1,5 +1,15 @@
 # Plan
 
+## Ga Huế, cảnh sát và âm thanh — xác nhận trực tiếp 2026-11-19
+
+Người dùng yêu cầu nâng tên áo, xuất phát tại cổng ga có tàu phía sau và Cầu Ga nối sang Lê Lợi; bổ sung tuần tra xe máy hai cảnh sát và hai file WAV được chỉ định; nhạc bật mặc định, âm thanh va chạm độc lập nhạc, thêm master bật/tắt toàn bộ. Đã triển khai trong module ga riêng, traffic/audio và UI hiện có. Không đổi tên/mã hay tọa độ địa điểm phía sau ga; giữ danh sách khu bị tắt. Kết quả và giới hạn mô phỏng trong HANDOFF.md.
+
+## Hai chế độ Khám phá/Online — xác nhận 2026-11-19
+
+Người dùng xác nhận bằng “hãy bắt đầu sửa code” sau review luồng nhập tên → Khám phá hoặc Online tối đa 10 người, tên trên áo, gặp/va chạm cùng khu và giữ cấu trúc hiện hành. Triển khai additive qua UI/identity/network mới và `server/`; dependency Node duy nhất `ws`. Một phòng chung, chưa nhiều phòng hay tài khoản.
+
+Giữ mô phỏng xe cục bộ để hạn chế xáo trộn; server kiểm tra chuyển động/khu và quyết định va chạm giữa người chơi. NPC vẫn cục bộ, không nhận là thành phố đồng bộ hoàn toàn. Cách chạy, cấu hình triển khai một instance, kiểm thử và giới hạn trong [ONLINE.md](ONLINE.md). Chưa publish public và chưa xác minh trên 10 thiết bị thật.
+
 ## Tuyến đường thực tế theo tọa độ — 2026-11-18
 
 Người dùng yêu cầu trục Ga Huế–Lê Lợi theo đúng bờ sông và thứ tự Quốc Học/Bia, Hai Bà Trưng, UBND, bệnh viện, Phú Xuân/Hà Nội, biển từng địa điểm và tương tự các tuyến khác. Đã lấy được OSM thật, thay lớp world/traffic/district trong entry bằng dữ liệu GPS chung; thêm biển 11 địa điểm, giao lộ và đèn minh họa. Đã kiểm vị trí đối diện, thứ tự dọc tuyến, 5 tuyến OSM, production/mobile/nhạc/hai tay. Còn mô hình kiến trúc chi tiết, khảo sát cao độ và giao thông theo luật đầy đủ.

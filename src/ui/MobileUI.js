@@ -95,7 +95,11 @@ export function initializeAudioUI(audio) {
     settings = document.querySelector("#sound-settings"),
     status = document.querySelector("#audio-status"),
     volume = document.querySelector("#audio-volume");
-  let settingsOpen = true;
+  let settingsOpen = false;
+  const masterButton = document.createElement("button");
+  masterButton.id = "master-audio-toggle";
+  masterButton.setAttribute("aria-label", "Bật hoặc tắt toàn bộ âm thanh");
+  button.after(masterButton);
   const expand = document.createElement("button");
   expand.id = "audio-settings-toggle";
   expand.setAttribute("aria-controls", "sound-settings");
@@ -137,13 +141,18 @@ export function initializeAudioUI(audio) {
     } catch {}
   });
   const sync = () => {
-    button.setAttribute("aria-pressed", String(audio.enabled));
-    button.textContent = audio.enabled ? "♫ Tắt nhạc" : "♫ Bật nhạc";
-    settings.hidden = !audio.enabled || !settingsOpen;
-    expand.hidden = !audio.enabled || settingsOpen;
-    expand.textContent = "♫ Mở nhạc ▾";
+    button.setAttribute("aria-pressed", String(audio.musicEnabled));
+    button.textContent = audio.musicEnabled ? "♫ Tắt nhạc" : "♫ Bật nhạc";
+    masterButton.setAttribute("aria-pressed", String(audio.enabled));
+    masterButton.textContent = audio.enabled ? "🔊 Tắt âm" : "🔇 Bật âm";
+    settings.hidden = !audio.musicEnabled || !settingsOpen;
+    expand.hidden = !audio.musicEnabled || settingsOpen;
+    expand.textContent = "⚙ Nhạc ▾";
     expand.setAttribute("aria-label", "Mở bảng nhạc");
-    expand.setAttribute("aria-expanded", String(audio.enabled && settingsOpen));
+    expand.setAttribute(
+      "aria-expanded",
+      String(audio.musicEnabled && settingsOpen),
+    );
   };
   collapse.addEventListener("click", () => {
     settingsOpen = false;
@@ -158,13 +167,27 @@ export function initializeAudioUI(audio) {
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
-      await audio.setEnabled(!audio.enabled);
+      if (audio.enabled && audio.ctx?.state !== "running")
+        await audio.setEnabled(true);
+      audio.setMusicEnabled(!audio.musicEnabled);
       status.textContent = "";
     } catch {
       status.textContent =
-        "Chưa phát được âm thanh. Hãy chạm Bật nhạc để thử lại.";
+        "Chưa phát được âm thanh. Hãy chạm nút Âm thanh để thử lại.";
     } finally {
       button.disabled = false;
+      sync();
+    }
+  });
+  masterButton.addEventListener("click", async () => {
+    masterButton.disabled = true;
+    try {
+      await audio.setEnabled(!audio.enabled);
+      status.textContent = "";
+    } catch {
+      status.textContent = "Chưa phát được âm thanh. Hãy thử lại.";
+    } finally {
+      masterButton.disabled = false;
       sync();
     }
   });
@@ -172,5 +195,9 @@ export function initializeAudioUI(audio) {
     audio.setVolume(Number(volume.value) / 100),
   );
   audio.onStatus = (text) => (status.textContent = text);
+  void audio.recordedMusic.sync(
+    audio.track,
+    audio.enabled && audio.musicEnabled,
+  );
   sync();
 }

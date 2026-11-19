@@ -22,13 +22,21 @@ export class RecordedMusic {
     this.version = 0;
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) this.element.pause();
-      else if (this.audio.enabled && this.audio.track?.kind === "file")
+      else if (
+        this.audio.enabled &&
+        this.audio.musicEnabled &&
+        this.audio.track?.kind === "file"
+      )
         void this.sync(this.audio.track, true);
     });
   }
   async sync(track, enabled) {
     const version = ++this.version,
-      active = enabled && track?.kind === "file";
+      active =
+        enabled &&
+        this.audio.enabled &&
+        this.audio.musicEnabled &&
+        track?.kind === "file";
     this.element.hidden = !active;
     if (!active) {
       this.element.pause();
@@ -52,6 +60,13 @@ export class RecordedMusic {
         this.currentFile = track.file;
       }
       await this.audio.ctx.resume();
+      if (
+        version !== this.version ||
+        !this.audio.enabled ||
+        !this.audio.musicEnabled ||
+        document.hidden
+      )
+        return;
       await this.element.play();
       if (version === this.version) this.onStatus("");
     } catch (error) {

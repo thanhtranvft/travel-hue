@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { beam } from "../shared/architecture/architecture.js";
 import { mat } from "../shared/architecture/shared.js";
 import { BicycleMotion } from "./BicycleMotion.js";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { SharedModelLoader } from "../shared/resources/sceneResources.js";
 
 export class TouringBike extends THREE.Group {
   constructor() {
@@ -128,11 +128,12 @@ export class TouringBike extends THREE.Group {
     this.fallbackParts = this.children.filter((part) => part !== this.rider);
   }
   async loadDetailedModel() {
-    const gltf = await new GLTFLoader().loadAsync(
+    const gltf = await new SharedModelLoader().loadAsync(
       new URL("../../assets/models/priority_gbike_v9.glb", import.meta.url)
         .href,
     );
-    const model = gltf.scene;
+    if (this.disposed) return;
+    const model = gltf.scene.clone(true);
     model.rotation.y = Math.PI;
     model.scale.setScalar(1.0875);
     model.traverse((o) => {

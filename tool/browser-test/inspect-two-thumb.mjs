@@ -1,4 +1,5 @@
 import {chromium} from 'playwright';import assert from 'node:assert/strict';
+import {enterExplore} from './enter-explore.mjs';
 const base=process.argv[2]||'http://127.0.0.1:4173/';
 const browser=await chromium.launch({headless:true,executablePath:'C:/Users/Admin/AppData/Local/ms-playwright/chromium-1200/chrome-win64/chrome.exe'});
 const page=await browser.newPage({viewport:{width:844,height:390},hasTouch:true,isMobile:true});const errors=[];page.on('pageerror',e=>errors.push(e.message));const cdp=await page.context().newCDPSession(page);
@@ -6,7 +7,7 @@ const touch=(type,points)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints
 const center=async selector=>{const b=await page.locator(selector).boundingBox();assert.ok(b);return {x:b.x+b.width/2,y:b.y+b.height/2};};
 const state=()=>page.evaluate(async()=>{const script=document.querySelector('script[src*="/src/main.js"]')||document.querySelector('script[type="module"][src]'),dev=script.src.includes('/src/main.js');let input=null;if(dev){const {game}=await import(script.src);input={throttle:game.input.throttle,steer:game.input.steer,brake:game.input.brake,yaw:game.input.drag.yaw,cameraActive:game.input.drag.active};}return {input,speed:Number(document.querySelector('#speed').textContent),stick:document.querySelector('#move-stick').classList.contains('engaged'),camera:document.querySelector('#look-pad').classList.contains('engaged'),thumb:getComputedStyle(document.querySelector('#stick-thumb')).transform,selection:window.getSelection().toString()};});
 try{
-  await page.goto(base,{waitUntil:'networkidle'});await page.locator('#scene-loading').waitFor({state:'hidden'});
+  await page.goto(base,{waitUntil:'networkidle'});await enterExplore(page);await page.locator('#scene-loading').waitFor({state:'hidden'});
   const left=await center('#move-stick'),right=await center('#look-pad');let a={id:1,x:left.x,y:left.y},b={id:2,x:right.x,y:right.y};
   await touch('touchStart',[a]);a={...a,x:left.x+16,y:left.y-35};await touch('touchMove',[a]);await page.waitForTimeout(450);
   await touch('touchStart',[a,b]);b={...b,x:right.x+28,y:right.y-10};await touch('touchMove',[a,b]);await page.waitForTimeout(1000);

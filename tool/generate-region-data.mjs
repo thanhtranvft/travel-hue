@@ -1,7 +1,9 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import snapshot from '../src/assets/maps/source/osm-snapshot.json' with {type:'json'};
 import entrances from '../src/assets/maps/source/osm-entrances.json' with {type:'json'};
-import {geoDistricts,sites,ringsOf,pointsOf} from '../src/core/shared/geography/map.js';
+import {sites,ringsOf,pointsOf} from '../src/core/shared/geography/map.js';
+import config from '../src/data/app-config.json' with {type:'json'};
+const geoDistricts=config.areas.items;
 import {project,nearestPoint,inside} from '../src/core/shared/geography/geometry.js';
 const directory=new URL('../src/modules/areas/',import.meta.url);await mkdir(directory,{recursive:true});const regions=[];
 for(const district of geoDistricts){const radius=district.id==='quoc-hoc'?140:district.id==='truong-tien'?65:district.id==='south-bank'?85:120,path=district.path.map(([x,z])=>({x,z})),extensions=sites.filter(s=>['school','hospital','youth'].includes(s.kind)&&nearestPoint(s.sign,path).distance<radius).flatMap(s=>ringsOf(s.feature)),near=p=>nearestPoint(p,path).distance<radius+45||extensions.some(r=>inside(p,r)),all=[...path,...extensions.flat()],bounds={minX:Math.min(...all.map(p=>p.x))-radius,maxX:Math.max(...all.map(p=>p.x))+radius,minZ:Math.min(...all.map(p=>p.z))-radius,maxZ:Math.max(...all.map(p=>p.z))+radius};

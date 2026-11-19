@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "path": "/online",
+  "endpoint": "",
+  "allowedOrigins": [],
+  "reconnectSeconds": 15
+}

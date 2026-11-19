@@ -1,0 +1,17 @@
+{
+  "id": "hue-station",
+  "buildingOsm": 175063593,
+  "entranceOsm": 13516177652,
+  "entrance": { "lat": 16.456522, "lon": 107.5780484 },
+  "forecourtRoadOsm": 39415634,
+  "bridgeOsm": 39414469,
+  "riverOsm": 491643300,
+  "railwayOsm": 1135136989,
+  "title": "Cổng Ga Huế",
+  "description": "Bạn đang ở cổng chính Ga Huế. Phía sau nhà ga là đoàn tàu chuẩn bị khởi hành. Đi qua Cầu Ga bắc qua sông An Cựu để vào đường Lê Lợi.",
+  "waterWidth": 30,
+  "trackOffsets": [0, 6],
+  "carriagesPerTrain": 3,
+  "source": "https://www.openstreetmap.org/way/175063593",
+  "notes": "Cổng, footprint, cầu, tim sông và tuyến ray chính theo OSM. Bề rộng mặt nước, đường ray phụ, toa tàu, cao độ và chi tiết kiến trúc mô phỏng; không phải lịch tàu thực."
+}

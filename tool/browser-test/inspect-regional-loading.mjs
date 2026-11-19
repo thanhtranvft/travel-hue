@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
 import assert from "node:assert/strict";
+import { enterExplore } from './enter-explore.mjs';
 const browser = await chromium.launch({
   headless: true,
   executablePath:
@@ -21,23 +22,18 @@ try {
     if (/\/areas\/[^/]+\/model\/osm\.json/.test(url)) packages.push(url);
     if (url.includes(".glb")) models.push(url);
   });
-  await page.goto("http://127.0.0.1:5174/", {
+  await page.goto(process.argv[2] || "http://127.0.0.1:5174/", {
     waitUntil: "networkidle",
     timeout: 120000,
   });
+  await enterExplore(page);
   await page
     .locator("#scene-loading")
     .waitFor({ state: "hidden", timeout: 120000 });
   assert.equal(packages.length, 1, JSON.stringify(packages));
   const reports = [];
-  for (const id of [
-    "quoc-hoc",
-    "south-bank",
-    "truong-tien",
-    "north-bank",
-    "imperial-city",
-    "quoc-hoc",
-  ]) {
+  const enabled = await page.locator('[data-district]').evaluateAll(buttons=>buttons.map(b=>b.dataset.district));
+  for (const id of [...enabled, enabled[0]]) {
     const report = await page.evaluate(async (id) => {
       const { game } = await import(
           document.querySelector('script[src*="/src/main.js"]').src
@@ -72,7 +68,7 @@ try {
       report.oldSceneEmpty && report.rejectsOutside && report.tourComplete,
     );
   }
-  assert.equal(new Set(packages).size, 5);
+  assert.equal(new Set(packages).size, enabled.length);
   assert.equal(models.filter((u) => u.includes("trees_v4")).length, 1);
   assert.equal(models.filter((u) => u.includes("waymo_gen6")).length, 1);
   assert.deepEqual(errors, []);

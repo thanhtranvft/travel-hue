@@ -1,5 +1,7 @@
 # Kiến trúc Cún con đi dạo Huế
 
+Luồng mới 19/11/2026: nhập tên → Khám phá/Online. Backend và network được thêm độc lập, không chuyển lại cấu trúc khu; xem [ONLINE.md](ONLINE.md) để chạy bản đầy đủ bằng `npm start` và cấu hình phòng 10 người.
+
 ## Phân chia trách nhiệm theo MVP
 
 ```text

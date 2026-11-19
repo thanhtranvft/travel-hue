@@ -1,5 +1,11 @@
 # Review
 
+## Online nhỏ, giữ cấu trúc — 2026-11-19
+
+Khả thi với một phòng chung 10 người. Google AI Studio hỗ trợ backend Node/full-stack; không chỉ thêm giao diện mà cần server WebSocket thực. Người dùng đã chọn nhập tên rồi Khám phá/Online và yêu cầu ít thay đổi cấu trúc; xác nhận triển khai sau review. Quyết định dùng WebSocket qua `ws` và adapter riêng thay vì chuyển engine hoặc áp framework multiplayer toàn bộ.
+
+Giữ lazy loading theo khu; chỉ render/va chạm người cùng khu. Server giữ sức chứa và kết quả va chạm; client giữ chuyển động với kiểm tra giới hạn phía server. Đánh đổi: NPC chưa đồng bộ và chưa có mô phỏng authoritative đầy đủ. Phòng trong RAM đòi hỏi một instance/revision; restart mất phiên. Chỉ coi là bản online MVP, không suy ra chất lượng WAN/điện thoại từ hai tab local. Chi tiết [ONLINE.md](ONLINE.md).
+
 ## Sửa diễn giải dữ liệu OSM — 2026-11-18
 
 Phản hồi người dùng: dữ liệu có sẵn trên OSM, không cần yêu cầu họ gửi bản đồ nguồn khác. Đã kiểm tra trực tiếp map và bổ sung node không tên. Lỗi thực có ở anchor Ga, centroid multipolygon bệnh viện, đèn đặt offset và lớp đường chọn thiếu. Tọa độ cổng Quốc Học cũ khớp node thật; giữ nguyên thay vì nhận định mọi điểm đều sai. Cổng chưa map rõ phải để trạng thái area-only, không đoán từ đỉnh gần đường. Các test trước chỉ xác nhận tự nhất quán, không chứng minh hiện trạng kiến trúc.

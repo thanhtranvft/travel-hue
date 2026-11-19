@@ -84,6 +84,7 @@ export class LivingGrass {
         },
         road = world.nearestRoad(p.x, p.z);
       if (road.road && road.distance < roadWidth(road.road) / 2 + 2.2) continue;
+      if (world.station?.blocks(p.x, p.z)) continue;
       if (
         world.riverRings.some((r) => inside(p, r)) ||
         world.buildingPolygons.some(

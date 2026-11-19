@@ -1,0 +1,10 @@
+{
+  "enabled": true,
+  "maxPatrolsPerArea": 2,
+  "speed": 4.2,
+  "warningDistance": 10,
+  "rearmDistance": 18,
+  "cooldownSeconds": 20,
+  "globalCooldownSeconds": 12,
+  "dialogue": "Chạy xe cẩn thận đi!"
+}

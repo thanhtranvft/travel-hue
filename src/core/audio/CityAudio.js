@@ -6,7 +6,8 @@ import { CollisionVoice } from "./CollisionVoice.js";
 
 export class CityAudio {
   constructor() {
-    this.enabled = false;
+    this.enabled = true;
+    this.musicEnabled = true;
     this.volume = 0.45;
     this.ctx = null;
     this.step = 0;
@@ -108,8 +109,30 @@ export class CityAudio {
       if (this.ctx) await this.ctx.suspend();
     }
     if (this.recordedMusic)
-      void this.recordedMusic.sync(this.track, this.enabled);
+      void this.recordedMusic.sync(
+        this.track,
+        this.enabled && this.musicEnabled,
+      );
     return this.enabled;
+  }
+  setMusicEnabled(enabled) {
+    this.musicEnabled = !!enabled;
+    if (this.ctx) {
+      const now = this.ctx.currentTime;
+      this.background.gain.setTargetAtTime(
+        enabled && this.track?.kind !== "file" ? 0.65 : 0,
+        now,
+        0.05,
+      );
+      if (!enabled) this.venue.gain.setTargetAtTime(0, now, 0.05);
+      this.nextNote = now + 0.08;
+    }
+    if (this.recordedMusic)
+      void this.recordedMusic.sync(
+        this.track,
+        this.enabled && this.musicEnabled,
+      );
+    return this.musicEnabled;
   }
   setVolume(value) {
     this.volume = Math.max(0, Math.min(1, value));
@@ -127,17 +150,20 @@ export class CityAudio {
       old.gain.cancelScheduledValues(now);
       old.gain.setTargetAtTime(0, now, 0.035);
       this.background = this.ctx.createGain();
-      this.background.gain.value = track.kind === "file" ? 0 : 0.65;
+      this.background.gain.value =
+        !this.musicEnabled || track.kind === "file" ? 0 : 0.65;
       this.background.connect(this.master);
       setTimeout(() => old.disconnect(), 3500);
       this.nextNote = now + 0.08;
     }
-    if (this.recordedMusic) void this.recordedMusic.sync(track, this.enabled);
+    if (this.recordedMusic)
+      void this.recordedMusic.sync(track, this.enabled && this.musicEnabled);
     return true;
   }
   schedule() {
     if (
       !this.enabled ||
+      !this.musicEnabled ||
       !this.track ||
       this.ctx.state !== "running" ||
       document.hidden
@@ -191,14 +217,16 @@ export class CityAudio {
       t = ctx.currentTime,
       speed = Math.abs(bike.motion.speed);
     this.background.gain.setTargetAtTime(
-      !this.track || this.track.kind === "file"
+      !this.musicEnabled || !this.track || this.track.kind === "file"
         ? 0
         : 0.65 - this.venueLevel * 0.4,
       t,
       0.7,
     );
     this.venue.gain.setTargetAtTime(
-      this.track?.kind === "file" ? 0 : this.venueLevel * 0.9,
+      !this.musicEnabled || this.track?.kind === "file"
+        ? 0
+        : this.venueLevel * 0.9,
       t,
       0.45,
     );
@@ -284,7 +312,21 @@ export class CityAudio {
   }
   speakCollision(type) {
     if (!this.enabled || this.ctx?.state !== "running") return false;
+    this.lastCollisionVoiceAt = this.ctx.currentTime;
     return this.collisionVoice.play(type);
+  }
+  speakPatrolWarning() {
+    if (!this.enabled || this.ctx?.state !== "running" || document.hidden)
+      return false;
+    const now = this.ctx.currentTime;
+    if (
+      this.collisionVoice.active ||
+      now - (this.lastCollisionVoiceAt ?? -Infinity) < 4 ||
+      now - (this.lastPatrolVoiceAt ?? -Infinity) < 12
+    )
+      return false;
+    this.lastPatrolVoiceAt = now;
+    return this.collisionVoice.play("police");
   }
   collision() {
     if (!this.enabled || this.ctx?.state !== "running") return;

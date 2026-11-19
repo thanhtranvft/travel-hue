@@ -9,23 +9,24 @@ import { TouringBike } from "../core/vehicle/TouringBike.js";
 import { geoDistricts as districts } from "../core/shared/geography/map.js";
 import { damp, wrapAngle } from "../core/vehicle/BicycleMotion.js";
 import { CityAudio } from "../core/audio/CityAudio.js";
+import patrolConfig from "../data/world/police-patrols.json" with { type: "json" };
 import collisionDialogue from "../data/audio/collision-dialogue.json" with { type: "json" };
 import { renderQuality } from "../core/rendering/renderQuality.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
-  static async create(canvas) {
+  static async create(canvas, { audio } = {}) {
     const quality = renderQuality({
         coarse: matchMedia("(pointer:coarse)").matches,
         width: innerWidth,
         dpr: devicePixelRatio,
       }),
       area = await createAreaView(quality);
-    return new this(canvas, { ...area, quality });
+    return new this(canvas, { ...area, quality, audio });
   }
   constructor(canvas, setup) {
     this.quality = setup.quality;
-    this.audio = new CityAudio();
+    this.audio = setup.audio || new CityAudio();
     this.scene = setup.scene;
     this.camera = new THREE.PerspectiveCamera(
       57,
@@ -95,6 +96,12 @@ export class GamePresenter {
     this.boundaryHint.textContent =
       "Đã tới ranh giới khu vực. Chọn khu khác để tiếp tục.";
     document.querySelector("#app").append(this.boundaryHint);
+    this.patrolNotice = document.createElement("aside");
+    this.patrolNotice.id = "patrol-toast";
+    this.patrolNotice.hidden = true;
+    this.patrolNotice.setAttribute("role", "status");
+    this.patrolNotice.textContent = `Cảnh sát: “${patrolConfig.dialogue}”`;
+    document.querySelector("#app").append(this.patrolNotice);
     this.travelTo(this.world.region.id);
     addEventListener("resize", () => this.resize());
     this.ready = Promise.allSettled([this.bike.loadDetailedModel()]).then(
@@ -106,6 +113,11 @@ export class GamePresenter {
       },
     );
     addEventListener("keydown", (e) => {
+      if (
+        this.sessionActive === false ||
+        e.target.closest?.('input,select,textarea,[contenteditable="true"]')
+      )
+        return;
       if (e.repeat) return;
       if (e.key.toLowerCase() === "m")
         document.querySelector("#map-panel").classList.toggle("expanded");
@@ -122,6 +134,10 @@ export class GamePresenter {
     const district = getDistrict(id);
     if (!district) return;
     this.district = district;
+    if (this.online) {
+      this.onlineResetRequested = true;
+      this.online.awaitingRegion = true;
+    }
     this.auto = false;
     this.completed = false;
     this.input.reset();
@@ -195,12 +211,17 @@ export class GamePresenter {
     this.renderer.setAnimationLoop(() => this.frame());
   }
   step(dt) {
+    if (this.sessionActive === false) return;
     this.collisionCooldown = Math.max(0, this.collisionCooldown - dt);
     this.stun = Math.max(0, this.stun - dt);
     this.noticeTime = Math.max(0, this.noticeTime - dt);
     if (this.noticeTime === 0)
       document.querySelector("#collision-toast").hidden = true;
     this.traffic.step(dt, this.bike);
+    if (this.online && !this.online.canMove) {
+      this.bike.motion.speed = 0;
+      return;
+    }
     let throttle = this.input.throttle,
       steer = this.input.steer,
       brake = this.input.brake;
@@ -325,11 +346,15 @@ export class GamePresenter {
           : "người đi bộ";
     const headOn = Math.cos(this.bike.motion.heading - actor.heading) < -0.4;
     document.querySelector("#collision-message").textContent =
-      collisionDialogue[actor.type] ||
+      (actor.isPolice
+        ? patrolConfig.dialogue
+        : actor.type === "player"
+          ? `Bạn vừa va chạm với ${actor.name}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
+          : collisionDialogue[actor.type]) ||
       `${headOn ? "Bạn đã đi đối đầu và va chạm với" : "Bạn vừa va chạm với"} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector("#collision-toast").hidden = false;
     this.audio.collision();
-    this.audio.speakCollision(actor.type);
+    this.audio.speakCollision(actor.isPolice ? "police" : actor.type);
   }
   frame() {
     const dt = Math.min(this.clock.getDelta(), 0.1);
@@ -346,6 +371,7 @@ export class GamePresenter {
     this.traffic.mobileCars?.update(this.bike.position);
     if (this.elapsed > this.boundaryHintUntil) this.boundaryHint.hidden = true;
     this.world.update(this.elapsed, this.bike.position);
+    this.online?.update(dt);
     if (this.quality.mobile) {
       updateMobileStaticScene(this.world, this.bike.position);
       this.world.mobileCrowd?.update(this.bike.position);
@@ -364,6 +390,13 @@ export class GamePresenter {
       this.traffic.actors,
       this.cameraYaw + this.input.drag.yaw,
     );
+    const patrol = this.traffic.patrolWarning?.(this.bike);
+    if (patrol) {
+      this.audio.speakPatrolWarning();
+      this.patrolNotice.hidden = false;
+      this.patrolNoticeUntil = this.elapsed + 4;
+    }
+    if (this.elapsed > this.patrolNoticeUntil) this.patrolNotice.hidden = true;
     if (!this.nextHud || this.elapsed >= this.nextHud) {
       this.updateHud();
       this.drawMap();

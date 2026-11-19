@@ -10,6 +10,7 @@ export class AreaPresenter {
     game.isLoadingRegion = true;
     game.auto = false;
     game.input.reset();
+    game.online?.pauseRegion();
     const previous = game.world.region?.id,
       loading = document.querySelector("#scene-loading");
     loading.textContent = `Đang tải khu vực ${geoDistricts.find((a) => a.id === id)?.title || id}…`;
@@ -27,6 +28,7 @@ export class AreaPresenter {
         game.scene = candidate.scene;
         game.world = candidate.world;
         game.traffic = candidate.traffic;
+        game.online?.attachScene(game.scene);
         game.scene.add(game.bike, game.impact);
         game.audio.venues = game.world.venues;
         game.isLoadingRegion = false;
@@ -36,6 +38,7 @@ export class AreaPresenter {
           !candidate.assetFailures;
         return true;
       } catch (error) {
+        if (game.online) game.onlineResetRequested = true;
         if (previous) await loadGeography(previous);
         if (candidate) disposeOldScene(candidate.scene, game.scene);
         document.querySelector("#asset-notice").textContent =

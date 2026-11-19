@@ -5,6 +5,7 @@ import { inside, nearestPoint } from "../geography/geometry.js";
 // Decorative facades follow existing building edges. Heights and architectural
 // details are approximations, while footprint and campus membership remain OSM.
 export const corridorStyles = {
+  station: { wall: '#e7d7aa', trim: '#fff1cf', roof: '#9b4935', columns: true },
   "ho-chi-minh-museum": {
     wall: "#e6ddbf",
     trim: "#f8f1dc",

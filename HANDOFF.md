@@ -1,5 +1,21 @@
 # Handoff
 
+## Ga Huế, tuần tra và hai mức âm thanh — 2026-11-19
+
+Đã nâng tên lên lưng áo phía trên đuôi. Tuyến Ga Huế → Tràng Tiền xuất phát trên đường sân trước cổng OSM, qua Cầu Ga rồi giữ nguyên đoạn Lê Lợi cũ. Module `quoc-hoc/view/HueStation.js` và `data/station.json` chứa mái/biển ga, hai đoàn tàu chờ, đường ray, sông An Cựu và lan can Cầu Ga. Cao độ, ray phụ và toa tàu là mô phỏng, không phải lịch tàu thực. Bộ sinh gói khu hiện đọc tuyến từ app-config để không mất điểm đầu mới khi tái sinh.
+
+Xe tuần tra mỗi xe có hai cảnh sát áo vàng/mũ cảnh sát, chạy theo các đường chính OSM của khu. `data/world/police-patrols.json` cấu hình bật/tắt, số xe, tốc độ, khoảng cách nhắc và cooldown. Dùng WAV “Chạy xe cẩn thận đi!” khi đi ngang; va chạm hai người chơi dùng WAV “Ui cha mạ ơi !” cho cả hai phía. NPC tuần tra vẫn cục bộ như các NPC hiện có.
+
+Nhạc nền mặc định bật sau thao tác chọn chế độ (mở AudioContext ngay trong cử chỉ người dùng). “Tắt nhạc” chỉ tắt nhạc nền/nhạc quán; va chạm, lời thoại và tiếng xe vẫn chạy. “Tắt âm/Bật âm” là công tắc toàn bộ. Bảng nhạc mặc định thu gọn, mở bằng “⚙ Nhạc”.
+
+Kiểm chứng: 71/71 unit/integration; browser xác nhận bảng tên trên đuôi, spawn cách cổng 6,5 m, hai đoàn tàu, đoạn đầu tự lái qua cầu không bị chặn; cảnh sát hai người và phát đúng bốn WAV; tắt riêng nhạc vẫn phát lời thoại, master mute dừng toàn bộ; hai phiên Online cùng phát tiếng va chạm mới. Build đã cập nhật; chưa publish domain Google.
+
+## Khám phá và Online 10 người — 2026-11-19
+
+Hướng dẫn mới: [ONLINE.md](ONLINE.md). Chạy `npm run build` rồi `npm start`, mở `http://localhost:8080/`; `preview` chỉ là frontend. Nhập tên mỗi lần mở trang, chọn Khám phá hoặc Online; đổi chế độ không tải lại trang. Khám phá không chiếm slot. Online một phòng tối đa 10, cùng khu thấy/va chạm nhau, có reconnect.
+
+Giữ nguyên module địa điểm và logic Khám phá; thêm `core/network`, UI phiên, áo tên và `server/`. 67 unit/integration test đạt; hai browser xác nhận cùng va chạm, tách khu và đổi mode; production xác nhận 10 người/đầy phòng/giải phóng chỗ. Chưa publish Google, chưa đo 10 điện thoại thật. NPC vẫn cục bộ; server kiểm tra pose và va chạm người chơi, chưa authoritative đầy đủ. Chỉ chạy một instance phòng khi deploy; xem giới hạn trong ONLINE.md.
+
 ## Kiến trúc MVP, lazy loading và mobile — 2026-11-19
 
 Hướng dẫn hiện hành: [ARCHITECTURE.md](ARCHITECTURE.md). Entry: `src/main.js` → `src/app/GamePresenter.js`. Code chung ở `src/core/`, từng khu ở `src/modules/areas/<id>/`, tài nguyên ở `src/assets/`. Các đường dẫn source trong ghi chép cũ bên dưới có thể đã chuyển; dùng cấu trúc mới trong ARCHITECTURE.md.

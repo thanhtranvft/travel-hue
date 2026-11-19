@@ -1,5 +1,7 @@
 # Dữ liệu địa điểm và tòa nhà
 
+`world/police-patrols.json` bật/tắt xe tuần tra, số xe tối đa mỗi khu, tốc độ, phạm vi nhắc và thời gian chống lặp. Metadata bốn bản thu local ở `audio/collision-recordings.json`. Dữ liệu cổng/đường ray/Cầu Ga ở `../modules/areas/quoc-hoc/data/station.json`; tuyến xuất phát vẫn lấy từ `app-config.json`.
+
 ## Cấu trúc hiện hành — 19/11/2026
 
 Các file địa điểm/tòa nhà/người đi bộ nêu dưới đây hiện nằm trong `world/`. Danh sách bật/tắt khu và nhạc dùng chung một file `app-config.json`; xem [hướng dẫn kiến trúc](../../ARCHITECTURE.md). Metadata âm thanh nằm trong `audio/`, dữ liệu OSM từng khu nằm trong `../modules/areas/<id>/model/`.

@@ -1,6 +1,10 @@
 import "./styles.css";
 import "./mobile.css";
 import "./touch-layout.css";
+import "./ui/session.css";
+import { chooseSession, createSessionPanel } from "./ui/SessionUI.js";
+import { setRiderIdentity } from "./core/vehicle/RiderIdentity.js";
+import { CityAudio } from "./core/audio/CityAudio.js";
 import { GamePresenter as Game } from "./app/GamePresenter.js";
 import { geoDistricts as districts } from "./core/shared/geography/map.js";
 import { initializeMobileUI, initializeAudioUI } from "./ui/MobileUI.js";
@@ -27,13 +31,46 @@ document.querySelector("#app").innerHTML = `
   <article class="card" id="landmark-card"><span>Di sản bên đường</span><h2></h2><p></p></article>
   <aside id="orientation-hint" role="status" hidden><p id="orientation-message"></p><button id="dismiss-orientation">Đã hiểu</button></aside><a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors · ODbL</a>`;
 
+const audio = new CityAudio();
+const primeAudio = () => {
+  void audio
+    .setEnabled(audio.enabled)
+    .catch(() => audio.onStatus("Chạm nút Âm thanh để phát tiếng."));
+};
+const initialSession = defaultArea ? await chooseSession("", primeAudio) : null;
 if (defaultArea) await loadGeography(defaultArea.id);
 document.querySelector("#district-list p").textContent =
   "Chọn khu để tải · Di chuyển trong khu đã chọn";
 export const game = defaultArea
-  ? await Game.create(document.querySelector("#game"))
+  ? await Game.create(document.querySelector("#game"), { audio })
   : null;
 if (game) {
+  let session = initialSession;
+  const activateSession = async (next) => {
+    session = next;
+    game.session = next;
+    setRiderIdentity(game.bike, next.name);
+    const panel = createSessionPanel(next, async () => {
+      game.sessionActive = false;
+      game.input.reset();
+      game.auto = false;
+      game.bike.motion.speed = 0;
+      game.online?.dispose();
+      game.online = null;
+      panel.remove();
+      document.querySelector(".hud").inert = true;
+      const selected = await chooseSession(session.name, primeAudio);
+      document.querySelector(".hud").inert = false;
+      await activateSession(selected);
+    });
+    if (next.mode === "online") {
+      const { OnlineSession } = await import("./core/network/OnlineSession.js");
+      game.online = new OnlineSession(game, next.name, panel, districts);
+    }
+    game.input.reset();
+    game.sessionActive = true;
+  };
+  await activateSession(initialSession);
   game.start();
   document
     .querySelector("#autopilot")

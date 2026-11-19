@@ -6,6 +6,9 @@ import { animateWalker, makePerson } from "../world/People.js";
 import { roadWidth } from "../world/roadProfile.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { sweptContact } from "./collision.js";
+import { policeScooter } from "./PoliceScooter.js";
+import { PatrolWarnings } from "./PatrolWarnings.js";
+import patrolConfig from "../../data/world/police-patrols.json" with { type: "json" };
 
 import { car, scooter } from "./TrafficSystem.js";
 function truck() {
@@ -77,11 +80,51 @@ export class GeographicTraffic extends TrafficSystem {
           r.points.length > 3 &&
           r.points.some((p) => p.x > 0 && p.x < 1500 && p.z < 0 && p.z > -1700),
       );
+    this.patrolWarnings = new PatrolWarnings(patrolConfig);
+    if (patrolConfig.enabled && vehicleRoads.length) {
+      const named = new Map();
+      const length = (r) =>
+        r.points
+          .slice(1)
+          .reduce(
+            (sum, p, i) =>
+              sum + Math.hypot(p.x - r.points[i].x, p.z - r.points[i].z),
+            0,
+          );
+      for (const road of vehicleRoads)
+        if (
+          !named.has(road.tags.name) ||
+          length(road) > length(named.get(road.tags.name))
+        )
+          named.set(road.tags.name, road);
+      const patrolRoads = [...named.values()]
+        .filter((r) => length(r) > 40)
+        .sort((a, b) => length(b) - length(a))
+        .slice(0, patrolConfig.maxPatrolsPerArea);
+      patrolRoads.forEach((road, index) => {
+        this.add(
+          "scooter",
+          policeScooter(),
+          { x: 0, z: 0 },
+          0,
+          patrolConfig.speed,
+          "x",
+          1,
+        );
+        Object.assign(this.actors.at(-1), {
+          isPolice: true,
+          patrolRoad: road,
+          patrolIndex: index,
+          radius: 0.8,
+        });
+      });
+    }
     this.actors.forEach((actor, index) => {
       const pavement = actor.type === "pedestrian" && index % 2 === 0,
         candidates =
           actor.type === "pedestrian" && !pavement ? footpaths : vehicleRoads,
         road =
+          actor.patrolRoad ||
           candidates[
             actor.type !== "pedestrian" && index % 2 === 0
               ? index %
@@ -101,7 +144,9 @@ export class GeographicTraffic extends TrafficSystem {
           ),
         );
       actor.trackLength = actor.track.getLength();
-      actor.progress = (index * 0.173) % 1;
+      actor.progress = actor.isPolice
+        ? 0.07 + actor.patrolIndex * 0.5
+        : (index * 0.173) % 1;
       actor.direction = road.tags.oneway === "yes" ? 1 : index % 2 ? 1 : -1;
       actor.lane =
         actor.type === "pedestrian"
@@ -198,6 +243,11 @@ export class GeographicTraffic extends TrafficSystem {
         return person;
     }
     return null;
+  }
+  patrolWarning(bike) {
+    return this.enabled
+      ? this.patrolWarnings.update(this.time, bike, this.actors)
+      : null;
   }
   clearSpawn(position) {
     for (const actor of this.actors) {
