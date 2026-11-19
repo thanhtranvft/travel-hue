@@ -1,4 +1,107 @@
 import { RecordedMusic } from "../core/audio/RecordedMusic.js";
+
+export function isMobileViewport() {
+  return matchMedia("(pointer:coarse), (max-width:760px), (max-height:500px)").matches;
+}
+
+const landscapeControllers = new WeakMap();
+
+export function initializeLandscapeMode() {
+  const button = document.querySelector("#landscape-toggle"),
+    hint = document.querySelector("#orientation-hint"),
+    message = document.querySelector("#orientation-message");
+  if (!button) return { enter: async () => {}, exit: async () => {} };
+  if (landscapeControllers.has(button)) return landscapeControllers.get(button);
+
+  let requested = false,
+    ownsFullscreen = false,
+    busy = false;
+  const update = () => {
+    button.setAttribute("aria-pressed", String(requested || ownsFullscreen));
+    button.textContent =
+      requested || ownsFullscreen ? "⛶ Thoát ngang" : "↔ Chơi ngang";
+  };
+  const enter = async ({ showHintOnFailure = true } = {}) => {
+    if (busy) return;
+    busy = true;
+    button.disabled = true;
+    try {
+      if (
+        document.documentElement.requestFullscreen &&
+        !document.fullscreenElement
+      ) {
+        try {
+          await document.documentElement.requestFullscreen();
+          ownsFullscreen = true;
+        } catch {
+          /* Portrait guidance remains available. */
+        }
+      }
+      try {
+        if (!screen.orientation?.lock)
+          throw new Error("Orientation unavailable");
+        await screen.orientation.lock("landscape");
+        requested = true;
+        hint.hidden = true;
+      } catch {
+        if (showHintOnFailure && innerHeight > innerWidth) {
+          message.textContent =
+            "Hãy bật Tự động xoay và xoay điện thoại sang ngang. Trình duyệt này chưa cho phép khóa ngang tự động.";
+          hint.hidden = false;
+        } else {
+          hint.hidden = true;
+        }
+      }
+    } finally {
+      busy = false;
+      button.disabled = false;
+      update();
+    }
+  };
+  const exit = async () => {
+    if (busy) return;
+    busy = true;
+    button.disabled = true;
+    try {
+      screen.orientation?.unlock?.();
+      requested = false;
+      if (ownsFullscreen && document.fullscreenElement)
+        await document.exitFullscreen();
+      ownsFullscreen = false;
+      hint.hidden = true;
+    } finally {
+      busy = false;
+      button.disabled = false;
+      update();
+    }
+  };
+  button.addEventListener("click", () =>
+    requested || ownsFullscreen ? exit() : enter({ showHintOnFailure: true }),
+  );
+  document
+    .querySelector("#dismiss-orientation")
+    .addEventListener("click", () => (hint.hidden = true));
+  document.addEventListener("fullscreenchange", () => {
+    if (!document.fullscreenElement && ownsFullscreen) {
+      ownsFullscreen = false;
+      requested = false;
+      screen.orientation?.unlock?.();
+      update();
+    }
+  });
+  const onOrientationChange = () => {
+    if (innerWidth > innerHeight) hint.hidden = true;
+    update();
+  };
+  screen.orientation?.addEventListener?.("change", onOrientationChange);
+  addEventListener("resize", onOrientationChange);
+  update();
+
+  const controller = { enter, exit };
+  landscapeControllers.set(button, controller);
+  return controller;
+}
+
 export function initializeMobileUI() {
   const nav = document.querySelector("#district-list"),
     toggle = document.querySelector("#toggle-districts"),
@@ -24,70 +127,7 @@ export function initializeMobileUI() {
   addEventListener("keydown", (event) => {
     if (event.key === "Escape" && small.matches) setOpen(false);
   });
-  const button = document.querySelector("#landscape-toggle"),
-    hint = document.querySelector("#orientation-hint"),
-    message = document.querySelector("#orientation-message");
-  let requested = false,
-    ownsFullscreen = false;
-  const update = () => {
-    button.setAttribute("aria-pressed", String(requested || ownsFullscreen));
-    button.textContent =
-      requested || ownsFullscreen ? "⛶ Thoát ngang" : "↔ Chơi ngang";
-  };
-  button.addEventListener("click", async () => {
-    if (button.disabled) return;
-    button.disabled = true;
-    try {
-      if (requested || ownsFullscreen) {
-        screen.orientation?.unlock?.();
-        requested = false;
-        if (ownsFullscreen && document.fullscreenElement)
-          await document.exitFullscreen();
-        ownsFullscreen = false;
-        hint.hidden = true;
-      } else {
-        if (
-          document.documentElement.requestFullscreen &&
-          !document.fullscreenElement
-        ) {
-          try {
-            await document.documentElement.requestFullscreen();
-            ownsFullscreen = true;
-          } catch {
-            /* Portrait guidance remains available. */
-          }
-        }
-        try {
-          if (!screen.orientation?.lock)
-            throw new Error("Orientation unavailable");
-          await screen.orientation.lock("landscape");
-          requested = true;
-          hint.hidden = true;
-        } catch {
-          message.textContent =
-            "Hãy bật Tự động xoay và xoay điện thoại sang ngang. Trình duyệt này chưa cho phép khóa ngang tự động.";
-          hint.hidden = false;
-        }
-      }
-    } finally {
-      button.disabled = false;
-      update();
-    }
-  });
-  document
-    .querySelector("#dismiss-orientation")
-    .addEventListener("click", () => (hint.hidden = true));
-  document.addEventListener("fullscreenchange", () => {
-    if (!document.fullscreenElement && ownsFullscreen) {
-      ownsFullscreen = false;
-      requested = false;
-      screen.orientation?.unlock?.();
-      update();
-    }
-  });
-  screen.orientation?.addEventListener?.("change", () => {
-    if (innerWidth > innerHeight) hint.hidden = true;
-  });
+  initializeLandscapeMode();
 }
 
 export function initializeAudioUI(audio) {

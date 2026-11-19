@@ -7,7 +7,12 @@ import { setRiderIdentity } from "./core/vehicle/RiderIdentity.js";
 import { CityAudio } from "./core/audio/CityAudio.js";
 import { GamePresenter as Game } from "./app/GamePresenter.js";
 import { geoDistricts as districts } from "./core/shared/geography/map.js";
-import { initializeMobileUI, initializeAudioUI } from "./ui/MobileUI.js";
+import {
+  initializeMobileUI,
+  initializeAudioUI,
+  initializeLandscapeMode,
+  isMobileViewport,
+} from "./ui/MobileUI.js";
 import { loadGeography } from "./modules/areas/AreaModel.js";
 import { defaultArea } from "./app/catalog.js";
 
@@ -32,12 +37,21 @@ document.querySelector("#app").innerHTML = `
   <aside id="orientation-hint" role="status" hidden><p id="orientation-message"></p><button id="dismiss-orientation">Đã hiểu</button></aside><a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors · ODbL</a>`;
 
 const audio = new CityAudio();
+const landscape = initializeLandscapeMode();
+let autoLandscapeDone = false;
 const primeAudio = () => {
   void audio
     .setEnabled(audio.enabled)
     .catch(() => audio.onStatus("Chạm nút Âm thanh để phát tiếng."));
 };
-const initialSession = defaultArea ? await chooseSession("", primeAudio) : null;
+const onStart = () => {
+  primeAudio();
+  if (!autoLandscapeDone && isMobileViewport()) {
+    autoLandscapeDone = true;
+    void landscape.enter({ showHintOnFailure: true });
+  }
+};
+const initialSession = defaultArea ? await chooseSession("", onStart) : null;
 if (defaultArea) await loadGeography(defaultArea.id);
 document.querySelector("#district-list p").textContent =
   "Chọn khu để tải · Di chuyển trong khu đã chọn";
