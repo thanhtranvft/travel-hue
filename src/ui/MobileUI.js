@@ -95,6 +95,17 @@ export function initializeAudioUI(audio) {
     settings = document.querySelector("#sound-settings"),
     status = document.querySelector("#audio-status"),
     volume = document.querySelector("#audio-volume");
+  let settingsOpen = true;
+  const expand = document.createElement("button");
+  expand.id = "audio-settings-toggle";
+  expand.setAttribute("aria-controls", "sound-settings");
+  button.after(expand);
+  const collapse = document.createElement("button");
+  collapse.type = "button";
+  collapse.className = "audio-collapse";
+  collapse.textContent = "Thu gọn ▴";
+  collapse.setAttribute("aria-label", "Thu gọn bảng nhạc");
+  settings.prepend(collapse);
   audio.recordedMusic = new RecordedMusic(
     audio,
     (text) => (status.textContent = text),
@@ -128,8 +139,22 @@ export function initializeAudioUI(audio) {
   const sync = () => {
     button.setAttribute("aria-pressed", String(audio.enabled));
     button.textContent = audio.enabled ? "♫ Tắt nhạc" : "♫ Bật nhạc";
-    settings.hidden = !audio.enabled;
+    settings.hidden = !audio.enabled || !settingsOpen;
+    expand.hidden = !audio.enabled || settingsOpen;
+    expand.textContent = "♫ Mở nhạc ▾";
+    expand.setAttribute("aria-label", "Mở bảng nhạc");
+    expand.setAttribute("aria-expanded", String(audio.enabled && settingsOpen));
   };
+  collapse.addEventListener("click", () => {
+    settingsOpen = false;
+    sync();
+    expand.focus({ preventScroll: true });
+  });
+  expand.addEventListener("click", () => {
+    settingsOpen = true;
+    sync();
+    collapse.focus({ preventScroll: true });
+  });
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
