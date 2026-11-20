@@ -5,21 +5,24 @@ import { disposeOldScene } from "../shared/resources/sceneResources.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 
 export class RemotePlayers {
-  constructor() {
+  constructor({ mobile = false } = {}) {
+    this.mobile = mobile;
     this.root = new THREE.Group();
     this.root.name = "online-players";
     this.entries = new Map();
+    this._targetPos = new THREE.Vector3();
   }
   sync(players, selfId) {
+    if (!Array.isArray(players)) return;
     const live = new Set();
     for (const player of players) {
-      if (player.id === selfId || !player.connected) continue;
+      if (!player || player.id === selfId || !player.connected) continue;
       live.add(player.id);
       let entry = this.entries.get(player.id);
       if (!entry) {
         const bike = new TouringBike();
         setRiderIdentity(bike, player.name, player.color, true);
-        bike.loadDetailedModel().catch(() => {});
+        if (!this.mobile) bike.loadDetailedModel().catch(() => {});
         entry = { bike, target: player, fresh: true, last: performance.now() };
         this.entries.set(player.id, entry);
         this.root.add(bike);
@@ -37,40 +40,57 @@ export class RemotePlayers {
       }
   }
   update(dt, region, position) {
-    for (const { bike, target, fresh, last } of this.entries.values()) {
+    if (!Number.isFinite(dt) || dt <= 0) return;
+    const hasPos =
+      position &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.z);
+    for (const entry of this.entries.values()) {
+      const { bike, target, fresh, last } = entry;
+      const validPose =
+        target &&
+        Number.isFinite(target.x) &&
+        Number.isFinite(target.y) &&
+        Number.isFinite(target.z) &&
+        Number.isFinite(target.heading);
       bike.visible =
-        target.ready &&
+        Boolean(target?.ready) &&
+        validPose &&
+        hasPos &&
         target.region === region &&
         performance.now() - last < 2500 &&
         Math.hypot(target.x - position.x, target.z - position.z) < 150;
       if (!bike.visible) continue;
-      const entry = this.entries.get(target.id);
       const alpha = 1 - Math.exp(-18 * dt);
       if (
         fresh ||
+        !Number.isFinite(bike.position.x) ||
+        !Number.isFinite(bike.position.z) ||
         Math.hypot(bike.position.x - target.x, bike.position.z - target.z) > 8
       ) {
         bike.position.set(target.x, target.y, target.z);
         bike.motion.heading = target.heading;
         entry.fresh = false;
       } else {
-        bike.position.lerp(
-          new THREE.Vector3(target.x, target.y, target.z),
-          alpha,
-        );
+        this._targetPos.set(target.x, target.y, target.z);
+        bike.position.lerp(this._targetPos, alpha);
         bike.motion.heading +=
           wrapAngle(target.heading - bike.motion.heading) * alpha;
       }
       // Animate without locally integrating a second network position.
-      const pose = bike.position.clone();
+      const poseX = bike.position.x,
+        poseY = bike.position.y,
+        poseZ = bike.position.z;
       const heading = bike.motion.heading;
-      bike.motion.speed = target.speed;
+      const speed = Number.isFinite(target.speed) ? target.speed : 0;
+      const lean = Number.isFinite(target.lean) ? target.lean : 0;
+      bike.motion.speed = speed;
       bike.motion.steering = 0;
-      bike.update(dt, (target.speed * 0.32) / 4.5, 0, false);
-      bike.position.copy(pose);
+      bike.update(dt, (speed * 0.32) / 4.5, 0, false);
+      bike.position.set(poseX, poseY, poseZ);
       bike.motion.heading = heading;
       bike.rotation.y = heading;
-      bike.rotation.z = target.lean;
+      bike.rotation.z = lean;
     }
   }
   clear() {

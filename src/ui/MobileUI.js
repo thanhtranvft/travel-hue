@@ -121,8 +121,8 @@ export function initializeMobileUI() {
       }
     }),
   );
-  document.querySelector("#game").addEventListener("pointerdown", () => {
-    if (small.matches) setOpen(false);
+  document.querySelector("#app").addEventListener("pointerdown", (e) => {
+    if (e.target?.id === "game" && small.matches) setOpen(false);
   });
   addEventListener("keydown", (event) => {
     if (event.key === "Escape" && small.matches) setOpen(false);

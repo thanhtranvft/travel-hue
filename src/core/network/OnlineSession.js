@@ -7,7 +7,7 @@ export class OnlineSession {
     this.game = game;
     this.panel = panel;
     this.areas = areas;
-    this.avatars = new RemotePlayers();
+    this.avatars = new RemotePlayers({ mobile: !!game.quality?.mobile });
     this.attachScene(game.scene);
     this.client = new OnlineClient(name, game.world.region.id);
     this.seq = 0;
@@ -52,19 +52,22 @@ export class OnlineSession {
       ),
     );
     this.client.addEventListener("collision", ({ detail }) => {
+      if (!detail?.players || game.isLoadingRegion) return;
       for (const p of detail.players)
         if (p.id === this.client.id) {
-          const other = detail.players.find((o) => o.id !== p.id);
+          const other = detail.players.find((o) => o.id !== p.id) || {};
           this.applyPose(p);
           game.crash(
             {
               type: "player",
-              name: other.name,
-              heading: other.heading,
+              name: other.name || "người chơi khác",
+              heading: Number.isFinite(other.heading)
+                ? other.heading
+                : game.bike.motion.heading,
               speed: 0,
             },
-            p.x,
-            p.z,
+            Number.isFinite(p.x) ? p.x : game.bike.position.x,
+            Number.isFinite(p.z) ? p.z : game.bike.position.z,
           );
         }
     });
@@ -87,12 +90,16 @@ export class OnlineSession {
   }
   applyPose(p) {
     const { game } = this;
-    if (game.world.region.id !== p.region) return;
-    game.bike.position.set(p.x, game.world.groundAt(p.x, p.z), p.z);
-    game.bike.motion.speed = p.speed;
-    game.bike.motion.heading = p.heading;
-    game.bike.motion.lean = p.lean;
-    game.bike.rotation.y = p.heading;
+    if (!p || game.world.region.id !== p.region) return;
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
+    const refY = Number.isFinite(p.y) ? p.y : game.bike.position.y;
+    game.bike.position.set(p.x, game.world.groundAt(p.x, p.z, refY), p.z);
+    if (Number.isFinite(p.speed)) game.bike.motion.speed = p.speed;
+    if (Number.isFinite(p.heading)) {
+      game.bike.motion.heading = p.heading;
+      game.bike.rotation.y = p.heading;
+    }
+    if (Number.isFinite(p.lean)) game.bike.motion.lean = p.lean;
   }
   update(dt) {
     const game = this.game,

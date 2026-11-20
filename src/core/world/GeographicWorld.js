@@ -90,11 +90,12 @@ function polygonGeometry(points, height = 0) {
   g.rotateX(-Math.PI / 2);
   return g;
 }
-function board(title, subtitle) {
+function board(title, subtitle, mobile = false) {
   const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 256;
+  canvas.width = mobile ? 512 : 1024;
+  canvas.height = mobile ? 128 : 256;
   const ctx = canvas.getContext("2d");
+  if (mobile) ctx.scale(0.5, 0.5);
   ctx.fillStyle = "#143c35";
   ctx.fillRect(0, 0, 1024, 256);
   ctx.strokeStyle = "#dfc78c";
@@ -112,6 +113,10 @@ function board(title, subtitle) {
   ctx.fillText(subtitle, 512, 182);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  if (mobile) {
+    texture.generateMipmaps = false;
+    texture.minFilter = THREE.LinearFilter;
+  }
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(7, 1.75),
     new THREE.MeshStandardMaterial({
@@ -422,6 +427,7 @@ export class GeographicWorld {
         sign = board(
           site.title,
           isArea ? `${site.address} · khuôn viên` : site.address,
+          Boolean(this.quality?.mobile),
         );
       sign.position.set(site.sign.x, 0.23, site.sign.z);
       const closest = mainRoads
@@ -596,7 +602,7 @@ export class GeographicWorld {
     this.pedestrianLife = new PedestrianLife(this);
     scene.add(new THREE.HemisphereLight("#d9edff", "#687348", 2));
     this.sun = new THREE.DirectionalLight("#fff1d5", 3);
-    this.sun.castShadow = true;
+    this.sun.castShadow = Boolean(this.quality?.shadows);
     this.sun.shadow.mapSize.set(2048, 2048);
     Object.assign(this.sun.shadow.camera, {
       left: -110,

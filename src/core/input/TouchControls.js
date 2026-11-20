@@ -15,10 +15,13 @@ export class TouchControls {
     this.stick.addEventListener("pointerdown", (e) => {
       if (this.moveId !== null || (e.pointerType === "mouse" && e.button !== 0))
         return;
+      const bounds = this.stick.getBoundingClientRect();
+      if (!(bounds.width > 0)) return;
       e.preventDefault();
       this.moveId = e.pointerId;
-      this.stick.setPointerCapture(e.pointerId);
-      const bounds = this.stick.getBoundingClientRect();
+      try {
+        this.stick.setPointerCapture(e.pointerId);
+      } catch {}
       this.center = {
         x: bounds.left + bounds.width / 2,
         y: bounds.top + bounds.height / 2,
@@ -48,7 +51,9 @@ export class TouchControls {
       e.preventDefault();
       this.brakeId = e.pointerId;
       this.braking = true;
-      brake.setPointerCapture(e.pointerId);
+      try {
+        brake.setPointerCapture(e.pointerId);
+      } catch {}
       brake.classList.add("engaged");
     });
     for (const event of ["pointerup", "pointercancel", "lostpointercapture"])
@@ -65,9 +70,15 @@ export class TouchControls {
       document.querySelector("#look-pad"),
       document.querySelector("#game"),
     ])
-      surface.addEventListener("contextmenu", (e) => e.preventDefault());
+      surface?.addEventListener("contextmenu", (e) => e.preventDefault());
   }
   move(event) {
+    if (
+      !(this.radius > 0) ||
+      !Number.isFinite(event.clientX) ||
+      !Number.isFinite(event.clientY)
+    )
+      return;
     const value = stickInput(
       event.clientX - this.center.x,
       event.clientY - this.center.y,
@@ -78,28 +89,39 @@ export class TouchControls {
     this.thumb.style.transform = `translate(${value.x}px,${value.y}px)`;
   }
   bindCamera(surface) {
+    if (!surface) return;
     surface.addEventListener("pointerdown", (e) => {
       if (
         this.cameraId !== null ||
-        (e.pointerType === "mouse" && e.button !== 0)
+        (e.pointerType === "mouse" && e.button !== 0) ||
+        !Number.isFinite(e.clientX) ||
+        !Number.isFinite(e.clientY)
       )
         return;
       e.preventDefault();
       this.cameraId = e.pointerId;
-      surface.setPointerCapture(e.pointerId);
+      try {
+        surface.setPointerCapture(e.pointerId);
+      } catch {}
       this.drag.active = true;
       this.drag.x = e.clientX;
       this.drag.y = e.clientY;
       surface.classList.add("engaged");
     });
     surface.addEventListener("pointermove", (e) => {
-      if (e.pointerId !== this.cameraId) return;
+      if (
+        e.pointerId !== this.cameraId ||
+        !Number.isFinite(e.clientX) ||
+        !Number.isFinite(e.clientY)
+      )
+        return;
       e.preventDefault();
-      this.drag.yaw -= (e.clientX - this.drag.x) * 0.005;
-      this.drag.pitch = Math.max(
-        0.12,
-        Math.min(1.05, this.drag.pitch + (e.clientY - this.drag.y) * 0.0035),
-      );
+      const nextYaw = this.drag.yaw - (e.clientX - this.drag.x) * 0.005;
+      if (Number.isFinite(nextYaw))
+        this.drag.yaw = Math.atan2(Math.sin(nextYaw), Math.cos(nextYaw));
+      const nextPitch = this.drag.pitch + (e.clientY - this.drag.y) * 0.0035;
+      if (Number.isFinite(nextPitch))
+        this.drag.pitch = Math.max(0.12, Math.min(1.05, nextPitch));
       this.drag.x = e.clientX;
       this.drag.y = e.clientY;
     });
@@ -112,6 +134,11 @@ export class TouchControls {
         }
       });
   }
+  rebindGameCanvas(canvas) {
+    this.reset();
+    this.bindCamera(canvas);
+    canvas?.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
   reset() {
     this.moveId = this.cameraId = this.brakeId = null;
     this.throttle = this.steer = 0;
@@ -119,7 +146,7 @@ export class TouchControls {
     this.drag.active = false;
     this.thumb.style.transform = "translate(0px,0px)";
     document
-      .querySelectorAll(".touch-controls .engaged")
+      .querySelectorAll(".touch-controls .engaged, #game.engaged")
       .forEach((e) => e.classList.remove("engaged"));
   }
 }

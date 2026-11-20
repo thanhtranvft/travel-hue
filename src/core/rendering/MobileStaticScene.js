@@ -70,8 +70,10 @@ export function optimizeMobileStaticScene(world) {
       }
       source.dispose();
       object.removeFromParent();
-      if (oldObstacles.has(object))
-        remainingObstacles.splice(remainingObstacles.indexOf(object), 1);
+      if (oldObstacles.has(object)) {
+        const idx = remainingObstacles.indexOf(object);
+        if (idx !== -1) remainingObstacles.splice(idx, 1);
+      }
       return;
     }
     for (const child of [...object.children]) collect(child, dynamic);

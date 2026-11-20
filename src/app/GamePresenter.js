@@ -34,17 +34,35 @@ export class GamePresenter {
       0.1,
       this.quality.mobile ? 1300 : 5000,
     );
-    this.renderer = new THREE.WebGLRenderer({
-      canvas,
-      antialias: !this.quality.mobile,
-      powerPreference: "high-performance",
-    });
-    this.renderer.setPixelRatio(this.quality.pixelRatio);
-    this.renderer.setSize(innerWidth, innerHeight);
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
-    this.renderer.shadowMap.enabled = this.quality.shadows;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer = this.createRenderer(canvas);
+    this.contextLost = false;
+    this.contextRestoreTimer = null;
+    this.onContextLost = (e) => {
+      e.preventDefault();
+      this.contextLost = true;
+      this.input?.reset();
+      if (!this.isLoadingRegion) {
+        const loading = document.querySelector("#scene-loading");
+        if (loading) {
+          loading.textContent = "Đang khôi phục màn hình 3D…";
+          loading.hidden = false;
+        }
+      }
+      clearTimeout(this.contextRestoreTimer);
+      this.contextRestoreTimer = setTimeout(() => {
+        if (this.contextLost) this.recoverWebGL();
+      }, 1500);
+    };
+    this.onContextRestored = () => {
+      clearTimeout(this.contextRestoreTimer);
+      this.contextLost = false;
+      if (!this.isLoadingRegion) {
+        const loading = document.querySelector("#scene-loading");
+        if (loading) loading.hidden = true;
+      }
+      this.resize();
+    };
+    this.bindContextEvents(canvas);
     this.input = new InputController(canvas);
     this.world = setup.world;
     this.traffic = setup.traffic;
@@ -63,11 +81,13 @@ export class GamePresenter {
     );
     ring.rotation.x = Math.PI / 2;
     this.impact.add(ring);
+    const sparkGeometry = new THREE.OctahedronGeometry(0.075);
+    const sparkMaterial = new THREE.MeshBasicMaterial({
+      color: "#ffe1a0",
+      transparent: true,
+    });
     for (let i = 0; i < 8; i++) {
-      const spark = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.075),
-        new THREE.MeshBasicMaterial({ color: "#ffe1a0", transparent: true }),
-      );
+      const spark = new THREE.Mesh(sparkGeometry, sparkMaterial);
       spark.position.set(
         Math.cos((i * Math.PI) / 4) * 0.8,
         0.4,
@@ -124,6 +144,65 @@ export class GamePresenter {
       if (e.key.toLowerCase() === "t") this.toggleAutopilot();
       if (e.key.toLowerCase() === "r") this.reset();
     });
+  }
+  createRenderer(canvas) {
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: !this.quality.mobile,
+      powerPreference: this.quality.mobile ? "default" : "high-performance",
+    });
+    renderer.setPixelRatio(this.quality.pixelRatio);
+    if (innerWidth > 0 && innerHeight > 0) {
+      renderer.setSize(innerWidth, innerHeight);
+    }
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    renderer.shadowMap.enabled = this.quality.shadows;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    return renderer;
+  }
+  bindContextEvents(canvas) {
+    if (this._boundCanvas === canvas) return;
+    if (this._boundCanvas) {
+      this._boundCanvas.removeEventListener(
+        "webglcontextlost",
+        this.onContextLost,
+      );
+      this._boundCanvas.removeEventListener(
+        "webglcontextrestored",
+        this.onContextRestored,
+      );
+    }
+    this._boundCanvas = canvas;
+    canvas.addEventListener("webglcontextlost", this.onContextLost);
+    canvas.addEventListener("webglcontextrestored", this.onContextRestored);
+  }
+  recoverWebGL() {
+    clearTimeout(this.contextRestoreTimer);
+    const oldCanvas =
+      this.renderer?.domElement || document.querySelector("#game");
+    if (!oldCanvas || !oldCanvas.parentNode) return;
+    const newCanvas = document.createElement("canvas");
+    newCanvas.id = "game";
+    oldCanvas.replaceWith(newCanvas);
+    try {
+      this.renderer?.setAnimationLoop(null);
+      this.renderer?.dispose();
+    } catch {}
+    try {
+      this.renderer = this.createRenderer(newCanvas);
+      this.bindContextEvents(newCanvas);
+      this.input?.touch?.rebindGameCanvas?.(newCanvas);
+      this.contextLost = false;
+      this.resize();
+      if (!this.isLoadingRegion) {
+        const loading = document.querySelector("#scene-loading");
+        if (loading) loading.hidden = true;
+        this.start();
+      }
+    } catch {
+      this.contextLost = true;
+    }
   }
   travelTo(id) {
     if (this.isLoadingRegion) {
@@ -285,6 +364,15 @@ export class GamePresenter {
         this.syncMode();
       }
     }
+    if (
+      !Number.isFinite(this.bike.position.x) ||
+      !Number.isFinite(this.bike.position.z) ||
+      !Number.isFinite(this.bike.motion.heading)
+    ) {
+      const spawn = this.district?.spawn || { x: 0, z: 0, heading: 0 };
+      this.bike.reset(spawn.x, spawn.z, spawn.heading);
+      this.bike.position.y = this.world.groundAt(spawn.x, spawn.z);
+    }
     const oldX = this.bike.position.x,
       oldZ = this.bike.position.z;
     if (this.stun > 0) {
@@ -293,8 +381,14 @@ export class GamePresenter {
       brake = true;
     }
     this.bike.update(dt, throttle, steer, brake);
-    if (!this.world.canRide(this.bike.position.x, this.bike.position.z)) {
+    if (
+      !Number.isFinite(this.bike.position.x) ||
+      !Number.isFinite(this.bike.position.z) ||
+      !this.world.canRide(this.bike.position.x, this.bike.position.z)
+    ) {
       if (
+        Number.isFinite(this.bike.position.x) &&
+        Number.isFinite(this.bike.position.z) &&
         !regionContains(
           this.world.region,
           this.bike.position.x,
@@ -308,16 +402,14 @@ export class GamePresenter {
       this.bike.position.z = oldZ;
       this.bike.motion.speed = 0;
     }
-    this.bike.position.y = damp(
+    const targetY = this.world.groundAt(
+      this.bike.position.x,
+      this.bike.position.z,
       this.bike.position.y,
-      this.world.groundAt(
-        this.bike.position.x,
-        this.bike.position.z,
-        this.bike.position.y,
-      ),
-      15,
-      dt,
     );
+    if (Number.isFinite(targetY)) {
+      this.bike.position.y = damp(this.bike.position.y, targetY, 15, dt);
+    }
     if (this.collisionCooldown === 0) {
       const actor = this.traffic.contact({ x: oldX, z: oldZ }, this.bike);
       if (actor && Math.abs(this.bike.motion.speed) + actor.speed > 0.5)
@@ -326,8 +418,10 @@ export class GamePresenter {
     if (this.stun > 0) this.bike.rotation.z += Math.sin(this.stun * 8) * 0.28;
   }
   crash(actor, oldX, oldZ) {
-    this.bike.position.x = oldX;
-    this.bike.position.z = oldZ;
+    const safeX = Number.isFinite(oldX) ? oldX : this.bike.position.x;
+    const safeZ = Number.isFinite(oldZ) ? oldZ : this.bike.position.z;
+    this.bike.position.x = safeX;
+    this.bike.position.z = safeZ;
     this.bike.motion.speed = 0;
     this.auto = false;
     this.completed = false;
@@ -336,30 +430,40 @@ export class GamePresenter {
     this.stun = 1;
     this.noticeTime = 4;
     this.crashCount++;
-    actor.pause = 1.4;
+    if (actor) actor.pause = 1.4;
     this.impact.position.copy(this.bike.position);
     this.impact.position.y += 0.12;
     this.impact.visible = true;
+    const actorType = actor?.type || "pedestrian";
     const label =
-      actor.type === "car"
+      actorType === "car"
         ? "ô tô"
-        : actor.type === "scooter"
+        : actorType === "scooter"
           ? "xe máy"
           : "người đi bộ";
-    const headOn = Math.cos(this.bike.motion.heading - actor.heading) < -0.4;
+    const actorHeading = Number.isFinite(actor?.heading)
+      ? actor.heading
+      : this.bike.motion.heading;
+    const headOn = Math.cos(this.bike.motion.heading - actorHeading) < -0.4;
     document.querySelector("#collision-message").textContent =
-      (actor.isPolice
+      (actor?.isPolice
         ? patrolConfig.dialogue
-        : actor.type === "player"
-          ? `Bạn vừa va chạm với ${actor.name}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
-          : collisionDialogue[actor.type]) ||
+        : actorType === "player"
+          ? `Bạn vừa va chạm với ${actor?.name || "người chơi khác"}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
+          : collisionDialogue[actorType]) ||
       `${headOn ? "Bạn đã đi đối đầu và va chạm với" : "Bạn vừa va chạm với"} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector("#collision-toast").hidden = false;
     this.audio.collision();
-    this.audio.speakCollision(actor.isPolice ? "police" : actor.type);
+    this.audio.speakCollision(actor?.isPolice ? "police" : actorType);
   }
   frame() {
-    const dt = Math.min(this.clock.getDelta(), 0.1);
+    const rawDt = this.clock.getDelta();
+    if (this.contextLost) return;
+    if (this.renderer.getContext?.()?.isContextLost?.()) {
+      this.onContextLost?.({ preventDefault() {} });
+      return;
+    }
+    const dt = Number.isFinite(rawDt) ? Math.min(Math.max(rawDt, 0), 0.1) : 0.016;
     this.elapsed += dt;
     this.accumulator += dt;
     const fixed = 1 / this.quality.physicsHz;
@@ -390,7 +494,8 @@ export class GamePresenter {
     this.audio.update(
       this.bike,
       this.traffic.actors,
-      this.cameraYaw + this.input.drag.yaw,
+      this.cameraYaw +
+        (Number.isFinite(this.input.drag.yaw) ? this.input.drag.yaw : 0),
     );
     const patrol = this.traffic.patrolWarning?.(this.bike);
     if (patrol) {
@@ -407,46 +512,75 @@ export class GamePresenter {
     this.renderer.render(this.scene, this.camera);
   }
   updateCamera(dt) {
+    if (!Number.isFinite(this.cameraYaw))
+      this.cameraYaw = this.bike.motion.heading || 0;
     const recenter = !!this.input.recenterRequested;
     if (recenter) {
-      this.cameraYaw = this.bike.motion.heading;
+      this.cameraYaw = Number.isFinite(this.bike.motion.heading)
+        ? this.bike.motion.heading
+        : 0;
       this.input.recenterRequested = false;
     }
     this.cameraYaw +=
       wrapAngle(this.bike.motion.heading - this.cameraYaw) *
       (1 - Math.exp(-12 * dt));
-    const yaw = this.cameraYaw + this.input.drag.yaw,
+    const dragYaw = Number.isFinite(this.input.drag.yaw)
+      ? this.input.drag.yaw
+      : 0;
+    const dragPitch = Number.isFinite(this.input.drag.pitch)
+      ? this.input.drag.pitch
+      : 0.38;
+    const yaw = this.cameraYaw + dragYaw,
       speed = Math.abs(this.bike.motion.speed),
       distance = 5.3 + speed * 0.07,
       p = this.bike.position;
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))
+      return;
     this.desired.set(
       p.x - Math.sin(yaw) * distance,
-      p.y + 2.0 + (this.input.drag.pitch - 0.38) * 3,
+      p.y + 2.0 + (dragPitch - 0.38) * 3,
       p.z - Math.cos(yaw) * distance,
     );
     this.cameraTarget.set(p.x, p.y + 1.25, p.z);
     this.rayDirection.copy(this.desired).sub(this.cameraTarget);
     const maxDistance = this.rayDirection.length();
-    this.ray.set(this.cameraTarget, this.rayDirection.normalize());
-    this.ray.far = maxDistance;
-    const hit = this.ray.intersectObjects(
-      [...this.world.cameraObstacles, ...this.traffic.cameraObstacles(p)],
-      false,
-    )[0];
-    if (hit)
-      this.desired
-        .copy(this.cameraTarget)
-        .addScaledVector(this.rayDirection, Math.max(0.8, hit.distance - 0.35));
+    if (maxDistance > 1e-4) {
+      this.ray.set(this.cameraTarget, this.rayDirection.divideScalar(maxDistance));
+      this.ray.far = maxDistance;
+      const hit = this.ray.intersectObjects(
+        [...this.world.cameraObstacles, ...this.traffic.cameraObstacles(p)],
+        false,
+      )[0];
+      if (hit)
+        this.desired
+          .copy(this.cameraTarget)
+          .addScaledVector(
+            this.rayDirection,
+            Math.max(0.8, hit.distance - 0.35),
+          );
+    }
     if (this.stun > 0)
       this.desired.x += Math.sin(this.elapsed * 46) * this.stun * 0.08;
-    if (recenter) this.camera.position.copy(this.desired);
+    if (
+      recenter ||
+      !Number.isFinite(this.camera.position.x) ||
+      !Number.isFinite(this.camera.position.y) ||
+      !Number.isFinite(this.camera.position.z)
+    )
+      this.camera.position.copy(this.desired);
     else this.camera.position.lerp(this.desired, 1 - Math.exp(-10 * dt));
     this.cameraTarget.set(
       p.x + Math.sin(yaw) * 1.8,
       p.y + 1.1,
       p.z + Math.cos(yaw) * 1.8,
     );
-    if (recenter) this.look.copy(this.cameraTarget);
+    if (
+      recenter ||
+      !Number.isFinite(this.look.x) ||
+      !Number.isFinite(this.look.y) ||
+      !Number.isFinite(this.look.z)
+    )
+      this.look.copy(this.cameraTarget);
     else this.look.lerp(this.cameraTarget, 1 - Math.exp(-12 * dt));
     this.camera.lookAt(this.look);
   }
@@ -457,6 +591,7 @@ export class GamePresenter {
     this.view.drawMap(this);
   }
   resize() {
+    if (innerWidth <= 0 || innerHeight <= 0) return;
     this.camera.aspect = innerWidth / innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(innerWidth, innerHeight);

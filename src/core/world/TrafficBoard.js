@@ -57,6 +57,9 @@ export function trafficBoard(title, subtitle = "", size = 3.4) {
     side: THREE.DoubleSide,
     roughness: 0.85,
   });
+  material.addEventListener("dispose", () => {
+    if (materials.get(key) === material) materials.delete(key);
+  });
   materials.set(key, material);
   return new THREE.Mesh(new THREE.PlaneGeometry(size, size), material);
 }

@@ -1,4 +1,6 @@
 export function stickInput(dx, dy, radius, deadZone = 0.12) {
+  if (!(radius > 0) || !Number.isFinite(dx) || !Number.isFinite(dy))
+    return { x: 0, y: 0, throttle: 0, steer: 0 };
   const length = Math.hypot(dx, dy),
     scale = length > radius ? radius / length : 1,
     x = (dx * scale) / radius,
