@@ -188,8 +188,10 @@ export class GamePresenter {
       .forEach((b) =>
         b.setAttribute("aria-pressed", String(b.dataset.district === id)),
       );
+    if (Array.isArray(this.world.trail)) this.world.trail = [];
     this.syncMode();
     this.updateHud();
+    this.drawMap();
   }
   changeRegion(id) {
     return this.areaPresenter.changeRegion(id);

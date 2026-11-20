@@ -187,3 +187,86 @@
   pointer-events: none;
   box-shadow: 0 5px 22px #0004;
 }
+.session-user {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #102a27;
+  border: 1px solid #e2c78b44;
+  font-size: 15px;
+  color: #dce7dc;
+}
+.session-user strong {
+  color: #ffdc8e;
+}
+.brand-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #ffffff1a;
+  pointer-events: auto;
+}
+.brand-account[hidden] {
+  display: none;
+}
+#current-user-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f6dc9c;
+  max-width: 125px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#logout-btn {
+  border: 1px solid #ffdda044;
+  border-radius: 999px;
+  background: #27443b;
+  color: #fff2d1;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#logout-btn:hover,
+#logout-btn:focus-visible {
+  background: #8a4b3a;
+  border-color: #ffb89988;
+}
+@media (max-width: 760px), (max-height: 500px) {
+  .brand-account {
+    margin-top: 5px;
+    padding-top: 5px;
+    gap: 6px;
+  }
+  #current-user-name {
+    font-size: 10px;
+    max-width: 82px;
+  }
+  #logout-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: none;
+  }
+  .brand-account {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    padding-left: 8px;
+    border-left: 1px solid #ffffff22;
+  }
+  #current-user-name {
+    max-width: 70px;
+  }
+}

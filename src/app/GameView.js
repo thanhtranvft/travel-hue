@@ -1,6 +1,7 @@
 import { unproject } from "../core/shared/geography/geometry.js";
 import { geoDistricts as districts } from "../core/shared/geography/map.js";
 import { CITY, BRIDGE } from "../core/world/cityLayout.js";
+import { formatPlayerCoords } from "../core/world/minimap.js";
 export class GameView {
   constructor() {
     this.map = document.querySelector("#minimap").getContext("2d");
@@ -12,6 +13,10 @@ export class GameView {
       mode: document.querySelector("#mode-label"),
       auto: document.querySelector("#autopilot"),
       card: document.querySelector("#landmark-card"),
+      mapArea: document.querySelector("#map-area-title"),
+      mapCoords: document.querySelector("#map-coords"),
+      mapLocalCoords: document.querySelector("#map-local-coords"),
+      osmLink: document.querySelector("#open-osm"),
     };
   }
   syncMode(game) {
@@ -20,10 +25,18 @@ export class GameView {
     game.hud.auto.setAttribute("aria-pressed", String(game.auto));
   }
   updateHud(game) {
-    const osmLink = document.querySelector("#open-osm");
-    if (osmLink) {
-      const gps = unproject(game.bike.position);
-      osmLink.href = `https://www.openstreetmap.org/#map=18/${gps.lat.toFixed(7)}/${gps.lon.toFixed(7)}`;
+    const coords = formatPlayerCoords(game.bike.position, unproject);
+    if (game.hud.osmLink) {
+      game.hud.osmLink.href = `https://www.openstreetmap.org/#map=18/${coords.lat.toFixed(7)}/${coords.lon.toFixed(7)}`;
+    }
+    if (game.hud.mapArea) {
+      game.hud.mapArea.textContent = game.district.title;
+    }
+    if (game.hud.mapCoords) {
+      game.hud.mapCoords.textContent = coords.gpsText;
+    }
+    if (game.hud.mapLocalCoords) {
+      game.hud.mapLocalCoords.textContent = coords.localText;
     }
     game.hud.district.textContent = game.district.title;
     game.hud.speed.textContent = Math.round(
@@ -61,12 +74,27 @@ export class GameView {
   }
   drawMap(game) {
     if (game.world.drawMap) {
+      const remotePlayers = game.online?.avatars?.entries
+        ? [...game.online.avatars.entries.values()]
+            .filter(
+              (entry) =>
+                entry.target?.connected &&
+                entry.target.region === game.district?.id,
+            )
+            .map((entry) => ({
+              x: entry.bike.position.x,
+              z: entry.bike.position.z,
+              color: entry.target.color,
+              name: entry.target.name,
+            }))
+        : [];
       game.world.drawMap(
         game.map,
         game.bike,
         districts,
         game.district.id,
         game.traffic.actors,
+        { remotePlayers },
       );
       return;
     }

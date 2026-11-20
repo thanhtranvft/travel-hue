@@ -16,6 +16,7 @@ import {
   mappedSignals,
 } from "../shared/geography/map.js";
 import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
+import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
 import { roadWidth } from "./roadProfile.js";
 import { roadSurfaceHeight } from "./roadSurface.js";
@@ -173,9 +174,13 @@ export class GeographicWorld {
       }));
     this.roadSegments = [];
     this.roadGrid = new Map();
+    this.trail = [];
+    this.staticMapCache = {};
     this.bounds = { minX: -350, maxX: 1700, minZ: -1900, maxZ: 200 };
   }
   build() {
+    this.trail = [];
+    this.staticMapCache = {};
     if (this.region) this.bounds = { ...this.region.bounds };
     this.loadedFeatureCount = features.length;
     const scene = this.scene;
@@ -720,43 +725,22 @@ export class GeographicWorld {
       }
     }
   }
-  drawMap(ctx, bike, districts, selected, actors) {
-    const w = 240,
-      h = 170,
-      b = this.bounds,
-      s = Math.min(w / (b.maxX - b.minX), h / (b.maxZ - b.minZ)),
-      px = (x) => (x - b.minX) * s,
-      pz = (z) => (z - b.minZ) * s;
-    ctx.fillStyle = "#163429";
-    ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = "#387987";
-    for (const ring of this.riverRings || river) {
-      ctx.beginPath();
-      ring.forEach((p, i) =>
-        i ? ctx.lineTo(px(p.x), pz(p.z)) : ctx.moveTo(px(p.x), pz(p.z)),
-      );
-      ctx.fill();
+  drawMap(ctx, bike, districts, selected, actors, options = {}) {
+    if (bike?.position) {
+      appendTrailPoint(this.trail, bike.position.x, bike.position.z);
     }
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "#8b9985";
-    for (const road of mainRoads) {
-      ctx.beginPath();
-      road.points.forEach((p, i) =>
-        i ? ctx.lineTo(px(p.x), pz(p.z)) : ctx.moveTo(px(p.x), pz(p.z)),
-      );
-      ctx.stroke();
-    }
-    const district = districts.find((d) => d.id === selected);
-    ctx.strokeStyle = "#f0d49a";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    district.path.forEach(([x, z], i) =>
-      i ? ctx.lineTo(px(x), pz(z)) : ctx.moveTo(px(x), pz(z)),
-    );
-    ctx.stroke();
-    ctx.fillStyle = "#fff0b9";
-    ctx.beginPath();
-    ctx.arc(px(bike.position.x), pz(bike.position.z), 3, 0, Math.PI * 2);
-    ctx.fill();
+    renderAreaMap(ctx, {
+      regionId: this.region?.id,
+      bounds: this.bounds,
+      riverRings: this.riverRings || river,
+      roads: this.renderRoads || roads,
+      mainRoads,
+      district: districts.find((d) => d.id === selected),
+      landmarks: this.landmarks,
+      bike,
+      trail: this.trail,
+      remotePlayers: options.remotePlayers || [],
+      staticCache: this.staticMapCache,
+    });
   }
 }

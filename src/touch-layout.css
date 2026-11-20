@@ -1,14 +1,20 @@
 /* Final placement of the two thumb zones, after the legacy mobile HUD rules. */
 @media(pointer:coarse),(max-width:760px),(max-height:500px){
-  .map-panel{position:absolute;left:max(12px,env(safe-area-inset-left));top:auto;bottom:180px;width:100px}
-  .map-panel.expanded{left:50%;top:100px;bottom:auto;width:min(280px,75vw);transform:translateX(-50%);z-index:9}
+  .map-panel{position:absolute;left:max(12px,env(safe-area-inset-left));top:auto;bottom:180px;width:112px;padding:6px}
+  .map-panel button{font-size:9px;padding:0 0 4px}
+  .map-panel:not(.expanded) .map-area-title,.map-panel:not(.expanded) .map-local-coords{display:none}
+  .map-panel:not(.expanded) .map-coords{font-size:8px;margin-top:4px}
+  .map-panel.expanded{left:50%;top:100px;bottom:auto;width:min(280px,75vw);padding:9px;transform:translateX(-50%);z-index:9}
   .ride-panel{position:absolute;left:50%;right:auto;bottom:25px;transform:translateX(-50%);width:72px;max-width:72px;display:block}
   .ride-panel .status,.ride-panel .guide{display:none}
   .speed{padding:8px 10px;min-width:66px}
 }
 @media(orientation:landscape) and (max-height:500px){
-  .map-panel{left:max(12px,env(safe-area-inset-left));top:115px;bottom:auto;width:96px}
-  .map-panel.expanded{left:50%;top:85px;bottom:auto;width:250px;transform:translateX(-50%)}
+  .map-panel{left:max(12px,env(safe-area-inset-left));top:111px;bottom:auto;width:114px;padding:5px}
+  .map-panel:not(.expanded) .map-coords{font-size:7px;line-height:1.25;margin-top:3px;letter-spacing:-0.02em;white-space:nowrap}
+  .map-panel:not(.expanded) #open-osm{display:none}
+  .map-panel.expanded{left:50%;top:72px;bottom:auto;width:250px;padding:9px;transform:translateX(-50%)}
   .ride-panel{left:50%;right:auto;bottom:15px;max-width:72px;width:72px;transform:translateX(-50%);display:block}
   .ride-panel .status{display:none}.card{right:170px;bottom:90px;max-width:180px}
 }
+
