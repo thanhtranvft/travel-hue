@@ -623,6 +623,19 @@ export class GeographicWorld {
     }
     this.youthPlayground = byId(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
+    const kqt = this.propertyEnclosures.records.find(
+      (p) => p.id === "property-TN-0100",
+    );
+    if (kqt && !this.landmarks.has("khoa-quoc-te")) {
+      this.landmarks.set("khoa-quoc-te", {
+        id: "khoa-quoc-te",
+        title: kqt.title,
+        position: kqt.gate,
+        radius: 45,
+        description:
+          "4 Lê Lợi · Điểm xuất phát tuyến Ga Huế → Tràng Tiền (OSM way/695775617).",
+      });
+    }
     this.station = byId(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.grass = new LivingGrass(this);
