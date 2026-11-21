@@ -4,6 +4,12 @@ import { mainRoads, roads } from "../shared/geography/map.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { animateWalker, makePerson } from "../world/People.js";
 import { roadWidth } from "../world/roadProfile.js";
+import {
+  TRUONG_TIEN_ID,
+  TRUONG_TIEN_SIDEWALK_IDS,
+  TRUONG_TIEN_WALK_LIFT,
+  truongTienElevation,
+} from "../world/roadSurface.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { sweptContact } from "./collision.js";
 import { policeScooter } from "./PoliceScooter.js";
@@ -50,7 +56,35 @@ export function stitchBridgeRoutes(roads, world) {
   const stitched = [];
   for (const road of roads) {
     if (phuXuanIds.has(road.id)) continue;
-    if (road.id === 174759688 || road.tags.bridge === "yes") {
+    if (road.id === TRUONG_TIEN_ID && road.points.length >= 2) {
+      const a = road.points[0];
+      const b = road.points[road.points.length - 1];
+      const mid = road.points.length > 2 ? road.points[1] : null;
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const nx = -dz / len;
+      const nz = dx / len;
+      const midLat = mid ? (mid.x - a.x) * nx + (mid.z - a.z) * nz : 0;
+      const steps = 24;
+      const points = [];
+      const heights = [];
+      for (let k = 0; k <= steps; k++) {
+        const t = k / steps;
+        const latShift = 4 * t * (1 - t) * midLat;
+        points.push({
+          x: a.x + dx * t + nx * latShift,
+          z: a.z + dz * t + nz * latShift,
+        });
+        heights.push(truongTienElevation(t));
+      }
+      stitched.push({
+        ...road,
+        isBridgeRoute: true,
+        points,
+        heights,
+      });
+    } else if (road.tags.bridge === "yes") {
       stitched.push({
         ...road,
         isBridgeRoute: true,
@@ -141,6 +175,7 @@ export class GeographicTraffic extends TrafficSystem {
       footpaths = roads.filter(
         (r) =>
           r.tags.highway === "footway" &&
+          !TRUONG_TIEN_SIDEWALK_IDS.has(r.id) &&
           r.points.length > 3 &&
           r.points.some((p) => p.x > 0 && p.x < 1500 && p.z < 0 && p.z > -1700),
       );
@@ -226,7 +261,9 @@ export class GeographicTraffic extends TrafficSystem {
       actor.lane =
         actor.type === "pedestrian"
           ? pavement
-            ? roadWidth(road) / 2 + 1.1
+            ? road.id === TRUONG_TIEN_ID
+              ? 5.15
+              : roadWidth(road) / 2 + 1.1
             : 0
           : road.isBridgeRoute
             ? roadWidth(road) * (actor.type === "scooter" ? 0.34 : 0.18)
@@ -249,11 +286,13 @@ export class GeographicTraffic extends TrafficSystem {
           : this.world.groundAt(x, z, p.y),
       y =
         baseY +
-        (actor.type === "pedestrian" &&
-        actor.road?.tags?.name === "Cầu Phú Xuân" &&
-        p.y > 4
-          ? 0.16
-          : 0);
+        (actor.type === "pedestrian" && actor.road?.id === TRUONG_TIEN_ID
+          ? TRUONG_TIEN_WALK_LIFT
+          : actor.type === "pedestrian" &&
+              actor.road?.tags?.name === "Cầu Phú Xuân" &&
+              p.y > 4
+            ? 0.16
+            : 0);
     actor.mesh.position.set(x, y, z);
     actor.heading = Math.atan2(tx * actor.direction, tz * actor.direction);
     actor.mesh.rotation.y = actor.heading;

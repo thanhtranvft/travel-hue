@@ -8,6 +8,7 @@ export function optimizeMobileStaticScene(world) {
       ...(world.pedestrianLife?.people.map((p) => p.mesh) || []),
       ...(world.youthPlayground?.equipment.map((e) => e.group) || []),
       ...(world.propertyEnclosures?.parking?.cars || []),
+      ...(world.truongTienBridge?.animatedObjects || []),
     ]),
     batches = new Map(),
     loose = [],

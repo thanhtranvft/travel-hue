@@ -1,5 +1,8 @@
 import * as THREE from "three";
-import { addTruongTienBridge } from "../../modules/areas/truong-tien/view/BridgeView.js";
+import {
+  addTruongTienBridge,
+  truongTienDeckQuery,
+} from "../../modules/areas/truong-tien/view/BridgeView.js";
 import { addPhuXuanBridge } from "../../modules/areas/quoc-hoc/view/PhuXuanBridgeView.js";
 import {
   addLimWoodBoardwalk,
@@ -25,7 +28,11 @@ import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
 import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
 import { roadWidth } from "./roadProfile.js";
-import { roadSurfaceHeight } from "./roadSurface.js";
+import {
+  roadSurfaceHeight,
+  TRUONG_TIEN_ID,
+  TRUONG_TIEN_SIDEWALK_IDS,
+} from "./roadSurface.js";
 import {
   railSegments,
   hitsRail,
@@ -207,6 +214,7 @@ export class GeographicWorld {
     scene.add(ground);
     const waterMaterial = riverMaterial();
     this.waterMaterial = waterMaterial;
+    this.riverRings = river;
     for (const ring of river) {
       const water = new THREE.Mesh(polygonGeometry(ring), waterMaterial);
       water.position.y = 0.02;
@@ -242,6 +250,8 @@ export class GeographicWorld {
     const customSurfaceIds = new Set([
       ...boardwalkWayIds,
       ...LATERAL_BRIDGE_IDS,
+      TRUONG_TIEN_ID,
+      ...TRUONG_TIEN_SIDEWALK_IDS,
       39420686,
       39419121,
       39453301,
@@ -301,10 +311,8 @@ export class GeographicWorld {
     addMerged(sidewalks, "#c9c1ad");
     addMerged(paved, "#414749");
     addMerged(walkways, "#b4a78b");
-    addTruongTienBridge(
-      this,
-      roads.find((r) => r.id === 174759688),
-    );
+    this.truongTienRoad = roads.find((r) => r.id === TRUONG_TIEN_ID) || null;
+    addTruongTienBridge(this, this.truongTienRoad);
     addPhuXuanBridge(this, roads);
     const buildingGroups = [[], [], []],
       roofGroups = [];
@@ -611,7 +619,10 @@ export class GeographicWorld {
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
     scene.add(new THREE.HemisphereLight("#d9edff", "#687348", 2));
-    this.sun = new THREE.DirectionalLight("#fff1d5", 3);
+    this.sun = new THREE.DirectionalLight(
+      this.region?.id === "truong-tien" ? "#ffebd0" : "#fff1d5",
+      this.region?.id === "truong-tien" ? 3.2 : 3,
+    );
     this.sun.castShadow = Boolean(this.quality?.shadows);
     this.sun.shadow.mapSize.set(2048, 2048);
     Object.assign(this.sun.shadow.camera, {
@@ -644,9 +655,21 @@ export class GeographicWorld {
   }
   groundAt(x, z, referenceY) {
     const candidates = [];
+    if (this.truongTienRoad) {
+      const q = truongTienDeckQuery(this.truongTienRoad, x, z);
+      if (q.onBridge) {
+        candidates.push({ y: q.deckY, distance: Math.abs(q.lat) });
+      }
+    }
     for (const segment of this.roadGrid.get(
       `${Math.floor(x / 64)},${Math.floor(z / 64)}`,
     ) || []) {
+      if (
+        segment.road.id === TRUONG_TIEN_ID ||
+        TRUONG_TIEN_SIDEWALK_IDS.has(segment.road.id)
+      ) {
+        continue;
+      }
       const hit = nearestPoint({ x, z }, [segment.a, segment.b]);
       if (hit.distance > roadWidth(segment.road) / 2 + 0.6) continue;
       const y =
@@ -686,6 +709,16 @@ export class GeographicWorld {
       )
     )
       return false;
+    if (this.truongTienRoad) {
+      const q = truongTienDeckQuery(this.truongTienRoad, x, z);
+      if (
+        q.onBridge &&
+        (!Number.isFinite(referenceY) || Math.abs(q.deckY - referenceY) < 1.8)
+      ) {
+        if (q.allowed) return true;
+        if (river.some((r) => inside({ x, z }, r))) return false;
+      }
+    }
     const hit = this.nearestRoad(x, z);
     if (hit.road && hit.distance < roadWidth(hit.road) / 2 + 1.2) return true;
     if (river.some((r) => inside({ x, z }, r))) return false;
@@ -700,6 +733,7 @@ export class GeographicWorld {
   }
   update(time, position) {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
+    this.truongTienBridge?.update?.(time);
     this.youthPlayground?.update(time);
     this.propertyEnclosures?.update(time);
     if (position) {

@@ -2,11 +2,20 @@ import config from "../../data/world/pedestrians.json" with { type: "json" };
 import { features, pointsOf } from "../shared/geography/map.js";
 import { inside, nearestPoint } from "../shared/geography/geometry.js";
 import { roadWidth, isFootway } from "./roadProfile.js";
+import {
+  TRUONG_TIEN_ID,
+  TRUONG_TIEN_SIDEWALK_IDS,
+  TRUONG_TIEN_WALK_LIFT,
+  truongTienHeightAtPoint,
+} from "./roadSurface.js";
 import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
 import { makePerson, animateWalker } from "./People.js";
 import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
 
 export function pedestrianGround(world, road, p) {
+  if (road.id === TRUONG_TIEN_ID) {
+    return truongTienHeightAtPoint(road, p.x, p.z) + TRUONG_TIEN_WALK_LIFT;
+  }
   const hit = nearestPoint(p, road.points);
   const y =
     world.roadHeight(road, hit.index - 1) * (1 - hit.t) +
@@ -108,16 +117,17 @@ export class PedestrianLife {
     const pedestrianRoads = world.renderRoads
       .filter(
         (r) =>
-          isFootway(r) ||
-          [
-            "primary",
-            "secondary",
-            "tertiary",
-            "residential",
-            "service",
-            "unclassified",
-            "living_street",
-          ].includes(r.tags.highway),
+          !TRUONG_TIEN_SIDEWALK_IDS.has(r.id) &&
+          (isFootway(r) ||
+            [
+              "primary",
+              "secondary",
+              "tertiary",
+              "residential",
+              "service",
+              "unclassified",
+              "living_street",
+            ].includes(r.tags.highway)),
       )
       .sort((a, b) => (b.tags.name === "Lê Lợi") - (a.tags.name === "Lê Lợi"));
     // Both sides get paired walkers. Validate the entire short shuttle, not just endpoints.
@@ -134,11 +144,13 @@ export class PedestrianLife {
                 road.tags.bridge === "yes" || road.tags.layer === "2",
               offset = isFootway(road)
                 ? 0.75
-                : road.tags.name === "Cầu Phú Xuân" && bridge
-                  ? roadWidth(road) / 2 + 1.2
-                  : bridge
-                    ? roadWidth(road) / 2 - 1.5
-                    : roadWidth(road) / 2 + 1.1,
+                : road.id === TRUONG_TIEN_ID
+                  ? 5.15
+                  : road.tags.name === "Cầu Phú Xuân" && bridge
+                    ? roadWidth(road) / 2 + 1.2
+                    : bridge
+                      ? roadWidth(road) / 2 - 1.5
+                      : roadWidth(road) / 2 + 1.1,
               start = roadsidePoint(a, b, d, offset, side),
               end = roadsidePoint(
                 a,

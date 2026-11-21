@@ -52,7 +52,7 @@ export function addStreetDetails(world, features) {
   const material = new THREE.MeshStandardMaterial({ color: "#eadfac" }),
     white = new THREE.MeshStandardMaterial({ color: "#eee9da" });
   for (const road of renderRoads.filter(
-    (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân",
+    (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân" && r.id !== 174759688,
   )) {
     let distance = 0,
       lastSign = -140;
