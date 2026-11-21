@@ -56,6 +56,8 @@ import { loadSharedModel } from "../shared/resources/sceneResources.js";
 export { roadWidth } from "./roadProfile.js";
 import { landmarkModules } from "../shared/architecture/registry.js";
 import { createBiaQuocHocPark } from "../../modules/areas/quoc-hoc/view/BiaQuocHocPark.js";
+import { createFireflyTreePark } from "../../modules/areas/quoc-hoc/view/FireflyTreePark.js";
+import { createFountainPark } from "../../modules/areas/quoc-hoc/view/FountainPark.js";
 import { surfaceTexture } from "./surfaceTextures.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { beam } from "../shared/architecture/architecture.js";
@@ -506,7 +508,75 @@ export class GeographicWorld {
         object.rotation.y = sign.rotation.y;
         scene.add(object);
         if (site.id === "quoc-hoc") {
-          this.quocHocPark = createBiaQuocHocPark(this, site, sign.rotation.y);
+          const haiBaTrungSite = sites.find((s) => s.id === "hai-ba-trung");
+          const ubndSite = sites.find((s) => s.id === "ubnd");
+          this.biaPark = createBiaQuocHocPark(this, site, sign.rotation.y);
+          this.fireflyPark = createFireflyTreePark(this, site, sign.rotation.y, {
+            haiBaTrung: haiBaTrungSite
+              ? {
+                  ...haiBaTrungSite,
+                  sign:
+                    this.schoolGates.find((g) => g.id === "hai-ba-trung") ||
+                    haiBaTrungSite.sign,
+                }
+              : null,
+          });
+          this.fountainPark = createFountainPark(this, site, sign.rotation.y, {
+            ubnd: ubndSite,
+          });
+          this.riversideParks = [
+            this.biaPark,
+            this.fireflyPark,
+            this.fountainPark,
+          ];
+          this.quocHocPark = {
+            groundAt: (wx, wz, referenceY) => {
+              for (const park of this.riversideParks) {
+                const y = park.groundAt(wx, wz, referenceY);
+                if (y !== null && y !== undefined) return y;
+              }
+              return null;
+            },
+            canRide: (wx, wz) => {
+              for (const park of this.riversideParks) {
+                const ride = park.canRide(wx, wz);
+                if (ride !== null && ride !== undefined) return ride;
+              }
+              return null;
+            },
+            blocksGrass: (wx, wz) =>
+              this.riversideParks.some((park) => park.blocksGrass(wx, wz)),
+            blocksTree: (wx, wz) =>
+              this.riversideParks.some((park) => park.blocksTree(wx, wz)),
+          };
+          if (haiBaTrungSite && this.fireflyPark?.treeCenterLocal) {
+            const c = this.biaPark.toWorld(
+              this.fireflyPark.treeCenterLocal.lx,
+              this.fireflyPark.treeCenterLocal.lz,
+            );
+            this.landmarks.set("firefly-park", {
+              id: "firefly-park",
+              title: "Công viên Cây Đom Đóm",
+              position: c,
+              radius: 42,
+              description:
+                "Đối diện cổng Trường Hai Bà Trưng · Cây đa ước nguyện với hàng trăm dải lụa đỏ và đèn đom đóm lung linh bên bờ sông Hương.",
+            });
+          }
+          if (ubndSite && this.fountainPark?.fountainCenterLocal) {
+            const f = this.biaPark.toWorld(
+              this.fountainPark.fountainCenterLocal.lx,
+              this.fountainPark.fountainCenterLocal.lz,
+            );
+            this.landmarks.set("fountain-park", {
+              id: "fountain-park",
+              title: "Công viên Đài Phun Nước",
+              position: f,
+              radius: 45,
+              description:
+                "Đối diện UBND Thành phố Huế · Quảng trường đài phun nước trung tâm, thảm hoa cúc vàng và hàng cọ ven sông Hương.",
+            });
+          }
           this.cameraObstacles.push(object);
         }
       }
@@ -772,6 +842,8 @@ export class GeographicWorld {
   update(time, position) {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
     this.truongTienBridge?.update?.(time);
+    this.fireflyPark?.update?.(time);
+    this.fountainPark?.update?.(time);
     this.youthPlayground?.update(time);
     this.propertyEnclosures?.update(time);
     if (position) {

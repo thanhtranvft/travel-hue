@@ -9,6 +9,8 @@ export function optimizeMobileStaticScene(world) {
       ...(world.youthPlayground?.equipment.map((e) => e.group) || []),
       ...(world.propertyEnclosures?.parking?.cars || []),
       ...(world.truongTienBridge?.animatedObjects || []),
+      ...(world.fireflyPark?.animatedObjects || []),
+      ...(world.fountainPark?.animatedObjects || []),
     ]),
     batches = new Map(),
     loose = [],
