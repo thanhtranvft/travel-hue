@@ -2,6 +2,8 @@ import { isFootway } from "./roadProfile.js";
 export const ROAD_Y = 0.32;
 export const FOOTWAY_Y = 0.12;
 export const SIDEWALK_Y = 0.16;
+const BOARDWALK_IDS = new Set([1167513732, 1167513733, 683633953]);
+export const BOARDWALK_Y = 0.68;
 export function roadSurfaceHeight(road, index) {
   const base = isFootway(road) ? FOOTWAY_Y : ROAD_Y;
   // Phu Xuan is above the layer-1 riverside boardwalk. OSM vertex spacing
@@ -21,6 +23,7 @@ export function roadSurfaceHeight(road, index) {
     const t = distance / (total || 1);
     return ROAD_Y + (4.8 - ROAD_Y) * (1 - t);
   }
+  if (BOARDWALK_IDS.has(road.id)) return BOARDWALK_Y;
   if (isFootway(road) && road.tags.layer === "2") return 4.8;
   if (road.tags.bridge === "yes" || road.tags.layer === "2") {
     const t = index / Math.max(1, road.points.length - 1);

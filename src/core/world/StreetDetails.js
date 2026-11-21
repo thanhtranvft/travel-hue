@@ -51,7 +51,9 @@ export function addStreetDetails(world, features) {
   };
   const material = new THREE.MeshStandardMaterial({ color: "#eadfac" }),
     white = new THREE.MeshStandardMaterial({ color: "#eee9da" });
-  for (const road of renderRoads.filter((r) => !isFootway(r))) {
+  for (const road of renderRoads.filter(
+    (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân",
+  )) {
     let distance = 0,
       lastSign = -140;
     for (let i = 1; i < road.points.length; i++) {
@@ -109,25 +111,26 @@ export function addStreetDetails(world, features) {
           scene.add(label);
         }
         lastSign = distance;
-        for (const side of [-1, 1]) {
-          const p = roadsidePoint(
-            a,
-            b,
-            Math.min(12, len / 2),
-            roadWidth(road) / 2 + 1.8,
-            side,
-          );
-          if (onOtherCarriageway(p, { id: null }, renderRoads, 1)) continue;
-          const lamp = new THREE.Group();
-          lamp.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
-          lamp.add(
-            box([0.18, 7, 0.18], "#455755", [0, 3.5, 0]),
-            box([1.4, 0.14, 0.2], "#455755", [0.6, 7, 0]),
-            box([0.8, 0.12, 0.4], "#f2e1ad", [1, 6.9, 0]),
-          );
-          scene.add(lamp);
-          world.streetLampPositions.push(p);
-        }
+        if (road.tags.bridge !== "yes" && road.tags.name !== "Cầu Phú Xuân")
+          for (const side of [-1, 1]) {
+            const p = roadsidePoint(
+              a,
+              b,
+              Math.min(12, len / 2),
+              roadWidth(road) / 2 + 1.8,
+              side,
+            );
+            if (onOtherCarriageway(p, { id: null }, renderRoads, 1)) continue;
+            const lamp = new THREE.Group();
+            lamp.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
+            lamp.add(
+              box([0.18, 7, 0.18], "#455755", [0, 3.5, 0]),
+              box([1.4, 0.14, 0.2], "#455755", [0.6, 7, 0]),
+              box([0.8, 0.12, 0.4], "#f2e1ad", [1, 6.9, 0]),
+            );
+            scene.add(lamp);
+            world.streetLampPositions.push(p);
+          }
       }
       distance += len;
     }

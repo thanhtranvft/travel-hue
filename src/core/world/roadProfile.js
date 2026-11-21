@@ -5,7 +5,7 @@ export function roadWidth(r) {
   const mapped = Number.parseFloat(r.tags.width) || 0;
   return Math.max(
     mapped,
-    r.tags.name === "Cầu Trường Tiền"
+    r.tags.name === "Cầu Trường Tiền" || r.tags.name === "Cầu Phú Xuân"
       ? 14
       : r.tags.name === "Lê Lợi"
         ? 14

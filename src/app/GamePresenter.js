@@ -384,7 +384,11 @@ export class GamePresenter {
     if (
       !Number.isFinite(this.bike.position.x) ||
       !Number.isFinite(this.bike.position.z) ||
-      !this.world.canRide(this.bike.position.x, this.bike.position.z)
+      !this.world.canRide(
+        this.bike.position.x,
+        this.bike.position.z,
+        this.bike.position.y,
+      )
     ) {
       if (
         Number.isFinite(this.bike.position.x) &&

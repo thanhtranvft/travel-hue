@@ -1,5 +1,11 @@
 import * as THREE from "three";
 import { addTruongTienBridge } from "../../modules/areas/truong-tien/view/BridgeView.js";
+import { addPhuXuanBridge } from "../../modules/areas/quoc-hoc/view/PhuXuanBridgeView.js";
+import {
+  addLimWoodBoardwalk,
+  LATERAL_BRIDGE_IDS,
+  lateralBridgeHeight,
+} from "../../modules/areas/south-bank/view/BoardwalkView.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { SharedModelLoader as GLTFLoader } from "../shared/resources/sceneResources.js";
 import {
@@ -228,20 +234,30 @@ export class GeographicWorld {
           p.z <= this.bounds.maxZ,
       ),
     );
+    this.boardwalkMainPoints = [683633953, 1167513733, 1167513732]
+      .flatMap((id, idx) => {
+        const pts = roads.find((r) => r.id === id)?.points || [];
+        return idx === 0 ? pts : pts.slice(1);
+      });
+    const customSurfaceIds = new Set([
+      ...boardwalkWayIds,
+      ...LATERAL_BRIDGE_IDS,
+      39420686,
+      39419121,
+      39453301,
+      1167997489,
+      1167997491,
+    ]);
     const paved = [],
       walkways = [],
-      wooden = [],
       sidewalks = [];
     for (const road of this.renderRoads) {
       const width = roadWidth(road),
         foot = ["footway", "path", "pedestrian"].includes(road.tags.highway);
       const height = (i) => this.roadHeight(road, i);
-      (boardwalkWayIds.includes(road.id)
-        ? wooden
-        : foot
-          ? walkways
-          : paved
-      ).push(ribbon(road.points, width, height));
+      if (!customSurfaceIds.has(road.id) && road.tags.name !== "Cầu Phú Xuân") {
+        (foot ? walkways : paved).push(ribbon(road.points, width, height));
+      }
       if (!foot && !road.tags.bridge)
         sidewalks.push(ribbon(road.points, width + 4, 0.16));
       for (let i = 1; i < road.points.length; i++)
@@ -285,11 +301,11 @@ export class GeographicWorld {
     addMerged(sidewalks, "#c9c1ad");
     addMerged(paved, "#414749");
     addMerged(walkways, "#b4a78b");
-    addMerged(wooden, "#947052");
     addTruongTienBridge(
       this,
       roads.find((r) => r.id === 174759688),
     );
+    addPhuXuanBridge(this, roads);
     const buildingGroups = [[], [], []],
       roofGroups = [];
     let rendered = 0;
@@ -571,28 +587,22 @@ export class GeographicWorld {
     this.projectPoint = project;
     this.riverRings = river;
     addStreetDetails(this, features);
+    const boardwalkView = addLimWoodBoardwalk(this, roads);
+    const lateralJunctions = boardwalkView?.lateralJunctions || [];
     this.boardwalkRails = [];
     for (const road of this.renderRoads.filter((r) =>
       boardwalkWayIds.includes(r.id),
     )) {
       const segments = railSegments(road, roadWidth(road), (i) =>
         this.roadHeight(road, i),
-      );
+      ).filter(({ a, b }) => {
+        const mx = (a.x + b.x) / 2;
+        const mz = (a.z + b.z) / 2;
+        return lateralJunctions.every(
+          (j) => Math.hypot(mx - j.x, mz - j.z) >= 2.1,
+        );
+      });
       this.boardwalkRails.push(...segments);
-      for (const { a, b } of segments) {
-        for (const y of [0.55, 1.15])
-          scene.add(
-            beam([a.x, a.y + y, a.z], [b.x, b.y + y, b.z], 0.075, "#785638"),
-          );
-        const length = Math.hypot(b.x - a.x, b.z - a.z);
-        for (let d = 0; d < length; d += 2) {
-          const t = d / length,
-            x = a.x + (b.x - a.x) * t,
-            z = a.z + (b.z - a.z) * t,
-            y = a.y + (b.y - a.y) * t;
-          scene.add(box([0.12, 1.25, 0.12], "#735335", [x, y + 0.625, z]));
-        }
-      }
     }
     this.youthPlayground = byId(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
@@ -616,6 +626,9 @@ export class GeographicWorld {
     scene.add(this.sun, this.sun.target);
   }
   roadHeight(road, index) {
+    if (LATERAL_BRIDGE_IDS.includes(road.id) && this.boardwalkMainPoints?.length) {
+      return lateralBridgeHeight(road, index, this.boardwalkMainPoints);
+    }
     return roadSurfaceHeight(road, index);
   }
   nearestRoad(x, z) {
@@ -655,7 +668,7 @@ export class GeographicWorld {
       ? nearbyWalls(this.campusWallGrid, x, z)
       : this.campusWallSegments || [];
   }
-  canRide(x, z) {
+  canRide(x, z, referenceY) {
     if (this.station?.blocks(x, z)) return false;
     if (!regionContains(this.region, x, z)) return false;
     if (
@@ -666,7 +679,12 @@ export class GeographicWorld {
     )
       return false;
     if (hitsCampusWall({ x, z }, this.nearCampusWalls(x, z))) return false;
-    if (hitsRail({ x, z, y: this.groundAt(x, z) }, this.boardwalkRails || []))
+    if (
+      hitsRail(
+        { x, z, y: this.groundAt(x, z, referenceY) },
+        this.boardwalkRails || [],
+      )
+    )
       return false;
     const hit = this.nearestRoad(x, z);
     if (hit.road && hit.distance < roadWidth(hit.road) / 2 + 1.2) return true;

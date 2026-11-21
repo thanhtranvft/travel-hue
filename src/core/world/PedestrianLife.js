@@ -8,10 +8,15 @@ import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
 
 export function pedestrianGround(world, road, p) {
   const hit = nearestPoint(p, road.points);
-  return (
+  const y =
     world.roadHeight(road, hit.index - 1) * (1 - hit.t) +
-    world.roadHeight(road, hit.index) * hit.t
-  );
+    world.roadHeight(road, hit.index) * hit.t;
+  const onPhuXuanSidewalk =
+    (!isFootway(road) &&
+      road.tags.name === "Cầu Phú Xuân" &&
+      (road.tags.bridge === "yes" || road.tags.layer === "2")) ||
+    (isFootway(road) && road.tags.layer === "2");
+  return onPhuXuanSidewalk ? y + 0.16 : y;
 }
 export function pedestrianSafe(world, p, park, walkwayRoad) {
   const bridge =
@@ -129,9 +134,11 @@ export class PedestrianLife {
                 road.tags.bridge === "yes" || road.tags.layer === "2",
               offset = isFootway(road)
                 ? 0.75
-                : bridge
-                  ? roadWidth(road) / 2 - 1.5
-                  : roadWidth(road) / 2 + 1.1,
+                : road.tags.name === "Cầu Phú Xuân" && bridge
+                  ? roadWidth(road) / 2 + 1.2
+                  : bridge
+                    ? roadWidth(road) / 2 - 1.5
+                    : roadWidth(road) / 2 + 1.1,
               start = roadsidePoint(a, b, d, offset, side),
               end = roadsidePoint(
                 a,

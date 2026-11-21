@@ -32,6 +32,69 @@ function truck() {
   return g;
 }
 
+const PHU_XUAN_RAMP_SOUTH = 39420686;
+const PHU_XUAN_SPAN = 39419121;
+const PHU_XUAN_RAMP_NORTH = 39453301;
+
+export function stitchBridgeRoutes(roads, world) {
+  const heightAt = (road, index) =>
+    world?.roadHeight ? world.roadHeight(road, index) : 0.32;
+  const south = roads.find((r) => r.id === PHU_XUAN_RAMP_SOUTH);
+  const span = roads.find((r) => r.id === PHU_XUAN_SPAN);
+  const north = roads.find((r) => r.id === PHU_XUAN_RAMP_NORTH);
+  const phuXuanIds = new Set([
+    PHU_XUAN_RAMP_SOUTH,
+    PHU_XUAN_SPAN,
+    PHU_XUAN_RAMP_NORTH,
+  ]);
+  const stitched = [];
+  for (const road of roads) {
+    if (phuXuanIds.has(road.id)) continue;
+    if (road.id === 174759688 || road.tags.bridge === "yes") {
+      stitched.push({
+        ...road,
+        isBridgeRoute: true,
+        heights: road.points.map((_, i) => heightAt(road, i)),
+      });
+    } else {
+      stitched.push(road);
+    }
+  }
+  if (south && span) {
+    const southPts = south.points.slice().reverse();
+    const southH = south.points.map((_, i) => heightAt(south, i)).reverse();
+    const spanPts = span.points.slice(1);
+    const spanH = span.points.slice(1).map((_, i) => heightAt(span, i + 1));
+    const northPts = north ? north.points.slice(1) : [];
+    const northH = north
+      ? north.points.slice(1).map((_, i) => heightAt(north, i + 1))
+      : [];
+    stitched.unshift({
+      ...span,
+      id: "phu-xuan-corridor",
+      tags: {
+        ...span.tags,
+        name: "Cầu Phú Xuân",
+        bridge: "yes",
+        lanes: "4",
+      },
+      isBridgeRoute: true,
+      points: [...southPts, ...spanPts, ...northPts],
+      heights: [...southH, ...spanH, ...northH],
+    });
+  } else {
+    for (const road of roads) {
+      if (!phuXuanIds.has(road.id)) continue;
+      stitched.push({
+        ...road,
+        isBridgeRoute: true,
+        heights: road.points.map((_, i) => heightAt(road, i)),
+      });
+    }
+  }
+  return stitched;
+}
+
 export class GeographicTraffic extends TrafficSystem {
   constructor(scene, world) {
     super(scene, world);
@@ -69,11 +132,12 @@ export class GeographicTraffic extends TrafficSystem {
         "x",
         1,
       );
-    const vehicleRoads = mainRoads
+    const rawVehicleRoads = mainRoads
         .filter((r) => r.points.length > 2)
         .sort(
           (a, b) => (b.tags.name === "Lê Lợi") - (a.tags.name === "Lê Lợi"),
         ),
+      vehicleRoads = stitchBridgeRoutes(rawVehicleRoads, this.world),
       footpaths = roads.filter(
         (r) =>
           r.tags.highway === "footway" &&
@@ -119,30 +183,41 @@ export class GeographicTraffic extends TrafficSystem {
         });
       });
     }
+    const bridgeRoads = vehicleRoads.filter((r) => r.isBridgeRoute);
     this.actors.forEach((actor, index) => {
       const pavement = actor.type === "pedestrian" && index % 2 === 0,
         candidates =
           actor.type === "pedestrian" && !pavement ? footpaths : vehicleRoads,
         road =
           actor.patrolRoad ||
-          candidates[
-            actor.type !== "pedestrian" && index % 2 === 0
-              ? index %
-                Math.max(
-                  1,
-                  candidates.filter((r) => r.tags.name === "Lê Lợi").length,
-                )
-              : index % candidates.length
-          ],
+          (actor.type !== "pedestrian" &&
+          bridgeRoads.length &&
+          index % 4 === 1
+            ? bridgeRoads[Math.floor(index / 4) % bridgeRoads.length]
+            : candidates[
+                actor.type !== "pedestrian" && index % 2 === 0
+                  ? index %
+                    Math.max(
+                      1,
+                      candidates.filter((r) => r.tags.name === "Lê Lợi").length,
+                    )
+                  : index % candidates.length
+              ]),
         points = road.points;
+      actor.road = road;
       actor.track = new THREE.CurvePath();
-      for (let i = 1; i < points.length; i++)
+      for (let i = 1; i < points.length; i++) {
+        const y0 = road.heights
+            ? road.heights[i - 1]
+            : this.world.roadHeight(road, i - 1),
+          y1 = road.heights ? road.heights[i] : this.world.roadHeight(road, i);
         actor.track.add(
           new THREE.LineCurve3(
-            new THREE.Vector3(points[i - 1].x, 0, points[i - 1].z),
-            new THREE.Vector3(points[i].x, 0, points[i].z),
+            new THREE.Vector3(points[i - 1].x, y0, points[i - 1].z),
+            new THREE.Vector3(points[i].x, y1, points[i].z),
           ),
         );
+      }
       actor.trackLength = actor.track.getLength();
       actor.progress = actor.isPolice
         ? 0.07 + actor.patrolIndex * 0.5
@@ -153,19 +228,34 @@ export class GeographicTraffic extends TrafficSystem {
           ? pavement
             ? roadWidth(road) / 2 + 1.1
             : 0
-          : roadWidth(road) * 0.25;
+          : road.isBridgeRoute
+            ? roadWidth(road) * (actor.type === "scooter" ? 0.34 : 0.18)
+            : roadWidth(road) * 0.25;
       this.place(actor);
     });
   }
   place(actor) {
     const p = actor.track.getPointAt(actor.progress),
-      t = actor.track.getTangentAt(actor.progress);
-    actor.mesh.position.set(
-      p.x - t.z * actor.lane * actor.direction,
-      this.world.groundAt(p.x, p.z, actor.mesh.position.y),
-      p.z + t.x * actor.lane * actor.direction,
-    );
-    actor.heading = Math.atan2(t.x * actor.direction, t.z * actor.direction);
+      t = actor.track.getTangentAt(actor.progress),
+      hLen = Math.hypot(t.x, t.z) || 1,
+      tx = t.x / hLen,
+      tz = t.z / hLen,
+      x = p.x - tz * actor.lane * actor.direction,
+      z = p.z + tx * actor.lane * actor.direction,
+      baseY = actor.road?.isBridgeRoute
+        ? p.y
+        : p.y > 0.45
+          ? p.y
+          : this.world.groundAt(x, z, p.y),
+      y =
+        baseY +
+        (actor.type === "pedestrian" &&
+        actor.road?.tags?.name === "Cầu Phú Xuân" &&
+        p.y > 4
+          ? 0.16
+          : 0);
+    actor.mesh.position.set(x, y, z);
+    actor.heading = Math.atan2(tx * actor.direction, tz * actor.direction);
     actor.mesh.rotation.y = actor.heading;
     actor.previous = { x: actor.mesh.position.x, z: actor.mesh.position.z };
   }
