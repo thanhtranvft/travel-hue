@@ -55,6 +55,7 @@ import { regionContains, byId } from "../../modules/areas/AreaModel.js";
 import { loadSharedModel } from "../shared/resources/sceneResources.js";
 export { roadWidth } from "./roadProfile.js";
 import { landmarkModules } from "../shared/architecture/registry.js";
+import { createBiaQuocHocPark } from "../../modules/areas/quoc-hoc/view/BiaQuocHocPark.js";
 import { surfaceTexture } from "./surfaceTextures.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { beam } from "../shared/architecture/architecture.js";
@@ -482,24 +483,32 @@ export class GeographicWorld {
       if (
         site.kind === "school" ||
         site.kind === "station" ||
-        site.id === "truong-tien"
+        site.id === "truong-tien" ||
+        site.id === "quoc-hoc"
       ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
       }
+      const module = landmarkModules.find((m) => m.id === site.id);
       this.landmarks.set(site.id, {
         id: site.id,
         title: site.title,
         position: site.sign,
-        radius: isArea ? 100 : 45,
-        description: `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
+        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : 45,
+        description:
+          site.id === "quoc-hoc" && module?.description
+            ? `${site.address}. ${module.description}`
+            : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
       });
-      const module = landmarkModules.find((m) => m.id === site.id);
       if (module && site.id !== "truong-tien") {
         const object = module.create();
         object.position.set(site.center.x, 0.23, site.center.z);
         object.rotation.y = sign.rotation.y;
         scene.add(object);
+        if (site.id === "quoc-hoc") {
+          this.quocHocPark = createBiaQuocHocPark(this, site, sign.rotation.y);
+          this.cameraObstacles.push(object);
+        }
       }
     }
     for (const crossing of corridorCrossings) {
@@ -600,10 +609,20 @@ export class GeographicWorld {
             this.treePositions.push(p);
         }
       }
+    if (this.quocHocPark) {
+      this.treePositions = this.treePositions.filter(
+        (p) => !this.quocHocPark.blocksTree(p.x, p.z),
+      );
+    }
     this.treePositions = this.treePositions.slice(0, 95);
     this.projectPoint = project;
     this.riverRings = river;
     addStreetDetails(this, features);
+    if (this.quocHocPark) {
+      this.treePositions = this.treePositions.filter(
+        (p) => !this.quocHocPark.blocksTree(p.x, p.z),
+      );
+    }
     const boardwalkView = addLimWoodBoardwalk(this, roads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
     this.boardwalkRails = [];
@@ -623,19 +642,6 @@ export class GeographicWorld {
     }
     this.youthPlayground = byId(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
-    const kqt = this.propertyEnclosures.records.find(
-      (p) => p.id === "property-TN-0100",
-    );
-    if (kqt && !this.landmarks.has("khoa-quoc-te")) {
-      this.landmarks.set("khoa-quoc-te", {
-        id: "khoa-quoc-te",
-        title: kqt.title,
-        position: kqt.gate,
-        radius: 45,
-        description:
-          "4 Lê Lợi · Điểm xuất phát tuyến Ga Huế → Tràng Tiền (OSM way/695775617).",
-      });
-    }
     this.station = byId(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.grass = new LivingGrass(this);
@@ -676,6 +682,14 @@ export class GeographicWorld {
     return result;
   }
   groundAt(x, z, referenceY) {
+    const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
+    if (
+      parkY !== null &&
+      parkY !== undefined &&
+      (!Number.isFinite(referenceY) || referenceY < 1.8)
+    ) {
+      return parkY;
+    }
     const candidates = [];
     if (this.truongTienRoad) {
       const q = truongTienDeckQuery(this.truongTienRoad, x, z);
@@ -731,6 +745,8 @@ export class GeographicWorld {
       )
     )
       return false;
+    const parkRide = this.quocHocPark?.canRide(x, z);
+    if (parkRide !== null && parkRide !== undefined) return parkRide;
     if (this.truongTienRoad) {
       const q = truongTienDeckQuery(this.truongTienRoad, x, z);
       if (

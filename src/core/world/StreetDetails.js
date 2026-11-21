@@ -216,6 +216,7 @@ export function addStreetDetails(world, features) {
           if (
             world.riverRings.some((r) => inside(p, r)) ||
             world.buildingPolygons.some((b) => inside(p, b.points)) ||
+            world.quocHocPark?.blocksTree(p.x, p.z) ||
             onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;

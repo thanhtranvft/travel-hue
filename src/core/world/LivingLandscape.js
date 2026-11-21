@@ -126,6 +126,7 @@ export class LivingGrass {
         })
       )
         continue;
+      if (world.quocHocPark?.blocksGrass(p.x, p.z)) continue;
       this.dummy.position.set(p.x, 0.055, p.z);
       this.dummy.rotation.y = random() * Math.PI;
       this.dummy.scale.setScalar(0.5 + random() * 1.1);
