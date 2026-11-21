@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
+import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -58,28 +59,7 @@ function createGranitePlazaTexture() {
 }
 
 function createTerraceGrassTexture() {
-  return createCanvasTexture(
-    256,
-    256,
-    (ctx, w, h) => {
-      ctx.fillStyle = "#56883c";
-      ctx.fillRect(0, 0, w, h);
-      // Soft mowed lawn stripes
-      for (let y = 0; y < h; y += 32) {
-        ctx.fillStyle = (y / 32) % 2 ? "#4e7e36" : "#5e9243";
-        ctx.fillRect(0, y, w, 32);
-      }
-      for (let i = 0; i < 650; i++) {
-        const x = (i * 97) % w;
-        const y = (i * 179) % h;
-        ctx.fillStyle =
-          i % 2 ? "rgba(128,176,82,0.22)" : "rgba(52,86,32,0.18)";
-        ctx.fillRect(x, y, 3, 2);
-      }
-    },
-    8,
-    3,
-  );
+  return createManicuredLawnTexture(8, 3, { striped: true, rich: true });
 }
 
 function createOverlookWoodTexture() {

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
+import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -50,25 +51,7 @@ function createFountainGraniteTexture() {
 }
 
 function createMarigoldLawnTexture() {
-  return createCanvasTexture(
-    256,
-    256,
-    (ctx, w, h) => {
-      ctx.fillStyle = "#4c8434";
-      ctx.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 32) {
-        ctx.fillStyle = (y / 32) % 2 ? "#457a2e" : "#558e3b";
-        ctx.fillRect(0, y, w, 32);
-      }
-      for (let i = 0; i < 600; i++) {
-        ctx.fillStyle =
-          i % 2 ? "rgba(130, 185, 80, 0.22)" : "rgba(44, 78, 28, 0.2)";
-        ctx.fillRect((i * 79) % w, (i * 167) % h, 3, 2);
-      }
-    },
-    10,
-    8,
-  );
+  return createManicuredLawnTexture(10, 8, { striped: true, rich: true });
 }
 
 function createMarigoldBloomTexture() {
@@ -604,6 +587,86 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   riverWalk.position.set(292, 0.12, -14.2);
   riverWalk.receiveShadow = true;
 
+  // Lê Lợi South Perimeter Walk linking wing footpaths along Lê Lợi curb
+  const frontWalk = new THREE.Mesh(
+    new THREE.BoxGeometry(148, 0.24, 3.2),
+    graniteMat,
+  );
+  frontWalk.position.set(292, 0.12, 37.6);
+  frontWalk.receiveShadow = true;
+
+  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (lx = 218..254 & 325..366)
+  const wingWalkSegments = [
+    // West wing connecting to FireflyTreePark (lx = 218)
+    { a: { lx: cx - 36, lz: cz }, b: { lx: 218, lz: cz }, width: 3.4 },
+    { a: { lx: cx - 35, lz: cz + 4 }, b: { lx: 234, lz: 37.6 }, width: 3.0 },
+    { a: { lx: cx - 35, lz: cz - 4 }, b: { lx: 232, lz: -14.2 }, width: 3.0 },
+    { a: { lx: 234, lz: 37.6 }, b: { lx: 218, lz: 22.0 }, width: 2.8 },
+    // East wing connecting seamlessly into PhuXuanParkWalk (lx = 366 -> Cầu Phú Xuân)
+    { a: { lx: cx + 36, lz: cz }, b: { lx: 366, lz: cz }, width: 3.4 },
+    { a: { lx: cx + 35, lz: cz + 4 }, b: { lx: 345, lz: 37.6 }, width: 3.0 },
+    { a: { lx: cx + 35, lz: cz - 4 }, b: { lx: 348, lz: -14.2 }, width: 3.0 },
+    { a: { lx: 345, lz: 37.6 }, b: { lx: 366, lz: 22.0 }, width: 2.8 },
+    { a: { lx: 348, lz: -14.2 }, b: { lx: 366, lz: cz }, width: 2.8 },
+  ];
+  const buildWingRibbon = (a, b, width) => {
+    const dx = b.lx - a.lx;
+    const dz = b.lz - a.lz;
+    const len = Math.hypot(dx, dz) || 1;
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(width, 0.24, len + 0.6),
+      graniteMat,
+    );
+    mesh.position.set((a.lx + b.lx) / 2, 0.12, (a.lz + b.lz) / 2);
+    mesh.rotation.y = Math.atan2(dx, dz);
+    mesh.receiveShadow = true;
+    return mesh;
+  };
+  wingWalkSegments.forEach((seg) => group.add(buildWingRibbon(seg.a, seg.b, seg.width)));
+
+  // Boxwood-trimmed wing parterres & rounded clipped shrubs on left & right wings
+  const buildWingHedgeBed = (pts, withMarigold = false) => {
+    const g = new THREE.Group();
+    const s = new THREE.Shape(pts.map(([x, z]) => new THREE.Vector2(x, -z)));
+    const hGeo = new THREE.ExtrudeGeometry(s, { depth: 0.24, bevelEnabled: false });
+    hGeo.rotateX(-Math.PI / 2);
+    const hedge = new THREE.Mesh(hGeo, mat("#366d29", 0.88));
+    hedge.position.y = 0.13;
+    hedge.castShadow = hedge.receiveShadow = true;
+    g.add(hedge);
+    let mx = 0;
+    let mz = 0;
+    for (const [x, z] of pts) {
+      mx += x;
+      mz += z;
+    }
+    mx /= pts.length;
+    mz /= pts.length;
+    for (const [x, z] of pts) {
+      const shrub = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.46, 1),
+        mat("#2b5e22", 0.84),
+      );
+      shrub.position.set(mx + (x - mx) * 0.68, 0.52, mz + (z - mz) * 0.68);
+      shrub.scale.set(1.05, 0.82, 1.05);
+      shrub.castShadow = true;
+      g.add(shrub);
+    }
+    if (withMarigold) {
+      const mound = new THREE.Mesh(new THREE.SphereGeometry(2.0, 12, 8), marigoldMat);
+      mound.position.set(mx, 0.34, mz);
+      mound.scale.set(1.2, 0.14, 1.0);
+      g.add(mound);
+    }
+    return g;
+  };
+  group.add(
+    buildWingHedgeBed([[336, 33], [358, 22], [358, 11], [336, 15]], true),
+    buildWingHedgeBed([[336, 1], [358, 1], [349, -10]], false),
+    buildWingHedgeBed([[224, 33], [244, 15], [224, 15]], true),
+    buildWingHedgeBed([[224, 1], [242, 1], [231, -10]], false),
+  );
+
   // Central riverfront granite stairway down to the Perfume River edge
   const stairTopZ = -16.5;
   const stairBotZ = sampleShoreZ(cx) + 0.5;
@@ -616,7 +679,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   riverStair.rotation.x = -Math.atan2(0.14, stairLen);
   riverStair.receiveShadow = true;
 
-  group.add(plazaDisk, nsWalk, frontRamp, ewWalk, riverWalk, riverStair);
+  group.add(plazaDisk, nsWalk, frontRamp, ewWalk, riverWalk, frontWalk, riverStair);
 
   // 3. CENTRAL SCALLOPED / LOBED FOUNTAIN BASIN (cx, cz)
   const basinRadius = 11.0;
@@ -853,13 +916,28 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Central circular plaza & cross-axial granite promenades
+      // Central circular plaza & cross-axial granite promenades + wing small footpaths
       if (Math.hypot(lx - cx, lz - cz) <= plazaRadius + 0.5) return 0.24;
       if (Math.abs(lx - cx) <= 5.8 && lz >= -16.6 && lz <= 38.8) return 0.24;
       if (Math.abs(lx - cx) <= 36 && Math.abs(lz - cz) <= 4.3) return 0.24;
       if (Math.hypot(lx - (cx - 27), lz - cz) <= 11.5) return 0.24;
       if (Math.hypot(lx - (cx + 27), lz - cz) <= 11.5) return 0.24;
       if (lz >= -16.6 && lz <= -11.8) return 0.24;
+      if (lz >= 36.0 && lz <= 39.2) return 0.24;
+      for (const seg of wingWalkSegments) {
+        const dx = seg.b.lx - seg.a.lx;
+        const dz = seg.b.lz - seg.a.lz;
+        const lenSq = dx * dx + dz * dz || 1;
+        const t = Math.max(
+          0,
+          Math.min(1, ((lx - seg.a.lx) * dx + (lz - seg.a.lz) * dz) / lenSq),
+        );
+        const dist = Math.hypot(
+          lx - (seg.a.lx + dx * t),
+          lz - (seg.a.lz + dz * t),
+        );
+        if (dist <= seg.width / 2 + 0.35) return 0.24;
+      }
 
       // Approach ramp at Lê Lợi
       if (Math.abs(lx - cx) <= 6.1 && lz > 38.8 && lz <= 40.7) {

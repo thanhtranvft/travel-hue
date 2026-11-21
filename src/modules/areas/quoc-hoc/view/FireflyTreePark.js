@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
+import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -75,25 +76,7 @@ function createGraniteWalkTexture() {
 }
 
 function createLawnTexture() {
-  return createCanvasTexture(
-    256,
-    256,
-    (ctx, w, h) => {
-      ctx.fillStyle = "#568a3b";
-      ctx.fillRect(0, 0, w, h);
-      for (let y = 0; y < h; y += 32) {
-        ctx.fillStyle = (y / 32) % 2 ? "#4d7e34" : "#609443";
-        ctx.fillRect(0, y, w, 32);
-      }
-      for (let i = 0; i < 600; i++) {
-        ctx.fillStyle =
-          i % 2 ? "rgba(130, 180, 84, 0.2)" : "rgba(50, 84, 30, 0.18)";
-        ctx.fillRect((i * 89) % w, (i * 173) % h, 3, 2);
-      }
-    },
-    10,
-    8,
-  );
+  return createManicuredLawnTexture(10, 8, { striped: true, rich: true });
 }
 
 function createParkBench(x, y, z, yaw = 0) {
@@ -414,7 +397,32 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   );
   approachRamp.position.set(treeLx, 0.13, 39.2);
   approachRamp.rotation.x = 0.035;
-  group.add(promenade, riverWall, gateWalk, approachRamp);
+
+  // East garden walkway linking Firefly clearing directly to FountainPark West wing (lx=218, lz=6.5)
+  const eastLinkWalk = new THREE.Mesh(
+    new THREE.BoxGeometry(218 - (treeLx + 20), 0.24, 3.4),
+    graniteMat,
+  );
+  eastLinkWalk.position.set((treeLx + 20 + 218) / 2, 0.12, 6.5);
+  eastLinkWalk.receiveShadow = true;
+
+  // Neat dark-green trimmed boxwood borders flanking the lawn wings
+  for (const [bx, bw, bz, bd] of [
+    [98, 42, 34.5, 0.5],
+    [98, 42, -9.2, 0.5],
+    [200, 26, 34.5, 0.5],
+    [200, 26, -9.2, 0.5],
+  ]) {
+    const hedge = new THREE.Mesh(
+      new THREE.BoxGeometry(bw, 0.26, bd),
+      mat("#366d29", 0.88),
+    );
+    hedge.position.set(bx, 0.24, bz);
+    hedge.castShadow = hedge.receiveShadow = true;
+    group.add(hedge);
+  }
+
+  group.add(promenade, riverWall, gateWalk, approachRamp, eastLinkWalk);
 
   // 3. CIRCULAR SUNLIT SANDY-GRAVEL CLEARING AROUND CÂY ĐOM ĐÓM (r = 22.5m)
   const clearingRadius = 22.5;
@@ -698,9 +706,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
       if (Math.hypot(lx - treeLx, lz - treeLz) <= clearingRadius + 0.4) {
         return 0.24;
       }
-      // Riverside promenade & Hai Bà Trưng approach walk
+      // Riverside promenade, Hai Bà Trưng approach walk & East garden link to Fountain Park
       if (lz >= -15.6 && lz <= -11.0) return 0.24;
       if (Math.abs(lx - treeLx) <= 4.7 && lz >= 18 && lz <= 38.8) return 0.24;
+      if (lx >= treeLx + 20 && lx <= 218 && Math.abs(lz - 6.5) <= 2.0) return 0.24;
       // Approach ramp at Lê Lợi
       if (Math.abs(lx - treeLx) <= 4.8 && lz > 38.8 && lz <= 40.7) {
         const t = (40.7 - lz) / 1.9;

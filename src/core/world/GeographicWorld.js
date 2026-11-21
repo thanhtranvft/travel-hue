@@ -58,6 +58,11 @@ import { landmarkModules } from "../shared/architecture/registry.js";
 import { createBiaQuocHocPark } from "../../modules/areas/quoc-hoc/view/BiaQuocHocPark.js";
 import { createFireflyTreePark } from "../../modules/areas/quoc-hoc/view/FireflyTreePark.js";
 import { createFountainPark } from "../../modules/areas/quoc-hoc/view/FountainPark.js";
+import { createPhuXuanParkWalk } from "../../modules/areas/quoc-hoc/view/PhuXuanParkWalk.js";
+import {
+  applyWorldPlanarUVs,
+  createManicuredLawnMaterial,
+} from "./turfTextures.js";
 import { surfaceTexture } from "./surfaceTextures.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { beam } from "../shared/architecture/architecture.js";
@@ -209,7 +214,7 @@ export class GeographicWorld {
     scene.fog = new THREE.Fog("#b8d2dd", 450, 1800);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(6500, 6500),
-      mat("#79916a"),
+      createManicuredLawnMaterial(360, 360, { striped: false, rich: true }),
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.1;
@@ -223,18 +228,46 @@ export class GeographicWorld {
       water.position.y = 0.02;
       scene.add(water);
     }
+    this.parkPolygons = [];
+    const parkGeos = [];
+    const parkBorderGeos = [];
     for (const feature of features.filter(
       (f) =>
         f.type === "way" &&
         f.geometry?.length > 3 &&
         (f.tags?.leisure === "park" || f.tags?.landuse === "grass"),
     )) {
-      const mesh = new THREE.Mesh(
-        polygonGeometry(pointsOf(feature)),
-        mat("#70935c"),
+      const pts = pointsOf(feature);
+      this.parkPolygons.push({
+        points: pts,
+        minX: Math.min(...pts.map((p) => p.x)),
+        maxX: Math.max(...pts.map((p) => p.x)),
+        minZ: Math.min(...pts.map((p) => p.z)),
+        maxZ: Math.max(...pts.map((p) => p.z)),
+      });
+      parkGeos.push(applyWorldPlanarUVs(polygonGeometry(pts), 14));
+      if (pts.length >= 3) {
+        parkBorderGeos.push(ribbon([...pts, pts[0]], 0.55, 0.12));
+      }
+    }
+    if (parkGeos.length) {
+      const mergedParks = new THREE.Mesh(
+        mergeGeometries(parkGeos),
+        createManicuredLawnMaterial(1, 1, { striped: true, rich: true }),
       );
-      mesh.position.y = 0.05;
-      scene.add(mesh);
+      mergedParks.position.y = 0.08;
+      mergedParks.receiveShadow = true;
+      scene.add(mergedParks);
+      parkGeos.forEach((g) => g.dispose());
+    }
+    if (parkBorderGeos.length) {
+      const borderMesh = new THREE.Mesh(
+        mergeGeometries(parkBorderGeos),
+        mat("#366d29", 0.88),
+      );
+      borderMesh.receiveShadow = true;
+      scene.add(borderMesh);
+      parkBorderGeos.forEach((g) => g.dispose());
     }
     this.renderRoads = roads.filter((r) =>
       r.points.some(
@@ -524,10 +557,12 @@ export class GeographicWorld {
           this.fountainPark = createFountainPark(this, site, sign.rotation.y, {
             ubnd: ubndSite,
           });
+          this.phuXuanParkWalk = createPhuXuanParkWalk(this, site, sign.rotation.y);
           this.riversideParks = [
             this.biaPark,
             this.fireflyPark,
             this.fountainPark,
+            this.phuXuanParkWalk,
           ];
           this.quocHocPark = {
             groundAt: (wx, wz, referenceY) => {
@@ -575,6 +610,20 @@ export class GeographicWorld {
               radius: 45,
               description:
                 "Đối diện UBND Thành phố Huế · Quảng trường đài phun nước trung tâm, thảm hoa cúc vàng và hàng cọ ven sông Hương.",
+            });
+          }
+          if (this.phuXuanParkWalk?.circleCenterLocal) {
+            const pw = this.biaPark.toWorld(
+              this.phuXuanParkWalk.circleCenterLocal.lx,
+              this.phuXuanParkWalk.circleCenterLocal.lz,
+            );
+            this.landmarks.set("phu-xuan-park-walk", {
+              id: "phu-xuan-park-walk",
+              title: "Vườn hoa & Đường dạo Cầu Phú Xuân",
+              position: pw,
+              radius: 42,
+              description:
+                "Hệ thống đường đi bộ nhỏ nối liền từ Công viên Đài Phun Nước qua các thảm cỏ xanh mướt tới chân Cầu Phú Xuân và Cầu Gỗ Lim.",
             });
           }
           this.cameraObstacles.push(object);
@@ -716,7 +765,7 @@ export class GeographicWorld {
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
-    scene.add(new THREE.HemisphereLight("#d9edff", "#687348", 2));
+    scene.add(new THREE.HemisphereLight("#d9edff", "#5c8a45", 2));
     this.sun = new THREE.DirectionalLight(
       this.region?.id === "truong-tien" ? "#ffebd0" : "#fff1d5",
       this.region?.id === "truong-tien" ? 3.2 : 3,
