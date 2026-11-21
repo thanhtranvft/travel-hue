@@ -220,6 +220,7 @@ export function addStreetDetails(world, features) {
             world.buildingPolygons.some((b) => inside(p, b.points)) ||
             world.quocHocPark?.blocksTree(p.x, p.z) ||
             world.quocHocCampus?.blocksTree(p.x, p.z) ||
+            world.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
             onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;

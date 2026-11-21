@@ -154,7 +154,8 @@ export class LivingGrass {
         continue;
       if (
         world.quocHocPark?.blocksGrass(p.x, p.z) ||
-        world.quocHocCampus?.blocksGrass(p.x, p.z)
+        world.quocHocCampus?.blocksGrass(p.x, p.z) ||
+        world.haiBaTrungCampus?.blocksGrass(p.x, p.z)
       )
         continue;
       this.dummy.position.set(p.x, 0.055, p.z);

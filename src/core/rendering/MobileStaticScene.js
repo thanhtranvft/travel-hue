@@ -12,6 +12,7 @@ export function optimizeMobileStaticScene(world) {
       ...(world.fireflyPark?.animatedObjects || []),
       ...(world.fountainPark?.animatedObjects || []),
       ...(world.quocHocCampus?.animatedObjects || []),
+      ...(world.haiBaTrungCampus?.animatedObjects || []),
     ]),
     batches = new Map(),
     loose = [],

@@ -375,12 +375,150 @@ export function schoolGatePlacement(site) {
   };
 }
 
+function createHaiBaTrungSignPanel(width = 7.0, height = 1.28) {
+  const texture = createGateCanvasTexture(1536, 280, (c, w, h) => {
+    c.fillStyle = "#f4f0e6";
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#94272d";
+    c.lineWidth = 14;
+    c.strokeRect(7, 7, w - 14, h - 14);
+    c.strokeStyle = "#b88c46";
+    c.lineWidth = 4;
+    c.strokeRect(20, 20, w - 40, h - 40);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#4d171a";
+    c.font = "bold 46px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("TRƯỜNG TRUNG HỌC PHỔ THÔNG", w / 2, h * 0.27);
+    c.fillStyle = "#7b1d22";
+    c.font = "bold 104px 'Playfair Display', Georgia, serif";
+    c.fillText("HAI BÀ TRƯNG", w / 2, h * 0.62);
+    c.fillStyle = "#624b42";
+    c.font = "600 28px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("14 LÊ LỢI · HUẾ · 1917", w / 2, h * 0.87);
+  });
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.52,
+      metalness: 0.06,
+      side: THREE.DoubleSide,
+    }),
+  );
+  panel.name = "gate-name-panel";
+  return panel;
+}
+
+function createHaiBaTrungGate() {
+  const group = new THREE.Group();
+  group.name = "hai-ba-trung-tam-quan-gate";
+  const crimson = "#94272d";
+  const cream = "#f0eae0";
+  const ironMat = mat("#8b9499", 0.38, 0.72);
+
+  // 4 stepped crimson masonry piers (matching Hai Bà Trưng Tam Quan gate in photo 1)
+  const innerX = 3.75;
+  const outerX = 6.45;
+  for (const px of [-outerX, -innerX, innerX, outerX]) {
+    const isInner = Math.abs(px) < 4.5;
+    const w = isInner ? 0.92 : 0.76;
+    const h = isInner ? 5.25 : 4.1;
+    const d = isInner ? 0.96 : 0.82;
+    group.add(
+      box([w + 0.18, 0.34, d + 0.18], cream, [px, 0.17, 0]),
+      box([w, h, d], crimson, [px, h / 2 + 0.2, 0]),
+      box([w + 0.14, 0.18, d + 0.14], cream, [px, h + 0.22, 0]),
+      box([w + 0.24, 0.22, d + 0.24], crimson, [px, h + 0.38, 0]),
+    );
+  }
+
+  // Main upper lintel & upturned curved beam tails (đầu đao ngang)
+  group.add(
+    box([innerX * 2 + 2.6, 1.38, 0.72], crimson, [0, 4.25, 0]),
+    box([innerX * 2 + 3.1, 0.16, 0.88], crimson, [0, 4.98, 0]),
+    box([innerX * 2 + 2.8, 0.1, 0.84], cream, [0, 3.55, 0]),
+  );
+  for (const sx of [-1, 1]) {
+    // Upturned beam horns at ends of upper and lower lintels
+    group.add(
+      box([0.45, 0.38, 0.74], crimson, [sx * (innerX + 1.4), 4.7, 0]),
+      box([0.42, 0.34, 0.64], crimson, [sx * (outerX + 1.15), 3.78, 0]),
+    );
+  }
+
+  // Side pedestrian lintels & open silver-grey iron gate leaves
+  for (const sx of [-1, 1]) {
+    const midX = sx * ((innerX + outerX) / 2);
+    const span = outerX - innerX;
+    group.add(
+      box([span + 1.4, 0.56, 0.6], crimson, [midX + sx * 0.45, 3.45, 0]),
+      box([span + 1.6, 0.14, 0.72], crimson, [midX + sx * 0.45, 3.78, 0]),
+    );
+    // White stepped geometric fretwork brackets (hoa văn chữ Công trắng) under inner & side corners
+    group.add(
+      box([0.62, 0.14, 0.36], cream, [sx * (innerX - 0.66), 3.46, 0]),
+      box([0.14, 0.42, 0.36], cream, [sx * (innerX - 0.92), 3.28, 0]),
+      box([0.42, 0.14, 0.36], cream, [sx * (innerX - 1.06), 3.12, 0]),
+      box([0.52, 0.12, 0.34], cream, [sx * (innerX + 0.62), 3.12, 0]),
+      box([0.12, 0.36, 0.34], cream, [sx * (innerX + 0.84), 2.96, 0]),
+      box([0.32, 0.12, 0.34], cream, [sx * (innerX + 0.96), 2.82, 0]),
+    );
+    // Silver-grey iron pedestrian gate leaf with lower solid kickplate
+    for (let bar = 0; bar < 7; bar++) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.045, 2.35, 0.045),
+        ironMat,
+      );
+      mesh.position.set(sx * (innerX + 0.62 + bar * 0.16), 1.38, 0.16);
+      group.add(mesh);
+    }
+    group.add(
+      box([1.15, 0.55, 0.06], "#8c969b", [sx * (innerX + 1.12), 0.48, 0.16]),
+      box([1.15, 0.07, 0.07], "#8c969b", [sx * (innerX + 1.12), 2.52, 0.16]),
+    );
+  }
+
+  // Red oval/rectangular school plaque on right inner pier (matching photo 1)
+  group.add(box([0.62, 0.42, 0.06], "#b82e29", [innerX, 2.05, 0.5]));
+
+  // Unobstructed front & back white signboard: TRƯỜNG THPT HAI BÀ TRƯNG
+  const frontPanel = createHaiBaTrungSignPanel(6.95, 1.24);
+  frontPanel.position.set(0, 4.25, 0.4);
+  group.add(frontPanel);
+
+  const backPanel = createHaiBaTrungSignPanel(6.95, 1.24);
+  backPanel.position.set(0, 4.25, -0.4);
+  backPanel.rotation.y = Math.PI;
+  backPanel.name = "gate-name-panel-back";
+  group.add(backPanel);
+
+  // Connecting low masonry flanks tying outer piers cleanly into the perimeter fence
+  for (const sx of [-1, 1]) {
+    group.add(
+      box([1.1, 1.9, 0.38], crimson, [sx * (outerX + 0.72), 0.95, 0]),
+      box([1.15, 0.16, 0.46], crimson, [sx * (outerX + 0.72), 1.94, 0]),
+    );
+  }
+
+  // Clean paved stone apron leading from Lê Lợi sidewalk through the gate
+  group.add(box([7.4, 0.08, 12], "#c5c0b5", [0, -0.02, -3.5]));
+  return group;
+}
+
 export function createSchoolGate(site) {
   const data = config[site.id];
   if (!data) return null;
   if (site.id === "quoc-hoc-school") {
     return {
       object: createQuocHocGate(data),
+      placement: schoolGatePlacement(site),
+    };
+  }
+  if (site.id === "hai-ba-trung") {
+    return {
+      object: createHaiBaTrungGate(),
       placement: schoolGatePlacement(site),
     };
   }

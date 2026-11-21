@@ -60,6 +60,7 @@ import { createFireflyTreePark } from "../../modules/areas/quoc-hoc/view/Firefly
 import { createFountainPark } from "../../modules/areas/quoc-hoc/view/FountainPark.js";
 import { createPhuXuanParkWalk } from "../../modules/areas/quoc-hoc/view/PhuXuanParkWalk.js";
 import { QuocHocSchoolCampus } from "../../modules/areas/quoc-hoc/view/QuocHocSchoolCampus.js";
+import { HaiBaTrungSchoolCampus } from "../../modules/areas/quoc-hoc/view/HaiBaTrungSchoolCampus.js";
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -386,7 +387,7 @@ export class GeographicWorld {
         Number(feature.tags["building:levels"] || 2) * 3.2;
       const institution = siteForBuilding(feature, points, sites, ringsOf);
       if (institution) {
-        if (institution.id !== "quoc-hoc-school") {
+        if (!["quoc-hoc-school", "hai-ba-trung"].includes(institution.id)) {
           const style = corridorStyles[institution.id],
             body = new THREE.Mesh(
               polygonGeometry(points, Math.min(45, height)),
@@ -478,6 +479,12 @@ export class GeographicWorld {
           }
           if (site.id === "quoc-hoc-school") {
             this.quocHocCampus = new QuocHocSchoolCampus(
+              this,
+              site,
+              gate.placement,
+            );
+          } else if (site.id === "hai-ba-trung") {
+            this.haiBaTrungCampus = new HaiBaTrungSchoolCampus(
               this,
               site,
               gate.placement,
@@ -738,22 +745,24 @@ export class GeographicWorld {
             this.treePositions.push(p);
         }
       }
-    if (this.quocHocPark || this.quocHocCampus) {
+    if (this.quocHocPark || this.quocHocCampus || this.haiBaTrungCampus) {
       this.treePositions = this.treePositions.filter(
         (p) =>
           !this.quocHocPark?.blocksTree(p.x, p.z) &&
-          !this.quocHocCampus?.blocksTree(p.x, p.z),
+          !this.quocHocCampus?.blocksTree(p.x, p.z) &&
+          !this.haiBaTrungCampus?.blocksTree(p.x, p.z),
       );
     }
     this.treePositions = this.treePositions.slice(0, 95);
     this.projectPoint = project;
     this.riverRings = river;
     addStreetDetails(this, features);
-    if (this.quocHocPark || this.quocHocCampus) {
+    if (this.quocHocPark || this.quocHocCampus || this.haiBaTrungCampus) {
       this.treePositions = this.treePositions.filter(
         (p) =>
           !this.quocHocPark?.blocksTree(p.x, p.z) &&
-          !this.quocHocCampus?.blocksTree(p.x, p.z),
+          !this.quocHocCampus?.blocksTree(p.x, p.z) &&
+          !this.haiBaTrungCampus?.blocksTree(p.x, p.z),
       );
     }
     const boardwalkView = addLimWoodBoardwalk(this, roads);
@@ -815,7 +824,9 @@ export class GeographicWorld {
     return result;
   }
   groundAt(x, z, referenceY) {
-    const campusY = this.quocHocCampus?.groundAt(x, z, referenceY);
+    const campusY =
+      this.quocHocCampus?.groundAt(x, z, referenceY) ??
+      this.haiBaTrungCampus?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
@@ -882,7 +893,8 @@ export class GeographicWorld {
       return false;
     const parkRide = this.quocHocPark?.canRide(x, z);
     if (parkRide !== null && parkRide !== undefined) return parkRide;
-    const campusRide = this.quocHocCampus?.canRide(x, z);
+    const campusRide =
+      this.quocHocCampus?.canRide(x, z) ?? this.haiBaTrungCampus?.canRide(x, z);
     if (campusRide === false) return false;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
@@ -925,6 +937,7 @@ export class GeographicWorld {
     this.youthPlayground?.update(time);
     this.propertyEnclosures?.update(time);
     this.quocHocCampus?.update(time);
+    this.haiBaTrungCampus?.update(time);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);

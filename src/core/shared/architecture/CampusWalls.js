@@ -197,16 +197,160 @@ function createQuocHocWallObject(segments, data) {
   return object;
 }
 
+function createHaiBaTrungWallTexture() {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    // Upper sky-transparent-looking iron picket zone & white baluster railing
+    ctx.fillStyle = "#8a272d";
+    ctx.fillRect(0, 0, 512, 256);
+
+    // Lower solid crimson brick base (lower 32%)
+    ctx.fillStyle = "#91292f";
+    ctx.fillRect(0, 174, 512, 82);
+    ctx.fillStyle = "#c8bfb1";
+    ctx.fillRect(0, 166, 512, 10);
+
+    // Dark recessed background behind white spindle balusters (mid band 56..166)
+    ctx.fillStyle = "#3a4536";
+    ctx.fillRect(0, 56, 512, 110);
+
+    // Repeating sculpted white concrete vase balusters (con tiện trắng)
+    for (let x = 14; x < 512; x += 36) {
+      ctx.fillStyle = "#e8e2d6";
+      ctx.fillRect(x, 62, 18, 102);
+      ctx.fillStyle = "#f4efe4";
+      ctx.fillRect(x + 3, 66, 12, 94);
+      // Narrow waist & curved vase belly illusion
+      ctx.fillStyle = "#3a4536";
+      ctx.fillRect(x, 76, 4, 16);
+      ctx.fillRect(x + 14, 76, 4, 16);
+      ctx.fillStyle = "#f4efe4";
+      ctx.fillRect(x - 2, 102, 22, 34);
+    }
+
+    // Crimson concrete handrail over balusters + top silver iron pickets
+    ctx.fillStyle = "#94272d";
+    ctx.fillRect(0, 42, 512, 20);
+    ctx.fillStyle = "#5a6852";
+    ctx.fillRect(0, 0, 512, 42);
+    ctx.fillStyle = "#b5bec2";
+    ctx.fillRect(0, 22, 512, 4);
+    for (let x = 8; x < 512; x += 24) {
+      ctx.fillRect(x, 2, 4, 40);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function createHaiBaTrungWallObject(segments, data) {
+  const object = new THREE.Group();
+  const wallTex = createHaiBaTrungWallTexture();
+  const wallBodies = [];
+  const wallCaps = [];
+  const piers = [];
+  const pierCaps = [];
+
+  const segmentGeo = (a, b, height, width, y, uScale = 0) => {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz),
+      g = new THREE.BoxGeometry(len, height, width);
+    if (uScale > 0 && g.attributes.uv) {
+      const uv = g.attributes.uv;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setX(i, uv.getX(i) * (len / uScale));
+      }
+    }
+    g.rotateY(Math.atan2(-dz, dx));
+    g.translate((a.x + b.x) / 2, y, (a.z + b.z) / 2);
+    return g;
+  };
+
+  for (const { a, b } of segments) {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz);
+    if (len < 0.1) continue;
+    wallBodies.push(
+      segmentGeo(a, b, data.wallHeight, data.wallThickness, 0.17 + data.wallHeight / 2, 5.8),
+    );
+    wallCaps.push(
+      segmentGeo(a, b, 0.14, data.wallThickness + 0.14, 0.17 + 1.72),
+    );
+    const posts = Math.max(1, Math.floor(len / 7.2));
+    for (let i = 0; i <= posts; i++) {
+      const t = i / posts;
+      const px = a.x + dx * t;
+      const pz = a.z + dz * t;
+      const yaw = Math.atan2(-dz, dx);
+
+      const post = new THREE.BoxGeometry(0.56, data.wallHeight + 0.2, 0.56);
+      post.rotateY(yaw);
+      post.translate(px, 0.17 + (data.wallHeight + 0.2) / 2, pz);
+      piers.push(post);
+
+      const cap = new THREE.BoxGeometry(0.68, 0.16, 0.68);
+      cap.rotateY(yaw);
+      cap.translate(px, 0.17 + data.wallHeight + 0.22, pz);
+      pierCaps.push(cap);
+    }
+  }
+
+  const addBatch = (parts, material) => {
+    if (!parts.length) return;
+    const mesh = new THREE.Mesh(mergeGeometries(parts), material);
+    mesh.castShadow = mesh.receiveShadow = true;
+    object.add(mesh);
+    parts.forEach((p) => p.dispose());
+  };
+
+  addBatch(
+    wallBodies,
+    new THREE.MeshStandardMaterial({
+      color: wallTex ? "#ffffff" : "#94272d",
+      map: wallTex,
+      roughness: 0.78,
+    }),
+  );
+  addBatch(
+    wallCaps,
+    new THREE.MeshStandardMaterial({ color: "#94272d", roughness: 0.82 }),
+  );
+  addBatch(
+    piers,
+    new THREE.MeshStandardMaterial({ color: "#94272d", roughness: 0.82 }),
+  );
+  addBatch(
+    pierCaps,
+    new THREE.MeshStandardMaterial({ color: "#ece5d8", roughness: 0.74 }),
+  );
+  return object;
+}
+
 export function createCampusWalls(site, gate) {
   const data = config[site.id];
   if (!data) return null;
-  const gap = site.id === "quoc-hoc-school" ? 13.6 : data.width;
+  const gap = site.id === "quoc-hoc-school" ? 13.6 : site.id === "hai-ba-trung" ? 14.2 : data.width;
   const segments = ringsOf(site.feature).flatMap((ring) =>
     campusWallSegments(ring, gate, gap),
   );
   if (site.id === "quoc-hoc-school") {
     return {
       object: createQuocHocWallObject(segments, data),
+      segments: segments.map((s) => ({ ...s, schoolId: site.id })),
+    };
+  }
+  if (site.id === "hai-ba-trung") {
+    return {
+      object: createHaiBaTrungWallObject(segments, data),
       segments: segments.map((s) => ({ ...s, schoolId: site.id })),
     };
   }
