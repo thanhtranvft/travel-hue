@@ -13,11 +13,11 @@ export const TRUONG_TIEN_ARCH_COUNT = 12;
 export const TRUONG_TIEN_PIER_COUNT = 5;
 export const TRUONG_TIEN_TRUSS_START_S = 12;
 export const TRUONG_TIEN_TRUSS_END_S = 397;
-export const TRUONG_TIEN_ROAD_HALF = 3.5;
-export const TRUONG_TIEN_TRUSS_HALF = 3.82;
-export const TRUONG_TIEN_WALK_INNER = 4.05;
-export const TRUONG_TIEN_WALK_OUTER = 6.25;
-export const TRUONG_TIEN_BALCONY_OUTER = 7.6;
+export const TRUONG_TIEN_ROAD_HALF = 6.8;
+export const TRUONG_TIEN_TRUSS_HALF = 7.18;
+export const TRUONG_TIEN_WALK_INNER = 7.42;
+export const TRUONG_TIEN_WALK_OUTER = 9.65;
+export const TRUONG_TIEN_BALCONY_OUTER = 11.05;
 
 const PANELS_PER_SPAN = 10;
 const BALCONY_HALF_LEN = 4.6;
@@ -83,7 +83,7 @@ export function truongTienDeckQuery(road, x, z) {
   const along = rx * m.tx + rz * m.tz;
   const lat = rx * m.nx + rz * m.nz;
   const absLat = Math.abs(lat);
-  if (along < -1.5 || along > m.length + 1.5 || absLat > 8.6) {
+  if (along < -1.5 || along > m.length + 1.5 || absLat > 12.2) {
     return { onBridge: false };
   }
   const t = Math.max(0, Math.min(1, along / m.length));
@@ -92,7 +92,7 @@ export function truongTienDeckQuery(road, x, z) {
     along >= TRUONG_TIEN_TRUSS_START_S && along <= TRUONG_TIEN_TRUSS_END_S;
 
   if (!inTrussZone) {
-    const allowed = absLat <= 6.2;
+    const allowed = absLat <= 9.6;
     const isSidewalk = absLat >= TRUONG_TIEN_WALK_INNER - 0.1;
     return {
       onBridge: true,
@@ -137,11 +137,11 @@ export function truongTienDeckQuery(road, x, z) {
 }
 
 function archHeight(u) {
-  return 2.05 + 6.35 * Math.sin(Math.PI * Math.max(0, Math.min(1, u)));
+  return 2.25 + 6.75 * Math.sin(Math.PI * Math.max(0, Math.min(1, u)));
 }
 
 function createBridgeAsphaltTexture(mobile = false) {
-  const width = 256;
+  const width = 512;
   const height = 256;
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -156,33 +156,40 @@ function createBridgeAsphaltTexture(mobile = false) {
     seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
     return seed / 4294967296;
   };
-  for (let i = 0; i < (mobile ? 2200 : 5200); i++) {
+  for (let i = 0; i < (mobile ? 3600 : 8000); i++) {
     const s = Math.floor(58 + rand() * 38);
     ctx.fillStyle = `rgba(${s},${s + 2},${s + 4},0.28)`;
     ctx.fillRect(rand() * width, rand() * height, 2, 2);
   }
 
-  // Subtle tire wear bands for 2 traffic lanes
-  for (const cx of [0.27, 0.73]) {
+  // Subtle tire wear bands for all 4 two-way lanes
+  for (const cx of [0.15, 0.375, 0.625, 0.85]) {
     const x = cx * width;
-    const grad = ctx.createLinearGradient(x - 30, 0, x + 30, 0);
+    const grad = ctx.createLinearGradient(x - 28, 0, x + 28, 0);
     grad.addColorStop(0, "rgba(32,35,38,0)");
-    grad.addColorStop(0.5, "rgba(32,35,38,0.24)");
+    grad.addColorStop(0.5, "rgba(32,35,38,0.22)");
     grad.addColorStop(1, "rgba(32,35,38,0)");
     ctx.fillStyle = grad;
-    ctx.fillRect(x - 30, 0, 60, height);
+    ctx.fillRect(x - 28, 0, 56, height);
   }
 
-  // White carriageway edge stripes
+  // White carriageway outer edge stripes
   ctx.fillStyle = "#ebe6d8";
-  ctx.fillRect(8, 0, 4, height);
-  ctx.fillRect(width - 12, 0, 4, height);
+  ctx.fillRect(10, 0, 5, height);
+  ctx.fillRect(width - 15, 0, 5, height);
 
-  // Dashed golden-yellow 2-lane centerline
-  ctx.fillStyle = "#ebc262";
-  for (let y = 14; y < height; y += 64) {
-    ctx.fillRect(width / 2 - 2.5, y, 5, 34);
+  // Dashed white lane dividers separating inner & outer lanes on both directions
+  ctx.fillStyle = "rgba(235, 230, 216, 0.9)";
+  for (const lx of [width * 0.265, width * 0.735]) {
+    for (let y = 12; y < height; y += 64) {
+      ctx.fillRect(lx - 2, y, 4, 32);
+    }
   }
+
+  // Double solid golden-yellow 2-way center divider
+  ctx.fillStyle = "#ebc262";
+  ctx.fillRect(width / 2 - 6, 0, 4, height);
+  ctx.fillRect(width / 2 + 2, 0, 4, height);
 
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -581,14 +588,14 @@ export function addTruongTienBridge(world, road) {
     metalness: 0.05,
   });
   const steelTrussMat = new THREE.MeshStandardMaterial({
-    color: "#dde4ea",
-    roughness: 0.34,
-    metalness: 0.62,
+    color: "#e8eef3",
+    roughness: 0.3,
+    metalness: 0.28,
   });
   const steelDarkMat = new THREE.MeshStandardMaterial({
-    color: "#7f8b94",
-    roughness: 0.44,
-    metalness: 0.56,
+    color: "#99a6b2",
+    roughness: 0.38,
+    metalness: 0.3,
   });
   const deckConcreteMat = new THREE.MeshStandardMaterial({
     color: "#c5c1b5",
@@ -597,9 +604,9 @@ export function addTruongTienBridge(world, road) {
     side: THREE.DoubleSide,
   });
   const balustradeMat = new THREE.MeshStandardMaterial({
-    color: "#6d7880",
-    roughness: 0.42,
-    metalness: 0.6,
+    color: "#7a8691",
+    roughness: 0.38,
+    metalness: 0.32,
     side: THREE.DoubleSide,
   });
   const goldGlowMat = new THREE.MeshStandardMaterial({
@@ -622,32 +629,32 @@ export function addTruongTienBridge(world, road) {
     roughness: 0.3,
   });
 
-  // 2. Smooth 2-lane Asphalt Roadway & Flared Approach Aprons
+  // 2. Smooth 4-lane 2-way Asphalt Roadway & Flared Approach Aprons
   const asphaltGeo = buildQuadStrip(
     frames,
     (f) => {
       if (f.s < TRUONG_TIEN_TRUSS_START_S) {
         const k = 1 - f.s / TRUONG_TIEN_TRUSS_START_S;
-        return -(TRUONG_TIEN_ROAD_HALF + 2.2 * k);
+        return -(TRUONG_TIEN_ROAD_HALF - 0.8 * k);
       }
       if (f.s > TRUONG_TIEN_TRUSS_END_S) {
         const k =
           (f.s - TRUONG_TIEN_TRUSS_END_S) /
           (metrics.length - TRUONG_TIEN_TRUSS_END_S || 1);
-        return -(TRUONG_TIEN_ROAD_HALF + 2.2 * k);
+        return -(TRUONG_TIEN_ROAD_HALF - 0.8 * k);
       }
       return -TRUONG_TIEN_ROAD_HALF;
     },
     (f) => {
       if (f.s < TRUONG_TIEN_TRUSS_START_S) {
         const k = 1 - f.s / TRUONG_TIEN_TRUSS_START_S;
-        return TRUONG_TIEN_ROAD_HALF + 2.2 * k;
+        return TRUONG_TIEN_ROAD_HALF - 0.8 * k;
       }
       if (f.s > TRUONG_TIEN_TRUSS_END_S) {
         const k =
           (f.s - TRUONG_TIEN_TRUSS_END_S) /
           (metrics.length - TRUONG_TIEN_TRUSS_END_S || 1);
-        return TRUONG_TIEN_ROAD_HALF + 2.2 * k;
+        return TRUONG_TIEN_ROAD_HALF - 0.8 * k;
       }
       return TRUONG_TIEN_ROAD_HALF;
     },
@@ -921,11 +928,11 @@ export function addTruongTienBridge(world, road) {
         [rt, -1],
       ]) {
         const inner = {
-          x: edge.x + metrics.nx * sign * 1.15,
+          x: edge.x + metrics.nx * sign * 1.65,
           y: edge.y - 0.05,
-          z: edge.z + metrics.nz * sign * 1.15,
+          z: edge.z + metrics.nz * sign * 1.65,
         };
-        const lower = { x: edge.x, y: edge.y - 1.15, z: edge.z };
+        const lower = { x: edge.x, y: edge.y - 1.55, z: edge.z };
         diagonalBars.push({ a: inner, b: lower });
       }
       if (idx < portalPanels.length - 1) {
@@ -1000,7 +1007,7 @@ export function addTruongTienBridge(world, road) {
     crossBeamFrames.push(frameAt(frames, s));
   }
   if (crossBeamFrames.length) {
-    const cbGeo = new THREE.BoxGeometry(12.5, 0.28, 0.22);
+    const cbGeo = new THREE.BoxGeometry(19.3, 0.32, 0.24);
     const crossBeams = new THREE.InstancedMesh(
       cbGeo,
       steelDarkMat,
@@ -1059,9 +1066,9 @@ export function addTruongTienBridge(world, road) {
   const yaw = Math.atan2(metrics.tx, metrics.tz);
   const dummy = new THREE.Object3D();
   const pierGroup = new THREE.Group();
-  const pierSubmergedGeo = createCutwaterPierGeometry(16.6, 3.4, 1.2, 1.1);
-  const pierShaftGeo = createCutwaterPierGeometry(15.6, 2.7, 3.8, 0.95);
-  const pierCapGeo = createCutwaterPierGeometry(16.2, 3.1, 0.34, 1.0);
+  const pierSubmergedGeo = createCutwaterPierGeometry(23.2, 3.8, 1.2, 1.25);
+  const pierShaftGeo = createCutwaterPierGeometry(22.2, 3.0, 3.8, 1.1);
+  const pierCapGeo = createCutwaterPierGeometry(22.8, 3.4, 0.36, 1.15);
 
   const submergedInst = new THREE.InstancedMesh(
     pierSubmergedGeo,
@@ -1084,7 +1091,7 @@ export function addTruongTienBridge(world, road) {
     steelDarkMat,
     TRUONG_TIEN_PIER_COUNT * 2,
   );
-  const pierGlowGeo = new THREE.BoxGeometry(11.6, 0.14, 2.86);
+  const pierGlowGeo = new THREE.BoxGeometry(19.6, 0.14, 3.06);
   const pierGlowInst = new THREE.InstancedMesh(
     pierGlowGeo,
     goldGlowMat,
@@ -1152,7 +1159,7 @@ export function addTruongTienBridge(world, road) {
   group.add(pierGroup);
 
   // 2 Shore Stone Abutments + 4 Ceremonial Huế Bridgehead Lantern Pylons
-  const abutmentGeo = new THREE.BoxGeometry(13.6, 2.0, 2.8);
+  const abutmentGeo = new THREE.BoxGeometry(20.6, 2.0, 3.0);
   const pylonBaseGeo = new THREE.BoxGeometry(0.95, 2.6, 0.95);
   const pylonCapGeo = new THREE.BoxGeometry(1.18, 0.22, 1.18);
   const pylonLanternGeo = new THREE.CylinderGeometry(0.28, 0.24, 0.56, 6);
@@ -1173,8 +1180,8 @@ export function addTruongTienBridge(world, road) {
 
     const pFrame = frameAt(frames, sAbut + dir * 1.4);
     for (const side of [-1, 1]) {
-      const px = pFrame.x + pFrame.nx * side * 6.32;
-      const pz = pFrame.z + pFrame.nz * side * 6.32;
+      const px = pFrame.x + pFrame.nx * side * 9.72;
+      const pz = pFrame.z + pFrame.nz * side * 9.72;
       const pylon = new THREE.Group();
       const plinth = new THREE.Mesh(pylonBaseGeo, deckConcreteMat);
       plinth.position.y = 1.3;

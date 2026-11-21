@@ -7,7 +7,7 @@ export const isTruongTienSpan = (r) =>
 export function roadWidth(r) {
   if (isFootway(r)) return Number.parseFloat(r.tags.width) || 4;
   const mapped = Number.parseFloat(r.tags.width) || 0;
-  if (isTruongTienSpan(r)) return Math.max(mapped, 7.2);
+  if (isTruongTienSpan(r)) return Math.max(mapped, 14);
   return Math.max(
     mapped,
     r.tags.name === "Cầu Phú Xuân"

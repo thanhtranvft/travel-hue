@@ -145,7 +145,7 @@ export class PedestrianLife {
               offset = isFootway(road)
                 ? 0.75
                 : road.id === TRUONG_TIEN_ID
-                  ? 5.15
+                  ? 8.55
                   : road.tags.name === "Cầu Phú Xuân" && bridge
                     ? roadWidth(road) / 2 + 1.2
                     : bridge

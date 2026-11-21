@@ -262,11 +262,15 @@ export class GeographicTraffic extends TrafficSystem {
         actor.type === "pedestrian"
           ? pavement
             ? road.id === TRUONG_TIEN_ID
-              ? 5.15
+              ? 8.55
               : roadWidth(road) / 2 + 1.1
             : 0
           : road.isBridgeRoute
-            ? roadWidth(road) * (actor.type === "scooter" ? 0.34 : 0.18)
+            ? roadWidth(road) *
+              (actor.type === "scooter" ||
+              (actor.type === "car" && index % 2 === 1)
+                ? 0.355
+                : 0.135)
             : roadWidth(road) * 0.25;
       this.place(actor);
     });

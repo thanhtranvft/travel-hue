@@ -268,7 +268,12 @@ export class GeographicWorld {
       if (!customSurfaceIds.has(road.id) && road.tags.name !== "Cầu Phú Xuân") {
         (foot ? walkways : paved).push(ribbon(road.points, width, height));
       }
-      if (!foot && !road.tags.bridge)
+      if (
+        !foot &&
+        !road.tags.bridge &&
+        !customSurfaceIds.has(road.id) &&
+        road.tags.name !== "Cầu Phú Xuân"
+      )
         sidewalks.push(ribbon(road.points, width + 4, 0.16));
       for (let i = 1; i < road.points.length; i++)
         this.roadSegments.push({
@@ -474,7 +479,11 @@ export class GeographicWorld {
         sign.position.y = Math.min(45, height) + 2;
         sign.scale.setScalar(1.7);
       }
-      if (site.kind === "school" || site.kind === "station") {
+      if (
+        site.kind === "school" ||
+        site.kind === "station" ||
+        site.id === "truong-tien"
+      ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
       }
