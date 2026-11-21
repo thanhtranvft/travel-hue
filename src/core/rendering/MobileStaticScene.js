@@ -11,6 +11,7 @@ export function optimizeMobileStaticScene(world) {
       ...(world.truongTienBridge?.animatedObjects || []),
       ...(world.fireflyPark?.animatedObjects || []),
       ...(world.fountainPark?.animatedObjects || []),
+      ...(world.quocHocCampus?.animatedObjects || []),
     ]),
     batches = new Map(),
     loose = [],

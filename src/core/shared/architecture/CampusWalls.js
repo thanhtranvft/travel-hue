@@ -4,6 +4,49 @@ import { nearestPoint } from "../geography/geometry.js";
 import { ringsOf } from "../geography/map.js";
 import config from "../../../modules/areas/quoc-hoc/data/school-gates.json" with { type: "json" };
 
+function createQuocHocWallTexture() {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    // Deep crimson wall field
+    ctx.fillStyle = "#96292f";
+    ctx.fillRect(0, 0, 512, 256);
+    // White stone base plinth along bottom
+    ctx.fillStyle = "#dcd4c4";
+    ctx.fillRect(0, 212, 512, 44);
+    ctx.fillStyle = "#efe8da";
+    ctx.fillRect(0, 206, 512, 8);
+    // Top cream cornice band
+    ctx.fillStyle = "#efe8da";
+    ctx.fillRect(0, 0, 512, 18);
+    // White framed recessed relief panels (3 bay rhythm)
+    for (const [x, w] of [
+      [18, 128],
+      [172, 168],
+      [366, 128],
+    ]) {
+      ctx.strokeStyle = "#f2ebdd";
+      ctx.lineWidth = 8;
+      ctx.strokeRect(x, 34, w, 152);
+      ctx.fillStyle = x === 172 ? "#e8e0cf" : "#872328";
+      ctx.fillRect(x + 12, 46, w - 24, 128);
+      if (x === 172) {
+        ctx.strokeStyle = "#c9bfa9";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(x + 22, 56, w - 44, 108);
+      }
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
+
 // Split by arc length, including a gate exactly at a corner of the closed ring.
 export function campusWallSegments(points, gate, gap = 10) {
   const ring = points.slice();
@@ -49,13 +92,125 @@ export function campusWallSegments(points, gate, gap = 10) {
 }
 export const hitsCampusWall = (point, segments, radius = 0.45) =>
   segments.some((s) => nearestPoint(point, [s.a, s.b]).distance < radius);
+
+function createQuocHocWallObject(segments, data) {
+  const object = new THREE.Group();
+  const wallTex = createQuocHocWallTexture();
+  const wallBodies = [];
+  const wallCaps = [];
+  const pilasters = [];
+  const pilasterTrim = [];
+  const lotusBases = [];
+  const lotusBuds = [];
+
+  const segmentGeo = (a, b, height, width, y, uScale = 0) => {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz),
+      g = new THREE.BoxGeometry(len, height, width);
+    if (uScale > 0 && g.attributes.uv) {
+      const uv = g.attributes.uv;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setX(i, uv.getX(i) * (len / uScale));
+      }
+    }
+    g.rotateY(Math.atan2(-dz, dx));
+    g.translate((a.x + b.x) / 2, y, (a.z + b.z) / 2);
+    return g;
+  };
+
+  for (const { a, b } of segments) {
+    const dx = b.x - a.x,
+      dz = b.z - a.z,
+      len = Math.hypot(dx, dz);
+    if (len < 0.1) continue;
+    wallBodies.push(
+      segmentGeo(a, b, data.wallHeight, data.wallThickness, 0.17 + data.wallHeight / 2, 7.2),
+    );
+    wallCaps.push(
+      segmentGeo(a, b, 0.24, data.wallThickness + 0.22, 0.17 + data.wallHeight + 0.12),
+    );
+    const posts = Math.max(1, Math.floor(len / 8));
+    for (let i = 0; i <= posts; i++) {
+      const t = i / posts;
+      const px = a.x + dx * t;
+      const pz = a.z + dz * t;
+      const yaw = Math.atan2(-dz, dx);
+
+      const post = new THREE.BoxGeometry(0.62, data.wallHeight + 0.42, 0.62);
+      post.rotateY(yaw);
+      post.translate(px, 0.17 + (data.wallHeight + 0.42) / 2, pz);
+      pilasters.push(post);
+
+      const collar = new THREE.BoxGeometry(0.76, 0.16, 0.76);
+      collar.rotateY(yaw);
+      collar.translate(px, 0.17 + data.wallHeight + 0.44, pz);
+      pilasterTrim.push(collar);
+
+      const base = new THREE.CylinderGeometry(0.18, 0.24, 0.14, 8);
+      base.translate(px, 0.17 + data.wallHeight + 0.59, pz);
+      lotusBases.push(base);
+
+      const bud = new THREE.SphereGeometry(0.19, 8, 8);
+      bud.scale(1, 1.45, 1);
+      bud.translate(px, 0.17 + data.wallHeight + 0.86, pz);
+      lotusBuds.push(bud);
+    }
+  }
+
+  const addBatch = (parts, material) => {
+    if (!parts.length) return;
+    const mesh = new THREE.Mesh(mergeGeometries(parts), material);
+    mesh.castShadow = mesh.receiveShadow = true;
+    object.add(mesh);
+    parts.forEach((p) => p.dispose());
+  };
+
+  addBatch(
+    wallBodies,
+    new THREE.MeshStandardMaterial({
+      color: wallTex ? "#ffffff" : "#96292f",
+      map: wallTex,
+      roughness: 0.84,
+    }),
+  );
+  addBatch(
+    wallCaps,
+    new THREE.MeshStandardMaterial({ color: "#b85a26", roughness: 0.56 }),
+  );
+  addBatch(
+    pilasters,
+    new THREE.MeshStandardMaterial({ color: "#96292f", roughness: 0.84 }),
+  );
+  addBatch(
+    pilasterTrim,
+    new THREE.MeshStandardMaterial({ color: "#eee6d6", roughness: 0.75 }),
+  );
+  addBatch(
+    lotusBases,
+    new THREE.MeshStandardMaterial({ color: "#d7cfbe", roughness: 0.74 }),
+  );
+  addBatch(
+    lotusBuds,
+    new THREE.MeshStandardMaterial({ color: "#ece6d8", roughness: 0.65 }),
+  );
+  return object;
+}
+
 export function createCampusWalls(site, gate) {
   const data = config[site.id];
   if (!data) return null;
+  const gap = site.id === "quoc-hoc-school" ? 13.6 : data.width;
   const segments = ringsOf(site.feature).flatMap((ring) =>
-      campusWallSegments(ring, gate, data.width),
-    ),
-    walls = [],
+    campusWallSegments(ring, gate, gap),
+  );
+  if (site.id === "quoc-hoc-school") {
+    return {
+      object: createQuocHocWallObject(segments, data),
+      segments: segments.map((s) => ({ ...s, schoolId: site.id })),
+    };
+  }
+  const walls = [],
     caps = [];
   const geometry = (a, b, height, width, y) => {
     const dx = b.x - a.x,
@@ -98,3 +253,4 @@ export function createCampusWalls(site, gate) {
     segments: segments.map((s) => ({ ...s, schoolId: site.id })),
   };
 }
+

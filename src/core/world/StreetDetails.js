@@ -54,6 +54,7 @@ export function addStreetDetails(world, features) {
   for (const road of renderRoads.filter(
     (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân" && r.id !== 174759688,
   )) {
+    const paintSurface = road.id !== 828329033 && road.id !== 835629406;
     let distance = 0,
       lastSign = -140;
     for (let i = 1; i < road.points.length; i++) {
@@ -68,33 +69,34 @@ export function addStreetDetails(world, features) {
       const surface = (d) =>
         world.roadHeight(road, i - 1) * (1 - d / len) +
         (world.roadHeight(road, i) * d) / len;
-      for (let d = 1; d < len; d += 2) {
-        const length = Math.min(2, len - d),
-          mid = d + length / 2,
-          p = roadsidePoint(a, b, mid, 0);
-        if (onOtherCarriageway(p, road, renderRoads, 1)) continue;
-        if (Math.floor((distance + d) / 3) % 2) {
-          const dash = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.15, length),
-            material,
-          );
-          dash.rotation.set(-Math.PI / 2, 0, Math.atan2(dx, dz));
-          dash.position.set(p.x, surface(mid) + 0.035, p.z);
-          addPaint(dash);
-          markers++;
+      if (paintSurface)
+        for (let d = 1; d < len; d += 2) {
+          const length = Math.min(2, len - d),
+            mid = d + length / 2,
+            p = roadsidePoint(a, b, mid, 0);
+          if (onOtherCarriageway(p, road, renderRoads, 1)) continue;
+          if (Math.floor((distance + d) / 3) % 2) {
+            const dash = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.15, length),
+              material,
+            );
+            dash.rotation.set(-Math.PI / 2, 0, Math.atan2(dx, dz));
+            dash.position.set(p.x, surface(mid) + 0.035, p.z);
+            addPaint(dash);
+            markers++;
+          }
+          for (const side of [-1, 1]) {
+            const e = roadsidePoint(a, b, mid, roadWidth(road) / 2 - 0.4, side);
+            if (onOtherCarriageway(e, road, renderRoads, 1)) continue;
+            const edge = new THREE.Mesh(
+              new THREE.PlaneGeometry(0.12, length),
+              white,
+            );
+            edge.rotation.set(-Math.PI / 2, 0, Math.atan2(dx, dz));
+            edge.position.set(e.x, surface(mid) + 0.03, e.z);
+            addPaint(edge);
+          }
         }
-        for (const side of [-1, 1]) {
-          const e = roadsidePoint(a, b, mid, roadWidth(road) / 2 - 0.4, side);
-          if (onOtherCarriageway(e, road, renderRoads, 1)) continue;
-          const edge = new THREE.Mesh(
-            new THREE.PlaneGeometry(0.12, length),
-            white,
-          );
-          edge.rotation.set(-Math.PI / 2, 0, Math.atan2(dx, dz));
-          edge.position.set(e.x, surface(mid) + 0.03, e.z);
-          addPaint(edge);
-        }
-      }
       if (road.tags.name && distance - lastSign > 120 && len > 6) {
         for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
           const p = roadsidePoint(
@@ -217,6 +219,7 @@ export function addStreetDetails(world, features) {
             world.riverRings.some((r) => inside(p, r)) ||
             world.buildingPolygons.some((b) => inside(p, b.points)) ||
             world.quocHocPark?.blocksTree(p.x, p.z) ||
+            world.quocHocCampus?.blocksTree(p.x, p.z) ||
             onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;
