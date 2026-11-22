@@ -23,8 +23,6 @@ const loaders = {
     import("./imperial-city/index.js").then((module) => module.loadModel()),
   "nguyen-chi-dieu": () =>
     import("./nguyen-chi-dieu/index.js").then((module) => module.loadModel()),
-  "quang-trung": () =>
-    import("./quang-trung/index.js").then((module) => module.loadModel()),
 };
 export const geoDistricts = enabledAreas;
 export let features = [],
@@ -107,22 +105,13 @@ export async function loadGeography(id) {
       "Hùng Vương",
       "Bùng binh Hùng Vương",
       "Lê Quý Đôn",
-      "Nguyễn Huệ",
-      "Nguyễn Khuyến",
     ].includes(r.tags.name),
   );
   const riverFeature = byId(2393612);
   river = riverFeature ? ringsOf(riverFeature) : [];
   const leLoi = roads.filter((r) => r.tags.name === "Lê Lợi");
   const dongDa = roads.filter((r) => r.tags.name === "Đống Đa");
-  const nguyenHue = roads.filter((r) => r.tags.name === "Nguyễn Huệ");
-  const frontageRoads = leLoi.length
-    ? leLoi
-    : dongDa.length
-      ? dongDa
-      : nguyenHue.length
-        ? nguyenHue
-        : mainRoads;
+  const frontageRoads = leLoi.length ? leLoi : dongDa.length ? dongDa : mainRoads;
   sites = siteCatalog.sites.flatMap((site) => {
     const feature = byId(site.osm);
     if (!feature) return [];
@@ -174,7 +163,6 @@ export async function loadGeography(id) {
   corridorCrossings = [
     ...findCrossings(leLoi, ["Phan Bội Châu", "Nguyễn Trường Tộ", "Lê Lai", "Hà Nội"]),
     ...findCrossings(dongDa, ["Lý Thường Kiệt", "Bùng binh Hùng Vương"]),
-    ...findCrossings(nguyenHue, ["Nguyễn Khuyến"]),
   ];
   return currentRegion;
 }

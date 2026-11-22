@@ -118,9 +118,7 @@ export class PedestrianLife {
       (r) => r.tags.name === "Lê Lợi",
     )
       ? "Lê Lợi"
-      : world.renderRoads.some((r) => r.tags.name === "Đống Đa")
-        ? "Đống Đa"
-        : "Nguyễn Huệ";
+      : "Đống Đa";
     const pedestrianRoads = world.renderRoads
       .filter(
         (r) =>

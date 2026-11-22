@@ -180,9 +180,7 @@ export class GeographicTraffic extends TrafficSystem {
         ),
       preferredMain = mainRoads.some((r) => r.tags.name === "Lê Lợi")
         ? "Lê Lợi"
-        : mainRoads.some((r) => r.tags.name === "Đống Đa")
-          ? "Đống Đa"
-          : "Nguyễn Huệ",
+        : "Đống Đa",
       rawVehicleRoadsAll = mainRoads.filter(
         (r) => r.points.length > 2 || r.tags?.junction === "roundabout",
       ),
@@ -397,6 +395,30 @@ export class GeographicTraffic extends TrafficSystem {
         )
       )
         return person;
+    }
+    const campusPeople =
+      this.world.campusStudents?.() ||
+      [
+        this.world.nguyenChiDieuCampus,
+        this.world.caoThangCampus,
+        this.world.quocHocCampus,
+        this.world.haiBaTrungCampus,
+        this.world.quangTrungCampus,
+      ].flatMap((c) => c?.students?.students || []);
+    for (const student of campusPeople) {
+      const mesh = student.mesh || student.rig?.actor;
+      if (!mesh || mesh.visible === false) continue;
+      if (Math.abs(mesh.position.y - bike.position.y) > 1.2) continue;
+      if (
+        sweptContact(
+          oldPosition,
+          bike.position,
+          student.previous || mesh.position,
+          mesh.position,
+          (student.radius || 0.35) + 0.4,
+        )
+      )
+        return student;
     }
     return null;
   }

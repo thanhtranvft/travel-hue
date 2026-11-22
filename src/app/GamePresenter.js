@@ -467,9 +467,11 @@ export class GamePresenter {
     document.querySelector("#collision-message").textContent =
       (actor?.isPolice
         ? patrolConfig.dialogue
-        : actorType === "player"
-          ? `Bạn vừa va chạm với ${actor?.name || "người chơi khác"}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
-          : collisionDialogue[actorType]) ||
+        : actor?.isStudent
+          ? "Bạn vừa va chạm với học sinh trong sân trường! Hãy đi chậm lại và nhường đường cho các bạn học sinh."
+          : actorType === "player"
+            ? `Bạn vừa va chạm với ${actor?.name || "người chơi khác"}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
+            : collisionDialogue[actorType]) ||
       `${headOn ? "Bạn đã đi đối đầu và va chạm với" : "Bạn vừa va chạm với"} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector("#collision-toast").hidden = false;
     this.audio.collision();

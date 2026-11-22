@@ -8,6 +8,8 @@ export function roadWidth(r) {
   if (isFootway(r)) return Number.parseFloat(r.tags.width) || 4;
   const mapped = Number.parseFloat(r.tags.width) || 0;
   if (isTruongTienSpan(r)) return Math.max(mapped, 14);
+  if (r.tags?.name === "Đống Đa" && r.tags?.oneway === "yes")
+    return Math.max(mapped, 8);
   return Math.max(
     mapped,
     r.tags.name === "Cầu Phú Xuân"

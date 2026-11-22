@@ -29,7 +29,8 @@ import { intersection } from "../shared/geography/map.js";
 import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
 import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
-import { roadWidth } from "./roadProfile.js";
+import { roadsidePoint } from "./streetPlacement.js";
+import { isFootway, roadWidth } from "./roadProfile.js";
 import {
   roadSurfaceHeight,
   TRUONG_TIEN_ID,
@@ -66,9 +67,6 @@ import { HaiBaTrungSchoolCampus } from "../../modules/areas/quoc-hoc/view/HaiBaT
 import { NguyenChiDieuCampus } from "../../modules/areas/nguyen-chi-dieu/view/NguyenChiDieuCampus.js";
 import { CaoThangCampus } from "../../modules/areas/nguyen-chi-dieu/view/CaoThangCampus.js";
 import { VincomPlazaHue } from "../../modules/areas/nguyen-chi-dieu/view/VincomPlazaHue.js";
-import { QuangTrungCampus } from "../../modules/areas/quang-trung/view/QuangTrungCampus.js";
-import { BenhVienRhmHue } from "../../modules/areas/quang-trung/view/BenhVienRhmHue.js";
-import { DongChuaCuuTheChurch } from "../../modules/areas/quang-trung/view/DongChuaCuuTheChurch.js";
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -93,13 +91,6 @@ const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
   732304137,
   732304138,
   749331141,
-  732320417,
-  1226642041,
-  732309927,
-  1174028274,
-  1174028275,
-  1174028276,
-  1172894102,
 ]);
 
 export function ribbon(points, width, height = 0.23) {
@@ -358,7 +349,13 @@ export class GeographicWorld {
         !customSurfaceIds.has(road.id) &&
         road.tags.name !== "Cầu Phú Xuân"
       )
-        sidewalks.push(ribbon(road.points, width + 4, 0.16));
+        sidewalks.push(
+          ribbon(
+            road.points,
+            width + (this.region?.id === "nguyen-chi-dieu" ? 5 : 4),
+            0.16,
+          ),
+        );
       for (let i = 1; i < road.points.length; i++)
         this.roadSegments.push({
           a: road.points[i - 1],
@@ -472,7 +469,7 @@ export class GeographicWorld {
               Math.min(45, height),
               style,
               activeMainRoads.filter((r) =>
-                ["Lê Lợi", "Đống Đa", "Nguyễn Huệ"].includes(r.tags.name),
+                ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
               ),
             ),
           );
@@ -573,21 +570,11 @@ export class GeographicWorld {
               site,
               gate.placement,
             );
-          } else if (site.id === "quang-trung") {
-            this.quangTrungCampus = new QuangTrungCampus(
-              this,
-              site,
-              gate.placement,
-            );
           }
         }
       }
       if (site.id === "vincom-hue") {
         this.vincomPlaza = new VincomPlazaHue(this, site);
-      } else if (site.id === "benh-vien-rhm-hue") {
-        this.benhVienRhmHue = new BenhVienRhmHue(this, site);
-      } else if (site.id === "nha-tho-dong-chua-cuu-the") {
-        this.dongChuaCuuTheChurch = new DongChuaCuuTheChurch(this, site);
       }
       if (!["bridge", "boardwalk", "school", "youth", "commercial"].includes(site.kind)) {
         const frontage = buildingFrontage(site.sign, this.renderRoads);
@@ -636,9 +623,7 @@ export class GeographicWorld {
         site.kind === "station" ||
         site.id === "truong-tien" ||
         site.id === "quoc-hoc" ||
-        site.id === "vincom-hue" ||
-        site.id === "benh-vien-rhm-hue" ||
-        site.id === "nha-tho-dong-chua-cuu-the"
+        site.id === "vincom-hue"
       ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
@@ -648,7 +633,7 @@ export class GeographicWorld {
         id: site.id,
         title: site.title,
         position: site.sign,
-        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : site.id === "vincom-hue" || site.id === "nha-tho-dong-chua-cuu-the" ? 68 : 48,
+        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : site.id === "vincom-hue" ? 68 : 48,
         description:
           site.id === "quoc-hoc" && module?.description
             ? `${site.address}. ${module.description}`
@@ -658,13 +643,7 @@ export class GeographicWorld {
                 ? `${site.address} · Trường THPT Cao Thắng nằm cạnh Trường THCS Nguyễn Chí Diểu với sân trường rộng rãi và các dãy phòng học mái ngói đỏ.`
                 : site.id === "vincom-hue"
                   ? `${site.address} · Tổ hợp trung tâm thương mại Vincom Plaza Huế & khách sạn Meliá Vinpearl cao 39 tầng ngay vòng xoay Ngã 6 Hùng Vương.`
-                  : site.id === "quang-trung"
-                    ? `${site.address} · Trường Tiểu học Quang Trung khang trang với cổng xanh dương, sân trường lát gạch ca-rô rợp bóng cây, dây cờ lễ hội và các dãy lớp học xanh trắng.`
-                    : site.id === "benh-vien-rhm-hue"
-                      ? `${site.address} · Bệnh viện Răng Hàm Mặt Huế nằm ngay cạnh Trường Tiểu học Quang Trung trên tuyến đường Nguyễn Huệ.`
-                      : site.id === "nha-tho-dong-chua-cuu-the"
-                        ? `${site.address} · Cụm kiến trúc Tu viện Pháp cổ Dòng Chúa Cứu Thế, Thánh đường Basilica và Tượng Chúa Giêsu dang tay bên ngã 3 Nguyễn Huệ – Nguyễn Khuyến.`
-                        : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
+                  : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
       });
       if (module && site.id !== "truong-tien") {
         const object = module.create();
@@ -817,7 +796,7 @@ export class GeographicWorld {
       }
     // Decorative trees on avenue sides; individual tree GPS is not surveyed.
     for (const road of activeMainRoads.filter((r) =>
-      ["Lê Lợi", "Đống Đa", "Nguyễn Huệ"].includes(r.tags.name),
+      ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
     ))
       for (let i = 1; i < road.points.length; i++) {
         let a = road.points[i - 1],
@@ -832,15 +811,7 @@ export class GeographicWorld {
               x: a.x + (dx * d) / length + (dz / length) * offset,
               z: a.z + (dz * d) / length - (dx / length) * offset,
             };
-          if (
-            p.x >= this.bounds.minX &&
-            p.x <= this.bounds.maxX &&
-            p.z >= this.bounds.minZ &&
-            p.z <= this.bounds.maxZ &&
-            !activeRiver.some((r) => inside(p, r)) &&
-            !this.buildingPolygons.some((poly) => inside(p, poly.points))
-          )
-            this.treePositions.push(p);
+          if (this.isTreePositionSafe(p)) this.treePositions.push(p);
         }
       }
     // Decorative greenery follows mapped public paths; individual tree GPS is not surveyed.
@@ -852,32 +823,18 @@ export class GeographicWorld {
           b = road.points[i],
           length = Math.hypot(a.x - b.x, a.z - b.z);
         for (let d = 8; d < length; d += 25) {
-          const p = {
-            x: a.x + ((b.x - a.x) * d) / length + 4,
-            z: a.z + ((b.z - a.z) * d) / length,
-          };
-          if (
-            !activeRiver.some((r) => inside(p, r)) &&
-            p.x >= this.bounds.minX &&
-            p.x <= this.bounds.maxX &&
-            p.z >= this.bounds.minZ &&
-            p.z <= this.bounds.maxZ
-          )
-            this.treePositions.push(p);
+          for (const side of [-1, 1]) {
+            const p = roadsidePoint(a, b, d, 3.0, side);
+            if (this.isTreePositionSafe(p)) {
+              this.treePositions.push(p);
+              break;
+            }
+          }
         }
       }
     const filterCampusTrees = () => {
-      this.treePositions = this.treePositions.filter(
-        (p) =>
-          !this.quocHocPark?.blocksTree(p.x, p.z) &&
-          !this.quocHocCampus?.blocksTree(p.x, p.z) &&
-          !this.haiBaTrungCampus?.blocksTree(p.x, p.z) &&
-          !this.nguyenChiDieuCampus?.blocksTree(p.x, p.z) &&
-          !this.caoThangCampus?.blocksTree(p.x, p.z) &&
-          !this.vincomPlaza?.blocksTree(p.x, p.z) &&
-          !this.quangTrungCampus?.blocksTree(p.x, p.z) &&
-          !this.benhVienRhmHue?.blocksTree(p.x, p.z) &&
-          !this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z),
+      this.treePositions = this.treePositions.filter((p) =>
+        this.isTreePositionSafe(p),
       );
     };
     filterCampusTrees();
@@ -907,6 +864,7 @@ export class GeographicWorld {
     this.propertyEnclosures = new PropertyEnclosures(this);
     this.station = getById(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
+    this.buildTreeGrid();
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
     scene.add(new THREE.HemisphereLight("#d9edff", "#5c8a45", 2));
@@ -950,10 +908,7 @@ export class GeographicWorld {
       this.haiBaTrungCampus?.groundAt(x, z, referenceY) ??
       this.nguyenChiDieuCampus?.groundAt(x, z, referenceY) ??
       this.caoThangCampus?.groundAt(x, z, referenceY) ??
-      this.vincomPlaza?.groundAt(x, z, referenceY) ??
-      this.quangTrungCampus?.groundAt(x, z, referenceY) ??
-      this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
-      this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY);
+      this.vincomPlaza?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
@@ -995,6 +950,86 @@ export class GeographicWorld {
     );
     return candidates[0].y;
   }
+  isTreePositionSafe(p, roadMargin = 2.6, footwayMargin = 0.8) {
+    if (
+      p.x < this.bounds.minX ||
+      p.x > this.bounds.maxX ||
+      p.z < this.bounds.minZ ||
+      p.z > this.bounds.maxZ
+    )
+      return false;
+    if (this.riverRings?.some((r) => inside(p, r))) return false;
+    if (
+      this.buildingPolygons.some(
+        (b) =>
+          p.x >= b.minX &&
+          p.x <= b.maxX &&
+          p.z >= b.minZ &&
+          p.z <= b.maxZ &&
+          inside(p, b.points),
+      )
+    )
+      return false;
+    if (this.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11))
+      return false;
+    if (
+      this.quocHocPark?.blocksTree(p.x, p.z) ||
+      this.quocHocCampus?.blocksTree(p.x, p.z) ||
+      this.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
+      this.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
+      this.caoThangCampus?.blocksTree(p.x, p.z) ||
+      this.vincomPlaza?.blocksTree(p.x, p.z) ||
+      this.quangTrungCampus?.blocksTree(p.x, p.z)
+    )
+      return false;
+    const gx = Math.floor(p.x / 64);
+    const gz = Math.floor(p.z / 64);
+    for (let ox = -1; ox <= 1; ox++) {
+      for (let oz = -1; oz <= 1; oz++) {
+        for (const seg of this.roadGrid.get(`${gx + ox},${gz + oz}`) || []) {
+          const hit = nearestPoint(p, [seg.a, seg.b]);
+          const clearance =
+            roadWidth(seg.road) / 2 +
+            (isFootway(seg.road) ? footwayMargin : roadMargin);
+          if (hit.distance < clearance) return false;
+        }
+      }
+    }
+    return true;
+  }
+  buildTreeGrid() {
+    this.treeGrid = new Map();
+    for (const p of this.treePositions) {
+      const x0 = Math.floor((p.x - 1) / 32);
+      const x1 = Math.floor((p.x + 1) / 32);
+      const z0 = Math.floor((p.z - 1) / 32);
+      const z1 = Math.floor((p.z + 1) / 32);
+      for (let gx = x0; gx <= x1; gx++) {
+        for (let gz = z0; gz <= z1; gz++) {
+          const key = `${gx},${gz}`;
+          if (!this.treeGrid.has(key)) this.treeGrid.set(key, []);
+          this.treeGrid.get(key).push(p);
+        }
+      }
+    }
+  }
+  hitsTree(x, z, referenceY) {
+    if (Number.isFinite(referenceY) && referenceY >= 2.2) return false;
+    const list = this.treeGrid
+      ? this.treeGrid.get(`${Math.floor(x / 32)},${Math.floor(z / 32)}`)
+      : this.treePositions;
+    if (!list?.length) return false;
+    return list.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 < 0.75 ** 2);
+  }
+  campusStudents() {
+    return [
+      this.quocHocCampus,
+      this.haiBaTrungCampus,
+      this.nguyenChiDieuCampus,
+      this.caoThangCampus,
+      this.quangTrungCampus,
+    ].flatMap((campus) => campus?.students?.students || []);
+  }
   nearCampusWalls(x, z) {
     return this.campusWallGrid
       ? nearbyWalls(this.campusWallGrid, x, z)
@@ -1026,11 +1061,9 @@ export class GeographicWorld {
       this.quocHocCampus?.canRide(x, z) ??
       this.haiBaTrungCampus?.canRide(x, z) ??
       this.nguyenChiDieuCampus?.canRide(x, z) ??
-      this.caoThangCampus?.canRide(x, z) ??
-      this.quangTrungCampus?.canRide(x, z) ??
-      this.benhVienRhmHue?.canRide(x, z) ??
-      this.dongChuaCuuTheChurch?.canRide(x, z);
+      this.caoThangCampus?.canRide(x, z);
     if (campusRide === false) return false;
+    if (this.hitsTree(x, z, referenceY)) return false;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
         (b) =>
@@ -1076,7 +1109,6 @@ export class GeographicWorld {
     this.haiBaTrungCampus?.update(time, position);
     this.nguyenChiDieuCampus?.update(time, position);
     this.caoThangCampus?.update(time, position);
-    this.quangTrungCampus?.update(time, position);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);
@@ -1104,6 +1136,7 @@ export class GeographicWorld {
       bounds = new THREE.Box3().setFromObject(template),
       height = bounds.max.y - bounds.min.y;
     for (const [i, p] of this.treePositions.entries()) {
+      if (i % 7 === 0) continue;
       const tree = template.clone(true),
         scale = (i % 5 === 0 ? 3 : 6 + (i % 6)) / height;
       tree.scale.setScalar(scale);
@@ -1113,13 +1146,17 @@ export class GeographicWorld {
         if (o.isMesh) o.castShadow = true;
       });
       this.scene.add(tree);
-      if (i % 3 === 0) {
+      const shrubPos = { x: p.x + 1.6, z: p.z + 1.5 };
+      if (
+        i % 3 === 0 &&
+        (!this.isTreePositionSafe || this.isTreePositionSafe(shrubPos, 2.5, 0.8))
+      ) {
         const shrub = new THREE.Mesh(
           new THREE.SphereGeometry(1.1, 10, 7),
           mat(i % 2 ? "#527f46" : "#8d9d53"),
         );
         shrub.scale.set(1, 0.65, 1);
-        shrub.position.set(p.x + 1.6, 0.65, p.z + 1.5);
+        shrub.position.set(shrubPos.x, 0.65, shrubPos.z);
         this.scene.add(shrub);
       }
     }

@@ -65,7 +65,7 @@ export async function loadMobileTrees(world) {
             i,
             d: (p.x - position.x) ** 2 + (p.z - position.z) ** 2,
           }))
-          .filter((p) => p.d < 320 ** 2)
+          .filter((p) => p.i % 7 !== 0 && p.d < 320 ** 2)
           .sort((a, b) => a.d - b.d),
         near = ordered.filter((p) => p.d < 85 ** 2).slice(0, capacity),
         nearIds = new Set(near.map((p) => p.i));

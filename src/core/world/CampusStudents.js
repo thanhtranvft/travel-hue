@@ -24,6 +24,7 @@ export class CampusStudents {
     this.distanceCutoffSq = distanceCutoff * distanceCutoff;
     this.animatedObjects = [];
     this.students = [];
+    this.lastTime = null;
 
     let seed = 1;
 
@@ -44,6 +45,7 @@ export class CampusStudents {
 
       const startPos = pts[0];
       const y = this.groundAt(startPos.x, startPos.z) ?? 0.34;
+      const walkSpeed = spec.speed || 1.25 + (seed % 4) * 0.14;
       rig.actor.name = `campus-student-${gender}`;
       rig.actor.userData.studentGender = gender;
       rig.actor.scale.setScalar(spec.scale || scale);
@@ -53,18 +55,27 @@ export class CampusStudents {
       this.animatedObjects.push(rig.actor);
 
       this.students.push({
+        type: "pedestrian",
+        isStudent: true,
         kind: "walker",
         gender,
         rig,
+        mesh: rig.actor,
+        radius: 0.38,
         pts,
         segLengths,
         totalLen,
-        speed: spec.speed || 1.25 + (seed % 4) * 0.14,
+        baseSpeed: walkSpeed,
+        speed: walkSpeed,
+        heading: rig.actor.rotation.y,
+        previous: { x: startPos.x, z: startPos.z },
+        pause: 0,
+        pauseOffset: 0,
         offset: spec.offset ?? (seed * 0.29) % 1,
         phaseSeed: seed * 1.37,
         animState: {
           stance: "walk",
-          speed: spec.speed || 1.3,
+          speed: walkSpeed,
           phase: 0,
           idleTime: 0,
           steer: 0,
@@ -106,9 +117,18 @@ export class CampusStudents {
         animateChibiActor(rig, animState);
 
         this.students.push({
+          type: "pedestrian",
+          isStudent: true,
           kind: "chat",
           gender,
           rig,
+          mesh: rig.actor,
+          radius: 0.38,
+          baseSpeed: 0,
+          speed: 0,
+          heading: rig.actor.rotation.y,
+          previous: { x: wx, z: wz },
+          pause: 0,
           baseX: wx,
           baseZ: wz,
           baseYaw: rig.actor.rotation.y,
@@ -133,8 +153,16 @@ export class CampusStudents {
   }
 
   update(time = 0, playerPos = null) {
+    const dt =
+      this.lastTime === null
+        ? 0
+        : Math.max(0, Math.min(0.25, time - this.lastTime));
+    this.lastTime = time;
+
     for (const s of this.students) {
       const actor = s.rig.actor;
+      s.previous = { x: actor.position.x, z: actor.position.z };
+
       if (playerPos) {
         const dx = actor.position.x - playerPos.x;
         const dz = actor.position.z - playerPos.z;
@@ -145,8 +173,24 @@ export class CampusStudents {
         actor.visible = true;
       }
 
+      if (s.pause > 0) {
+        s.pause = Math.max(0, s.pause - dt);
+        if (s.kind === "walker") s.pauseOffset += dt;
+        s.speed = 0;
+        s.animState.stance = "idle";
+        s.animState.speed = 0;
+        s.animState.idleTime = time + s.phaseSeed;
+        animateChibiActor(s.rig, s.animState);
+        s.heading = actor.rotation.y;
+        continue;
+      }
+
       if (s.kind === "walker") {
-        const travel = (time * s.speed + s.offset * s.totalLen * 2) % (s.totalLen * 2);
+        s.speed = s.baseSpeed;
+        const effectiveTime = Math.max(0, time - s.pauseOffset);
+        const travel =
+          (effectiveTime * s.baseSpeed + s.offset * s.totalLen * 2) %
+          (s.totalLen * 2);
         const forward = travel <= s.totalLen;
         let dist = forward ? travel : s.totalLen * 2 - travel;
 
@@ -169,17 +213,20 @@ export class CampusStudents {
           (b.x - a.x) * dirSign,
           (b.z - a.z) * dirSign,
         );
+        s.heading = actor.rotation.y;
 
         s.animState.stance = "walk";
-        s.animState.speed = s.speed;
-        s.animState.phase = time * s.speed * 4.4 + s.phaseSeed;
+        s.animState.speed = s.baseSpeed;
+        s.animState.phase = effectiveTime * s.baseSpeed * 4.4 + s.phaseSeed;
         s.animState.idleTime = time + s.phaseSeed;
         animateChibiActor(s.rig, s.animState);
       } else {
+        s.speed = 0;
         s.animState.stance = "idle";
         s.animState.idleTime = time + s.phaseSeed;
         actor.rotation.y =
           s.baseYaw + Math.sin(time * 0.8 + s.phaseSeed) * 0.08;
+        s.heading = actor.rotation.y;
         animateChibiActor(s.rig, s.animState);
       }
     }

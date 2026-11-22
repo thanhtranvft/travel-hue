@@ -4,7 +4,6 @@ import { box, mat, roof } from "../../../../core/shared/architecture/shared.js";
 import { getPointsOf, getRoads } from "../../../../core/shared/geography/activeGeography.js";
 import { nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import dongDaCampuses from "../../nguyen-chi-dieu/data/campuses.json" with { type: "json" };
-import quangTrungCampuses from "../../quang-trung/data/campuses.json" with { type: "json" };
 
 function createGateCanvasTexture(width, height, draw) {
   if (typeof document === "undefined") return null;
@@ -345,19 +344,11 @@ function createQuocHocGate(data) {
 }
 
 export function schoolGatePlacement(site) {
-  const precomputedDongDa = dongDaCampuses[site.id];
-  if (precomputedDongDa?.gate) {
+  const precomputed = dongDaCampuses[site.id];
+  if (precomputed?.gate) {
     return {
-      ...precomputedDongDa.gate,
+      ...precomputed.gate,
       heading: dongDaCampuses.gateHeading,
-      confidence: "mapped",
-    };
-  }
-  const precomputedQT = quangTrungCampuses[site.id];
-  if (precomputedQT?.gate) {
-    return {
-      ...precomputedQT.gate,
-      heading: quangTrungCampuses.gateHeading,
       confidence: "mapped",
     };
   }
@@ -783,207 +774,6 @@ function createCaoThangGate() {
   return group;
 }
 
-function createQuangTrungSignPanel(width = 8.4, height = 1.25) {
-  const texture = createGateCanvasTexture(1536, 256, (c, w, h) => {
-    // Deep royal-blue swept signboard matching Trường Tiểu học Quang Trung photo
-    c.fillStyle = "#0b4d96";
-    c.fillRect(0, 0, w, h);
-    c.strokeStyle = "#cde3fa";
-    c.lineWidth = 8;
-    c.strokeRect(8, 8, w - 16, h - 16);
-
-    // Circular school crest medallion on the left
-    c.fillStyle = "#f2eed8";
-    c.beginPath?.();
-    c.arc?.(160, h / 2, 74, 0, Math.PI * 2);
-    c.fill?.();
-    c.strokeStyle = "#2b7ec9";
-    c.lineWidth = 8;
-    c.stroke?.();
-    c.fillStyle = "#0b4d96";
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.font = "bold 46px 'Be Vietnam Pro', Arial, sans-serif";
-    c.fillText("QT", 160, h / 2 + 2);
-
-    // Upper "TRƯỜNG TIỂU HỌC" & bold silver-white "QUANG TRUNG"
-    c.fillStyle = "#edf6ff";
-    c.font = "bold 44px 'Be Vietnam Pro', Arial, sans-serif";
-    c.fillText("TRƯỜNG TIỂU HỌC", w * 0.56, h * 0.3);
-    c.fillStyle = "#ffffff";
-    c.font = "900 102px 'Be Vietnam Pro', Arial, sans-serif";
-    c.fillText("QUANG TRUNG", w * 0.56, h * 0.72, w - 340);
-  });
-  const panel = new THREE.Mesh(
-    new THREE.PlaneGeometry(width, height),
-    new THREE.MeshStandardMaterial({
-      color: "#ffffff",
-      map: texture,
-      roughness: 0.42,
-      metalness: 0.16,
-      side: THREE.DoubleSide,
-    }),
-  );
-  panel.name = "gate-name-panel";
-  return panel;
-}
-
-function createQuangTrungGate() {
-  const group = new THREE.Group();
-  group.name = "quang-trung-gate";
-  const creamYellow = "#f1e5b2";
-  const creamTrim = "#f7f0d2";
-  const stonePlinth = "#a8a397";
-  const royalBlue = "#0b4d96";
-  const navyGate = "#153668";
-  const silverMat = mat("#c6cfd6", 0.36, 0.65);
-  const navyMat = mat(navyGate, 0.44, 0.62);
-
-  // 4 stepped cream-yellow piers (inner ±3.65, outer ±6.35)
-  const innerX = 3.65;
-  const outerX = 6.35;
-  for (const px of [-outerX, -innerX, innerX, outerX]) {
-    const isInner = Math.abs(px) < 4.5;
-    const w = isInner ? 0.88 : 0.76;
-    const h = isInner ? 4.45 : 3.95;
-    const d = isInner ? 0.92 : 0.78;
-    group.add(
-      box([w + 0.16, 0.34, d + 0.16], stonePlinth, [px, 0.17, 0]),
-      box([w, h, d], creamYellow, [px, h / 2 + 0.2, 0]),
-      box([w + 0.14, 0.14, d + 0.14], creamTrim, [px, h + 0.22, 0]),
-    );
-  }
-
-  // Main upper lintel & address sub-beam ("SỐ: 83 NGUYỄN HUỆ - TP. HUẾ · ĐT: 054.3822044")
-  group.add(
-    box([outerX * 2 + 1.8, 0.52, 0.78], creamYellow, [0, 4.18, 0]),
-    box([outerX * 2 + 2.2, 0.14, 0.92], creamTrim, [0, 4.48, 0]),
-  );
-
-  // Address sub-band & crimson welcome banner underneath (kept high y >= 3.2m so cyclists ride freely under it)
-  const addrTex = createGateCanvasTexture(1536, 128, (c, w, h) => {
-    c.fillStyle = "#efe3b4";
-    c.fillRect(0, 0, w, h);
-    c.fillStyle = "#16263d";
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.font = "bold 52px 'Be Vietnam Pro', Arial, sans-serif";
-    c.fillText("SỐ: 83 NGUYỄN HUỆ - TP. HUẾ   ·   ĐT: 054.3822044", w / 2, h / 2);
-  });
-  const addrMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(11.6, 0.44),
-    new THREE.MeshStandardMaterial({
-      color: "#ffffff",
-      map: addrTex,
-      roughness: 0.65,
-      side: THREE.DoubleSide,
-    }),
-  );
-  addrMesh.position.set(0, 4.18, 0.41);
-  group.add(addrMesh);
-
-  const bannerTex = createGateCanvasTexture(1024, 160, (c, w, h) => {
-    c.fillStyle = "#bf1d1d";
-    c.fillRect(0, 0, w, h);
-    c.strokeStyle = "#f6d76c";
-    c.lineWidth = 6;
-    c.strokeRect(6, 6, w - 12, h - 12);
-    c.fillStyle = "#ffe875";
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-    c.font = "bold 44px 'Be Vietnam Pro', Arial, sans-serif";
-    c.fillText("CHÀO MỪNG NĂM HỌC MỚI · TIỂU HỌC QUANG TRUNG", w / 2, h / 2, w - 48);
-  });
-  const banner = new THREE.Mesh(
-    new THREE.PlaneGeometry(6.3, 0.72),
-    new THREE.MeshStandardMaterial({
-      color: "#ffffff",
-      map: bannerTex,
-      roughness: 0.6,
-      side: THREE.DoubleSide,
-    }),
-  );
-  banner.position.set(0, 3.55, 0.16);
-  group.add(banner);
-
-  // Sweeping royal-blue wing fascia backing & trapezoidal ends matching reference photo
-  group.add(box([8.7, 1.32, 0.62], royalBlue, [0, 5.18, 0]));
-  for (const sx of [-1, 1]) {
-    const wingTip = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.18, 0.72, 1.5, 4),
-      mat(royalBlue, 0.45, 0.12),
-    );
-    wingTip.rotation.z = -sx * Math.PI * 0.5;
-    wingTip.position.set(sx * 5.05, 5.2, 0);
-    group.add(wingTip);
-
-    // Side pedestrian portal lintels + navy iron oval-medallion side panels
-    const midX = sx * ((innerX + outerX) / 2);
-    const span = outerX - innerX;
-    group.add(
-      box([span, 0.46, 0.66], creamYellow, [midX, 3.7, 0]),
-      box([span, 0.42, 0.06], silverMat ? "#c6cfd6" : navyGate, [midX, 0.42, 0.12]),
-      box([span - 0.7, 0.06, 0.06], navyGate, [midX, 2.52, 0.12]),
-    );
-    for (let b = 0; b < 7; b++) {
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 2.15, 0.045), navyMat);
-      bar.position.set(sx * (innerX + 0.58 + b * 0.25), 1.44, 0.12);
-      group.add(bar);
-    }
-    const medallion = new THREE.Mesh(
-      new THREE.TorusGeometry(0.55, 0.045, 8, 20),
-      silverMat,
-    );
-    medallion.position.set(midX, 1.48, 0.14);
-    medallion.scale.set(0.95, 1.15, 1);
-    group.add(medallion);
-
-    // Swung-open main navy double gate leaves along inner piers (wide 6.3m clear path)
-    const leafGroup = new THREE.Group();
-    leafGroup.position.set(sx * (innerX - 0.46), 0.18, -0.04);
-    leafGroup.rotation.y = sx > 0 ? -Math.PI * 0.48 : Math.PI * 0.48;
-    leafGroup.add(
-      box([2.7, 0.48, 0.07], "#c8d0d6", [-sx * 1.35, 0.28, 0]),
-      box([2.7, 0.07, 0.07], navyGate, [-sx * 1.35, 2.38, 0]),
-    );
-    for (let b = 0; b < 9; b++) {
-      leafGroup.add(box([0.045, 2.2, 0.045], navyGate, [-sx * (0.18 + b * 0.28), 1.3, 0]));
-    }
-    const leafRing = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.045, 8, 20), silverMat);
-    leafRing.position.set(-sx * 1.35, 1.36, 0.04);
-    leafGroup.add(leafRing);
-    group.add(leafGroup);
-
-    // Connecting plinth to perimeter fence
-    group.add(box([0.9, 0.58, 0.36], stonePlinth, [sx * (outerX + 0.72), 0.29, 0]));
-  }
-
-  // Colorful vertical festival flags on top of the gate lintel (matching photo)
-  const flagColors = ["#e873a8", "#65c94d", "#de2929", "#ffd22b", "#f26b26"];
-  for (let i = 0; i < flagColors.length; i++) {
-    const fx = -3.6 + i * 1.8;
-    group.add(
-      box([0.045, 1.45, 0.045], "#e5e8ec", [fx, 6.45, 0]),
-      box([0.42, 0.78, 0.025], flagColors[i], [fx + 0.22, 6.72, 0]),
-    );
-  }
-
-  // Unobstructed front & back royal-blue gate-name-panel
-  const frontPanel = createQuangTrungSignPanel(8.45, 1.24);
-  frontPanel.position.set(0, 5.18, 0.36);
-  group.add(frontPanel);
-
-  const backPanel = createQuangTrungSignPanel(8.45, 1.24);
-  backPanel.position.set(0, 5.18, -0.36);
-  backPanel.rotation.y = Math.PI;
-  backPanel.name = "gate-name-panel-back";
-  group.add(backPanel);
-
-  // Paved stone entrance apron connecting Nguyễn Huệ sidewalk right into Quang Trung courtyard
-  group.add(box([7.8, 0.08, 13], "#cbc6ba", [0, -0.02, -3.5]));
-  return group;
-}
-
 export function createSchoolGate(site) {
   const data = config[site.id];
   if (!data) return null;
@@ -1008,12 +798,6 @@ export function createSchoolGate(site) {
   if (site.id === "cao-thang") {
     return {
       object: createCaoThangGate(),
-      placement: schoolGatePlacement(site),
-    };
-  }
-  if (site.id === "quang-trung") {
-    return {
-      object: createQuangTrungGate(),
       placement: schoolGatePlacement(site),
     };
   }

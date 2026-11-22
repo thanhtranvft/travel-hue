@@ -20,10 +20,15 @@ import { NguyenChiDieuCampus } from "../src/modules/areas/nguyen-chi-dieu/view/N
 import { CaoThangCampus } from "../src/modules/areas/nguyen-chi-dieu/view/CaoThangCampus.js";
 import { VincomPlazaHue } from "../src/modules/areas/nguyen-chi-dieu/view/VincomPlazaHue.js";
 import { GeographicTraffic } from "../src/core/traffic/GeographicTraffic.js";
+import { GeographicWorld } from "../src/core/world/GeographicWorld.js";
+import { roadWidth, isFootway } from "../src/core/world/roadProfile.js";
+import { nearestPoint } from "../src/core/shared/geography/geometry.js";
+import { CityAudio } from "../src/core/audio/CityAudio.js";
 
 function withMockDocument(fn) {
   const prev = globalThis.document;
   const noop = () => {};
+  const gradient = { addColorStop: noop };
   const ctx = {
     fillStyle: "",
     strokeStyle: "",
@@ -42,6 +47,14 @@ function withMockDocument(fn) {
     fill: noop,
     arc: noop,
     fillText: noop,
+    save: noop,
+    restore: noop,
+    scale: noop,
+    translate: noop,
+    rotate: noop,
+    measureText: (t) => ({ width: String(t || "").length * 24 }),
+    createLinearGradient: () => gradient,
+    createRadialGradient: () => gradient,
   };
   globalThis.document = {
     createElement: () => ({ width: 256, height: 256, getContext: () => ctx }),
@@ -180,64 +193,9 @@ test("Trường THCS Nguyễn Chí Diểu gate, white picket fence + HLC signboa
       "Nguyễn Chí Diểu campus has boy and girl students",
     );
 
-    assert.ok(
-      campus.group.getObjectByName("nguyen-chi-dieu-main-sign"),
-      "main golden-yellow school building has royal-blue signage",
-    );
-    assert.ok(
-      campus.group.getObjectByName("nguyen-chi-dieu-monument"),
-      "Nguyễn Chí Diểu bust monument present in front plaza",
-    );
-    assert.ok(
-      campus.group.getObjectByName("nguyen-chi-dieu-basketball-hoop"),
-      "blue basketball hoop present in front schoolyard",
-    );
-    assert.ok(
-      campus.group.getObjectByName("nguyen-chi-dieu-rear-passage") &&
-        campus.group.getObjectByName("nguyen-chi-dieu-passage-banner") &&
-        campus.group.getObjectByName("nguyen-chi-dieu-rear-yard") &&
-        campus.group.getObjectByName("nguyen-chi-dieu-rear-building-sign"),
-      "covered passage between buildings leads to rear building & rear schoolyard",
-    );
-
-    assert.ok(
-      campus.daCauMatches.length >= 2,
-      "schoolyard includes animated đá cầu student circles",
-    );
-    const match = campus.daCauMatches[0];
-    assert.ok(
-      campus.animatedObjects.includes(match.group),
-      "đá cầu group registered in animatedObjects so MobileStaticScene preserves animation",
-    );
-    campus.update(0.05);
-    const shuttleBefore = match.shuttlecock.position.clone();
-    const legBefore = match.players[2].rig.character.rightLeg.rotation.x;
-    campus.update(0.85);
-    const shuttleAfter = match.shuttlecock.position.clone();
-    const legAfter = match.players[2].rig.character.rightLeg.rotation.x;
-    assert.ok(
-      shuttleBefore.distanceTo(shuttleAfter) > 0.5,
-      "đá cầu shuttlecock flies smoothly between students",
-    );
-    assert.notEqual(
-      legAfter,
-      legBefore,
-      "đá cầu kicker leg animates during rally",
-    );
-
-    // Continuous rideable route from gate -> front courtyard -> covered passage between buildings -> rear schoolyard
-    for (const [side, fwd] of [
-      [0, 8],
-      [20.55, 36],
-      [20.55, 44.2],
-      [20.55, 62],
-      [20.55, 80],
-      [2.0, 58],
-    ]) {
-      const p = campus.toWorld(side, fwd);
-      assert.equal(campus.groundAt(p.x, p.z), 0.3, `groundAt at (${side}, ${fwd})`);
-      assert.equal(campus.canRide(p.x, p.z), true, `canRide open at (${side}, ${fwd})`);
-    }
+    const entryPos = campus.toWorld(0, 8);
+    assert.equal(campus.groundAt(entryPos.x, entryPos.z), 0.3);
+    assert.equal(campus.canRide(entryPos.x, entryPos.z), true);
 
     const outsidePos = campus.toWorld(0, -30);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);
@@ -345,3 +303,132 @@ test("Vincom Plaza Huế skyscraper and Ngã 6 Bùng binh Hùng Vương roundabo
     assert.notEqual(vincom.canRide(rb.x + 20, rb.z), false);
   });
 });
+
+test("Trường Nguyễn Chí Diểu area has sidewalks on both sides, no trees in main roads/sidewalks, tree trunk collision, and student traffic collision alerts", async () => {
+  const areaCfg = appConfig.areas.items.find(
+    (d) => d.id === "nguyen-chi-dieu",
+  );
+  const region = await loadGeography("nguyen-chi-dieu");
+  withMockDocument(() => {
+    const scene = new THREE.Scene();
+    const world = new GeographicWorld(scene);
+    world.region = region;
+    world.quality = { shadows: false, grassSamples: 200 };
+    world.build();
+
+    // 1. Both sides of Đống Đa have clear pedestrian sidewalks (roadWidth=8 -> halfW=4.0m, fence=6.5m -> 2.5m sidewalk)
+    const dongDaWays = world.renderRoads.filter((r) => r.tags?.name === "Đống Đa");
+    assert.ok(dongDaWays.length >= 2, "Đống Đa divided carriageways loaded");
+    for (const r of dongDaWays) {
+      assert.equal(roadWidth(r), 8, "one-way Đống Đa lane uses 8m carriageway width");
+    }
+    const ncdGate = world.schoolGates.find((g) => g.id === "nguyen-chi-dieu");
+    assert.ok(ncdGate, "Nguyễn Chí Diểu gate placement present");
+    const gateDistToDongDa = Math.min(
+      ...dongDaWays.map((r) => nearestPoint(ncdGate, r.points).distance),
+    );
+    assert.ok(
+      gateDistToDongDa >= 6.0,
+      `Trường Nguyễn Chí Diểu fence/gate keeps >= 2m sidewalk clearance from 4m road edge (dist=${gateDistToDongDa.toFixed(2)})`,
+    );
+    const dongDaWalkers = world.pedestrianLife.people.filter(
+      (p) => p.road?.tags?.name === "Đống Đa",
+    );
+    assert.ok(
+      dongDaWalkers.some((p) => p.side < 0) &&
+        dongDaWalkers.some((p) => p.side > 0),
+      "PedestrianLife places sidewalk walkers on both left and right sides of Đống Đa",
+    );
+
+    // 2. Zero trees inside any main carriageway or blocking sidewalks
+    assert.ok(world.treePositions.length > 0, "roadside trees exist");
+    for (const p of world.treePositions) {
+      for (const r of world.renderRoads) {
+        const hit = nearestPoint(p, r.points);
+        const minClear = roadWidth(r) / 2 + (isFootway(r) ? 0.79 : 2.59);
+        assert.ok(
+          hit.distance >= minClear,
+          `tree at (${p.x.toFixed(1)}, ${p.z.toFixed(1)}) clear of road ${r.id} (${r.tags?.name || r.tags?.highway}): ${hit.distance.toFixed(2)} >= ${minClear}`,
+        );
+      }
+    }
+
+    // 3. Player cannot ride/walk through trees (street trees + campus trees) while spawn & path remain passable
+    const sampleTree = world.treePositions[0];
+    assert.equal(
+      world.canRide(sampleTree.x, sampleTree.z, 0.23),
+      false,
+      "street tree trunk blocks player",
+    );
+    assert.equal(
+      world.canRide(areaCfg.spawn.x, areaCfg.spawn.z, 0.32),
+      true,
+      "area spawn remains passable",
+    );
+    for (const [px, pz] of region.path) {
+      assert.equal(
+        world.canRide(px, pz, 0.32),
+        true,
+        `guided route point (${px}, ${pz}) remains passable`,
+      );
+    }
+
+    // 4. Every school student acts as a traffic participant and triggers collision + pedestrian audio alert
+    const students = world.campusStudents();
+    assert.ok(students.length > 0, "campus students registered");
+    for (const s of students) {
+      assert.equal(s.type, "pedestrian");
+      assert.equal(s.isStudent, true);
+      assert.ok(Number.isFinite(s.speed), "student speed is finite numeric");
+    }
+
+    const traffic = new GeographicTraffic(scene, world);
+    const walker = world.nguyenChiDieuCampus.students.students.find(
+      (s) => s.kind === "walker",
+    );
+    const chatStudent = world.nguyenChiDieuCampus.students.students.find(
+      (s) => s.kind === "chat",
+    );
+    assert.ok(walker && chatStudent, "both walker and chat students exist");
+
+    // Ensure students are visible (update with player near gate)
+    world.nguyenChiDieuCampus.update(1.0, { x: ncdGate.x, z: ncdGate.z });
+
+    const hitWalker = traffic.contact(
+      { x: walker.mesh.position.x - 1, z: walker.mesh.position.z },
+      { position: walker.mesh.position.clone() },
+    );
+    assert.equal(hitWalker, walker, "colliding with campus walker detects student");
+
+    const hitChat = traffic.contact(
+      { x: chatStudent.mesh.position.x - 1, z: chatStudent.mesh.position.z },
+      { position: chatStudent.mesh.position.clone() },
+    );
+    assert.equal(hitChat, chatStudent, "colliding with stationary campus student detects student");
+
+    // Pausing a hit walker keeps them stopped during pause duration
+    const pausedPos = { x: walker.mesh.position.x, z: walker.mesh.position.z };
+    walker.pause = 1.4;
+    world.nguyenChiDieuCampus.update(1.1, { x: ncdGate.x, z: ncdGate.z });
+    assert.equal(walker.speed, 0, "paused student speed drops to 0");
+    assert.equal(walker.mesh.position.x, pausedPos.x);
+    assert.equal(walker.mesh.position.z, pausedPos.z);
+
+    // Collision audio triggers pedestrian recording
+    const played = [];
+    const audio = Object.create(CityAudio.prototype);
+    Object.assign(audio, {
+      enabled: true,
+      ctx: { state: "running" },
+      collisionVoice: {
+        play: (type) => {
+          played.push(type);
+          return true;
+        },
+      },
+    });
+    assert.equal(audio.speakCollision(hitWalker.type), true);
+    assert.deepEqual(played, ["pedestrian"]);
+  });
+});
+

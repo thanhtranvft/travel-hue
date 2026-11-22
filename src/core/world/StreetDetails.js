@@ -97,6 +97,14 @@ export function addStreetDetails(world, features) {
             addPaint(edge);
           }
         }
+      const blockedProp = (p) =>
+        world.quocHocPark?.blocksTree(p.x, p.z) ||
+        world.quocHocCampus?.blocksTree(p.x, p.z) ||
+        world.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
+        world.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
+        world.caoThangCampus?.blocksTree(p.x, p.z) ||
+        world.vincomPlaza?.blocksTree(p.x, p.z) ||
+        world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 10);
       if (road.tags.name && distance - lastSign > 120 && len > 6) {
         for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
           const p = roadsidePoint(
@@ -106,7 +114,11 @@ export function addStreetDetails(world, features) {
             roadWidth(road) / 2 + 3,
             direction,
           );
-          if (onOtherCarriageway(p, { id: null }, renderRoads, 2)) continue;
+          if (
+            onOtherCarriageway(p, { id: null }, renderRoads, 2) ||
+            blockedProp(p)
+          )
+            continue;
           const label = postedBoard(road.tags.name, "", 3.6);
           label.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
           label.rotation.y = Math.atan2(-dx * direction, -dz * direction);
@@ -122,7 +134,11 @@ export function addStreetDetails(world, features) {
               roadWidth(road) / 2 + 1.8,
               side,
             );
-            if (onOtherCarriageway(p, { id: null }, renderRoads, 1)) continue;
+            if (
+              onOtherCarriageway(p, { id: null }, renderRoads, 1) ||
+              blockedProp(p)
+            )
+              continue;
             const lamp = new THREE.Group();
             lamp.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
             lamp.add(
@@ -141,8 +157,6 @@ export function addStreetDetails(world, features) {
     732304130, 732304131, 1416873568,
     732304133, 732304134, 732304135, 732304136, 732304137, 732304138,
     749331141,
-    732320417, 1226642041, 732309927,
-    1174028274, 1174028275, 1174028276, 1172894102,
   ]);
   for (const f of features.filter(
     (f) => f.type === "way" && f.tags?.building && f.geometry?.length > 3,
@@ -213,9 +227,7 @@ export function addStreetDetails(world, features) {
   // Trees follow pavements, with river/building rejection; these are landscape decorations.
   const preferredTreeRoad = renderRoads.some((r) => r.tags.name === "Lê Lợi")
     ? "Lê Lợi"
-    : renderRoads.some((r) => r.tags.name === "Đống Đa")
-      ? "Đống Đa"
-      : "Nguyễn Huệ";
+    : "Đống Đa";
   for (const road of renderRoads
     .filter((r) => !isFootway(r) && r.tags.name)
     .sort(
@@ -233,18 +245,17 @@ export function addStreetDetails(world, features) {
         for (const side of [-1, 1]) {
           const p = roadsidePoint(a, b, d, roadWidth(road) / 2 + 3, side);
           if (
-            world.riverRings.some((r) => inside(p, r)) ||
-            world.buildingPolygons.some((b) => inside(p, b.points)) ||
-            world.quocHocPark?.blocksTree(p.x, p.z) ||
-            world.quocHocCampus?.blocksTree(p.x, p.z) ||
-            world.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
-            world.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
-            world.caoThangCampus?.blocksTree(p.x, p.z) ||
-            world.vincomPlaza?.blocksTree(p.x, p.z) ||
-            world.quangTrungCampus?.blocksTree(p.x, p.z) ||
-            world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
-            world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
-            onOtherCarriageway(p, road, renderRoads, 2)
+            world.isTreePositionSafe
+              ? !world.isTreePositionSafe(p)
+              : world.riverRings.some((r) => inside(p, r)) ||
+                world.buildingPolygons.some((b) => inside(p, b.points)) ||
+                world.quocHocPark?.blocksTree(p.x, p.z) ||
+                world.quocHocCampus?.blocksTree(p.x, p.z) ||
+                world.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
+                world.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
+                world.caoThangCampus?.blocksTree(p.x, p.z) ||
+                world.vincomPlaza?.blocksTree(p.x, p.z) ||
+                onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;
           if (
@@ -260,9 +271,10 @@ export function addStreetDetails(world, features) {
     scene.add(new THREE.Mesh(mergeGeometries(paint), white));
     paint.forEach((g) => g.dispose());
   }
-  world.treePositions = world.treePositions.filter(
-    (p) =>
-      !world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11),
+  world.treePositions = world.treePositions.filter((p) =>
+    world.isTreePositionSafe
+      ? world.isTreePositionSafe(p)
+      : !world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11),
   );
   for (let i = 0; i < world.treePositions.length; i += 7) {
     const p = world.treePositions[i],
@@ -278,7 +290,7 @@ export function addStreetDetails(world, features) {
       crown.position.y = 3 + j * 0.9;
       tree.add(crown);
     }
-    tree.position.set(p.x + 3, 0, p.z);
+    tree.position.set(p.x, 0, p.z);
     scene.add(tree);
   }
   world.streetDetailCounts = {
