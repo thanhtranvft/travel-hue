@@ -4,6 +4,7 @@ import { nearestPoint } from "../geography/geometry.js";
 import { getRingsOf } from "../geography/activeGeography.js";
 import config from "../../../modules/areas/quoc-hoc/data/school-gates.json" with { type: "json" };
 import dongDaCampuses from "../../../modules/areas/nguyen-chi-dieu/data/campuses.json" with { type: "json" };
+import quangTrungCampuses from "../../../modules/areas/quang-trung/data/campuses.json" with { type: "json" };
 
 function createQuocHocWallTexture() {
   if (typeof document === "undefined") return null;
@@ -710,6 +711,115 @@ function createCaoThangWallObject(segments, data) {
   return object;
 }
 
+function createQuangTrungWallTexture() {
+  if (typeof document === "undefined") return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#3f533c";
+    ctx.fillRect(0, 0, 512, 256);
+    // Cream-yellow low masonry plinth
+    ctx.fillStyle = "#eadb9f";
+    ctx.fillRect(0, 166, 512, 90);
+    ctx.fillStyle = "#a6a094";
+    ctx.fillRect(0, 218, 512, 38);
+    ctx.fillStyle = "#f5edd0";
+    ctx.fillRect(0, 158, 512, 10);
+    // Navy-blue iron picket bars & top rail
+    ctx.fillStyle = "#16386b";
+    ctx.fillRect(0, 22, 512, 10);
+    ctx.fillRect(0, 140, 512, 10);
+    for (let x = 14; x < 512; x += 26) {
+      ctx.fillRect(x, 12, 9, 146);
+    }
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+function createQuangTrungWallObject(segments, data) {
+  const object = new THREE.Group();
+  object.name = "quang-trung-perimeter-fence";
+  const wallTex = createQuangTrungWallTexture();
+  const wallBodies = [];
+  const piers = [];
+  const pierCaps = [];
+
+  const segmentGeo = (a, b, height, width, y, uScale = 0) => {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const len = Math.hypot(dx, dz);
+    const g = new THREE.BoxGeometry(len, height, width);
+    if (uScale > 0 && g.attributes.uv) {
+      const uv = g.attributes.uv;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setX(i, uv.getX(i) * (len / uScale));
+      }
+    }
+    g.rotateY(Math.atan2(-dz, dx));
+    g.translate((a.x + b.x) / 2, y, (a.z + b.z) / 2);
+    return g;
+  };
+
+  for (const { a, b } of segments) {
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const len = Math.hypot(dx, dz);
+    if (len < 0.1) continue;
+    wallBodies.push(
+      segmentGeo(a, b, data.wallHeight, data.wallThickness, 0.17 + data.wallHeight / 2, 5.2),
+    );
+    const posts = Math.max(1, Math.floor(len / 5.4));
+    for (let i = 0; i <= posts; i++) {
+      const t = i / posts;
+      const px = a.x + dx * t;
+      const pz = a.z + dz * t;
+      const yaw = Math.atan2(-dz, dx);
+
+      const post = new THREE.BoxGeometry(0.48, data.wallHeight + 0.22, 0.48);
+      post.rotateY(yaw);
+      post.translate(px, 0.17 + (data.wallHeight + 0.22) / 2, pz);
+      piers.push(post);
+
+      const cap = new THREE.BoxGeometry(0.6, 0.14, 0.6);
+      cap.rotateY(yaw);
+      cap.translate(px, 0.17 + data.wallHeight + 0.22, pz);
+      pierCaps.push(cap);
+    }
+  }
+
+  const addBatch = (parts, material) => {
+    if (!parts.length) return;
+    const mesh = new THREE.Mesh(mergeGeometries(parts), material);
+    mesh.castShadow = mesh.receiveShadow = true;
+    object.add(mesh);
+    parts.forEach((p) => p.dispose());
+  };
+
+  addBatch(
+    wallBodies,
+    new THREE.MeshStandardMaterial({
+      color: wallTex ? "#ffffff" : "#eadb9f",
+      map: wallTex,
+      roughness: 0.78,
+    }),
+  );
+  addBatch(
+    piers,
+    new THREE.MeshStandardMaterial({ color: "#f1e5b2", roughness: 0.8 }),
+  );
+  addBatch(
+    pierCaps,
+    new THREE.MeshStandardMaterial({ color: "#0b4d96", roughness: 0.65 }),
+  );
+  return object;
+}
+
 export function createCampusWalls(site, gate) {
   const data = config[site.id];
   if (!data) return null;
@@ -722,8 +832,11 @@ export function createCampusWalls(site, gate) {
           ? 13.8
           : site.id === "cao-thang"
             ? 13.0
-            : data.width;
-  const precomputedRing = dongDaCampuses[site.id]?.ring;
+            : site.id === "quang-trung"
+              ? 13.8
+              : data.width;
+  const precomputedRing =
+    dongDaCampuses[site.id]?.ring || quangTrungCampuses[site.id]?.ring;
   const rings = precomputedRing ? [precomputedRing] : getRingsOf(site.feature);
   const segments = rings.flatMap((ring) =>
     campusWallSegments(ring, gate, gap),
@@ -749,6 +862,12 @@ export function createCampusWalls(site, gate) {
   if (site.id === "cao-thang") {
     return {
       object: createCaoThangWallObject(segments, data),
+      segments: segments.map((s) => ({ ...s, schoolId: site.id })),
+    };
+  }
+  if (site.id === "quang-trung") {
+    return {
+      object: createQuangTrungWallObject(segments, data),
       segments: segments.map((s) => ({ ...s, schoolId: site.id })),
     };
   }

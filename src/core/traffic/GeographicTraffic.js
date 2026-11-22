@@ -180,7 +180,9 @@ export class GeographicTraffic extends TrafficSystem {
         ),
       preferredMain = mainRoads.some((r) => r.tags.name === "Lê Lợi")
         ? "Lê Lợi"
-        : "Đống Đa",
+        : mainRoads.some((r) => r.tags.name === "Đống Đa")
+          ? "Đống Đa"
+          : "Nguyễn Huệ",
       rawVehicleRoadsAll = mainRoads.filter(
         (r) => r.points.length > 2 || r.tags?.junction === "roundabout",
       ),

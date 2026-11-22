@@ -155,7 +155,12 @@ export class LivingGrass {
       if (
         world.quocHocPark?.blocksGrass(p.x, p.z) ||
         world.quocHocCampus?.blocksGrass(p.x, p.z) ||
-        world.haiBaTrungCampus?.blocksGrass(p.x, p.z)
+        world.haiBaTrungCampus?.blocksGrass(p.x, p.z) ||
+        world.nguyenChiDieuCampus?.blocksGrass(p.x, p.z) ||
+        world.caoThangCampus?.blocksGrass(p.x, p.z) ||
+        world.quangTrungCampus?.blocksGrass(p.x, p.z) ||
+        world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
+        world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z)
       )
         continue;
       this.dummy.position.set(p.x, 0.055, p.z);

@@ -66,6 +66,9 @@ import { HaiBaTrungSchoolCampus } from "../../modules/areas/quoc-hoc/view/HaiBaT
 import { NguyenChiDieuCampus } from "../../modules/areas/nguyen-chi-dieu/view/NguyenChiDieuCampus.js";
 import { CaoThangCampus } from "../../modules/areas/nguyen-chi-dieu/view/CaoThangCampus.js";
 import { VincomPlazaHue } from "../../modules/areas/nguyen-chi-dieu/view/VincomPlazaHue.js";
+import { QuangTrungCampus } from "../../modules/areas/quang-trung/view/QuangTrungCampus.js";
+import { BenhVienRhmHue } from "../../modules/areas/quang-trung/view/BenhVienRhmHue.js";
+import { DongChuaCuuTheChurch } from "../../modules/areas/quang-trung/view/DongChuaCuuTheChurch.js";
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -90,6 +93,13 @@ const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
   732304137,
   732304138,
   749331141,
+  732320417,
+  1226642041,
+  732309927,
+  1174028274,
+  1174028275,
+  1174028276,
+  1172894102,
 ]);
 
 export function ribbon(points, width, height = 0.23) {
@@ -462,7 +472,7 @@ export class GeographicWorld {
               Math.min(45, height),
               style,
               activeMainRoads.filter((r) =>
-                ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
+                ["Lê Lợi", "Đống Đa", "Nguyễn Huệ"].includes(r.tags.name),
               ),
             ),
           );
@@ -563,11 +573,21 @@ export class GeographicWorld {
               site,
               gate.placement,
             );
+          } else if (site.id === "quang-trung") {
+            this.quangTrungCampus = new QuangTrungCampus(
+              this,
+              site,
+              gate.placement,
+            );
           }
         }
       }
       if (site.id === "vincom-hue") {
         this.vincomPlaza = new VincomPlazaHue(this, site);
+      } else if (site.id === "benh-vien-rhm-hue") {
+        this.benhVienRhmHue = new BenhVienRhmHue(this, site);
+      } else if (site.id === "nha-tho-dong-chua-cuu-the") {
+        this.dongChuaCuuTheChurch = new DongChuaCuuTheChurch(this, site);
       }
       if (!["bridge", "boardwalk", "school", "youth", "commercial"].includes(site.kind)) {
         const frontage = buildingFrontage(site.sign, this.renderRoads);
@@ -616,7 +636,9 @@ export class GeographicWorld {
         site.kind === "station" ||
         site.id === "truong-tien" ||
         site.id === "quoc-hoc" ||
-        site.id === "vincom-hue"
+        site.id === "vincom-hue" ||
+        site.id === "benh-vien-rhm-hue" ||
+        site.id === "nha-tho-dong-chua-cuu-the"
       ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
@@ -626,7 +648,7 @@ export class GeographicWorld {
         id: site.id,
         title: site.title,
         position: site.sign,
-        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : site.id === "vincom-hue" ? 68 : 48,
+        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : site.id === "vincom-hue" || site.id === "nha-tho-dong-chua-cuu-the" ? 68 : 48,
         description:
           site.id === "quoc-hoc" && module?.description
             ? `${site.address}. ${module.description}`
@@ -636,7 +658,13 @@ export class GeographicWorld {
                 ? `${site.address} · Trường THPT Cao Thắng nằm cạnh Trường THCS Nguyễn Chí Diểu với sân trường rộng rãi và các dãy phòng học mái ngói đỏ.`
                 : site.id === "vincom-hue"
                   ? `${site.address} · Tổ hợp trung tâm thương mại Vincom Plaza Huế & khách sạn Meliá Vinpearl cao 39 tầng ngay vòng xoay Ngã 6 Hùng Vương.`
-                  : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
+                  : site.id === "quang-trung"
+                    ? `${site.address} · Trường Tiểu học Quang Trung khang trang với cổng xanh dương, sân trường lát gạch ca-rô rợp bóng cây, dây cờ lễ hội và các dãy lớp học xanh trắng.`
+                    : site.id === "benh-vien-rhm-hue"
+                      ? `${site.address} · Bệnh viện Răng Hàm Mặt Huế nằm ngay cạnh Trường Tiểu học Quang Trung trên tuyến đường Nguyễn Huệ.`
+                      : site.id === "nha-tho-dong-chua-cuu-the"
+                        ? `${site.address} · Cụm kiến trúc Tu viện Pháp cổ Dòng Chúa Cứu Thế, Thánh đường Basilica và Tượng Chúa Giêsu dang tay bên ngã 3 Nguyễn Huệ – Nguyễn Khuyến.`
+                        : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
       });
       if (module && site.id !== "truong-tien") {
         const object = module.create();
@@ -789,7 +817,7 @@ export class GeographicWorld {
       }
     // Decorative trees on avenue sides; individual tree GPS is not surveyed.
     for (const road of activeMainRoads.filter((r) =>
-      ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
+      ["Lê Lợi", "Đống Đa", "Nguyễn Huệ"].includes(r.tags.name),
     ))
       for (let i = 1; i < road.points.length; i++) {
         let a = road.points[i - 1],
@@ -846,7 +874,10 @@ export class GeographicWorld {
           !this.haiBaTrungCampus?.blocksTree(p.x, p.z) &&
           !this.nguyenChiDieuCampus?.blocksTree(p.x, p.z) &&
           !this.caoThangCampus?.blocksTree(p.x, p.z) &&
-          !this.vincomPlaza?.blocksTree(p.x, p.z),
+          !this.vincomPlaza?.blocksTree(p.x, p.z) &&
+          !this.quangTrungCampus?.blocksTree(p.x, p.z) &&
+          !this.benhVienRhmHue?.blocksTree(p.x, p.z) &&
+          !this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z),
       );
     };
     filterCampusTrees();
@@ -919,7 +950,10 @@ export class GeographicWorld {
       this.haiBaTrungCampus?.groundAt(x, z, referenceY) ??
       this.nguyenChiDieuCampus?.groundAt(x, z, referenceY) ??
       this.caoThangCampus?.groundAt(x, z, referenceY) ??
-      this.vincomPlaza?.groundAt(x, z, referenceY);
+      this.vincomPlaza?.groundAt(x, z, referenceY) ??
+      this.quangTrungCampus?.groundAt(x, z, referenceY) ??
+      this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
+      this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
@@ -992,7 +1026,10 @@ export class GeographicWorld {
       this.quocHocCampus?.canRide(x, z) ??
       this.haiBaTrungCampus?.canRide(x, z) ??
       this.nguyenChiDieuCampus?.canRide(x, z) ??
-      this.caoThangCampus?.canRide(x, z);
+      this.caoThangCampus?.canRide(x, z) ??
+      this.quangTrungCampus?.canRide(x, z) ??
+      this.benhVienRhmHue?.canRide(x, z) ??
+      this.dongChuaCuuTheChurch?.canRide(x, z);
     if (campusRide === false) return false;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
@@ -1039,6 +1076,7 @@ export class GeographicWorld {
     this.haiBaTrungCampus?.update(time, position);
     this.nguyenChiDieuCampus?.update(time, position);
     this.caoThangCampus?.update(time, position);
+    this.quangTrungCampus?.update(time, position);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);

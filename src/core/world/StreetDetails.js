@@ -141,6 +141,8 @@ export function addStreetDetails(world, features) {
     732304130, 732304131, 1416873568,
     732304133, 732304134, 732304135, 732304136, 732304137, 732304138,
     749331141,
+    732320417, 1226642041, 732309927,
+    1174028274, 1174028275, 1174028276, 1172894102,
   ]);
   for (const f of features.filter(
     (f) => f.type === "way" && f.tags?.building && f.geometry?.length > 3,
@@ -211,7 +213,9 @@ export function addStreetDetails(world, features) {
   // Trees follow pavements, with river/building rejection; these are landscape decorations.
   const preferredTreeRoad = renderRoads.some((r) => r.tags.name === "Lê Lợi")
     ? "Lê Lợi"
-    : "Đống Đa";
+    : renderRoads.some((r) => r.tags.name === "Đống Đa")
+      ? "Đống Đa"
+      : "Nguyễn Huệ";
   for (const road of renderRoads
     .filter((r) => !isFootway(r) && r.tags.name)
     .sort(
@@ -237,6 +241,9 @@ export function addStreetDetails(world, features) {
             world.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
             world.caoThangCampus?.blocksTree(p.x, p.z) ||
             world.vincomPlaza?.blocksTree(p.x, p.z) ||
+            world.quangTrungCampus?.blocksTree(p.x, p.z) ||
+            world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
+            world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
             onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;
