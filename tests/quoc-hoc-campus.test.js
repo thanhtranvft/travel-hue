@@ -127,6 +127,17 @@ test("Quốc Học Tam Quan gate, lotus-finial walls, statue dais, twin flagpole
     assert.equal(campus.blocksTree(avenuePos.x, avenuePos.z), true);
     assert.equal(campus.blocksGrass(avenuePos.x, avenuePos.z), true);
 
+    const counts = campus.students.getCounts();
+    assert.ok(counts.boys > 0 && counts.girls > 0, "Quốc Học has boy and girl students");
+    assert.equal(
+      campus.animatedObjects.some((o) => o.userData?.studentGender === "boy"),
+      true,
+    );
+    assert.equal(
+      campus.animatedObjects.some((o) => o.userData?.studentGender === "girl"),
+      true,
+    );
+
     // Outside campus returns null
     const outsidePos = campus.toWorld(0, -40);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);

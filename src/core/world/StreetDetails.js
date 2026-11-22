@@ -137,9 +137,15 @@ export function addStreetDetails(world, features) {
       distance += len;
     }
   }
+  const customLandmarkBuildings = new Set([
+    732304130, 732304131, 1416873568,
+    732304133, 732304134, 732304135, 732304136, 732304137, 732304138,
+    749331141,
+  ]);
   for (const f of features.filter(
     (f) => f.type === "way" && f.tags?.building && f.geometry?.length > 3,
   )) {
+    if (customLandmarkBuildings.has(f.id)) continue;
     const points = f.geometry.map((p) => world.projectPoint(p)),
       center = points.reduce(
         (a, p) => ({
@@ -203,9 +209,16 @@ export function addStreetDetails(world, features) {
     }
   }
   // Trees follow pavements, with river/building rejection; these are landscape decorations.
+  const preferredTreeRoad = renderRoads.some((r) => r.tags.name === "Lê Lợi")
+    ? "Lê Lợi"
+    : "Đống Đa";
   for (const road of renderRoads
     .filter((r) => !isFootway(r) && r.tags.name)
-    .sort((a, b) => (b.tags.name === "Lê Lợi") - (a.tags.name === "Lê Lợi")))
+    .sort(
+      (a, b) =>
+        (b.tags.name === preferredTreeRoad) -
+        (a.tags.name === preferredTreeRoad),
+    ))
     for (let i = 1; i < road.points.length; i++) {
       const a = road.points[i - 1],
         b = road.points[i],
@@ -221,6 +234,9 @@ export function addStreetDetails(world, features) {
             world.quocHocPark?.blocksTree(p.x, p.z) ||
             world.quocHocCampus?.blocksTree(p.x, p.z) ||
             world.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
+            world.nguyenChiDieuCampus?.blocksTree(p.x, p.z) ||
+            world.caoThangCampus?.blocksTree(p.x, p.z) ||
+            world.vincomPlaza?.blocksTree(p.x, p.z) ||
             onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;

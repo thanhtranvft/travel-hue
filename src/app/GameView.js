@@ -1,5 +1,5 @@
 import { unproject } from "../core/shared/geography/geometry.js";
-import { geoDistricts as districts } from "../core/shared/geography/map.js";
+import { geoDistricts as districts } from "../modules/areas/AreaModel.js";
 import { AVATAR_CATALOG } from "../core/network/protocol.js";
 import { CITY, BRIDGE } from "../core/world/cityLayout.js";
 import { formatPlayerCoords } from "../core/world/minimap.js";

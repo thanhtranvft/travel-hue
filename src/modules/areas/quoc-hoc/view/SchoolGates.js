@@ -1,8 +1,9 @@
 import * as THREE from "three";
 import config from "../data/school-gates.json" with { type: "json" };
 import { box, mat, roof } from "../../../../core/shared/architecture/shared.js";
-import { pointsOf, roads } from "../../../../core/shared/geography/map.js";
+import { getPointsOf, getRoads } from "../../../../core/shared/geography/activeGeography.js";
 import { nearestPoint } from "../../../../core/shared/geography/geometry.js";
+import dongDaCampuses from "../../nguyen-chi-dieu/data/campuses.json" with { type: "json" };
 
 function createGateCanvasTexture(width, height, draw) {
   if (typeof document === "undefined") return null;
@@ -343,7 +344,15 @@ function createQuocHocGate(data) {
 }
 
 export function schoolGatePlacement(site) {
-  const leLoi = roads.filter((r) => r.tags.name === "Lê Lợi");
+  const precomputed = dongDaCampuses[site.id];
+  if (precomputed?.gate) {
+    return {
+      ...precomputed.gate,
+      heading: dongDaCampuses.gateHeading,
+      confidence: "mapped",
+    };
+  }
+  const leLoi = getRoads().filter((r) => r.tags.name === "Lê Lợi");
   if (site.anchor.kind === "mapped-entrance") {
     const hit = leLoi
       .map((r) => nearestPoint(site.sign, r.points))
@@ -354,7 +363,7 @@ export function schoolGatePlacement(site) {
       confidence: "mapped",
     };
   }
-  const points = pointsOf(site.feature),
+  const points = getPointsOf(site.feature),
     edges = [];
   for (let i = 1; i < points.length; i++) {
     const p = {
@@ -507,6 +516,264 @@ function createHaiBaTrungGate() {
   return group;
 }
 
+function createNguyenChiDieuSignPanel(width = 6.35, height = 0.94) {
+  const texture = createGateCanvasTexture(1536, 240, (c, w, h) => {
+    c.fillStyle = "#bc1e1e";
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#f7df78";
+    c.lineWidth = 10;
+    c.strokeRect(8, 8, w - 16, h - 16);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#fff5d2";
+    c.font = "700 32px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("PHÒNG GIÁO DỤC VÀ ĐÀO TẠO THÀNH PHỐ HUẾ", w / 2, h * 0.28);
+    c.fillStyle = "#ffe55e";
+    c.font = "bold 76px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("TRƯỜNG THCS NGUYỄN CHÍ DIỂU", w / 2, h * 0.66, w - 80);
+  });
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.45,
+      metalness: 0.08,
+      side: THREE.DoubleSide,
+    }),
+  );
+  panel.name = "gate-name-panel";
+  return panel;
+}
+
+function createNguyenChiDieuGate() {
+  const group = new THREE.Group();
+  group.name = "nguyen-chi-dieu-gate";
+  const cream = "#f7f4ec";
+  const paleYellow = "#f3e38a";
+  const stoneBase = "#a49f96";
+  const skyBlue = "#2f8cd6";
+  const skyBlueLight = "#4ca5eb";
+
+  // 4 cream-white vertically fluted masonry piers matching photo (inner ±3.55, outer ±6.45)
+  const innerX = 3.55;
+  const outerX = 6.45;
+  for (const px of [-outerX, -innerX, innerX, outerX]) {
+    const isInner = Math.abs(px) < 4.5;
+    const w = isInner ? 0.78 : 0.66;
+    const h = isInner ? 4.85 : 3.72;
+    const d = isInner ? 0.82 : 0.68;
+    group.add(
+      box([w + 0.14, 0.34, d + 0.14], stoneBase, [px, 0.17, 0]),
+      box([w, h, d], cream, [px, h / 2 + 0.2, 0]),
+      box([w + 0.14, 0.14, d + 0.14], paleYellow, [px, h + 0.22, 0]),
+    );
+    // Vertical flutes along front & back pier faces matching photo
+    for (const fx of [-0.2, 0, 0.2]) {
+      group.add(
+        box([0.07, h - 0.55, 0.04], "#dfd9cc", [px + fx, h / 2 + 0.22, d / 2 + 0.01]),
+        box([0.07, h - 0.55, 0.04], "#dfd9cc", [px + fx, h / 2 + 0.22, -d / 2 - 0.01]),
+      );
+    }
+  }
+
+  // Stepped horizontal cream & pale-yellow lintel beams + cantilevered flat canopies with gently upturned wing tips
+  group.add(
+    // Main central beam housing the red signboard
+    box([innerX * 2 + 0.6, 1.05, 0.7], cream, [0, 4.18, 0]),
+    box([innerX * 2 + 0.8, 0.12, 0.86], paleYellow, [0, 3.62, 0]),
+    // Upper cantilevered pale-yellow & cream flat roof canopy above central bay
+    box([9.8, 0.18, 1.45], paleYellow, [0, 4.82, 0]),
+    box([10.4, 0.16, 1.56], cream, [0, 4.98, 0]),
+    box([11.2, 0.18, 1.72], paleYellow, [0, 5.14, 0]),
+  );
+
+  // Flared upward corner wing tips on upper & lower canopies
+  for (const sx of [-1, 1]) {
+    const midX = sx * ((innerX + outerX) / 2);
+    const sideSpan = outerX - innerX;
+    // Lower side bay lintels & sky-blue interior frieze strip
+    group.add(
+      box([sideSpan + 1.1, 0.36, 0.66], cream, [midX + sx * 0.45, 3.64, 0]),
+      box([sideSpan + 1.65, 0.16, 1.25], paleYellow, [midX + sx * 0.68, 3.88, 0]),
+      box([sideSpan + 1.4, 0.14, 1.15], cream, [midX + sx * 0.6, 3.78, 0]),
+    );
+
+    // Flared wing finials on upper central canopy (y ~ 5.14) and lower outer canopies (y ~ 3.88)
+    const upperTip = new THREE.Mesh(
+      new THREE.BoxGeometry(1.15, 0.22, 1.72),
+      mat(paleYellow, 0.62),
+    );
+    upperTip.position.set(sx * 5.95, 5.3, 0);
+    upperTip.rotation.z = sx * 0.24;
+    group.add(upperTip);
+
+    const lowerTip = new THREE.Mesh(
+      new THREE.BoxGeometry(1.05, 0.18, 1.25),
+      mat(paleYellow, 0.62),
+    );
+    lowerTip.position.set(sx * (outerX + 1.45), 4.02, 0);
+    lowerTip.rotation.z = sx * 0.22;
+    group.add(lowerTip);
+
+    // Closed/semi-fixed sky-blue painted steel side portal gate leaves
+    const sideLeafW = 2.05;
+    const sideGateCenter = sx * ((innerX + outerX) / 2);
+    group.add(
+      box([sideLeafW, 0.56, 0.07], skyBlueLight, [sideGateCenter, 0.46, 0.12]),
+      box([sideLeafW, 0.07, 0.07], skyBlue, [sideGateCenter, 1.55, 0.12]),
+      box([sideLeafW, 0.07, 0.07], skyBlue, [sideGateCenter, 2.48, 0.12]),
+    );
+    for (let b = 0; b < 9; b++) {
+      group.add(
+        box([0.042, 2.28, 0.042], skyBlue, [
+          sideGateCenter - sideLeafW / 2 + 0.12 + b * 0.225,
+          1.34,
+          0.12,
+        ]),
+      );
+    }
+
+    // Swung-open sky-blue main double gate leaves tucked cleanly along inner pier edges (leaving >= 5.9m open center bay!)
+    const leafGroup = new THREE.Group();
+    leafGroup.position.set(sx * (innerX - 0.44), 0.18, -0.05);
+    leafGroup.rotation.y = sx > 0 ? -Math.PI * 0.48 : Math.PI * 0.48;
+    leafGroup.add(
+      box([2.75, 0.62, 0.07], skyBlueLight, [-sx * 1.38, 0.34, 0]),
+      box([2.75, 0.07, 0.07], skyBlue, [-sx * 1.38, 1.52, 0]),
+      box([2.75, 0.07, 0.07], skyBlue, [-sx * 1.38, 2.48, 0]),
+    );
+    for (let b = 0; b < 11; b++) {
+      leafGroup.add(
+        box([0.042, 2.38, 0.042], skyBlue, [
+          -sx * (0.14 + b * 0.24),
+          1.3,
+          0,
+        ]),
+      );
+    }
+    group.add(leafGroup);
+
+    // Connecting gray split-stone plinth base linking outer piers cleanly to perimeter picket fence
+    group.add(
+      box([0.85, 0.58, 0.36], stoneBase, [sx * (outerX + 0.7), 0.29, 0]),
+    );
+  }
+
+  // Unobstructed front & back red signboard: TRƯỜNG THCS NGUYỄN CHÍ DIỂU
+  const frontPanel = createNguyenChiDieuSignPanel(6.3, 0.92);
+  frontPanel.position.set(0, 4.18, 0.38);
+  group.add(frontPanel);
+
+  const backPanel = createNguyenChiDieuSignPanel(6.3, 0.92);
+  backPanel.position.set(0, 4.18, -0.38);
+  backPanel.rotation.y = Math.PI;
+  backPanel.name = "gate-name-panel-back";
+  group.add(backPanel);
+
+  // Clean wide paved stone gate apron connecting Đống Đa sidewalk right into campus courtyard
+  group.add(box([7.8, 0.08, 13], "#ccc7bb", [0, -0.02, -3.5]));
+  return group;
+}
+
+function createCaoThangSignPanel(width = 6.3, height = 1.05) {
+  const texture = createGateCanvasTexture(1536, 256, (c, w, h) => {
+    c.fillStyle = "#184f8c";
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#f2ce66";
+    c.lineWidth = 12;
+    c.strokeRect(8, 8, w - 16, h - 16);
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#e2effc";
+    c.font = "700 34px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("SỞ GIÁO DỤC VÀ ĐÀO TẠO THÀNH PHỐ HUẾ", w / 2, h * 0.26);
+    c.fillStyle = "#ffe470";
+    c.font = "bold 80px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("TRƯỜNG THPT CAO THẮNG", w / 2, h * 0.64, w - 80);
+  });
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.45,
+      metalness: 0.08,
+      side: THREE.DoubleSide,
+    }),
+  );
+  panel.name = "gate-name-panel";
+  return panel;
+}
+
+function createCaoThangGate() {
+  const group = new THREE.Group();
+  group.name = "cao-thang-gate";
+  const ivory = "#f2ede3";
+  const brick = "#88342e";
+  const royalBlue = "#1e5d9e";
+  const ironMat = mat("#33414e", 0.45, 0.7);
+
+  const innerX = 3.65;
+  const outerX = 6.15;
+  for (const px of [-outerX, -innerX, innerX, outerX]) {
+    const isInner = Math.abs(px) < 4.5;
+    const w = isInner ? 0.86 : 0.72;
+    const h = isInner ? 5.15 : 4.0;
+    const d = isInner ? 0.9 : 0.76;
+    group.add(
+      box([w + 0.16, 0.36, d + 0.16], brick, [px, 0.18, 0]),
+      box([w, h, d], ivory, [px, h / 2 + 0.2, 0]),
+      box([w + 0.16, 0.18, d + 0.16], brick, [px, h + 0.24, 0]),
+      box([w + 0.22, 0.14, d + 0.22], ivory, [px, h + 0.38, 0]),
+    );
+  }
+
+  // Main upper lintel & stepped architectural pediment
+  group.add(
+    box([innerX * 2 + 0.9, 1.18, 0.72], ivory, [0, 4.35, 0]),
+    box([innerX * 2 + 1.3, 0.18, 0.92], brick, [0, 5.0, 0]),
+    box([5.2, 0.65, 0.65], ivory, [0, 5.4, 0]),
+    box([5.5, 0.16, 0.78], brick, [0, 5.76, 0]),
+  );
+
+  // Side portal lintels & open iron pedestrian bays
+  for (const sx of [-1, 1]) {
+    const midX = sx * ((innerX + outerX) / 2);
+    const span = outerX - innerX;
+    group.add(
+      box([span + 0.2, 0.56, 0.64], ivory, [midX, 3.65, 0]),
+      box([span + 0.45, 0.16, 0.78], brick, [midX, 3.98, 0]),
+      box([0.9, 1.85, 0.38], ivory, [sx * (outerX + 0.68), 0.92, 0]),
+      box([0.96, 0.16, 0.46], brick, [sx * (outerX + 0.68), 1.9, 0]),
+    );
+    for (let b = 0; b < 7; b++) {
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.045, 2.3, 0.045),
+        ironMat,
+      );
+      bar.position.set(sx * (innerX + 0.62 + b * 0.19), 1.35, 0.14);
+      group.add(bar);
+    }
+    group.add(
+      box([1.45, 0.07, 0.07], royalBlue, [midX, 2.48, 0.14]),
+      box([1.45, 0.48, 0.06], royalBlue, [midX, 0.44, 0.14]),
+    );
+  }
+
+  const frontPanel = createCaoThangSignPanel(6.25, 1.02);
+  frontPanel.position.set(0, 4.35, 0.4);
+  group.add(frontPanel);
+
+  const backPanel = createCaoThangSignPanel(6.25, 1.02);
+  backPanel.position.set(0, 4.35, -0.4);
+  backPanel.rotation.y = Math.PI;
+  backPanel.name = "gate-name-panel-back";
+  group.add(backPanel);
+
+  group.add(box([7.6, 0.08, 13], "#c9c4b8", [0, -0.02, -3.5]));
+  return group;
+}
+
 export function createSchoolGate(site) {
   const data = config[site.id];
   if (!data) return null;
@@ -519,6 +786,18 @@ export function createSchoolGate(site) {
   if (site.id === "hai-ba-trung") {
     return {
       object: createHaiBaTrungGate(),
+      placement: schoolGatePlacement(site),
+    };
+  }
+  if (site.id === "nguyen-chi-dieu") {
+    return {
+      object: createNguyenChiDieuGate(),
+      placement: schoolGatePlacement(site),
+    };
+  }
+  if (site.id === "cao-thang") {
+    return {
+      object: createCaoThangGate(),
       placement: schoolGatePlacement(site),
     };
   }

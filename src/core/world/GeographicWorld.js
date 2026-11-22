@@ -12,18 +12,20 @@ import {
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { SharedModelLoader as GLTFLoader } from "../shared/resources/sceneResources.js";
 import {
-  features,
-  roads,
-  mainRoads,
-  river,
-  sites,
-  pointsOf,
-  ringsOf,
-  centroid,
-  intersection,
-  boardwalkWayIds,
-  mappedSignals,
-} from "../shared/geography/map.js";
+  getFeatures,
+  getRoads,
+  getMainRoads,
+  getRiver,
+  getSites,
+  getPointsOf,
+  getRingsOf,
+  getCentroid,
+  getById,
+  getBoardwalkWayIds,
+  getMappedSignals,
+  getCorridorCrossings,
+} from "../shared/geography/activeGeography.js";
+import { intersection } from "../shared/geography/map.js";
 import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
 import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
@@ -51,7 +53,7 @@ import { YouthPlayground } from "../../modules/areas/quoc-hoc/view/YouthPlaygrou
 import { HueStation } from "../../modules/areas/quoc-hoc/view/HueStation.js";
 import { PropertyEnclosures } from "./PropertyEnclosures.js";
 import { campusWallIndex, nearbyWalls } from "./CampusWallIndex.js";
-import { regionContains, byId } from "../../modules/areas/AreaModel.js";
+import { regionContains } from "../../modules/areas/AreaModel.js";
 import { loadSharedModel } from "../shared/resources/sceneResources.js";
 export { roadWidth } from "./roadProfile.js";
 import { landmarkModules } from "../shared/architecture/registry.js";
@@ -61,6 +63,9 @@ import { createFountainPark } from "../../modules/areas/quoc-hoc/view/FountainPa
 import { createPhuXuanParkWalk } from "../../modules/areas/quoc-hoc/view/PhuXuanParkWalk.js";
 import { QuocHocSchoolCampus } from "../../modules/areas/quoc-hoc/view/QuocHocSchoolCampus.js";
 import { HaiBaTrungSchoolCampus } from "../../modules/areas/quoc-hoc/view/HaiBaTrungSchoolCampus.js";
+import { NguyenChiDieuCampus } from "../../modules/areas/nguyen-chi-dieu/view/NguyenChiDieuCampus.js";
+import { CaoThangCampus } from "../../modules/areas/nguyen-chi-dieu/view/CaoThangCampus.js";
+import { VincomPlazaHue } from "../../modules/areas/nguyen-chi-dieu/view/VincomPlazaHue.js";
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -68,12 +73,24 @@ import {
 import { surfaceTexture } from "./surfaceTextures.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { beam } from "../shared/architecture/architecture.js";
-import { corridorCrossings } from "../shared/geography/map.js";
 import {
   corridorStyles,
   siteForBuilding,
   decorateCorridorBuilding,
 } from "../shared/architecture/CorridorArchitecture.js";
+
+const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
+  732304130,
+  732304131,
+  1416873568,
+  732304133,
+  732304134,
+  732304135,
+  732304136,
+  732304137,
+  732304138,
+  749331141,
+]);
 
 export function ribbon(points, width, height = 0.23) {
   const vertices = [],
@@ -190,7 +207,7 @@ export class GeographicWorld {
     this.treePositions = [];
     this.buildingPolygons = [];
     this.areaLabels = [];
-    this.venues = features
+    this.venues = getFeatures()
       .filter(
         (f) =>
           f.type === "node" && ["restaurant", "cafe"].includes(f.tags?.amenity),
@@ -198,7 +215,7 @@ export class GeographicWorld {
       .map((f) => ({
         id: `osm-${f.id}`,
         title: f.tags.name || "Quán ăn",
-        ...centroid(f),
+        ...getCentroid(f),
       }));
     this.roadSegments = [];
     this.roadGrid = new Map();
@@ -207,10 +224,29 @@ export class GeographicWorld {
     this.bounds = { minX: -350, maxX: 1700, minZ: -1900, maxZ: 200 };
   }
   build() {
+    const activeFeatures = getFeatures();
+    const activeRoads = getRoads();
+    const activeMainRoads = getMainRoads();
+    const activeRiver = getRiver();
+    const activeSites = getSites();
+    const activeBoardwalkWayIds = getBoardwalkWayIds();
+    const activeMappedSignals = getMappedSignals();
+    const activeCorridorCrossings = getCorridorCrossings();
+
     this.trail = [];
     this.staticMapCache = {};
     if (this.region) this.bounds = { ...this.region.bounds };
-    this.loadedFeatureCount = features.length;
+    this.loadedFeatureCount = activeFeatures.length;
+    this.venues = activeFeatures
+      .filter(
+        (f) =>
+          f.type === "node" && ["restaurant", "cafe"].includes(f.tags?.amenity),
+      )
+      .map((f) => ({
+        id: `osm-${f.id}`,
+        title: f.tags.name || "Quán ăn",
+        ...getCentroid(f),
+      }));
     const scene = this.scene;
     scene.background = new THREE.Color("#b8d2dd");
     scene.fog = new THREE.Fog("#b8d2dd", 450, 1800);
@@ -224,8 +260,8 @@ export class GeographicWorld {
     scene.add(ground);
     const waterMaterial = riverMaterial();
     this.waterMaterial = waterMaterial;
-    this.riverRings = river;
-    for (const ring of river) {
+    this.riverRings = activeRiver;
+    for (const ring of activeRiver) {
       const water = new THREE.Mesh(polygonGeometry(ring), waterMaterial);
       water.position.y = 0.02;
       scene.add(water);
@@ -233,13 +269,13 @@ export class GeographicWorld {
     this.parkPolygons = [];
     const parkGeos = [];
     const parkBorderGeos = [];
-    for (const feature of features.filter(
+    for (const feature of activeFeatures.filter(
       (f) =>
         f.type === "way" &&
         f.geometry?.length > 3 &&
         (f.tags?.leisure === "park" || f.tags?.landuse === "grass"),
     )) {
-      const pts = pointsOf(feature);
+      const pts = getPointsOf(feature);
       this.parkPolygons.push({
         points: pts,
         minX: Math.min(...pts.map((p) => p.x)),
@@ -271,7 +307,7 @@ export class GeographicWorld {
       scene.add(borderMesh);
       parkBorderGeos.forEach((g) => g.dispose());
     }
-    this.renderRoads = roads.filter((r) =>
+    this.renderRoads = activeRoads.filter((r) =>
       r.points.some(
         (p) =>
           p.x >= this.bounds.minX &&
@@ -282,11 +318,11 @@ export class GeographicWorld {
     );
     this.boardwalkMainPoints = [683633953, 1167513733, 1167513732]
       .flatMap((id, idx) => {
-        const pts = roads.find((r) => r.id === id)?.points || [];
+        const pts = activeRoads.find((r) => r.id === id)?.points || [];
         return idx === 0 ? pts : pts.slice(1);
       });
     const customSurfaceIds = new Set([
-      ...boardwalkWayIds,
+      ...activeBoardwalkWayIds,
       ...LATERAL_BRIDGE_IDS,
       TRUONG_TIEN_ID,
       ...TRUONG_TIEN_SIDEWALK_IDS,
@@ -354,17 +390,17 @@ export class GeographicWorld {
     addMerged(sidewalks, "#c9c1ad");
     addMerged(paved, "#414749");
     addMerged(walkways, "#b4a78b");
-    this.truongTienRoad = roads.find((r) => r.id === TRUONG_TIEN_ID) || null;
+    this.truongTienRoad = activeRoads.find((r) => r.id === TRUONG_TIEN_ID) || null;
     addTruongTienBridge(this, this.truongTienRoad);
-    addPhuXuanBridge(this, roads);
+    addPhuXuanBridge(this, activeRoads);
     const buildingGroups = [[], [], []],
       roofGroups = [];
     let rendered = 0;
-    for (const feature of features.filter(
+    for (const feature of activeFeatures.filter(
       (f) => f.type === "way" && f.tags?.building && f.geometry?.length > 3,
     )) {
-      const points = pointsOf(feature),
-        center = centroid(feature);
+      const points = getPointsOf(feature),
+        center = getCentroid(feature);
       if (
         center.x < this.bounds.minX ||
         center.x > this.bounds.maxX ||
@@ -372,27 +408,51 @@ export class GeographicWorld {
         center.z > this.bounds.maxZ
       )
         continue;
-      if (!mainRoads.some((r) => nearestPoint(center, r.points).distance < 135))
+      if (
+        !activeMainRoads.some(
+          (r) => nearestPoint(center, r.points).distance < 135,
+        )
+      )
         continue;
       if (
-        sites.some(
+        activeSites.some(
           (s) =>
             ["ngo-mon", "ky-dai"].includes(s.id) &&
             Math.hypot(s.center.x - center.x, s.center.z - center.z) < 30,
         )
       )
         continue;
+      if (CUSTOM_LANDMARK_BUILDING_IDS.has(feature.id)) {
+        this.buildingPolygons.push({
+          points,
+          minX: Math.min(...points.map((p) => p.x)),
+          maxX: Math.max(...points.map((p) => p.x)),
+          minZ: Math.min(...points.map((p) => p.z)),
+          maxZ: Math.max(...points.map((p) => p.z)),
+        });
+        rendered++;
+        continue;
+      }
       const height =
         Number.parseFloat(feature.tags.height) ||
         Number(feature.tags["building:levels"] || 2) * 3.2;
-      const institution = siteForBuilding(feature, points, sites, ringsOf);
+      const institution = siteForBuilding(feature, points, activeSites, getRingsOf);
       if (institution) {
-        if (!["quoc-hoc-school", "hai-ba-trung"].includes(institution.id)) {
-          const style = corridorStyles[institution.id],
-            body = new THREE.Mesh(
-              polygonGeometry(points, Math.min(45, height)),
-              mat(style.wall),
-            );
+        const style = corridorStyles[institution.id];
+        if (
+          style &&
+          ![
+            "quoc-hoc-school",
+            "hai-ba-trung",
+            "nguyen-chi-dieu",
+            "cao-thang",
+            "vincom-hue",
+          ].includes(institution.id)
+        ) {
+          const body = new THREE.Mesh(
+            polygonGeometry(points, Math.min(45, height)),
+            mat(style.wall),
+          );
           body.position.y = 0.23;
           body.castShadow = body.receiveShadow = true;
           scene.add(
@@ -401,7 +461,9 @@ export class GeographicWorld {
               points,
               Math.min(45, height),
               style,
-              mainRoads.filter((r) => r.tags.name === "Lê Lợi"),
+              activeMainRoads.filter((r) =>
+                ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
+              ),
             ),
           );
           this.cameraObstacles.push(body);
@@ -463,7 +525,7 @@ export class GeographicWorld {
     this.buildingCount = rendered;
     this.schoolGates = [];
     this.campusWallSegments = [];
-    for (const site of sites) {
+    for (const site of activeSites) {
       if (site.kind === "school") {
         const gate = createSchoolGate(site);
         if (gate) {
@@ -489,10 +551,25 @@ export class GeographicWorld {
               site,
               gate.placement,
             );
+          } else if (site.id === "nguyen-chi-dieu") {
+            this.nguyenChiDieuCampus = new NguyenChiDieuCampus(
+              this,
+              site,
+              gate.placement,
+            );
+          } else if (site.id === "cao-thang") {
+            this.caoThangCampus = new CaoThangCampus(
+              this,
+              site,
+              gate.placement,
+            );
           }
         }
       }
-      if (!["bridge", "boardwalk", "school", "youth"].includes(site.kind)) {
+      if (site.id === "vincom-hue") {
+        this.vincomPlaza = new VincomPlazaHue(this, site);
+      }
+      if (!["bridge", "boardwalk", "school", "youth", "commercial"].includes(site.kind)) {
         const frontage = buildingFrontage(site.sign, this.renderRoads);
         if (frontage) {
           const post = postedBoard(site.title, site.address, 2.8);
@@ -512,13 +589,15 @@ export class GeographicWorld {
           Boolean(this.quality?.mobile),
         );
       sign.position.set(site.sign.x, 0.23, site.sign.z);
-      const closest = mainRoads
+      const closest = activeMainRoads
         .map((r) => nearestPoint(site.sign, r.points))
         .sort((a, b) => a.distance - b.distance)[0];
-      sign.rotation.y = Math.atan2(
-        closest.x - site.sign.x,
-        closest.z - site.sign.z,
-      );
+      if (closest) {
+        sign.rotation.y = Math.atan2(
+          closest.x - site.sign.x,
+          closest.z - site.sign.z,
+        );
+      }
       if (isArea) {
         sign.children.slice(1).forEach((child) => (child.visible = false));
         sign.position.y = 6;
@@ -536,7 +615,8 @@ export class GeographicWorld {
         site.kind === "school" ||
         site.kind === "station" ||
         site.id === "truong-tien" ||
-        site.id === "quoc-hoc"
+        site.id === "quoc-hoc" ||
+        site.id === "vincom-hue"
       ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
@@ -546,11 +626,17 @@ export class GeographicWorld {
         id: site.id,
         title: site.title,
         position: site.sign,
-        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : 45,
+        radius: isArea ? 100 : site.id === "quoc-hoc" ? 55 : site.id === "vincom-hue" ? 68 : 48,
         description:
           site.id === "quoc-hoc" && module?.description
             ? `${site.address}. ${module.description}`
-            : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
+            : site.id === "nguyen-chi-dieu"
+              ? `${site.address} · Ngôi trường THCS khang trang bên đường Đống Đa với hàng rào trắng, bảng HLC và sân trường rợp bóng cây xanh.`
+              : site.id === "cao-thang"
+                ? `${site.address} · Trường THPT Cao Thắng nằm cạnh Trường THCS Nguyễn Chí Diểu với sân trường rộng rãi và các dãy phòng học mái ngói đỏ.`
+                : site.id === "vincom-hue"
+                  ? `${site.address} · Tổ hợp trung tâm thương mại Vincom Plaza Huế & khách sạn Meliá Vinpearl cao 39 tầng ngay vòng xoay Ngã 6 Hùng Vương.`
+                  : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
       });
       if (module && site.id !== "truong-tien") {
         const object = module.create();
@@ -558,8 +644,8 @@ export class GeographicWorld {
         object.rotation.y = sign.rotation.y;
         scene.add(object);
         if (site.id === "quoc-hoc") {
-          const haiBaTrungSite = sites.find((s) => s.id === "hai-ba-trung");
-          const ubndSite = sites.find((s) => s.id === "ubnd");
+          const haiBaTrungSite = activeSites.find((s) => s.id === "hai-ba-trung");
+          const ubndSite = activeSites.find((s) => s.id === "ubnd");
           this.biaPark = createBiaQuocHocPark(this, site, sign.rotation.y);
           this.fireflyPark = createFireflyTreePark(this, site, sign.rotation.y, {
             haiBaTrung: haiBaTrungSite
@@ -647,9 +733,10 @@ export class GeographicWorld {
         }
       }
     }
-    for (const crossing of corridorCrossings) {
-      const road = roads.find((r) => r.id === crossing.mainId),
-        hit = nearestPoint(crossing.point, road.points),
+    for (const crossing of activeCorridorCrossings) {
+      const road = activeRoads.find((r) => r.id === crossing.mainId);
+      if (!road) continue;
+      const hit = nearestPoint(crossing.point, road.points),
         a = road.points[hit.index - 1],
         b = road.points[hit.index];
       for (const direction of [1, -1]) {
@@ -657,7 +744,7 @@ export class GeographicWorld {
           dx = (b.x - a.x) / length,
           dz = (b.z - a.z) / length,
           offset = roadWidth(road) / 2 + 3,
-          sign = postedBoard(`Lê Lợi × ${crossing.name}`, "Giao lộ", 3.6);
+          sign = postedBoard(`${road.tags?.name || "Lê Lợi"} × ${crossing.name}`, "Giao lộ", 3.6);
         sign.position.set(
           crossing.point.x - dx * 18 * direction - dz * offset * direction,
           0.32,
@@ -668,7 +755,7 @@ export class GeographicWorld {
       }
     }
     this.trafficSignalPositions = [];
-    for (const source of mappedSignals)
+    for (const source of activeMappedSignals)
       for (const signal of placeTrafficSignal(source, this.renderRoads)) {
         if (
           this.trafficSignalPositions.some(
@@ -700,8 +787,10 @@ export class GeographicWorld {
         scene.add(group);
         this.trafficSignalPositions.push(signal);
       }
-    // Decorative trees on the river side of Le Loi; individual tree GPS is not surveyed.
-    for (const road of mainRoads.filter((r) => r.tags.name === "Lê Lợi"))
+    // Decorative trees on avenue sides; individual tree GPS is not surveyed.
+    for (const road of activeMainRoads.filter((r) =>
+      ["Lê Lợi", "Đống Đa"].includes(r.tags.name),
+    ))
       for (let i = 1; i < road.points.length; i++) {
         let a = road.points[i - 1],
           b = road.points[i];
@@ -716,7 +805,11 @@ export class GeographicWorld {
               z: a.z + (dz * d) / length - (dx / length) * offset,
             };
           if (
-            !river.some((r) => inside(p, r)) &&
+            p.x >= this.bounds.minX &&
+            p.x <= this.bounds.maxX &&
+            p.z >= this.bounds.minZ &&
+            p.z <= this.bounds.maxZ &&
+            !activeRiver.some((r) => inside(p, r)) &&
             !this.buildingPolygons.some((poly) => inside(p, poly.points))
           )
             this.treePositions.push(p);
@@ -736,40 +829,37 @@ export class GeographicWorld {
             z: a.z + ((b.z - a.z) * d) / length,
           };
           if (
-            !river.some((r) => inside(p, r)) &&
-            p.x >= 0 &&
-            p.x < 1450 &&
-            p.z < 0 &&
-            p.z > -1700
+            !activeRiver.some((r) => inside(p, r)) &&
+            p.x >= this.bounds.minX &&
+            p.x <= this.bounds.maxX &&
+            p.z >= this.bounds.minZ &&
+            p.z <= this.bounds.maxZ
           )
             this.treePositions.push(p);
         }
       }
-    if (this.quocHocPark || this.quocHocCampus || this.haiBaTrungCampus) {
+    const filterCampusTrees = () => {
       this.treePositions = this.treePositions.filter(
         (p) =>
           !this.quocHocPark?.blocksTree(p.x, p.z) &&
           !this.quocHocCampus?.blocksTree(p.x, p.z) &&
-          !this.haiBaTrungCampus?.blocksTree(p.x, p.z),
+          !this.haiBaTrungCampus?.blocksTree(p.x, p.z) &&
+          !this.nguyenChiDieuCampus?.blocksTree(p.x, p.z) &&
+          !this.caoThangCampus?.blocksTree(p.x, p.z) &&
+          !this.vincomPlaza?.blocksTree(p.x, p.z),
       );
-    }
+    };
+    filterCampusTrees();
     this.treePositions = this.treePositions.slice(0, 95);
     this.projectPoint = project;
-    this.riverRings = river;
-    addStreetDetails(this, features);
-    if (this.quocHocPark || this.quocHocCampus || this.haiBaTrungCampus) {
-      this.treePositions = this.treePositions.filter(
-        (p) =>
-          !this.quocHocPark?.blocksTree(p.x, p.z) &&
-          !this.quocHocCampus?.blocksTree(p.x, p.z) &&
-          !this.haiBaTrungCampus?.blocksTree(p.x, p.z),
-      );
-    }
-    const boardwalkView = addLimWoodBoardwalk(this, roads);
+    this.riverRings = activeRiver;
+    addStreetDetails(this, activeFeatures);
+    filterCampusTrees();
+    const boardwalkView = addLimWoodBoardwalk(this, activeRoads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
     this.boardwalkRails = [];
     for (const road of this.renderRoads.filter((r) =>
-      boardwalkWayIds.includes(r.id),
+      activeBoardwalkWayIds.includes(r.id),
     )) {
       const segments = railSegments(road, roadWidth(road), (i) =>
         this.roadHeight(road, i),
@@ -782,9 +872,9 @@ export class GeographicWorld {
       });
       this.boardwalkRails.push(...segments);
     }
-    this.youthPlayground = byId(695775607) ? new YouthPlayground(this) : null;
+    this.youthPlayground = getById(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
-    this.station = byId(175063593) ? new HueStation(this) : null;
+    this.station = getById(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
@@ -826,7 +916,10 @@ export class GeographicWorld {
   groundAt(x, z, referenceY) {
     const campusY =
       this.quocHocCampus?.groundAt(x, z, referenceY) ??
-      this.haiBaTrungCampus?.groundAt(x, z, referenceY);
+      this.haiBaTrungCampus?.groundAt(x, z, referenceY) ??
+      this.nguyenChiDieuCampus?.groundAt(x, z, referenceY) ??
+      this.caoThangCampus?.groundAt(x, z, referenceY) ??
+      this.vincomPlaza?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
@@ -891,10 +984,15 @@ export class GeographicWorld {
       )
     )
       return false;
+    const vincomRide = this.vincomPlaza?.canRide(x, z);
+    if (vincomRide === false) return false;
     const parkRide = this.quocHocPark?.canRide(x, z);
     if (parkRide !== null && parkRide !== undefined) return parkRide;
     const campusRide =
-      this.quocHocCampus?.canRide(x, z) ?? this.haiBaTrungCampus?.canRide(x, z);
+      this.quocHocCampus?.canRide(x, z) ??
+      this.haiBaTrungCampus?.canRide(x, z) ??
+      this.nguyenChiDieuCampus?.canRide(x, z) ??
+      this.caoThangCampus?.canRide(x, z);
     if (campusRide === false) return false;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
@@ -907,6 +1005,7 @@ export class GeographicWorld {
       );
       if (!blockedByBuilding) return true;
     }
+    const activeRiver = this.riverRings || getRiver();
     if (this.truongTienRoad) {
       const q = truongTienDeckQuery(this.truongTienRoad, x, z);
       if (
@@ -914,12 +1013,12 @@ export class GeographicWorld {
         (!Number.isFinite(referenceY) || Math.abs(q.deckY - referenceY) < 1.8)
       ) {
         if (q.allowed) return true;
-        if (river.some((r) => inside({ x, z }, r))) return false;
+        if (activeRiver.some((r) => inside({ x, z }, r))) return false;
       }
     }
     const hit = this.nearestRoad(x, z);
     if (hit.road && hit.distance < roadWidth(hit.road) / 2 + 1.2) return true;
-    if (river.some((r) => inside({ x, z }, r))) return false;
+    if (activeRiver.some((r) => inside({ x, z }, r))) return false;
     return !this.buildingPolygons.some(
       (b) =>
         x > b.minX &&
@@ -936,8 +1035,10 @@ export class GeographicWorld {
     this.fountainPark?.update?.(time);
     this.youthPlayground?.update(time);
     this.propertyEnclosures?.update(time);
-    this.quocHocCampus?.update(time);
-    this.haiBaTrungCampus?.update(time);
+    this.quocHocCampus?.update(time, position);
+    this.haiBaTrungCampus?.update(time, position);
+    this.nguyenChiDieuCampus?.update(time, position);
+    this.caoThangCampus?.update(time, position);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);
@@ -992,9 +1093,9 @@ export class GeographicWorld {
     renderAreaMap(ctx, {
       regionId: this.region?.id,
       bounds: this.bounds,
-      riverRings: this.riverRings || river,
-      roads: this.renderRoads || roads,
-      mainRoads,
+      riverRings: this.riverRings || getRiver(),
+      roads: this.renderRoads || getRoads(),
+      mainRoads: getMainRoads(),
       district: districts.find((d) => d.id === selected),
       landmarks: this.landmarks,
       bike,

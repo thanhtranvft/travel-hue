@@ -10,7 +10,7 @@ import {
   parkingGate,
 } from "../../modules/areas/quoc-hoc/view/CITParking.js";
 import { propertyGateModel } from "./PropertyGate.js";
-import { features } from "../shared/geography/map.js";
+import { getFeatures } from "../shared/geography/activeGeography.js";
 import { buildings } from "../shared/data/buildingCatalog.js";
 
 export const propertyRecords = data.properties;
@@ -53,7 +53,7 @@ export class PropertyEnclosures {
         batches.get(color).push(geometry);
       };
     const available = new Set(
-        features
+        getFeatures()
           .filter((f) => f.tags?.building)
           .map((f) => `${f.type}/${f.id}`),
       ),

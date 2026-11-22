@@ -98,6 +98,27 @@
       "title": "Ngọ Môn",
       "address": "Hoàng thành Huế",
       "kind": "gate"
+    },
+    {
+      "id": "nguyen-chi-dieu",
+      "osm": 732304130,
+      "title": "Trường THCS Nguyễn Chí Diểu",
+      "address": "11 Đống Đa · P. Thuận Hóa",
+      "kind": "school"
+    },
+    {
+      "id": "cao-thang",
+      "osm": 732304135,
+      "title": "Trường THPT Cao Thắng",
+      "address": "Đống Đa · P. Thuận Hóa",
+      "kind": "school"
+    },
+    {
+      "id": "vincom-hue",
+      "osm": 749331141,
+      "title": "Vincom Plaza Huế",
+      "address": "50A Hùng Vương · Ngã 6 Đống Đa",
+      "kind": "commercial"
     }
   ]
 }

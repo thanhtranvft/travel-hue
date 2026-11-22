@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import {
-  centroid,
-  features,
-  pointsOf,
-  ringsOf,
-} from "../../../../core/shared/geography/map.js";
+  getCentroid,
+  getFeatures,
+  getPointsOf,
+  getRingsOf,
+} from "../../../../core/shared/geography/activeGeography.js";
 import {
   inside,
   nearestPoint,
@@ -15,6 +15,7 @@ import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
 } from "../../../../core/world/turfTextures.js";
+import { CampusStudents } from "../../../../core/world/CampusStudents.js";
 
 const QUOC_HOC_STATUE_NODE_ID = 13516238185;
 const FALLBACK_STATUE = { x: 585.9926923575766, z: -374.803926445244 };
@@ -782,11 +783,11 @@ export class QuocHocSchoolCampus {
   constructor(world, site, gatePlacement) {
     this.world = world;
     this.site = site;
-    this.campusRings = ringsOf(site.feature);
+    this.campusRings = getRingsOf(site.feature);
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
 
-    const statueNode = features.find((f) => f.id === QUOC_HOC_STATUE_NODE_ID);
-    this.statue = statueNode ? centroid(statueNode) : FALLBACK_STATUE;
+    const statueNode = getFeatures().find((f) => f.id === QUOC_HOC_STATUE_NODE_ID);
+    this.statue = statueNode ? getCentroid(statueNode) : FALLBACK_STATUE;
 
     const dx = this.statue.x - this.gate.x;
     const dz = this.statue.z - this.gate.z;
@@ -805,6 +806,7 @@ export class QuocHocSchoolCampus {
     this.buildBuildings();
     this.buildCourtyard();
     this.buildGreenery();
+    this.buildStudents();
 
     world.scene.add(this.group);
   }
@@ -851,12 +853,12 @@ export class QuocHocSchoolCampus {
     const stonePlinthMat = mat("#6f665a", 0.9);
     const darkWoodMat = mat("#3b2217", 0.8);
 
-    const campusBuildings = features.filter(
+    const campusBuildings = getFeatures().filter(
       (f) =>
         f.type === "way" &&
         f.tags?.building &&
         f.geometry?.length > 3 &&
-        this.campusRings.some((r) => inside(centroid(f), r)),
+        this.campusRings.some((r) => inside(getCentroid(f), r)),
     );
 
     const pilasters = [];
@@ -866,7 +868,7 @@ export class QuocHocSchoolCampus {
     const plinthTrim = [];
 
     for (const feature of campusBuildings) {
-      const pts = pointsOf(feature);
+      const pts = getPointsOf(feature);
       this.campusBuildingPolygons.push(pts);
 
       const isMainHall = feature.id === 695775639;
@@ -973,7 +975,7 @@ export class QuocHocSchoolCampus {
       // Main Hall (695775639) iconic white ornate pediment crest, veranda balcony & colonnade porch facing statue
       if (isMainHall) {
         const hall = new THREE.Group();
-        const c = centroid(feature);
+        const c = getCentroid(feature);
         hall.position.set(c.x, 0.23, c.z);
         hall.rotation.y = this.facingGateYaw;
 
@@ -1452,7 +1454,32 @@ export class QuocHocSchoolCampus {
     return this.inCampus(wx, wz);
   }
 
-  update(time) {
+  buildStudents() {
+    this.students = new CampusStudents({
+      parent: this.group,
+      toWorld: (side, fwd) => this.toWorld(side, fwd),
+      groundAt: (wx, wz) => this.groundAt(wx, wz) ?? 0.34,
+      walkers: [
+        { gender: "girl", points: [[-2.4, 16], [-2.4, 82]], speed: 1.32, offset: 0.1 },
+        { gender: "boy", points: [[2.5, 84], [2.5, 22]], speed: 1.4, offset: 0.45 },
+        { gender: "girl", points: [[-36.8, 66], [-36.8, 134]], speed: 1.24, offset: 0.25 },
+        { gender: "boy", points: [[31.0, 136], [31.0, 68]], speed: 1.36, offset: 0.65 },
+        { gender: "girl", points: [[-34, this.axisLength], [-14.5, this.axisLength]], speed: 1.28, offset: 0.2 },
+        { gender: "boy", points: [[14.5, this.axisLength], [30, this.axisLength]], speed: 1.3, offset: 0.5 },
+        { gender: "girl", points: [[-5.2, 118], [-5.2, 138]], speed: 1.18, offset: 0.35 },
+        { gender: "boy", points: [[5.2, 138], [5.2, 118]], speed: 1.22, offset: 0.7 },
+      ],
+      chatSpots: [
+        { side: -10.5, fwd: this.axisLength - 7.5, members: ["girl", "boy", "girl"], radius: 0.9 },
+        { side: 10.5, fwd: this.axisLength + 6.5, members: ["boy", "girl", "boy"], radius: 0.9 },
+        { side: -22, fwd: 138.5, members: ["girl", "boy"], radius: 0.75 },
+        { side: 19, fwd: 138.5, members: ["boy", "girl"], radius: 0.75 },
+      ],
+    });
+    this.animatedObjects.push(...this.students.animatedObjects);
+  }
+
+  update(time, playerPos = null) {
     for (const flag of this.flags) {
       const pos = flag.geometry.attributes.position;
       const base = flag.userData.basePos;
@@ -1472,5 +1499,6 @@ export class QuocHocSchoolCampus {
       pos.needsUpdate = true;
       flag.geometry.computeVertexNormals();
     }
+    this.students?.update(time, playerPos);
   }
 }

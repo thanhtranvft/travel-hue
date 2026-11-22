@@ -14,7 +14,7 @@ import { cleanAvatarId } from "./core/network/protocol.js";
 import { setRiderIdentity } from "./core/vehicle/RiderIdentity.js";
 import { CityAudio } from "./core/audio/CityAudio.js";
 import { GamePresenter as Game } from "./app/GamePresenter.js";
-import { geoDistricts as districts } from "./core/shared/geography/map.js";
+import { geoDistricts as districts } from "./modules/areas/AreaModel.js";
 import {
   initializeMobileUI,
   initializeAudioUI,

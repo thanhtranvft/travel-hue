@@ -1,17 +1,18 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import {
-  centroid,
-  features,
-  pointsOf,
-  ringsOf,
-} from "../../../../core/shared/geography/map.js";
+  getCentroid,
+  getFeatures,
+  getPointsOf,
+  getRingsOf,
+} from "../../../../core/shared/geography/activeGeography.js";
 import {
   inside,
   nearestPoint,
 } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
+import { CampusStudents } from "../../../../core/world/CampusStudents.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -670,7 +671,7 @@ export class HaiBaTrungSchoolCampus {
   constructor(world, site, gatePlacement) {
     this.world = world;
     this.site = site;
-    this.campusRings = ringsOf(site.feature);
+    this.campusRings = getRingsOf(site.feature);
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
     this.facingGateYaw = gatePlacement.heading;
     this.fwdVec = {
@@ -690,6 +691,7 @@ export class HaiBaTrungSchoolCampus {
     this.buildBuildings();
     this.buildCourtyard();
     this.buildGreenery();
+    this.buildStudents();
 
     world.scene.add(this.group);
   }
@@ -742,12 +744,12 @@ export class HaiBaTrungSchoolCampus {
     const stonePlinthMat = mat("#6f665a", 0.9);
     const darkWoodMat = mat("#3b2217", 0.82);
 
-    const campusBuildings = features.filter(
+    const campusBuildings = getFeatures().filter(
       (f) =>
         f.type === "way" &&
         f.tags?.building &&
         f.geometry?.length > 3 &&
-        this.campusRings.some((r) => inside(centroid(f), r)),
+        this.campusRings.some((r) => inside(getCentroid(f), r)),
     );
 
     const pilasters = [];
@@ -757,7 +759,7 @@ export class HaiBaTrungSchoolCampus {
     const plinthTrim = [];
 
     for (const feature of campusBuildings) {
-      const pts = pointsOf(feature);
+      const pts = getPointsOf(feature);
       this.campusBuildingPolygons.push(pts);
       const ob = orientedBounds(pts);
       const isCarport = feature.tags?.building === "carport";
@@ -906,7 +908,7 @@ export class HaiBaTrungSchoolCampus {
       // Iconic Main Hall (695770489 Nhà chơi) matching Photo 2: colonnade arcade, verandah roof, oculus gable & motto plaques
       if (isMainHall) {
         const hall = new THREE.Group();
-        const c = centroid(feature);
+        const c = getCentroid(feature);
         hall.position.set(c.x, 0.23, c.z);
         hall.rotation.y = this.facingGateYaw;
 
@@ -1460,7 +1462,32 @@ export class HaiBaTrungSchoolCampus {
     return this.inCampus(wx, wz);
   }
 
-  update(time) {
+  buildStudents() {
+    this.students = new CampusStudents({
+      parent: this.group,
+      toWorld: (side, fwd) => this.toWorld(side, fwd),
+      groundAt: (wx, wz) => this.groundAt(wx, wz) ?? 0.34,
+      walkers: [
+        { gender: "girl", points: [[-1.6, 14], [-1.6, 118]], speed: 1.28, offset: 0.12 },
+        { gender: "boy", points: [[2.4, 120], [2.4, 18]], speed: 1.38, offset: 0.52 },
+        { gender: "girl", points: [[-29.8, 34], [-29.8, 152]], speed: 1.22, offset: 0.3 },
+        { gender: "boy", points: [[31.2, 152], [31.2, 34]], speed: 1.32, offset: 0.72 },
+        { gender: "girl", points: [[-26, 92], [26, 92]], speed: 1.26, offset: 0.18 },
+        { gender: "boy", points: [[26, 125], [-26, 125]], speed: 1.34, offset: 0.6 },
+        { gender: "girl", points: [[1.0, 134], [1.0, 140.5]], speed: 1.1, offset: 0.2 },
+        { gender: "boy", points: [[11.0, 144], [21.5, 144]], speed: 1.22, offset: 0.5 },
+      ],
+      chatSpots: [
+        { side: -14.5, fwd: 144, members: ["girl", "girl", "boy"], radius: 0.9 },
+        { side: 16.5, fwd: 160, members: ["boy", "girl", "boy"], radius: 0.9 },
+        { side: -16, fwd: 160, members: ["girl", "boy"], radius: 0.78 },
+        { side: -6, fwd: 54, members: ["boy", "girl"], radius: 0.72 },
+      ],
+    });
+    this.animatedObjects.push(...this.students.animatedObjects);
+  }
+
+  update(time, playerPos = null) {
     for (const flag of this.flags) {
       const pos = flag.geometry.attributes.position;
       const base = flag.userData.basePos;
@@ -1479,5 +1506,6 @@ export class HaiBaTrungSchoolCampus {
       pos.needsUpdate = true;
       flag.geometry.computeVertexNormals();
     }
+    this.students?.update(time, playerPos);
   }
 }

@@ -6,7 +6,7 @@ import { createAreaView } from "../modules/areas/AreaView.js";
 import * as THREE from "three";
 import { InputController } from "../core/input/InputController.js";
 import { TouringBike } from "../core/vehicle/TouringBike.js";
-import { geoDistricts as districts } from "../core/shared/geography/map.js";
+import { geoDistricts as districts } from "../modules/areas/AreaModel.js";
 import { damp, wrapAngle } from "../core/vehicle/BicycleMotion.js";
 import { CityAudio } from "../core/audio/CityAudio.js";
 import patrolConfig from "../data/world/police-patrols.json" with { type: "json" };
