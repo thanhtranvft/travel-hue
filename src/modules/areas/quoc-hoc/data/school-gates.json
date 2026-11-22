@@ -2,6 +2,7 @@
   "quoc-hoc-school": {"title":"TRƯỜNG QUỐC HỌC HUẾ", "address":"12 Lê Lợi", "color":"#a73d30", "trim":"#efd9aa", "width":10, "style":"tiled", "wallHeight":2.2, "wallThickness":0.4},
   "hai-ba-trung": {"title":"TRƯỜNG HAI BÀ TRƯNG", "address":"14 Lê Lợi", "color":"#e5cb84", "wallColor":"#a73d30", "trim":"#fff1ce", "width":10, "style":"colonial", "wallHeight":2.2, "wallThickness":0.4},
   "nguyen-chi-dieu": {"title":"TRƯỜNG THCS NGUYỄN CHÍ DIỂU", "address":"11 Đống Đa", "color":"#f4f1e8", "wallColor":"#8e8980", "trim":"#f3e38a", "width":11.5, "style":"canopy", "wallHeight":2.05, "wallThickness":0.36},
-  "cao-thang": {"title":"TRƯỜNG THPT CAO THẮNG", "address":"Đống Đa · Huế", "color":"#f3eee4", "wallColor":"#7d3330", "trim":"#245d96", "width":11.2, "style":"pediment", "wallHeight":2.1, "wallThickness":0.38}
+  "cao-thang": {"title":"TRƯỜNG THPT CAO THẮNG", "address":"Đống Đa · Huế", "color":"#f3eee4", "wallColor":"#7d3330", "trim":"#245d96", "width":11.2, "style":"pediment", "wallHeight":2.1, "wallThickness":0.38},
+  "quang-trung": {"title":"TRƯỜNG TIỂU HỌC QUANG TRUNG", "address":"83 Nguyễn Huệ · Huế", "color":"#f3f6fa", "wallColor":"#eef3f8", "trim":"#1a73c8", "width":11.0, "style":"modern", "wallHeight":2.05, "wallThickness":0.36}
 }
 

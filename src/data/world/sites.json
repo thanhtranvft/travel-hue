@@ -119,6 +119,27 @@
       "title": "Vincom Plaza Huế",
       "address": "50A Hùng Vương · Ngã 6 Đống Đa",
       "kind": "commercial"
+    },
+    {
+      "id": "quang-trung",
+      "osm": 732320417,
+      "title": "Trường Tiểu học Quang Trung",
+      "address": "83 Nguyễn Huệ · P. Thuận Hóa",
+      "kind": "school"
+    },
+    {
+      "id": "benh-vien-rhm-hue",
+      "osm": 1226642041,
+      "title": "Bệnh viện Răng Hàm Mặt Huế",
+      "address": "83 Nguyễn Huệ · P. Thuận Hóa",
+      "kind": "hospital"
+    },
+    {
+      "id": "nha-tho-dong-chua-cuu-the",
+      "osm": 1173745442,
+      "title": "Nhà thờ Dòng Chúa Cứu Thế",
+      "address": "142 Nguyễn Huệ · P. Thuận Hóa",
+      "kind": "commercial"
     }
   ]
 }

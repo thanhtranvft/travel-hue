@@ -4,6 +4,7 @@ import { box, mat, roof } from "../../../../core/shared/architecture/shared.js";
 import { getPointsOf, getRoads } from "../../../../core/shared/geography/activeGeography.js";
 import { nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import dongDaCampuses from "../../nguyen-chi-dieu/data/campuses.json" with { type: "json" };
+import quangTrungCampuses from "../../quang-trung/data/campuses.json" with { type: "json" };
 
 function createGateCanvasTexture(width, height, draw) {
   if (typeof document === "undefined") return null;
@@ -349,6 +350,14 @@ export function schoolGatePlacement(site) {
     return {
       ...precomputed.gate,
       heading: dongDaCampuses.gateHeading,
+      confidence: "mapped",
+    };
+  }
+  const qtPrecomputed = quangTrungCampuses[site.id];
+  if (qtPrecomputed?.gate) {
+    return {
+      ...qtPrecomputed.gate,
+      heading: quangTrungCampuses.gateHeading,
       confidence: "mapped",
     };
   }
@@ -774,6 +783,131 @@ function createCaoThangGate() {
   return group;
 }
 
+function createQuangTrungSignPanel(width = 6.6, height = 1.08) {
+  const texture = createGateCanvasTexture(1536, 256, (c, w, h) => {
+    c.fillStyle = "#145ea8";
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#f2f6fa";
+    c.lineWidth = 12;
+    c.strokeRect(8, 8, w - 16, h - 16);
+    c.strokeStyle = "#ffd95e";
+    c.lineWidth = 4;
+    c.strokeRect(22, 22, w - 44, h - 44);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#e4f2ff";
+    c.font = "700 34px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("PHÒNG GIÁO DỤC VÀ ĐÀO TẠO THÀNH PHỐ HUẾ", w / 2, h * 0.27);
+    c.fillStyle = "#ffffff";
+    c.font = "bold 74px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("TRƯỜNG TIỂU HỌC QUANG TRUNG", w / 2, h * 0.65, w - 80);
+  });
+  const panel = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.45,
+      metalness: 0.08,
+      side: THREE.DoubleSide,
+    }),
+  );
+  panel.name = "gate-name-panel";
+  return panel;
+}
+
+function createQuangTrungGate() {
+  const group = new THREE.Group();
+  group.name = "quang-trung-gate";
+  const white = "#f4f7fa";
+  const iceBlue = "#b9d2e8";
+  const royalBlue = "#1a73c8";
+  const stoneBase = "#8a9199";
+  const ironMat = mat("#2368b0", 0.38, 0.55);
+
+  const innerX = 3.7;
+  const outerX = 6.2;
+  for (const px of [-outerX, -innerX, innerX, outerX]) {
+    const isInner = Math.abs(px) < 4.5;
+    const w = isInner ? 0.84 : 0.7;
+    const h = isInner ? 5.0 : 3.9;
+    const d = isInner ? 0.88 : 0.74;
+    group.add(
+      box([w + 0.16, 0.34, d + 0.16], stoneBase, [px, 0.17, 0]),
+      box([w, h, d], white, [px, h / 2 + 0.2, 0]),
+      box([w + 0.14, 0.16, d + 0.14], royalBlue, [px, h + 0.22, 0]),
+      box([w + 0.22, 0.14, d + 0.22], white, [px, h + 0.36, 0]),
+    );
+    group.add(
+      box([w + 0.06, 0.2, d + 0.06], iceBlue, [px, 1.4, 0]),
+      box([w + 0.06, 0.2, d + 0.06], iceBlue, [px, 2.8, 0]),
+    );
+  }
+
+  // Main upper lintel beam & modern ice-blue tiered canopy above the sign
+  group.add(
+    box([innerX * 2 + 0.8, 1.18, 0.68], white, [0, 4.35, 0]),
+    box([innerX * 2 + 1.0, 0.12, 0.82], royalBlue, [0, 3.72, 0]),
+    box([9.6, 0.18, 1.35], royalBlue, [0, 5.04, 0]),
+    box([10.3, 0.16, 1.48], white, [0, 5.2, 0]),
+    box([4.8, 0.52, 0.52], iceBlue, [0, 5.54, 0]),
+    box([5.1, 0.16, 0.64], royalBlue, [0, 5.84, 0]),
+  );
+
+  // Side pedestrian bays & swung-open blue steel center gate leaves
+  for (const sx of [-1, 1]) {
+    const midX = sx * ((innerX + outerX) / 2);
+    const span = outerX - innerX;
+    group.add(
+      box([span + 0.2, 0.52, 0.62], white, [midX, 3.55, 0]),
+      box([span + 0.4, 0.16, 0.76], royalBlue, [midX, 3.88, 0]),
+      box([0.9, 1.85, 0.36], white, [sx * (outerX + 0.68), 0.92, 0]),
+      box([0.96, 0.16, 0.44], royalBlue, [sx * (outerX + 0.68), 1.9, 0]),
+    );
+    for (let b = 0; b < 7; b++) {
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(0.045, 2.25, 0.045),
+        ironMat,
+      );
+      bar.position.set(sx * (innerX + 0.6 + b * 0.21), 1.32, 0.12);
+      group.add(bar);
+    }
+    group.add(
+      box([1.45, 0.07, 0.07], royalBlue, [midX, 2.44, 0.12]),
+      box([1.45, 0.46, 0.06], iceBlue, [midX, 0.42, 0.12]),
+    );
+
+    const leafGroup = new THREE.Group();
+    leafGroup.position.set(sx * (innerX - 0.46), 0.18, -0.05);
+    leafGroup.rotation.y = sx > 0 ? -Math.PI * 0.48 : Math.PI * 0.48;
+    leafGroup.add(
+      box([2.7, 0.58, 0.07], iceBlue, [-sx * 1.35, 0.32, 0]),
+      box([2.7, 0.07, 0.07], royalBlue, [-sx * 1.35, 1.48, 0]),
+      box([2.7, 0.07, 0.07], royalBlue, [-sx * 1.35, 2.42, 0]),
+    );
+    for (let b = 0; b < 11; b++) {
+      leafGroup.add(
+        box([0.042, 2.34, 0.042], royalBlue, [-sx * (0.14 + b * 0.235), 1.28, 0]),
+      );
+    }
+    group.add(leafGroup);
+  }
+
+  // Unobstructed front & back school signboard
+  const frontPanel = createQuangTrungSignPanel(6.6, 1.08);
+  frontPanel.position.set(0, 4.35, 0.42);
+  group.add(frontPanel);
+
+  const backPanel = createQuangTrungSignPanel(6.6, 1.08);
+  backPanel.position.set(0, 4.35, -0.42);
+  backPanel.rotation.y = Math.PI;
+  backPanel.name = "gate-name-panel-back";
+  group.add(backPanel);
+
+  group.add(box([7.6, 0.08, 13], "#ccc9c1", [0, -0.02, -3.5]));
+  return group;
+}
+
 export function createSchoolGate(site) {
   const data = config[site.id];
   if (!data) return null;
@@ -798,6 +932,12 @@ export function createSchoolGate(site) {
   if (site.id === "cao-thang") {
     return {
       object: createCaoThangGate(),
+      placement: schoolGatePlacement(site),
+    };
+  }
+  if (site.id === "quang-trung") {
+    return {
+      object: createQuangTrungGate(),
       placement: schoolGatePlacement(site),
     };
   }
