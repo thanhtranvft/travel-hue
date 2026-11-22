@@ -180,9 +180,64 @@ test("Trường THCS Nguyễn Chí Diểu gate, white picket fence + HLC signboa
       "Nguyễn Chí Diểu campus has boy and girl students",
     );
 
-    const entryPos = campus.toWorld(0, 8);
-    assert.equal(campus.groundAt(entryPos.x, entryPos.z), 0.3);
-    assert.equal(campus.canRide(entryPos.x, entryPos.z), true);
+    assert.ok(
+      campus.group.getObjectByName("nguyen-chi-dieu-main-sign"),
+      "main golden-yellow school building has royal-blue signage",
+    );
+    assert.ok(
+      campus.group.getObjectByName("nguyen-chi-dieu-monument"),
+      "Nguyễn Chí Diểu bust monument present in front plaza",
+    );
+    assert.ok(
+      campus.group.getObjectByName("nguyen-chi-dieu-basketball-hoop"),
+      "blue basketball hoop present in front schoolyard",
+    );
+    assert.ok(
+      campus.group.getObjectByName("nguyen-chi-dieu-rear-passage") &&
+        campus.group.getObjectByName("nguyen-chi-dieu-passage-banner") &&
+        campus.group.getObjectByName("nguyen-chi-dieu-rear-yard") &&
+        campus.group.getObjectByName("nguyen-chi-dieu-rear-building-sign"),
+      "covered passage between buildings leads to rear building & rear schoolyard",
+    );
+
+    assert.ok(
+      campus.daCauMatches.length >= 2,
+      "schoolyard includes animated đá cầu student circles",
+    );
+    const match = campus.daCauMatches[0];
+    assert.ok(
+      campus.animatedObjects.includes(match.group),
+      "đá cầu group registered in animatedObjects so MobileStaticScene preserves animation",
+    );
+    campus.update(0.05);
+    const shuttleBefore = match.shuttlecock.position.clone();
+    const legBefore = match.players[2].rig.character.rightLeg.rotation.x;
+    campus.update(0.85);
+    const shuttleAfter = match.shuttlecock.position.clone();
+    const legAfter = match.players[2].rig.character.rightLeg.rotation.x;
+    assert.ok(
+      shuttleBefore.distanceTo(shuttleAfter) > 0.5,
+      "đá cầu shuttlecock flies smoothly between students",
+    );
+    assert.notEqual(
+      legAfter,
+      legBefore,
+      "đá cầu kicker leg animates during rally",
+    );
+
+    // Continuous rideable route from gate -> front courtyard -> covered passage between buildings -> rear schoolyard
+    for (const [side, fwd] of [
+      [0, 8],
+      [20.55, 36],
+      [20.55, 44.2],
+      [20.55, 62],
+      [20.55, 80],
+      [2.0, 58],
+    ]) {
+      const p = campus.toWorld(side, fwd);
+      assert.equal(campus.groundAt(p.x, p.z), 0.3, `groundAt at (${side}, ${fwd})`);
+      assert.equal(campus.canRide(p.x, p.z), true, `canRide open at (${side}, ${fwd})`);
+    }
 
     const outsidePos = campus.toWorld(0, -30);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);
