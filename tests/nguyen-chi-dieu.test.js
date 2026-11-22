@@ -200,6 +200,22 @@ test("Trường THCS Nguyễn Chí Diểu gate, white picket fence + HLC signboa
     const outsidePos = campus.toWorld(0, -30);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);
     assert.equal(campus.canRide(outsidePos.x, outsidePos.z), null);
+
+    const yardMeshes = [];
+    campus.group.traverse((o) => {
+      if (o.isMesh && o.material?.map?.repeat) {
+        const { x, y } = o.material.map.repeat;
+        if (x === 1 && y === 1 && o.material.roughness === 0.86) {
+          yardMeshes.push(o);
+        }
+      }
+    });
+    assert.equal(yardMeshes.length, 2, "courtyard polygon and entry drive share brick stripe material");
+    for (const m of yardMeshes) {
+      const uv = m.geometry.attributes.uv;
+      assert.ok(uv && uv.count > 0, "courtyard mesh has planar UVs");
+      assert.ok(Number.isFinite(uv.getX(0)) && Number.isFinite(uv.getY(0)), "courtyard UVs are finite");
+    }
   });
 });
 

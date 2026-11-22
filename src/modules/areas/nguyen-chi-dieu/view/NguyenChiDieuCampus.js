@@ -88,32 +88,70 @@ function createTerracottaRoofTexture() {
   );
 }
 
-function createSchoolyardStoneTexture() {
-  return createCanvasTexture(
+function createSchoolyardBrickStripeTexture() {
+  const tex = createCanvasTexture(
     512,
     512,
     (ctx, w, h) => {
-      ctx.fillStyle = "#aba89f";
+      // Base mortar / joint tone
+      ctx.fillStyle = "#8a7e78";
       ctx.fillRect(0, 0, w, h);
-      for (let i = 0; i < 900; i++) {
-        ctx.fillStyle =
-          i % 3 === 0 ? "rgba(85,82,76,0.12)" : "rgba(242,240,235,0.11)";
-        ctx.fillRect((i * 197) % w, (i * 331) % h, 4, 4);
+
+      // Pattern from photo: 2 columns dusty terracotta-rose pavers, 1 column pale sage-grey pavers
+      const stripeTypes = ["rose", "rose", "grey", "rose", "rose", "grey"];
+      const cols = stripeTypes.length;
+      const rows = 10;
+      const rosePalette = ["#b87d79", "#c18782", "#ae736f", "#bc827e", "#b47975"];
+      const greyPalette = ["#cfd3cc", "#d7dbd4", "#c5cac2", "#d2d6cf", "#cbd0c8"];
+      const gap = 3;
+
+      for (let c = 0; c < cols; c++) {
+        const x0 = Math.round((c * w) / cols);
+        const x1 = Math.round(((c + 1) * w) / cols);
+        const bw = x1 - x0 - gap;
+        const type = stripeTypes[c];
+        const palette = type === "rose" ? rosePalette : greyPalette;
+        // Stagger second rose column by half a brick for realistic interlocking bond
+        const staggerPx = c % 3 === 1 ? Math.round(h / (rows * 2)) : 0;
+
+        for (let r = -1; r <= rows; r++) {
+          const wrappedRow = ((r % rows) + rows) % rows;
+          const y0 = Math.round((r * h) / rows) + staggerPx;
+          const y1 = Math.round(((r + 1) * h) / rows) + staggerPx;
+          const bh = y1 - y0 - gap;
+
+          const seed = (c * 37 + wrappedRow * 73) & 255;
+          ctx.fillStyle = palette[seed % palette.length];
+          ctx.fillRect(x0 + 1, y0 + 1, bw, bh);
+
+          // Subtle top/left chamfer highlight so individual bricks read cleanly
+          ctx.fillStyle =
+            type === "rose"
+              ? "rgba(245, 218, 214, 0.18)"
+              : "rgba(255, 255, 255, 0.24)";
+          ctx.fillRect(x0 + 1, y0 + 1, bw, 2);
+          ctx.fillRect(x0 + 1, y0 + 1, 2, bh);
+
+          // Subtle bottom/right chamfer shadow
+          ctx.fillStyle = "rgba(65, 52, 48, 0.16)";
+          ctx.fillRect(x0 + 1, y0 + bh - 1, bw, 2);
+        }
       }
-      ctx.strokeStyle = "rgba(120,117,110,0.22)";
-      ctx.lineWidth = 2;
-      for (let p = 0; p <= w; p += 128) {
-        ctx.beginPath?.();
-        ctx.moveTo?.(p, 0);
-        ctx.lineTo?.(p, h);
-        ctx.moveTo?.(0, p);
-        ctx.lineTo?.(w, p);
-        ctx.stroke?.();
+
+      // Fine weathered concrete / dust speckle
+      for (let i = 0; i < 1200; i++) {
+        const sx = (i * 197 + 13) % w;
+        const sy = (i * 331 + 29) % h;
+        ctx.fillStyle =
+          i % 2 === 0 ? "rgba(70, 62, 58, 0.08)" : "rgba(248, 244, 238, 0.08)";
+        ctx.fillRect(sx, sy, 2, 2);
       }
     },
-    10,
-    10,
+    1,
+    1,
   );
+  if (tex) tex.anisotropy = 8;
+  return tex;
 }
 
 function createVietnamFlagTexture() {
@@ -385,14 +423,16 @@ export class NguyenChiDieuCampus {
   }
 
   buildCourtyard() {
-    const yardTex = createSchoolyardStoneTexture();
+    const yardTex = createSchoolyardBrickStripeTexture();
     const flagTex = createVietnamFlagTexture();
+    // 6 brick columns (2 rose + 1 grey repeated twice) over 1.92m -> ~0.32m per paver column
+    const tileMeters = 1.92;
 
     const yardMat = new THREE.MeshStandardMaterial({
-      color: yardTex ? "#ffffff" : "#aba89f",
+      color: yardTex ? "#ffffff" : "#b87d79",
       map: yardTex,
-      roughness: 0.84,
-      metalness: 0.03,
+      roughness: 0.86,
+      metalness: 0.02,
       side: THREE.DoubleSide,
     });
     const lawnMat = createManicuredLawnMaterial(6, 6, {
@@ -400,8 +440,17 @@ export class NguyenChiDieuCampus {
       rich: true,
     });
 
-    // Paved courtyard matching exact campus footprint polygon
+    // Paved courtyard matching exact campus footprint polygon with campus-aligned UVs
     const yardGeo = polygonGeometry(this.campusRings[0], 0.14);
+    if (yardGeo.attributes.uv && yardGeo.attributes.position) {
+      const uv = yardGeo.attributes.uv;
+      const pos = yardGeo.attributes.position;
+      for (let i = 0; i < uv.count; i++) {
+        const { side, fwd } = this.toLocal(pos.getX(i), pos.getZ(i));
+        uv.setXY(i, side / tileMeters, -fwd / tileMeters);
+      }
+      uv.needsUpdate = true;
+    }
     const yardMesh = new THREE.Mesh(yardGeo, yardMat);
     yardMesh.position.y = 0.16;
     yardMesh.receiveShadow = true;
@@ -411,11 +460,17 @@ export class NguyenChiDieuCampus {
     yard.position.set(this.gate.x, 0, this.gate.z);
     yard.rotation.y = this.facingGateYaw;
 
-    // Entry plaza drive connecting Đống Đa gate into courtyard
-    const entryDrive = new THREE.Mesh(
-      new THREE.BoxGeometry(10.4, 0.05, 22),
-      yardMat,
-    );
+    // Entry plaza drive connecting Đống Đa gate into courtyard with matching metric UVs
+    const entryGeo = new THREE.BoxGeometry(10.4, 0.05, 22);
+    if (entryGeo.attributes.uv && entryGeo.attributes.position) {
+      const uv = entryGeo.attributes.uv;
+      const pos = entryGeo.attributes.position;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setXY(i, pos.getX(i) / tileMeters, (pos.getZ(i) - 10) / tileMeters);
+      }
+      uv.needsUpdate = true;
+    }
+    const entryDrive = new THREE.Mesh(entryGeo, yardMat);
     entryDrive.position.set(0, 0.29, -10);
     entryDrive.receiveShadow = true;
     yard.add(entryDrive);
