@@ -1,11 +1,12 @@
 import config from "../../data/online-config.json" with { type: "json" };
-import { PROTOCOL_VERSION } from "./protocol.js";
+import { cleanAvatarId, DEFAULT_AVATAR_ID, PROTOCOL_VERSION } from "./protocol.js";
 
 export class OnlineClient extends EventTarget {
-  constructor(name, region) {
+  constructor(name, region, avatar = DEFAULT_AVATAR_ID) {
     super();
     this.name = name;
     this.region = region;
+    this.avatar = cleanAvatarId(avatar);
     this.status = "idle";
     this.stopped = false;
     this.attempt = 0;
@@ -36,6 +37,7 @@ export class OnlineClient extends EventTarget {
         type: "join",
         version: PROTOCOL_VERSION,
         name: this.name,
+        avatar: this.avatar,
         region: this.region,
         token: this.token,
       });

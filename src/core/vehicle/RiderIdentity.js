@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { cleanPlayerName } from "../network/protocol.js";
 
-// Additive accessory: the existing dog and bicycle geometry remain intact.
 export function setRiderIdentity(
   bike,
   name,
@@ -17,50 +16,66 @@ export function setRiderIdentity(
         o.material.dispose();
       }
     });
+    bike.identity = null;
+    bike.identityTag = null;
   }
-  const group = new THREE.Group();
-  group.name = "rider-identity";
-  const shirt = new THREE.Mesh(
-    new THREE.SphereGeometry(0.267, 16, 10),
-    new THREE.MeshStandardMaterial({ color, roughness: 0.9 }),
-  );
-  shirt.position.y = 0.25;
-  shirt.scale.set(0.82, 1.35, 1.04);
-  group.add(shirt);
+
+  const label = cleanPlayerName(name);
+  bike.playerName = label;
+  if (overhead && typeof bike.setBikeColor === "function") {
+    bike.setBikeColor(color);
+  }
+  if (!overhead || typeof document === "undefined" || !label) return;
+
   const canvas = document.createElement("canvas");
+  if (!canvas || typeof canvas.getContext !== "function") return;
   canvas.width = 512;
-  canvas.height = 160;
+  canvas.height = 128;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, 512, 160);
-  ctx.fillStyle = "#fff";
+  if (!ctx) return;
+
+  ctx.clearRect?.(0, 0, 512, 128);
+  if (typeof ctx.beginPath === "function" && typeof ctx.roundRect === "function") {
+    ctx.fillStyle = "rgba(16, 38, 34, 0.88)";
+    ctx.beginPath();
+    ctx.roundRect(16, 16, 480, 96, 44);
+    ctx.fill?.();
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = color;
+    ctx.stroke?.();
+  } else {
+    ctx.fillStyle = color;
+    ctx.fillRect?.(16, 16, 480, 96);
+  }
+
+  ctx.fillStyle = "#fff8e8";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  const label = cleanPlayerName(name);
-  let size = 64;
+  let size = 50;
   ctx.font = `bold ${size}px sans-serif`;
-  while (ctx.measureText(label).width > 480 && size > 20)
+  while (ctx.measureText?.(label)?.width > 430 && size > 20) {
     ctx.font = `bold ${--size}px sans-serif`;
-  ctx.fillText(label, 256, 80);
+  }
+  ctx.fillText?.(label, 256, 66);
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const patch = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.4, 0.125),
-    new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide }),
+  const group = new THREE.Group();
+  group.name = "rider-identity";
+
+  const tag = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: texture,
+      transparent: true,
+      depthWrite: false,
+    }),
   );
-  // Upper back: above the tail and proud of the curved shirt surface.
-  patch.position.set(0, 0.55, -0.23);
-  patch.rotation.y = Math.PI;
-  group.add(patch);
-  if (overhead) {
-    const tag = new THREE.Sprite(
-      new THREE.SpriteMaterial({ map: texture, depthWrite: false }),
-    );
-    tag.position.set(0, 1.23, 0);
-    tag.scale.set(1.05, 0.33, 1);
-    group.add(tag);
-  }
+  tag.position.set(0, (bike.headTopY || 1.46) + 0.34, 0);
+  tag.scale.set(1.18, 0.3, 1);
+  group.add(tag);
+
   bike.rider.add(group);
   bike.identity = group;
-  bike.playerName = label;
+  bike.identityTag = tag;
 }
+

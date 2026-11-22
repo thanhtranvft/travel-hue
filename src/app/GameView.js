@@ -1,7 +1,16 @@
 import { unproject } from "../core/shared/geography/geometry.js";
 import { geoDistricts as districts } from "../core/shared/geography/map.js";
+import { AVATAR_CATALOG } from "../core/network/protocol.js";
 import { CITY, BRIDGE } from "../core/world/cityLayout.js";
 import { formatPlayerCoords } from "../core/world/minimap.js";
+
+const STANCE_LABELS = {
+  idle: "Đang đứng · Vẫy tay",
+  walk: "Đang đi bộ",
+  run: "Đang chạy bộ",
+  bike: "Đang đạp xe",
+};
+
 export class GameView {
   constructor() {
     this.map = document.querySelector("#minimap").getContext("2d");
@@ -12,6 +21,9 @@ export class GameView {
       progress: document.querySelector("#progress"),
       mode: document.querySelector("#mode-label"),
       auto: document.querySelector("#autopilot"),
+      transport: document.querySelector("#transport-toggle"),
+      touchTransport: document.querySelector("#touch-transport"),
+      avatarBtn: document.querySelector("#avatar-toggle"),
       card: document.querySelector("#landmark-card"),
       mapArea: document.querySelector("#map-area-title"),
       mapCoords: document.querySelector("#map-coords"),
@@ -20,9 +32,30 @@ export class GameView {
     };
   }
   syncMode(game) {
-    game.hud.mode.textContent = game.auto ? "Tự lái tham quan" : "Đạp tự do";
+    const isBike = game.bike.transportMode === "bike";
+    const stanceText = game.auto
+      ? "Tự lái tham quan"
+      : STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
+    game.hud.mode.textContent = stanceText;
     game.hud.auto.classList.toggle("active", game.auto);
     game.hud.auto.setAttribute("aria-pressed", String(game.auto));
+    if (game.hud.transport) {
+      game.hud.transport.textContent = isBike ? "🚲 Đạp xe" : "🚶 Đi bộ";
+      game.hud.transport.classList.toggle("active", isBike);
+      game.hud.transport.setAttribute("aria-pressed", String(isBike));
+    }
+    if (game.hud.touchTransport) {
+      game.hud.touchTransport.textContent = isBike ? "🚶" : "🚲";
+      game.hud.touchTransport.setAttribute(
+        "aria-label",
+        isBike ? "Chuyển sang đi bộ" : "Chuyển sang đạp xe đạp",
+      );
+      game.hud.touchTransport.classList.toggle("active", isBike);
+    }
+    if (game.hud.avatarBtn) {
+      const meta = AVATAR_CATALOG.find((a) => a.id === game.bike.avatarId);
+      if (meta) game.hud.avatarBtn.textContent = `🎭 ${meta.label}`;
+    }
   }
   updateHud(game) {
     const coords = formatPlayerCoords(game.bike.position, unproject);
@@ -42,11 +75,15 @@ export class GameView {
     game.hud.speed.textContent = Math.round(
       Math.abs(game.bike.motion.speed) * 3.6,
     );
+    if (!game.auto && game.hud.mode) {
+      game.hud.mode.textContent =
+        STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
+    }
     game.hud.distance.textContent = game.completed
       ? "Đã hoàn thành tuyến"
       : game.auto
         ? `${Math.round((1 - game.routeU) * game.routeLength)} m trên tuyến`
-        : "Tự do khám phá";
+        : STANCE_LABELS[game.bike.stance] || "Tự do khám phá";
     game.hud.progress.style.width = `${game.completed ? 100 : game.routeU * 100}%`;
     const soundLocation = document.querySelector("#sound-location");
     if (soundLocation)
