@@ -492,18 +492,31 @@ test("Bệnh viện Đa Khoa, Hẻm nhỏ, Công viên Dự Án & tree-clearance
         east.group.getObjectByName("quang-trung-project-park") &&
         east.group.getObjectByName("cong-vien-nha-ve-sinh") &&
         east.group.getObjectByName("cong-vien-picnic-group") &&
+        east.group.getObjectByName("cong-vien-lawn-reading-group") &&
+        east.group.getObjectByName("cong-vien-ho-phun-nuoc") &&
+        east.group.getObjectByName("cong-vien-khu-the-duc") &&
+        east.group.getObjectByName("cong-vien-khu-vui-choi") &&
         east.group.getObjectByName("cong-vien-du-an-sign"),
-      "Bệnh viện Đa Khoa, Hẻm nhỏ, and Công viên Dự Án landmarks built",
+      "Bệnh viện Đa Khoa, Hẻm nhỏ, and upgraded Công viên Dự Án landmarks built",
     );
 
     let ambulanceCount = 0;
     let sedanCount = 0;
+    let pergolaCount = 0;
+    let picnicTableCount = 0;
+    let benchCount = 0;
     east.group.traverse((o) => {
       if (o.name === "hospital-ambulance") ambulanceCount++;
       if (o.name === "cong-vien-parked-sedan") sedanCount++;
+      if (o.name === "cong-vien-choi-nghi") pergolaCount++;
+      if (o.name === "cong-vien-picnic-table") picnicTableCount++;
+      if (o.name === "cong-vien-bench") benchCount++;
     });
     assert.equal(ambulanceCount, 2, "2 ambulances parked in Bệnh viện Đa Khoa forecourt");
     assert.equal(sedanCount, 3, "3 white sedans parked at Công viên Dự Án bay");
+    assert.ok(pergolaCount >= 2, `park includes shaded timber pergolas (${pergolaCount})`);
+    assert.ok(picnicTableCount >= 4, `park includes picnic/chess tables (${picnicTableCount})`);
+    assert.ok(benchCount >= 18, `park includes ample seating benches (${benchCount})`);
 
     assert.ok(world.landmarks.has("benh-vien-da-khoa"), "Bệnh viện Đa Khoa landmark registered");
     assert.ok(world.landmarks.has("cong-vien-du-an"), "Công viên Dự Án landmark registered");
@@ -525,6 +538,14 @@ test("Bệnh viện Đa Khoa, Hẻm nhỏ, Công viên Dự Án & tree-clearance
 
     const parkPavilion = east.toWorld(192.5, 53.25);
     assert.equal(east.canRide(parkPavilion.x, parkPavilion.z), false, "Công viên service pavilion solid");
+    const parkFountain = east.toWorld(168.0 + 34.5, 32.75 - -3.5);
+    assert.equal(east.canRide(parkFountain.x, parkFountain.z), false, "Công viên fountain pool solid");
+    const parkPergola = east.toWorld(168.0 - 40.5, 32.75 - -15.5);
+    assert.equal(east.canRide(parkPergola.x, parkPergola.z), false, "Công viên NW pergola solid");
+    const parkFitness = east.toWorld(168.0 + 34.5, 32.75 - 20.0);
+    assert.equal(east.canRide(parkFitness.x, parkFitness.z), false, "Công viên fitness pad solid");
+    const parkPlay = east.toWorld(168.0 - 39.5, 32.75 - 17.8);
+    assert.equal(east.canRide(parkPlay.x, parkPlay.z), false, "Công viên family play corner solid");
 
     // Verify no ambient world trees obstruct Bệnh viện RHM gate or east precinct lots
     const hospEntrance = world.benhVienRhmHue.entrance;
@@ -549,6 +570,8 @@ test("Bệnh viện Đa Khoa, Hẻm nhỏ, Công viên Dự Án & tree-clearance
       }
     }
     east.update(3.2, parkWalkway);
+    assert.notEqual(east.fountainWater.jet.scale.y, 1, "fountain water jet animates");
+    assert.notEqual(east.swingPivots[0].rotation.x, 0, "family swing sways gently");
   });
 });
 
