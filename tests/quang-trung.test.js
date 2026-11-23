@@ -169,8 +169,15 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
     const campus = new QuangTrungCampus(world, site, gate.placement);
     assert.equal(
       campus.campusBuildingPolygons.length,
-      2,
-      "West OSM wing + North ceremony wing polygons built",
+      3,
+      "West OSM wing + North ceremony wing + East 3-story wing polygons built",
+    );
+    assert.ok(
+      campus.group.getObjectByName("quang-trung-east-wing") &&
+        campus.group.getObjectByName("quang-trung-north-portico") &&
+        campus.group.getObjectByName("quang-trung-parking-lot") &&
+        campus.group.getObjectByName("quang-trung-parking-booth"),
+      "East 3-story wing, North central portico, and school parking lot + booth built",
     );
     assert.ok(
       campus.group.getObjectByName("quang-trung-flagpole"),
@@ -195,9 +202,18 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
         campus.group.getObjectByName("quang-trung-guard-house") &&
         campus.group.getObjectByName("quang-trung-notice-board") &&
         campus.group.getObjectByName("quang-trung-school-drum") &&
-        campus.group.getObjectByName("quang-trung-green-library") &&
-        campus.group.getObjectByName("quang-trung-bike-shed"),
+        campus.group.getObjectByName("quang-trung-green-library"),
       "central gate lane and detailed primary school props built",
+    );
+    assert.ok(
+      campus.group.getObjectByName("quang-trung-rose-garden-cafe") &&
+        campus.group.getObjectByName("quang-trung-nguyen-hue-cafes") &&
+        campus.group.getObjectByName("cafe-muoi-hue") &&
+        campus.group.getObjectByName("cafe-co-do") &&
+        campus.group.getObjectByName("cafe-moc-garden") &&
+        campus.group.getObjectByName("cafe-hue-xua") &&
+        campus.group.getObjectByName("cafe-la-nguyen-hue"),
+      "Rose Garden café beside school and 5-café strip opposite Bệnh viện RHM Huế -> Dòng Chúa Cứu Thế built",
     );
 
     const treeCurbs = [];
@@ -243,6 +259,25 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
 
     const insideWestWing = campus.toWorld(-28.5, 35);
     assert.equal(campus.canRide(insideWestWing.x, insideWestWing.z), false);
+
+    const insideEastWing = campus.toWorld(25.3, 36);
+    assert.equal(campus.canRide(insideEastWing.x, insideEastWing.z), false);
+
+    const parkingAisle = campus.toWorld(30.8, 22);
+    assert.equal(campus.canRide(parkingAisle.x, parkingAisle.z), true);
+    const parkingShelter = campus.toWorld(34.4, 24);
+    assert.equal(campus.canRide(parkingShelter.x, parkingShelter.z), false);
+
+    const insideRoseGarden = campus.toWorld(47.0, 16.4);
+    assert.equal(campus.canRide(insideRoseGarden.x, insideRoseGarden.z), false);
+    assert.equal(campus.blocksTree(insideRoseGarden.x, insideRoseGarden.z), true);
+
+    const insideCafeStrip = campus.toWorld(-61.8, -24.7);
+    assert.equal(campus.canRide(insideCafeStrip.x, insideCafeStrip.z), false);
+    assert.equal(campus.blocksTree(insideCafeStrip.x, insideCafeStrip.z), true);
+
+    const southSidewalkClear = campus.toWorld(-61.8, -17.5);
+    assert.equal(campus.canRide(southSidewalkClear.x, southSidewalkClear.z), null);
   });
 });
 

@@ -16,6 +16,10 @@ import {
   createComNamHawker,
   createXoiPushcartCouple,
 } from "./QuangTrungVendors.js";
+import {
+  buildRoseGardenCafe,
+  buildNguyenHueCafeStrip,
+} from "./QuangTrungCafes.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -660,53 +664,181 @@ function createSchoolDrumStand(x, y, z, yaw = 0) {
   return g;
 }
 
-function createBikeShed(x, y, z, yaw = 0) {
+function createParkedMotorbike(bodyColor = "#c83232", yaw = 0) {
   const g = new THREE.Group();
-  g.name = "quang-trung-bike-shed";
-  g.position.set(x, y, z);
   g.rotation.y = yaw;
-
-  const w = 3.2;
-  const d = 9.2;
-  const steel = "#dde3ea";
-  for (const sx of [-w / 2 + 0.2, w / 2 - 0.2]) {
-    for (const sz of [-d / 2 + 0.4, 0, d / 2 - 0.4]) {
-      g.add(box([0.1, 2.35, 0.1], steel, [sx, 1.18, sz]));
-    }
-  }
-  const roof = new THREE.Mesh(
-    new THREE.BoxGeometry(w + 0.5, 0.12, d + 0.6),
-    mat("#1d73c4", 0.52, 0.18),
-  );
-  roof.position.set(0, 2.42, 0);
-  roof.rotation.z = 0.1;
-  roof.castShadow = true;
-  g.add(roof);
-
-  // Miniature parked student bicycles
-  const bikeColors = ["#e04b5a", "#2684d4", "#31a354", "#f0b429", "#7b5cc7"];
-  for (let i = 0; i < 5; i++) {
-    const bz = -3.4 + i * 1.7;
-    const c = bikeColors[i];
-    const bike = new THREE.Group();
-    bike.position.set(0, 0, bz);
-    for (const wx of [-0.42, 0.42]) {
-      const wheel = new THREE.Mesh(
-        new THREE.TorusGeometry(0.24, 0.032, 6, 14),
-        mat("#23272b", 0.85),
-      );
-      wheel.position.set(wx, 0.24, 0);
-      bike.add(wheel);
-    }
-    bike.add(
-      box([0.65, 0.05, 0.05], c, [0, 0.52, 0]),
-      box([0.05, 0.45, 0.05], c, [-0.15, 0.42, 0]),
-      box([0.05, 0.56, 0.05], "#cfd6dd", [0.32, 0.5, 0]),
-      box([0.12, 0.05, 0.34], "#262a2e", [0.32, 0.78, 0]),
+  const tireMat = mat("#202428", 0.85);
+  for (const wz of [-0.46, 0.46]) {
+    const wheel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.22, 0.055, 8, 14),
+      tireMat,
     );
-    g.add(bike);
+    wheel.rotation.y = Math.PI / 2;
+    wheel.position.set(0, 0.24, wz);
+    g.add(wheel);
   }
+  g.add(
+    box([0.28, 0.34, 0.92], bodyColor, [0, 0.52, -0.02]),
+    box([0.24, 0.14, 0.56], "#272b30", [0, 0.72, -0.14]),
+    box([0.24, 0.48, 0.24], bodyColor, [0, 0.66, 0.34]),
+    box([0.52, 0.06, 0.08], "#2c3136", [0, 0.96, 0.36]),
+    box([0.16, 0.14, 0.08], "#f4f0cc", [0, 0.82, 0.47]),
+  );
   return g;
+}
+
+function createParkedBicycle(frameColor = "#2684d4", yaw = 0) {
+  const g = new THREE.Group();
+  g.rotation.y = yaw;
+  const tireMat = mat("#23272b", 0.85);
+  for (const wx of [-0.4, 0.4]) {
+    const wheel = new THREE.Mesh(
+      new THREE.TorusGeometry(0.24, 0.032, 6, 14),
+      tireMat,
+    );
+    wheel.position.set(wx, 0.24, 0);
+    g.add(wheel);
+  }
+  g.add(
+    box([0.62, 0.05, 0.05], frameColor, [0, 0.52, 0]),
+    box([0.05, 0.44, 0.05], frameColor, [-0.14, 0.42, 0]),
+    box([0.05, 0.56, 0.05], "#cfd6dd", [0.3, 0.5, 0]),
+    box([0.12, 0.05, 0.34], "#262a2e", [0.3, 0.78, 0]),
+  );
+  return g;
+}
+
+function createSchoolParkingLot(gate, facingGateYaw) {
+  const lot = new THREE.Group();
+  lot.name = "quang-trung-parking-lot";
+  lot.position.set(gate.x, 0, gate.z);
+  lot.rotation.y = facingGateYaw;
+
+  // Dedicated paved parking zone beside East classroom wing: side [+29.7..+36.7], fwd [8.8..57.8]
+  const lotCenterX = 33.2;
+  const lotCenterZ = -33.3;
+  const lotW = 6.9;
+  const lotD = 49.0;
+
+  const asphalt = new THREE.Mesh(
+    new THREE.BoxGeometry(lotW, 0.032, lotD),
+    mat("#494f57", 0.92),
+  );
+  asphalt.position.set(lotCenterX, 0.3, lotCenterZ);
+  asphalt.receiveShadow = true;
+  lot.add(asphalt);
+
+  // Curbed border separating parking zone from inner walkway & fence
+  lot.add(
+    box([0.16, 0.08, lotD], "#e5e8ec", [29.8, 0.32, lotCenterZ]),
+    box([0.16, 0.08, lotD], "#e5e8ec", [36.6, 0.32, lotCenterZ]),
+  );
+
+  // Yellow entry guide lane lines along left side of parking lot (x = 30.8)
+  for (let z = -10.5; z >= -55.0; z -= 3.2) {
+    lot.add(createCourtLineStrip(0.14, 1.8, 31.35, 0.318, z));
+  }
+
+  // Painted parking bays on right side (x = 32.0..36.2)
+  for (let z = -12.5; z >= -55.5; z -= 2.2) {
+    lot.add(createCourtLineStrip(3.9, 0.09, 34.25, 0.318, z));
+  }
+
+  // Shelter 1: BÃI GIỮ XE GIÁO VIÊN (Motorbikes, fwd 12.5..28.5 -> z = -20.5)
+  const teacherShelter = new THREE.Group();
+  teacherShelter.position.set(34.1, 0.3, -20.5);
+  for (const sx of [-1.85, 1.85]) {
+    for (const sz of [-7.5, -2.5, 2.5, 7.5]) {
+      teacherShelter.add(box([0.12, 2.55, 0.12], "#dce3ea", [sx, 1.28, sz]));
+    }
+  }
+  const tRoof = new THREE.Mesh(
+    new THREE.BoxGeometry(4.4, 0.12, 16.4),
+    mat("#1c73c4", 0.5, 0.2),
+  );
+  tRoof.position.set(0, 2.65, 0);
+  tRoof.rotation.z = -0.12;
+  tRoof.castShadow = true;
+  teacherShelter.add(tRoof);
+
+  const teacherSignTex = createBannerTexture("BÃI GIỮ XE GIÁO VIÊN", "KHU VỰC XE MÁY", "#0b5da8");
+  const teacherSign = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.4, 0.58),
+    new THREE.MeshStandardMaterial({
+      color: teacherSignTex ? "#ffffff" : "#0b5da8",
+      map: teacherSignTex,
+      roughness: 0.45,
+    }),
+  );
+  teacherSign.position.set(0, 2.38, 8.24);
+  teacherShelter.add(teacherSign);
+
+  const motoColors = ["#c83232", "#1f252c", "#2d64b8", "#e8e6e0", "#8b2f3f", "#455a64"];
+  for (let i = 0; i < 6; i++) {
+    const mz = -6.2 + i * 2.45;
+    const moto = createParkedMotorbike(motoColors[i % motoColors.length], -Math.PI * 0.42);
+    moto.position.set(0.25, 0.02, mz);
+    teacherShelter.add(moto);
+  }
+  lot.add(teacherShelter);
+
+  // Shelter 2: NHÀ XE HỌC SINH (Bicycles, fwd 34.5..54.5 -> z = -44.5)
+  const studentShelter = new THREE.Group();
+  studentShelter.position.set(34.1, 0.3, -44.5);
+  for (const sx of [-1.85, 1.85]) {
+    for (const sz of [-9.2, -3.1, 3.1, 9.2]) {
+      studentShelter.add(box([0.12, 2.4, 0.12], "#dce3ea", [sx, 1.2, sz]));
+    }
+  }
+  const sRoof = new THREE.Mesh(
+    new THREE.BoxGeometry(4.4, 0.12, 19.6),
+    mat("#2483d6", 0.52, 0.18),
+  );
+  sRoof.position.set(0, 2.5, 0);
+  sRoof.rotation.z = -0.12;
+  sRoof.castShadow = true;
+  studentShelter.add(sRoof);
+
+  // Galvanized bike rack rail
+  studentShelter.add(box([0.14, 0.32, 17.4], "#aeb7c0", [1.3, 0.16, 0]));
+
+  const studentSignTex = createBannerTexture("NHÀ XE HỌC SINH", "KHU VỰC XE ĐẠP", "#156cb8");
+  const studentSign = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.4, 0.58),
+    new THREE.MeshStandardMaterial({
+      color: studentSignTex ? "#ffffff" : "#156cb8",
+      map: studentSignTex,
+      roughness: 0.45,
+    }),
+  );
+  studentSign.position.set(0, 2.25, 9.84);
+  studentShelter.add(studentSign);
+
+  const bikeColors = ["#e04b5a", "#2684d4", "#31a354", "#f0b429", "#7b5cc7", "#f26b38", "#2fa4a9", "#d64579"];
+  for (let i = 0; i < 8; i++) {
+    const bz = -7.7 + i * 2.2;
+    const bike = createParkedBicycle(bikeColors[i % bikeColors.length], 0);
+    bike.position.set(0.25, 0.02, bz);
+    studentShelter.add(bike);
+  }
+  lot.add(studentShelter);
+
+  // Guard booth & barrier at parking entrance (fwd = 9.8 -> z = -9.8)
+  const booth = new THREE.Group();
+  booth.name = "quang-trung-parking-booth";
+  booth.position.set(35.1, 0.3, -9.8);
+  booth.add(
+    box([1.85, 2.2, 1.75], "#eaf2f9", [0, 1.1, 0]),
+    box([1.89, 0.72, 1.79], "#1c73c4", [0, 0.38, 0]),
+    box([1.2, 0.82, 0.08], "#24435c", [-0.94, 1.45, 0]),
+    box([2.2, 0.18, 2.1], "#1967b2", [0, 2.28, 0]),
+    // Raised yellow/black barie arm
+    box([0.16, 0.95, 0.16], "#e5a922", [-1.3, 0.48, 0.6]),
+    box([0.08, 0.08, 2.2], "#f4c430", [-1.3, 1.55, -0.3]),
+  );
+  lot.add(booth);
+
+  return lot;
 }
 
 function createGreenLibraryZone(x, y, z, yaw = 0) {
@@ -858,14 +990,18 @@ export class QuangTrungCampus {
     this.animatedObjects = [];
     this.vendorAnimations = [];
     this.campusBuildingPolygons = [];
+    this.cafePolygons = [];
+    this.cafeLotBounds = [];
     this.obstacles = [];
     this.outsideObstacles = [];
 
     this.buildCourtyard();
     this.buildBuildings();
+    this.buildParkingLot();
     this.buildGreenery();
     this.buildPrimarySchoolProps();
     this.buildStreetVendors();
+    this.buildCafes();
     this.buildStudents();
 
     world.scene.add(this.group);
@@ -889,6 +1025,18 @@ export class QuangTrungCampus {
 
   inCampus(wx, wz) {
     return this.campusRings.some((r) => inside({ x: wx, z: wz }, r));
+  }
+
+  inCafeLot(wx, wz, pad = 0) {
+    if (!this.cafeLotBounds.length) return false;
+    const { side, fwd } = this.toLocal(wx, wz);
+    return this.cafeLotBounds.some(
+      (b) =>
+        side >= b.minSide - pad &&
+        side <= b.maxSide + pad &&
+        fwd >= b.minFwd - pad &&
+        fwd <= b.maxFwd + pad,
+    );
   }
 
   hitsOutsideProp(wx, wz, extraPad = 0) {
@@ -932,8 +1080,8 @@ export class QuangTrungCampus {
     yard.position.set(this.gate.x, 0, this.gate.z);
     yard.rotation.y = this.facingGateYaw;
 
-    // Straight central avenue from school gate (fwd = -0.8) straight to ceremonial stage (fwd = 54.5)
-    const laneLen = 55.3;
+    // Straight central avenue from school gate (fwd = -0.8) straight to ceremonial stage (fwd = 50.0)
+    const laneLen = 50.8;
     const laneGeo = new THREE.BoxGeometry(6.4, 0.032, laneLen);
     if (laneGeo.attributes.uv && laneGeo.attributes.position) {
       const uv = laneGeo.attributes.uv;
@@ -953,28 +1101,28 @@ export class QuangTrungCampus {
       }),
     );
     centralLane.name = "quang-trung-central-lane";
-    centralLane.position.set(0, 0.298, -26.85);
+    centralLane.position.set(0, 0.298, -24.6);
     centralLane.receiveShadow = true;
     yard.add(centralLane);
 
     // Crisp curb borders along both edges of the central avenue
     for (const sx of [-3.28, 3.28]) {
-      yard.add(box([0.16, 0.055, laneLen], "#f3f6f9", [sx, 0.305, -26.85]));
+      yard.add(box([0.16, 0.055, laneLen], "#f3f6f9", [sx, 0.305, -24.6]));
     }
 
     // Ceremonial red carpet runner down center avenue approaching stage
     const carpet = new THREE.Mesh(
-      new THREE.BoxGeometry(2.6, 0.018, 36.0),
+      new THREE.BoxGeometry(2.6, 0.018, 33.5),
       mat("#a72631", 0.9),
     );
-    carpet.position.set(0, 0.318, -36.5);
+    carpet.position.set(0, 0.318, -32.2);
     carpet.receiveShadow = true;
     yard.add(carpet);
 
-    // Ceremonial elevated stage & backdrop pavilion in front of North classroom wing
+    // Ceremonial elevated stage & backdrop pavilion in front of North portico (fwd = 52.4)
     const stageGroup = new THREE.Group();
     stageGroup.name = "quang-trung-stage";
-    stageGroup.position.set(0, 0.3, -57.2);
+    stageGroup.position.set(0, 0.3, -52.4);
     const stageDeck = box([12.2, 0.44, 4.6], "#d6d1c6", [0, 0.22, 0]);
     const stageSteps = box([6.6, 0.22, 0.75], "#e2ddd3", [0, 0.11, 2.65]);
     const stageCarpet = box([11.4, 0.04, 4.0], "#a72631", [0, 0.46, 0]);
@@ -1004,20 +1152,20 @@ export class QuangTrungCampus {
       stageGroup.add(createFlowerPlanterPot(px, 0.0, 2.45));
     }
     yard.add(stageGroup);
-    this.obstacles.push({ side: 0, fwd: 57.2, radius: 3.6 });
+    this.obstacles.push({ side: 0, fwd: 52.4, radius: 3.6 });
 
     // Ceremonial flagpole (just left of stage)
-    const fp = createFlagpole(-8.4, 0.3, -52.2, flagTex);
+    const fp = createFlagpole(-8.4, 0.3, -49.0, flagTex);
     yard.add(fp.group);
     this.flags.push(fp.flagMesh);
     this.animatedObjects.push(fp.flagMesh);
-    this.obstacles.push({ side: -8.4, fwd: 52.2, radius: 1.15 });
+    this.obstacles.push({ side: -8.4, fwd: 49.0, radius: 1.15 });
 
-    // Courtyard manicured front border garden beds flanking the twin gate-pillar tree rows
+    // Courtyard manicured front border garden beds flanking the twin gate-pillar tree rows (leaving East parking entry open)
     const lawnMat = createManicuredLawnMaterial(4, 4, { striped: false, rich: true });
     for (const [lx, lz, w, d] of [
       [-18.0, -3.2, 16.0, 3.2],
-      [18.5, -3.2, 16.0, 3.2],
+      [17.2, -3.2, 13.5, 3.2],
     ]) {
       const bed = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), lawnMat);
       bed.position.set(lx, 0.3, lz);
@@ -1094,22 +1242,22 @@ export class QuangTrungCampus {
     );
     this.obstacles.push({ side: pitchSide, fwd: 44.3, radius: 1.55 });
 
-    // Right courtyard mini basketball half-court on brick yard
-    yard.add(createBasketballHoop(26.6, 0.3, -20.5, -Math.PI * 0.5));
-    this.obstacles.push({ side: 26.6, fwd: 20.5, radius: 1.35 });
+    // Right courtyard mini basketball half-court on brick yard (inside side 9..18, clear of East wing)
+    yard.add(createBasketballHoop(18.0, 0.3, -23.5, -Math.PI * 0.5));
+    this.obstacles.push({ side: 18.0, fwd: 23.5, radius: 1.35 });
     yard.add(
-      createCourtLineStrip(0.11, 12.0, 16.5, lineY, -20.5),
-      createCourtLineStrip(10.0, 0.11, 21.5, lineY, -14.5),
-      createCourtLineStrip(10.0, 0.11, 21.5, lineY, -26.5),
+      createCourtLineStrip(0.11, 12.0, 10.0, lineY, -23.5),
+      createCourtLineStrip(8.0, 0.11, 14.0, lineY, -17.5),
+      createCourtLineStrip(8.0, 0.11, 14.0, lineY, -29.5),
     );
 
-    // Festive overhead bunting strands above expanded primary courtyard
+    // Festive overhead bunting strands spanning from West wing to East wing
     const buntingGroup = new THREE.Group();
     buntingGroup.name = "quang-trung-bunting";
     const anchorA = new THREE.Vector3(-24.0, 6.8, -21.0);
-    const anchorB = new THREE.Vector3(28.0, 6.8, -21.0);
+    const anchorB = new THREE.Vector3(20.6, 6.8, -21.0);
     const anchorC = new THREE.Vector3(-24.0, 6.9, -44.0);
-    const anchorD = new THREE.Vector3(28.0, 6.9, -44.0);
+    const anchorD = new THREE.Vector3(20.6, 6.9, -44.0);
     const anchorE = new THREE.Vector3(-14.0, 7.0, -59.0);
     const anchorF = new THREE.Vector3(14.0, 7.0, -59.0);
     for (const [p1, p2] of [
@@ -1200,12 +1348,16 @@ export class QuangTrungCampus {
       }
     }
 
-    // 2) North Rear 3-story classroom wing positioned cleanly in expanded yard (fwd 61.5..70.9)
+    // 2) North Rear 3-story classroom wing + central projecting 2-story portico (fwd 57.1..70.9)
     const nW = 46.0;
     const nD = 9.4;
     const nH = 10.6;
     const northCorners = [
       this.toWorld(-21.5, 61.5),
+      this.toWorld(-4.2, 61.5),
+      this.toWorld(-4.2, 57.1),
+      this.toWorld(4.2, 57.1),
+      this.toWorld(4.2, 61.5),
       this.toWorld(24.5, 61.5),
       this.toWorld(24.5, 70.9),
       this.toWorld(-21.5, 70.9),
@@ -1234,6 +1386,31 @@ export class QuangTrungCampus {
     const nRoof = createHipRoofMesh(nW + 0.8, nD + 0.8, 2.4, roofMat);
     nRoof.position.y = nH;
     northWingGroup.add(nRoof);
+
+    // Central projecting 2-story lobby/portico matching school 3D layout
+    const portico = new THREE.Group();
+    portico.name = "quang-trung-north-portico";
+    portico.position.set(-1.5, 0, nD / 2 + 2.2);
+    const wallTex2 = createIceBlueWingWallTexture(2);
+    const porticoBody = new THREE.Mesh(
+      new THREE.BoxGeometry(8.4, 7.0, 4.4),
+      new THREE.MeshStandardMaterial({
+        color: wallTex2 ? "#ffffff" : "#b7cce0",
+        map: wallTex2,
+        roughness: 0.74,
+      }),
+    );
+    porticoBody.position.y = 3.5;
+    porticoBody.castShadow = porticoBody.receiveShadow = true;
+    portico.add(
+      porticoBody,
+      box([8.9, 0.28, 4.8], "#2c82d2", [0, 7.12, 0]),
+      box([9.0, 0.14, 4.9], "#f3f6fa", [0, 7.32, 0]),
+      box([3.2, 2.7, 0.12], "#1f3242", [0, 1.4, 2.22]),
+      box([4.8, 0.22, 1.1], "#2c82d2", [0, 3.35, 2.45]),
+    );
+    northWingGroup.add(portico);
+    this.world.cameraObstacles.push(porticoBody);
 
     const nAwning = new THREE.Mesh(
       new THREE.BoxGeometry(nW - 0.5, 0.22, 1.85),
@@ -1270,17 +1447,85 @@ export class QuangTrungCampus {
       "#0b68bd",
     );
     const lowerBanner = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.8, 1.75),
+      new THREE.PlaneGeometry(7.6, 1.35),
       new THREE.MeshStandardMaterial({
         color: "#ffffff",
         map: lowerBannerTex,
         roughness: 0.45,
       }),
     );
-    lowerBanner.position.set(0, 4.9, nD / 2 + 0.16);
+    lowerBanner.position.set(-1.5, 4.35, nD / 2 + 4.46);
     northWingGroup.add(lowerBanner);
 
     this.group.add(northWingGroup);
+
+    // 3) East 3-story classroom wing completing the U-shaped campus (side 21.5..29.1, fwd 15.5..58.8)
+    const eW = 7.6;
+    const eD = 43.3;
+    const eH = 10.6;
+    const eastCorners = [
+      this.toWorld(21.5, 15.5),
+      this.toWorld(29.1, 15.5),
+      this.toWorld(29.1, 58.8),
+      this.toWorld(21.5, 58.8),
+    ];
+    this.campusBuildingPolygons.push([...eastCorners, eastCorners[0]]);
+
+    const eastWingGroup = new THREE.Group();
+    eastWingGroup.name = "quang-trung-east-wing";
+    const ec = this.toWorld(25.3, 37.15);
+    eastWingGroup.position.set(ec.x, 0.28, ec.z);
+    eastWingGroup.rotation.y = this.facingGateYaw;
+
+    const eBodyGeo = new THREE.BoxGeometry(eW, eH, eD);
+    if (eBodyGeo.attributes.uv) {
+      const uv = eBodyGeo.attributes.uv;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setX(i, uv.getX(i) * 4.2);
+      }
+    }
+    const eBody = new THREE.Mesh(eBodyGeo, wallMat3);
+    eBody.position.y = eH / 2;
+    eBody.castShadow = eBody.receiveShadow = true;
+    eastWingGroup.add(eBody);
+    this.world.cameraObstacles.push(eBody);
+
+    const eRoof = createHipRoofMesh(eD + 0.8, eW + 0.8, 2.2, roofMat);
+    eRoof.position.y = eH;
+    eRoof.rotation.y = Math.PI * 0.5;
+    eastWingGroup.add(eRoof);
+
+    // Inward-facing blue ground-floor verandah awning + white square colonnade columns
+    const eAwning = new THREE.Mesh(
+      new THREE.BoxGeometry(2.05, 0.22, eD - 1.1),
+      canopyMat,
+    );
+    eAwning.position.set(-eW / 2 - 0.9, 3.57, 0);
+    eAwning.castShadow = true;
+    eastWingGroup.add(eAwning);
+
+    for (let f = 16.8; f <= 57.8; f += 5.12) {
+      const cp = this.toWorld(20.05, f);
+      const col = new THREE.BoxGeometry(0.38, 3.6, 0.38);
+      col.rotateY(this.facingGateYaw);
+      col.translate(cp.x, 0.28 + 1.8, cp.z);
+      colonnadeParts.push(col);
+    }
+
+    for (const lvY of [4.25, 7.65]) {
+      for (let f = 18.2; f <= 56.2; f += 4.2) {
+        const pp = this.toWorld(21.25, f);
+        const planter = new THREE.Mesh(
+          new THREE.BoxGeometry(0.45, 0.36, 1.3),
+          mat("#edece7", 0.78),
+        );
+        planter.position.set(pp.x, lvY, pp.z);
+        planter.rotation.y = this.facingGateYaw;
+        this.group.add(planter);
+      }
+    }
+
+    this.group.add(eastWingGroup);
 
     if (colonnadeParts.length) {
       const m = new THREE.Mesh(mergeGeometries(colonnadeParts), trimMat);
@@ -1288,6 +1533,16 @@ export class QuangTrungCampus {
       this.group.add(m);
       colonnadeParts.forEach((p) => p.dispose());
     }
+  }
+
+  buildParkingLot() {
+    const lot = createSchoolParkingLot(this.gate, this.facingGateYaw);
+    this.group.add(lot);
+    // Shelters & booth block riding while leaving left aisle (side 30.0..31.8) passable
+    for (const fwd of [16, 20, 24, 27, 38, 42, 47, 52]) {
+      this.obstacles.push({ side: 34.4, fwd, radius: 2.0 });
+    }
+    this.obstacles.push({ side: 35.1, fwd: 9.8, radius: 1.5 });
   }
 
   buildGreenery() {
@@ -1305,14 +1560,13 @@ export class QuangTrungCampus {
       [5.4, 30.0, 1.05, 8],
       [5.4, 40.5, 1.08, 9],
       [5.4, 51.0, 1.04, 10],
-      // Perimeter & garden shade trees
-      [31.5, 11.0, 1.08, 11],
-      [31.5, 25.0, 1.12, 12],
-      [31.5, 39.5, 1.1, 13],
-      [31.5, 55.0, 1.06, 14],
-      [-29.5, 6.8, 1.04, 15],
-      [-29.5, 68.0, 1.06, 16],
-      [30.0, 66.0, 1.05, 17],
+      // Right courtyard & corner perimeter shade trees (clear of East wing & parking lot)
+      [17.2, 10.5, 1.06, 11],
+      [17.2, 51.0, 1.06, 12],
+      [33.2, 4.2, 1.04, 13],
+      [-29.5, 6.8, 1.04, 14],
+      [-29.5, 68.0, 1.06, 15],
+      [30.0, 66.0, 1.05, 16],
     ];
 
     for (const [side, fwd, scale, seed] of trees) {
@@ -1366,13 +1620,9 @@ export class QuangTrungCampus {
     yardProps.add(createSchoolDrumStand(-22.4, 0.3, -52.5, Math.PI * 0.5));
     this.obstacles.push({ side: -22.4, fwd: 52.5, radius: 0.9 });
 
-    // 4) Green library pergola & student handwash station on right yard
-    yardProps.add(createGreenLibraryZone(25.2, 0.3, -35.5, 0));
-    this.obstacles.push({ side: 25.2, fwd: 35.5, radius: 2.3 });
-
-    // 5) Covered student bicycle shed along right-rear yard
-    yardProps.add(createBikeShed(27.5, 0.3, -49.5, 0));
-    this.obstacles.push({ side: 27.5, fwd: 49.5, radius: 2.6 });
+    // 4) Green library pergola & student handwash station on inner right courtyard (clear of East wing)
+    yardProps.add(createGreenLibraryZone(17.6, 0.3, -39.0, 0));
+    this.obstacles.push({ side: 17.6, fwd: 39.0, radius: 2.3 });
 
     // 6) Stone courtyard benches neatly tucked beside tree curbs
     for (const [bx, bf, yaw] of [
@@ -1426,6 +1676,28 @@ export class QuangTrungCampus {
     this.group.add(sidewalk);
   }
 
+  buildCafes() {
+    const roseGarden = buildRoseGardenCafe({
+      toWorld: (s, f) => this.toWorld(s, f),
+      roadYaw: this.facingGateYaw,
+      cameraObstacles: this.world.cameraObstacles,
+    });
+    this.group.add(roseGarden.group);
+    this.cafePolygons.push(roseGarden.buildingPoly);
+    this.cafeLotBounds.push(roseGarden.lotBounds);
+    this.outsideObstacles.push(...roseGarden.obstacles);
+
+    const cafeStrip = buildNguyenHueCafeStrip({
+      toWorld: (s, f) => this.toWorld(s, f),
+      roadYaw: this.facingGateYaw,
+      cameraObstacles: this.world.cameraObstacles,
+    });
+    this.group.add(cafeStrip.group);
+    this.cafePolygons.push(...cafeStrip.buildingPolys);
+    this.cafeLotBounds.push(...cafeStrip.lotBoundsList);
+    this.outsideObstacles.push(...cafeStrip.obstacles);
+  }
+
   buildStudents() {
     const isWalkSafe = (side, fwd) => {
       const w = this.toWorld(side, fwd);
@@ -1439,19 +1711,19 @@ export class QuangTrungCampus {
 
     const walkers = [
       // Students walking straight down the central gate avenue
-      { gender: "boy", points: [[-1.6, 3.5], [-1.6, 48.0]], speed: 1.28, offset: 0.1 },
-      { gender: "girl", points: [[1.6, 48.0], [1.6, 4.0]], speed: 1.24, offset: 0.45 },
+      { gender: "boy", points: [[-1.6, 3.5], [-1.6, 46.0]], speed: 1.28, offset: 0.1 },
+      { gender: "girl", points: [[1.6, 46.0], [1.6, 4.0]], speed: 1.24, offset: 0.45 },
       // Primary students running/playing across the left brick football pitch
       { gender: "boy", points: [[-18.0, 19.0], [-11.5, 36.5]], speed: 1.48, offset: 0.2 },
       { gender: "boy", points: [[-11.8, 22.0], [-17.8, 38.0]], speed: 1.42, offset: 0.65 },
       // Students walking across courtyard toward library & notice board
-      { gender: "girl", points: [[-9.5, 48.5], [14.5, 48.5]], speed: 1.22, offset: 0.3 },
-      { gender: "girl", points: [[14.0, 26.0], [21.0, 34.0]], speed: 1.26, offset: 0.72 },
+      { gender: "girl", points: [[-9.5, 45.5], [14.5, 45.5]], speed: 1.22, offset: 0.3 },
+      { gender: "girl", points: [[11.5, 25.5], [16.5, 36.0]], speed: 1.26, offset: 0.72 },
     ].filter((w) => w.points.every(([s, f]) => isWalkSafe(s, f)));
 
     const chatSpots = [
       { side: 10.6, fwd: 14.5, members: ["boy", "girl", "boy"], radius: 0.85 },
-      { side: 19.8, fwd: 34.5, members: ["girl", "boy", "girl"], radius: 0.85 },
+      { side: 14.5, fwd: 34.5, members: ["girl", "boy", "girl"], radius: 0.85 },
       { side: -14.8, fwd: 27.5, members: ["boy", "boy", "girl"], radius: 1.1 },
       { side: 12.2, fwd: 47.0, members: ["girl", "boy"], radius: 0.8 },
     ].filter((c) => isWalkSafe(c.side, c.fwd));
@@ -1475,6 +1747,9 @@ export class QuangTrungCampus {
 
   canRide(wx, wz) {
     if (this.hitsOutsideProp(wx, wz)) return false;
+    if (this.cafePolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
+      return false;
+    }
     if (!this.inCampus(wx, wz)) return null;
     if (this.campusBuildingPolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
       return false;
@@ -1491,11 +1766,19 @@ export class QuangTrungCampus {
   }
 
   blocksGrass(wx, wz) {
-    return this.inCampus(wx, wz) || this.hitsOutsideProp(wx, wz, 2.0);
+    return (
+      this.inCampus(wx, wz) ||
+      this.inCafeLot(wx, wz, 0.8) ||
+      this.hitsOutsideProp(wx, wz, 2.0)
+    );
   }
 
   blocksTree(wx, wz) {
-    return this.inCampus(wx, wz) || this.hitsOutsideProp(wx, wz, 2.6);
+    return (
+      this.inCampus(wx, wz) ||
+      this.inCafeLot(wx, wz, 1.5) ||
+      this.hitsOutsideProp(wx, wz, 2.6)
+    );
   }
 
   update(time, playerPos = null) {
