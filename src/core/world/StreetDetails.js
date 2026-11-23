@@ -104,7 +104,10 @@ export function addStreetDetails(world, features) {
         world.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
         world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
         world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
-        world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 10);
+        world.allGateClearances?.some(
+          (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
+        ) ||
+        world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 14.5);
       if (road.tags.name && distance - lastSign > 120 && len > 6) {
         for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
           const p = roadsidePoint(
@@ -282,7 +285,10 @@ export function addStreetDetails(world, features) {
   world.treePositions = world.treePositions.filter((p) =>
     world.isTreePositionSafe
       ? world.isTreePositionSafe(p)
-      : !world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11),
+      : !world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 14.5) &&
+        !world.allGateClearances?.some(
+          (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
+        ),
   );
   for (let i = 0; i < world.treePositions.length; i += 7) {
     const p = world.treePositions[i],

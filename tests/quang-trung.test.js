@@ -21,6 +21,7 @@ import { BenhVienRhmHue } from "../src/modules/areas/quang-trung/view/BenhVienRh
 import { DongChuaCuuTheChurch } from "../src/modules/areas/quang-trung/view/DongChuaCuuTheChurch.js";
 import { GeographicTraffic } from "../src/core/traffic/GeographicTraffic.js";
 import { GeographicWorld } from "../src/core/world/GeographicWorld.js";
+import { ChurchBellController } from "../src/core/audio/ChurchBellController.js";
 
 function withMockDocument(fn) {
   const prev = globalThis.document;
@@ -436,6 +437,24 @@ test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòn
       );
     }
 
+    assert.ok(
+      church.stairPortals.length === 10 &&
+        church.group.getObjectByName("portal-basilica-east-main") &&
+        church.group.getObjectByName("portal-basilica-south-transept") &&
+        church.group.getObjectByName("portal-basilica-north-transept") &&
+        church.group.getObjectByName("portal-tuvien-north"),
+      "all Colonial Tu viện & Basilica buildings feature stone stair portals",
+    );
+    const southTranseptStairY = church.groundAt(1845.5, -139.0);
+    assert.ok(
+      southTranseptStairY > 0.35 && church.canRide(1845.5, -139.0) === true,
+      "walking onto Basilica sanctuary staircase smoothly elevates player",
+    );
+    assert.equal(church.isPlayerInArea(1845, -170), true);
+    assert.equal(church.isPlayerInArea(1670.5, -246.4), false);
+    const bellSrc = church.getBellSource();
+    assert.ok(Number.isFinite(bellSrc?.x) && Number.isFinite(bellSrc?.z));
+
     const gateOpening = church.toWorld(36, -24);
     assert.equal(
       church.canRide(gateOpening.x, gateOpening.z),
@@ -515,9 +534,53 @@ test("Bệnh viện Đa Khoa, Hẻm nhỏ, Công viên Dự Án & tree-clearance
         false,
         "no ambient roadside tree intrudes on Rose Garden / Bệnh viện Đa Khoa / Hẻm nhỏ / Công viên Dự Án",
       );
+      for (const g of world.allGateClearances || []) {
+        assert.ok(
+          Math.hypot(tp.x - g.x, tp.z - g.z) >= (g.radius || 14.5),
+          `no ambient tree blocks gate clearance (${g.x.toFixed(1)}, ${g.z.toFixed(1)})`,
+        );
+      }
     }
     east.update(3.2, parkWalkway);
   });
+});
+
+test("ChurchBellController stays silent outside church and chimes every 30-60s inside Dòng Chúa Cứu Thế", () => {
+  const spans = [0.0, 0.5, 1.0];
+  let idx = 0;
+  const bell = new ChurchBellController({
+    minInterval: 30,
+    maxInterval: 60,
+    initialDelay: 1.5,
+    rng: () => spans[idx++ % spans.length],
+  });
+
+  // Never rings outside church compound
+  for (let t = 0; t <= 120; t += 1) {
+    assert.equal(bell.update(t, false), false);
+  }
+
+  // Player enters church at t = 121 -> chimes after initialDelay (122.5)
+  assert.equal(bell.update(121.0, true), false);
+  assert.equal(bell.update(122.5, true), true); // rng=0 -> next interval +30s -> 152.5
+
+  // Quiet before 30s passes
+  assert.equal(bell.update(140.0, true), false);
+  assert.equal(bell.update(152.4, true), false);
+  assert.equal(bell.update(152.5, true), true); // rng=0.5 -> next interval +45s -> 197.5
+
+  assert.equal(bell.update(197.4, true), false);
+  assert.equal(bell.update(197.5, true), true); // rng=1.0 -> next interval +60s -> 257.5
+
+  // Leaves church -> silent even past 257.5
+  assert.equal(bell.update(260.0, false), false);
+  // Re-enters quickly after < 30s since last toll at 197.5 (e.g. t = 210 vs >227.5):
+  bell.reset();
+  assert.equal(bell.update(300.0, true), false);
+  assert.equal(bell.update(301.5, true), true);
+  // Step outside and step right back in within 10s -> must NOT double chime
+  assert.equal(bell.update(305.0, false), false);
+  assert.equal(bell.update(310.0, true), false);
 });
 
 test("Every school campus across all districts contains both boy and girl students inside its yard", async () => {

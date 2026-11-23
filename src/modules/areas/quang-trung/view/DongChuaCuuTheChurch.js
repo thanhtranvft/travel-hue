@@ -4,7 +4,10 @@ import {
   getById,
   getPointsOf,
 } from "../../../../core/shared/geography/activeGeography.js";
-import { inside } from "../../../../core/shared/geography/geometry.js";
+import {
+  inside,
+  nearestPoint,
+} from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
@@ -92,7 +95,7 @@ function createBasilicaStoneTexture() {
     ctx.fillStyle = "#e5d7b4";
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle limestone ashlar block joints + tall stained-glass lancet windows
+    // Subtle limestone ashlar joints
     ctx.strokeStyle = "rgba(140, 122, 88, 0.25)";
     ctx.lineWidth = 2;
     for (let y = 0; y < h; y += 32) {
@@ -102,18 +105,26 @@ function createBasilicaStoneTexture() {
       ctx.stroke?.();
     }
 
+    // Carved ground-floor limestone plinth & dado molding so windows sit gracefully above stairs
+    ctx.fillStyle = "#b8ab92";
+    ctx.fillRect(0, h - 118, w, 118);
+    ctx.fillStyle = "#f2ead6";
+    ctx.fillRect(0, h - 124, w, 10);
+    ctx.fillStyle = "#6c655a";
+    ctx.fillRect(0, h - 22, w, 22);
+
+    // Tall cobalt-blue Gothic stained-glass lancet windows above ground plinth
     for (const wx of [44, 184, 324, 444]) {
       const ww = wx === 444 ? 48 : 88;
       ctx.fillStyle = "#f5efdd";
-      ctx.fillRect(wx - 6, 86, ww + 12, h - 140);
-      // Iconic cobalt-blue Gothic stained glass seen behind Christ Statue in image_5b73abc9.png
+      ctx.fillRect(wx - 6, 48, ww + 12, h - 186);
       ctx.fillStyle = "#195eb8";
-      ctx.fillRect(wx, 92, ww, h - 152);
+      ctx.fillRect(wx, 54, ww, h - 198);
       ctx.fillStyle = "#4fa2f0";
-      ctx.fillRect(wx + ww * 0.18, 108, ww * 0.64, h - 184);
+      ctx.fillRect(wx + ww * 0.18, 70, ww * 0.64, h - 230);
       ctx.fillStyle = "#eef4fa";
-      ctx.fillRect(wx + ww * 0.46, 96, 5, h - 160);
-      ctx.fillRect(wx + 4, 210, ww - 8, 5);
+      ctx.fillRect(wx + ww * 0.46, 58, 5, h - 206);
+      ctx.fillRect(wx + 4, 186, ww - 8, 5);
     }
   });
 }
@@ -337,6 +348,8 @@ export class DongChuaCuuTheChurch {
     this.buildingPolygons = [];
     this.fenceSegments = [];
     this.secondaryGates = [];
+    this.stairPortals = [];
+    this.stairZones = [];
     this.obstacles = [];
 
     this.buildGroundsAndFence();
@@ -620,11 +633,13 @@ export class DongChuaCuuTheChurch {
     const trimMat = mat("#f3ead0", 0.72);
     const balustradeMat = mat("#d5c294", 0.74);
 
+    const colonialPolys = new Map();
     for (const id of this.colonialIds) {
       const feature = getById(id);
       if (!feature) continue;
       const pts = getPointsOf(feature);
       this.buildingPolygons.push(pts);
+      colonialPolys.set(id, pts);
 
       const wallH = id === 1174028275 ? 9.4 : 8.6;
       const geo = polygonGeometry(pts, wallH);
@@ -640,6 +655,83 @@ export class DongChuaCuuTheChurch {
       mesh.castShadow = mesh.receiveShadow = true;
       this.group.add(mesh);
       this.world.cameraObstacles.push(mesh);
+    }
+
+    // Add formal French-colonial entrance stone staircases & portals to all 3 Tu viện buildings
+    const tuVienMain = colonialPolys.get(1174028275);
+    if (tuVienMain) {
+      this.addPortalOnEdge(tuVienMain, 7, 8, {
+        name: "portal-tuvien-north",
+        width: 7.2,
+        steps: 5,
+        stepDepth: 0.44,
+        stepRise: 0.18,
+        landingDepth: 1.55,
+        doorW: 3.6,
+        doorH: 3.8,
+        style: "colonial",
+      });
+      this.addPortalOnEdge(tuVienMain, 1, 2, {
+        name: "portal-tuvien-south",
+        width: 5.8,
+        steps: 4,
+        stepDepth: 0.42,
+        stepRise: 0.18,
+        landingDepth: 1.35,
+        doorW: 3.0,
+        doorH: 3.4,
+        style: "colonial",
+      });
+    }
+    const tuVienWest = colonialPolys.get(1174028276);
+    if (tuVienWest) {
+      this.addPortalOnEdge(tuVienWest, 3, 4, {
+        name: "portal-west-wing-north",
+        width: 5.4,
+        steps: 4,
+        stepDepth: 0.42,
+        stepRise: 0.18,
+        landingDepth: 1.3,
+        doorW: 2.8,
+        doorH: 3.3,
+        style: "colonial",
+      });
+      this.addPortalOnEdge(tuVienWest, 1, 2, {
+        name: "portal-west-wing-south",
+        width: 5.4,
+        steps: 4,
+        stepDepth: 0.42,
+        stepRise: 0.18,
+        landingDepth: 1.3,
+        doorW: 2.8,
+        doorH: 3.3,
+        style: "colonial",
+      });
+    }
+    const cloisterWing = colonialPolys.get(1174028274);
+    if (cloisterWing) {
+      this.addPortalOnEdge(cloisterWing, 1, 2, {
+        name: "portal-cloister-east",
+        width: 5.6,
+        steps: 4,
+        stepDepth: 0.42,
+        stepRise: 0.18,
+        landingDepth: 1.35,
+        doorW: 2.9,
+        doorH: 3.4,
+        style: "colonial",
+      });
+      this.addPortalOnEdge(cloisterWing, 3, 4, {
+        name: "portal-cloister-west",
+        width: 5.2,
+        steps: 4,
+        stepDepth: 0.42,
+        stepRise: 0.18,
+        landingDepth: 1.25,
+        doorW: 2.6,
+        doorH: 3.2,
+        style: "colonial",
+      });
     }
 
     // Iconic front stepped gable, Stone Cross, balcony & perforated balustrade on primary colonial block 1174028275
@@ -713,8 +805,10 @@ export class DongChuaCuuTheChurch {
 
     const feature = getById(this.basilicaId);
     let bCenter = this.toWorld(108, -58);
+    let basilicaPts = null;
     if (feature) {
       const pts = getPointsOf(feature);
+      basilicaPts = pts;
       this.buildingPolygons.push(pts);
       const navH = 16.2;
       const bodyGeo = polygonGeometry(pts, navH);
@@ -738,6 +832,58 @@ export class DongChuaCuuTheChurch {
       bCenter = { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2 };
     }
 
+    // Grand sanctuary stone staircases & cathedral portals on all 4 facades of the Basilica
+    if (basilicaPts && basilicaPts.length >= 28) {
+      // 1) East Main Sanctuary Portal facing Jesus Christ statue & Ngã 3 Nguyễn Huệ × Nguyễn Khuyến
+      this.addPortalOnEdge(basilicaPts, 27, 0, {
+        name: "portal-basilica-east-main",
+        width: 11.4,
+        steps: 7,
+        stepDepth: 0.48,
+        stepRise: 0.18,
+        landingDepth: 2.1,
+        doorW: 4.8,
+        doorH: 5.4,
+        style: "basilica",
+      });
+      // 2) South Transept Cathedral Portal facing green courtyard lawn
+      this.addPortalOnEdge(basilicaPts, 4, 5, {
+        name: "portal-basilica-south-transept",
+        width: 8.6,
+        steps: 5,
+        stepDepth: 0.46,
+        stepRise: 0.18,
+        landingDepth: 1.65,
+        doorW: 3.8,
+        doorH: 4.6,
+        style: "basilica",
+      });
+      // 3) North Transept Cathedral Portal facing Nguyễn Huệ
+      this.addPortalOnEdge(basilicaPts, 22, 23, {
+        name: "portal-basilica-north-transept",
+        width: 8.6,
+        steps: 5,
+        stepDepth: 0.46,
+        stepRise: 0.18,
+        landingDepth: 1.65,
+        doorW: 3.8,
+        doorH: 4.6,
+        style: "basilica",
+      });
+      // 4) West Apse Chapel Portal facing Tu viện courtyard
+      this.addPortalOnEdge(basilicaPts, 13, 14, {
+        name: "portal-basilica-west-apse",
+        width: 5.2,
+        steps: 4,
+        stepDepth: 0.44,
+        stepRise: 0.18,
+        landingDepth: 1.35,
+        doorW: 2.8,
+        doorH: 3.8,
+        style: "basilica",
+      });
+    }
+
     // Cruciform Basilica gabled roofs & soaring Bell Tower aligned with Basilica's true OSM axis (~ +0.06 rad from E)
     const basilicaYaw = this.roadYaw + 0.08;
     const basilicaRoofAndTower = new THREE.Group();
@@ -755,6 +901,10 @@ export class DongChuaCuuTheChurch {
 
     // Tall Basilica Facade & Bell Tower facing East toward the Christ Statue & Nguyễn Khuyến
     const towerX = 33.5;
+    this.bellTowerPos = {
+      x: bCenter.x + Math.cos(basilicaYaw) * towerX,
+      z: bCenter.z - Math.sin(basilicaYaw) * towerX,
+    };
     basilicaRoofAndTower.add(
       box([6.6, 26.0, 7.2], "#e8dbb9", [towerX, 13.0, 0]),
       box([5.4, 5.2, 5.4], "#efe4c7", [towerX, 28.0, 0]),
@@ -797,9 +947,210 @@ export class DongChuaCuuTheChurch {
     this.obstacles.push({ x: jPos.x, z: jPos.z, radius: 4.1 });
   }
 
+  addPortalOnEdge(
+    poly,
+    indexA,
+    indexB,
+    {
+      name,
+      width = 6.8,
+      steps = 5,
+      stepDepth = 0.45,
+      stepRise = 0.18,
+      landingDepth = 1.5,
+      doorW = 3.4,
+      doorH = 4.0,
+      style = "basilica",
+    } = {},
+  ) {
+    const a = poly[indexA];
+    const b = poly[indexB];
+    if (!a || !b) return null;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const edgeLen = Math.hypot(dx, dz);
+    if (edgeLen < 1) return null;
+
+    const mid = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
+    let nx = -dz / edgeLen;
+    let nz = dx / edgeLen;
+    // Flip normal strictly outward from building interior
+    if (inside({ x: mid.x + nx * 1.2, z: mid.z + nz * 1.2 }, poly)) {
+      nx = -nx;
+      nz = -nz;
+    }
+
+    const yaw = Math.atan2(nx, nz);
+    const portal = new THREE.Group();
+    portal.name = name || "dong-chua-cuu-the-stair-portal";
+    portal.position.set(mid.x, 0.28, mid.z);
+    portal.rotation.y = yaw;
+
+    const maxRise = steps * stepRise;
+    const totalDepth = landingDepth + steps * stepDepth;
+
+    // 1) Top stone landing platform anchored slightly inside wall (-0.35..+landingDepth)
+    const landingGeo = new THREE.BoxGeometry(width, maxRise, landingDepth + 0.35);
+    const stoneColor = "#d9d0be";
+    const treadTrim = "#ebe3d3";
+    const balustradeHex = "#c7bea9";
+    const archStoneHex = "#efe6d2";
+    const woodDoorHex = "#4f2c1a";
+    const landing = new THREE.Mesh(landingGeo, mat(stoneColor, 0.8));
+    landing.position.set(0, maxRise / 2, (landingDepth - 0.35) / 2);
+    landing.castShadow = landing.receiveShadow = true;
+    portal.add(landing);
+
+    // 2) Tiered stone staircase descending cleanly from landing outward to ground
+    for (let s = 0; s < steps; s++) {
+      const h = (steps - s) * stepRise;
+      const zCenter = landingDepth + s * stepDepth + stepDepth / 2;
+      const stepW = width + Math.min(1.0, s * 0.22);
+      const stepMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(stepW, h, stepDepth + 0.04),
+        mat(s % 2 === 0 ? treadTrim : stoneColor, 0.82),
+      );
+      stepMesh.position.set(0, h / 2, zCenter);
+      stepMesh.castShadow = stepMesh.receiveShadow = true;
+      portal.add(stepMesh);
+    }
+
+    // 3) Flanking stepped stone cheek balustrades + front newel piers with warm lanterns
+    for (const sx of [-1, 1]) {
+      const railX = sx * (width / 2 + 0.24);
+      // Upper balustrade wall along landing
+      portal.add(
+        box([0.42, maxRise + 0.72, landingDepth + 0.35], balustradeHex, [
+          railX,
+          (maxRise + 0.72) / 2,
+          (landingDepth - 0.35) / 2,
+        ]),
+        box([0.52, 0.14, landingDepth + 0.45], archStoneHex, [
+          railX,
+          maxRise + 0.78,
+          (landingDepth - 0.35) / 2,
+        ]),
+      );
+      // Diagonal stepped balustrade wing wall down stair sides
+      const slopeLen = steps * stepDepth;
+      const cheek = new THREE.Mesh(
+        new THREE.BoxGeometry(0.4, maxRise * 0.65 + 0.6, slopeLen),
+        mat(balustradeHex, 0.8),
+      );
+      cheek.position.set(railX, (maxRise * 0.65 + 0.6) / 2, landingDepth + slopeLen / 2);
+      cheek.castShadow = true;
+      portal.add(cheek);
+
+      // Front square granite newel post + glowing bronze lantern at stair foot
+      const postZ = totalDepth - 0.15;
+      const postX = sx * (width / 2 + Math.min(0.5, steps * 0.1) + 0.22);
+      portal.add(
+        box([0.56, 1.35, 0.56], balustradeHex, [postX, 0.675, postZ]),
+        box([0.66, 0.14, 0.66], archStoneHex, [postX, 1.4, postZ]),
+      );
+      const lantern = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 10, 8),
+        new THREE.MeshStandardMaterial({
+          color: "#fff7db",
+          emissive: "#ffe09a",
+          emissiveIntensity: 0.4,
+          roughness: 0.3,
+        }),
+      );
+      lantern.position.set(postX, 1.66, postZ);
+      portal.add(lantern);
+
+      // Register corner pier obstacles in world space (leaving center steps 100% passable)
+      this.obstacles.push({
+        x: mid.x + (postX * Math.cos(yaw) + postZ * Math.sin(yaw)),
+        z: mid.z + (-postX * Math.sin(yaw) + postZ * Math.cos(yaw)),
+        radius: 0.55,
+      });
+    }
+
+    // 4) Grand Sanctuary Entrance Portal Frame, Pilasters & Double Carved Doors sitting atop landing
+    const frameW = doorW + 1.5;
+    const sillZ = 0.14;
+    const baseDoorY = maxRise;
+    portal.add(
+      // Stone portal pilasters left & right
+      box([0.7, doorH + 0.5, 0.72], archStoneHex, [-doorW / 2 - 0.35, baseDoorY + (doorH + 0.5) / 2, sillZ + 0.18]),
+      box([0.7, doorH + 0.5, 0.72], archStoneHex, [doorW / 2 + 0.35, baseDoorY + (doorH + 0.5) / 2, sillZ + 0.18]),
+      // Heavy carved lintel & cornice pediment
+      box([frameW + 0.4, 0.52, 0.85], archStoneHex, [0, baseDoorY + doorH + 0.35, sillZ + 0.22]),
+      box([frameW + 0.9, 0.24, 1.05], treadTrim, [0, baseDoorY + doorH + 0.72, sillZ + 0.26]),
+    );
+
+    if (style === "basilica") {
+      // Gothic pointed stone gable hood, blue stained-glass tympanum & golden cross finial
+      const hood = new THREE.Mesh(
+        new THREE.ConeGeometry(frameW * 0.42, 1.85, 4),
+        mat(archStoneHex, 0.72),
+      );
+      hood.rotation.y = Math.PI / 4;
+      hood.scale.set(1.15, 1, 0.45);
+      hood.position.set(0, baseDoorY + doorH + 1.68, sillZ + 0.22);
+      portal.add(
+        hood,
+        box([0.16, 0.95, 0.16], "#fff5d2", [0, baseDoorY + doorH + 2.85, sillZ + 0.22]),
+        box([0.62, 0.16, 0.16], "#fff5d2", [0, baseDoorY + doorH + 3.02, sillZ + 0.22]),
+      );
+      const tympanum = new THREE.Mesh(
+        new THREE.CircleGeometry(doorW * 0.44, 18, 0, Math.PI),
+        mat("#1c60ba", 0.3, 0.2),
+      );
+      tympanum.position.set(0, baseDoorY + doorH - 0.55, sillZ + 0.19);
+      portal.add(tympanum);
+    }
+
+    // Carved dark mahogany sanctuary double doors + central brass cross & handles
+    const doorLeafH = doorH - (style === "basilica" ? 0.65 : 0.2);
+    portal.add(
+      box([doorW, doorLeafH, 0.22], woodDoorHex, [0, baseDoorY + doorLeafH / 2, sillZ]),
+      box([0.1, doorLeafH, 0.28], "#2d170c", [0, baseDoorY + doorLeafH / 2, sillZ + 0.02]),
+      box([0.12, 0.42, 0.08], "#dfb965", [-0.26, baseDoorY + 1.35, sillZ + 0.13]),
+      box([0.12, 0.42, 0.08], "#dfb965", [0.26, baseDoorY + 1.35, sillZ + 0.13]),
+    );
+
+    this.group.add(portal);
+    this.stairPortals.push(portal);
+
+    // Register smooth walkable stair slope in world space
+    this.stairZones.push({
+      cx: mid.x,
+      cz: mid.z,
+      nx,
+      nz,
+      tx: -nz,
+      tz: nx,
+      halfW: width / 2 + 0.2,
+      landingDepth,
+      totalDepth,
+      maxRise,
+    });
+    return portal;
+  }
+
+  stairElevationAt(wx, wz) {
+    for (const s of this.stairZones) {
+      const dx = wx - s.cx;
+      const dz = wz - s.cz;
+      const lateral = Math.abs(dx * s.tx + dz * s.tz);
+      if (lateral > s.halfW) continue;
+      const outward = dx * s.nx + dz * s.nz;
+      if (outward < -0.25 || outward > s.totalDepth) continue;
+      if (outward <= s.landingDepth) return 0.28 + s.maxRise;
+      const t = 1 - (outward - s.landingDepth) / (s.totalDepth - s.landingDepth);
+      return 0.28 + Math.max(0, Math.min(1, t)) * s.maxRise;
+    }
+    return null;
+  }
+
   groundAt(wx, wz, referenceY) {
     if (!this.inCompound(wx, wz)) return null;
-    if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
+    if (Number.isFinite(referenceY) && referenceY > 2.4) return null;
+    const stairY = this.stairElevationAt(wx, wz);
+    if (stairY !== null) return stairY;
     return 0.28;
   }
 
@@ -833,6 +1184,19 @@ export class DongChuaCuuTheChurch {
   }
 
   blocksTree(wx, wz) {
-    return this.inCompound(wx, wz);
+    if (this.inCompound(wx, wz)) return true;
+    return this.secondaryGates.some(
+      (g) => Math.hypot(wx - g.x, wz - g.z) < 15.5,
+    );
+  }
+
+  isPlayerInArea(wx, wz) {
+    if (this.inCompound(wx, wz)) return true;
+    const hit = nearestPoint({ x: wx, z: wz }, this.ring);
+    return hit.distance <= 16;
+  }
+
+  getBellSource() {
+    return this.bellTowerPos || this.jesusStatuePos;
   }
 }

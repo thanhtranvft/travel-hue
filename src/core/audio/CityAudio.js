@@ -423,6 +423,68 @@ export class CityAudio {
       flute(ctx, this.master, percent >= 100 ? 91 : 86, t + 0.07, 0.11, 0.55);
     }
   }
+  playChurchBell({ pan = 0, gainScale = 1 } = {}) {
+    if (
+      !this.enabled ||
+      !this.ctx ||
+      this.ctx.state !== "running" ||
+      (typeof document !== "undefined" && document.hidden)
+    )
+      return false;
+
+    const ctx = this.ctx;
+    const t0 = ctx.currentTime + 0.03;
+    this.churchBellsPlayed = (this.churchBellsPlayed || 0) + 1;
+
+    const panner = ctx.createStereoPanner();
+    panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), t0);
+    panner.connect(this.master);
+
+    // Classic cathedral bronze bell phrase (3 resonant tolls: G3 -> C4 -> G3)
+    const strikes = [
+      { offset: 0.0, fundamental: 196.0, gain: 0.24 * gainScale, decay: 3.8 },
+      { offset: 1.65, fundamental: 261.63, gain: 0.21 * gainScale, decay: 3.6 },
+      { offset: 3.3, fundamental: 196.0, gain: 0.26 * gainScale, decay: 4.5 },
+    ];
+    // Authentic minor-third bell inharmonic overtone ratios
+    const partials = [
+      { ratio: 0.5, weight: 0.55, decayMul: 1.15 },
+      { ratio: 1.0, weight: 1.0, decayMul: 1.0 },
+      { ratio: 1.189, weight: 0.65, decayMul: 0.85 },
+      { ratio: 1.5, weight: 0.48, decayMul: 0.72 },
+      { ratio: 2.0, weight: 0.52, decayMul: 0.62 },
+      { ratio: 2.51, weight: 0.24, decayMul: 0.45 },
+      { ratio: 3.01, weight: 0.2, decayMul: 0.36 },
+    ];
+
+    for (const strike of strikes) {
+      const st = t0 + strike.offset;
+      for (const p of partials) {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(strike.fundamental * p.ratio, st);
+        const peak = Math.max(0.0005, strike.gain * p.weight * 0.32);
+        const dur = strike.decay * p.decayMul;
+        g.gain.setValueAtTime(0.0001, st);
+        g.gain.linearRampToValueAtTime(peak, st + 0.014);
+        g.gain.exponentialRampToValueAtTime(0.0001, st + dur);
+        osc.connect(g).connect(panner);
+        osc.start(st);
+        osc.stop(st + dur + 0.04);
+        osc.onended = () => {
+          osc.disconnect();
+          g.disconnect();
+        };
+      }
+    }
+    setTimeout(() => {
+      try {
+        panner.disconnect();
+      } catch {}
+    }, 9000);
+    return true;
+  }
   dispose() {
     clearInterval(this.timer);
     if (this.preloadIdleId != null && typeof cancelIdleCallback === "function") {

@@ -809,6 +809,34 @@ export class GeographicWorld {
     if (this.region?.id === "quang-trung") {
       this.quangTrungEastPrecinct = new QuangTrungEastPrecinct(this);
     }
+    this.allGateClearances = [
+      ...(this.schoolGates || []).map((g) => ({ x: g.x, z: g.z, radius: 14.5 })),
+    ];
+    if (this.benhVienRhmHue?.entrance) {
+      this.allGateClearances.push({
+        x: this.benhVienRhmHue.entrance.x,
+        z: this.benhVienRhmHue.entrance.z,
+        radius: 15.0,
+      });
+    }
+    if (this.quangTrungCampus) {
+      this.allGateClearances.push(
+        { ...this.quangTrungCampus.toWorld(37.2, 58.5), radius: 14.5 },
+        { ...this.quangTrungCampus.toWorld(50.25, 1.5), radius: 14.5 },
+        { ...this.quangTrungCampus.toWorld(39.0, 58.5), radius: 14.5 },
+      );
+    }
+    if (this.quangTrungEastPrecinct) {
+      this.allGateClearances.push({
+        ...this.quangTrungEastPrecinct.toWorld(85.5, 1.0),
+        radius: 14.5,
+      });
+    }
+    if (this.dongChuaCuuTheChurch?.secondaryGates) {
+      for (const g of this.dongChuaCuuTheChurch.secondaryGates) {
+        this.allGateClearances.push({ x: g.x, z: g.z, radius: 16.0 });
+      }
+    }
     for (const crossing of activeCorridorCrossings) {
       const road = activeRoads.find((r) => r.id === crossing.mainId);
       if (!road) continue;
@@ -1043,7 +1071,13 @@ export class GeographicWorld {
       )
     )
       return false;
-    if (this.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11))
+    if (this.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 14.5))
+      return false;
+    if (
+      this.allGateClearances?.some(
+        (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
+      )
+    )
       return false;
     if (
       this.benhVienRhmHue?.entrance &&

@@ -15,6 +15,8 @@ import { renderQuality } from "../core/rendering/renderQuality.js";
 import { VendorCalls } from "../core/world/VendorCalls.js";
 import { CharmController } from "../core/world/CharmController.js";
 import { SpeedAuraEffect } from "../core/world/CharmSceneFX.js";
+import { ChurchBellController } from "../core/audio/ChurchBellController.js";
+import { sourcePan } from "../core/audio/spatial.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
@@ -132,6 +134,15 @@ export class GamePresenter {
     this.vendorNotice.hidden = true;
     this.vendorNotice.setAttribute("role", "status");
     document.querySelector("#app").append(this.vendorNotice);
+    this.churchBell = new ChurchBellController();
+    this.churchBellNoticeUntil = -Infinity;
+    this.churchBellNotice = document.createElement("aside");
+    this.churchBellNotice.id = "church-bell-toast";
+    this.churchBellNotice.hidden = true;
+    this.churchBellNotice.setAttribute("role", "status");
+    this.churchBellNotice.textContent =
+      "🔔 Tiếng chuông Nhà thờ Dòng Chúa Cứu Thế đang ngân vang…";
+    document.querySelector("#app").append(this.churchBellNotice);
     this.charms = new CharmController(this);
     this.speedAura = new SpeedAuraEffect();
     this.speedAura.attachTo(this.bike);
@@ -254,6 +265,9 @@ export class GamePresenter {
     this.noticeTime = 0;
     this.impact.visible = false;
     this.boundaryHint.hidden = true;
+    this.churchBell?.reset();
+    if (this.churchBellNotice) this.churchBellNotice.hidden = true;
+    this.churchBellNoticeUntil = -Infinity;
     document.querySelector("#collision-toast").hidden = true;
     this.view?.resetLandmarkNotice?.();
     const { x, z, heading } = district.spawn;
@@ -621,6 +635,28 @@ export class GamePresenter {
       }
     }
     if (this.elapsed > this.vendorNoticeUntil) this.vendorNotice.hidden = true;
+    const church = this.world.dongChuaCuuTheChurch;
+    const inChurchArea = Boolean(
+      church?.isPlayerInArea?.(this.bike.position.x, this.bike.position.z),
+    );
+    if (this.churchBell?.update(this.elapsed, inChurchArea)) {
+      const bellSrc = church.getBellSource?.();
+      const heading =
+        this.cameraYaw +
+        (Number.isFinite(this.input.drag.yaw) ? this.input.drag.yaw : 0);
+      const pan = bellSrc
+        ? sourcePan(
+            bellSrc.x - this.bike.position.x,
+            bellSrc.z - this.bike.position.z,
+            heading,
+          )
+        : 0;
+      this.audio.playChurchBell?.({ pan });
+      this.churchBellNotice.hidden = false;
+      this.churchBellNoticeUntil = this.elapsed + 4.8;
+    }
+    if (this.elapsed > this.churchBellNoticeUntil)
+      this.churchBellNotice.hidden = true;
     if (!this.nextHud || this.elapsed >= this.nextHud) {
       this.updateHud();
       this.drawMap();

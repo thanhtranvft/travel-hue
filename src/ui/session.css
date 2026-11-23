@@ -172,7 +172,8 @@
   border-color: #d89b7880;
 }
 #patrol-toast,
-#vendor-toast {
+#vendor-toast,
+#church-bell-toast {
   position: absolute;
   top: 27%;
   left: 50%;
@@ -193,6 +194,12 @@
   border-color: #f3c669;
   background: #4e3622ed;
   color: #fff3d6;
+}
+#church-bell-toast {
+  top: 15%;
+  border-color: #f4d88c;
+  background: #3d3124ed;
+  color: #fff6dc;
 }
 .session-user {
   margin: 0 0 10px;
