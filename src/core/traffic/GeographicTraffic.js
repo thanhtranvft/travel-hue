@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { TrafficSystem } from "./TrafficSystem.js";
-import { mainRoads, roads } from "../shared/geography/map.js";
+import { getMainRoads, getRoads } from "../shared/geography/activeGeography.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { animateWalker, makePerson } from "../world/People.js";
 import { roadWidth } from "../world/roadProfile.js";
@@ -166,18 +166,38 @@ export class GeographicTraffic extends TrafficSystem {
         "x",
         1,
       );
-    const rawVehicleRoads = mainRoads
-        .filter((r) => r.points.length > 2)
-        .sort(
-          (a, b) => (b.tags.name === "Lê Lợi") - (a.tags.name === "Lê Lợi"),
+    const roads = getRoads(),
+      mainRoads = getMainRoads(),
+      bounds = this.world?.bounds,
+      inBounds = (r) =>
+        !bounds ||
+        r.points.some(
+          (p) =>
+            p.x >= bounds.minX &&
+            p.x <= bounds.maxX &&
+            p.z >= bounds.minZ &&
+            p.z <= bounds.maxZ,
         ),
+      preferredMain = mainRoads.some((r) => r.tags.name === "Lê Lợi")
+        ? "Lê Lợi"
+        : "Đống Đa",
+      rawVehicleRoadsAll = mainRoads.filter(
+        (r) => r.points.length > 2 || r.tags?.junction === "roundabout",
+      ),
+      scopedVehicleRoads = rawVehicleRoadsAll.filter(inBounds),
+      rawVehicleRoads = (
+        scopedVehicleRoads.length ? scopedVehicleRoads : rawVehicleRoadsAll
+      ).sort(
+        (a, b) =>
+          (b.tags.name === preferredMain) - (a.tags.name === preferredMain),
+      ),
       vehicleRoads = stitchBridgeRoutes(rawVehicleRoads, this.world),
       footpaths = roads.filter(
         (r) =>
           r.tags.highway === "footway" &&
           !TRUONG_TIEN_SIDEWALK_IDS.has(r.id) &&
           r.points.length > 3 &&
-          r.points.some((p) => p.x > 0 && p.x < 1500 && p.z < 0 && p.z > -1700),
+          inBounds(r),
       );
     this.patrolWarnings = new PatrolWarnings(patrolConfig);
     if (patrolConfig.enabled && vehicleRoads.length) {
@@ -234,7 +254,8 @@ export class GeographicTraffic extends TrafficSystem {
                   ? index %
                     Math.max(
                       1,
-                      candidates.filter((r) => r.tags.name === "Lê Lợi").length,
+                      candidates.filter((r) => r.tags.name === preferredMain)
+                        .length,
                     )
                   : index % candidates.length
               ]),
@@ -374,6 +395,30 @@ export class GeographicTraffic extends TrafficSystem {
         )
       )
         return person;
+    }
+    const campusPeople =
+      this.world.campusStudents?.() ||
+      [
+        this.world.nguyenChiDieuCampus,
+        this.world.caoThangCampus,
+        this.world.quocHocCampus,
+        this.world.haiBaTrungCampus,
+        this.world.quangTrungCampus,
+      ].flatMap((c) => c?.students?.students || []);
+    for (const student of campusPeople) {
+      const mesh = student.mesh || student.rig?.actor;
+      if (!mesh || mesh.visible === false) continue;
+      if (Math.abs(mesh.position.y - bike.position.y) > 1.2) continue;
+      if (
+        sweptContact(
+          oldPosition,
+          bike.position,
+          student.previous || mesh.position,
+          mesh.position,
+          (student.radius || 0.35) + 0.4,
+        )
+      )
+        return student;
     }
     return null;
   }

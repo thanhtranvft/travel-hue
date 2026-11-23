@@ -1,5 +1,5 @@
 import config from "../../data/world/pedestrians.json" with { type: "json" };
-import { features, pointsOf } from "../shared/geography/map.js";
+import { getFeatures, getPointsOf } from "../shared/geography/activeGeography.js";
 import { inside, nearestPoint } from "../shared/geography/geometry.js";
 import { roadWidth, isFootway } from "./roadProfile.js";
 import {
@@ -114,6 +114,11 @@ export class PedestrianLife {
         ...extra,
       });
     };
+    const preferredMain = world.renderRoads.some(
+      (r) => r.tags.name === "Lê Lợi",
+    )
+      ? "Lê Lợi"
+      : "Đống Đa";
     const pedestrianRoads = world.renderRoads
       .filter(
         (r) =>
@@ -129,7 +134,10 @@ export class PedestrianLife {
               "living_street",
             ].includes(r.tags.highway)),
       )
-      .sort((a, b) => (b.tags.name === "Lê Lợi") - (a.tags.name === "Lê Lợi"));
+      .sort(
+        (a, b) =>
+          (b.tags.name === preferredMain) - (a.tags.name === preferredMain),
+      );
     // Both sides get paired walkers. Validate the entire short shuttle, not just endpoints.
     const routes = [];
     for (const road of pedestrianRoads)
@@ -190,13 +198,13 @@ export class PedestrianLife {
       add(route.start, "walk", route);
       this.stats[route.side < 0 ? "sidewalkLeft" : "sidewalkRight"]++;
     }
-    for (const feature of features.filter(
+    for (const feature of getFeatures().filter(
       (f) =>
         f.type === "way" &&
         f.tags?.leisure === "park" &&
         f.geometry?.length > 3,
     )) {
-      const polygon = pointsOf(feature),
+      const polygon = getPointsOf(feature),
         minX = Math.min(...polygon.map((p) => p.x)),
         maxX = Math.max(...polygon.map((p) => p.x)),
         minZ = Math.min(...polygon.map((p) => p.z)),

@@ -21,6 +21,10 @@ const loaders = {
     import("./north-bank/index.js").then((module) => module.loadModel()),
   "imperial-city": () =>
     import("./imperial-city/index.js").then((module) => module.loadModel()),
+  "nguyen-chi-dieu": () =>
+    import("./nguyen-chi-dieu/index.js").then((module) => module.loadModel()),
+  "quang-trung": () =>
+    import("./quang-trung/index.js").then((module) => module.loadModel()),
 };
 export const geoDistricts = enabledAreas;
 export let features = [],
@@ -98,10 +102,27 @@ export async function loadGeography(id) {
       "Cầu Phú Xuân",
       "Cầu Trường Tiền",
       "Lê Duẩn",
+      "Đống Đa",
+      "Lý Thường Kiệt",
+      "Hùng Vương",
+      "Bùng binh Hùng Vương",
+      "Lê Quý Đôn",
+      "Nguyễn Huệ",
+      "Nguyễn Khuyến",
     ].includes(r.tags.name),
   );
-  river = ringsOf(byId(2393612));
+  const riverFeature = byId(2393612);
+  river = riverFeature ? ringsOf(riverFeature) : [];
   const leLoi = roads.filter((r) => r.tags.name === "Lê Lợi");
+  const dongDa = roads.filter((r) => r.tags.name === "Đống Đa");
+  const nguyenHue = roads.filter((r) => r.tags.name === "Nguyễn Huệ");
+  const frontageRoads = leLoi.length
+    ? leLoi
+    : dongDa.length
+      ? dongDa
+      : nguyenHue.length
+        ? nguyenHue
+        : mainRoads;
   sites = siteCatalog.sites.flatMap((site) => {
     const feature = byId(site.osm);
     if (!feature) return [];
@@ -111,7 +132,7 @@ export async function loadGeography(id) {
         ringsOf(feature),
         data.entrances,
         ["school", "government", "hospital"].includes(site.kind)
-          ? leLoi.map((r) => r.points)
+          ? frontageRoads.map((r) => r.points)
           : [],
       );
     return [
@@ -129,30 +150,31 @@ export async function loadGeography(id) {
   mappedSignals = data.entrances
     .filter((e) => e.type === "node" && e.tags?.highway === "traffic_signals")
     .map((n) => ({ ...project(n), osm: n.id }));
-  corridorCrossings = [
-    "Phan Bội Châu",
-    "Nguyễn Trường Tộ",
-    "Lê Lai",
-    "Hà Nội",
-  ].flatMap((name) => {
-    for (const road of roads.filter((r) => r.tags.name === name))
-      for (const point of road.points)
-        for (const main of leLoi)
-          if (
-            main.points.some(
-              (p) => Math.hypot(p.x - point.x, p.z - point.z) < 0.1,
+  const findCrossings = (mains, names) =>
+    names.flatMap((name) => {
+      for (const road of roads.filter((r) => r.tags.name === name))
+        for (const point of road.points)
+          for (const main of mains)
+            if (
+              main.points.some(
+                (p) => Math.hypot(p.x - point.x, p.z - point.z) < 0.1,
+              )
             )
-          )
-            return [
-              {
-                name,
-                point,
-                roadId: road.id,
-                mainId: main.id,
-                heading: nearestPoint(point, main.points).heading,
-              },
-            ];
-    return [];
-  });
+              return [
+                {
+                  name,
+                  point,
+                  roadId: road.id,
+                  mainId: main.id,
+                  heading: nearestPoint(point, main.points).heading,
+                },
+              ];
+      return [];
+    });
+  corridorCrossings = [
+    ...findCrossings(leLoi, ["Phan Bội Châu", "Nguyễn Trường Tộ", "Lê Lai", "Hà Nội"]),
+    ...findCrossings(dongDa, ["Lý Thường Kiệt", "Bùng binh Hùng Vương"]),
+    ...findCrossings(nguyenHue, ["Nguyễn Khuyến"]),
+  ];
   return currentRegion;
 }

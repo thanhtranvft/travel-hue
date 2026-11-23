@@ -51,4 +51,8 @@ export class InputController {
   get brake() {
     return this.keys.has(" ") || this.touch.braking;
   }
+  get sprint() {
+    return this.keys.has("shift") || this.touch.throttle > 0.88;
+  }
 }
+

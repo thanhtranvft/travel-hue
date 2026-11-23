@@ -42,26 +42,41 @@ export class LivingGrass {
     this.world = world;
     this.center = { x: Infinity, z: Infinity };
     const geometry = new THREE.BufferGeometry();
+    // Low, manicured emerald multi-blade turf tuft (~0.20m) so open grass stays tidy and soft
     geometry.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(
         [
-          -0.05, 0, 0, 0.05, 0, 0, 0.01, 0.45, 0, 0, 0, -0.05, 0, 0, 0.05, 0,
-          0.35, 0.01,
+          -0.06, 0, 0, 0.06, 0, 0, 0.015, 0.21, 0.01,
+          0, 0, -0.06, 0, 0, 0.06, -0.01, 0.17, 0.015,
+          -0.04, 0, -0.04, 0.04, 0, 0.04, 0.0, 0.15, -0.01,
         ],
         3,
       ),
     );
     geometry.computeVertexNormals();
     const material = new THREE.MeshStandardMaterial({
-      color: "#668745",
+      color: "#6ba748",
       side: THREE.DoubleSide,
-      roughness: 1,
+      roughness: 0.9,
+      metalness: 0.0,
     });
-    this.mesh = new THREE.InstancedMesh(geometry, material, 18000);
+    const maxCount = world.quality?.grassSamples || 18000;
+    this.mesh = new THREE.InstancedMesh(geometry, material, maxCount);
     this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     this.mesh.frustumCulled = false;
     this.mesh.receiveShadow = true;
+    const toneA = new THREE.Color("#529038");
+    const toneB = new THREE.Color("#63a343");
+    const toneC = new THREE.Color("#74b351");
+    const tmpColor = new THREE.Color();
+    for (let i = 0; i < maxCount; i++) {
+      const m = i % 3;
+      tmpColor.copy(m === 0 ? toneA : m === 1 ? toneB : toneC);
+      this.mesh.setColorAt?.(i, tmpColor);
+    }
+    if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    this.mesh.computeBoundingSphere?.();
     world.scene.add(this.mesh);
     this.dummy = new THREE.Object3D();
   }
@@ -83,11 +98,22 @@ export class LivingGrass {
           z: position.z + (random() - 0.5) * span,
         },
         road = world.nearestRoad(p.x, p.z);
-      if (road.road && road.distance < roadWidth(road.road) / 2 + 2.2) continue;
+      if (road.road && road.distance < roadWidth(road.road) / 2 + 2.5) continue;
       if (world.station?.blocks(p.x, p.z)) continue;
       if (
         world.riverRings.some((r) => inside(p, r)) ||
         world.buildingPolygons.some(
+          (b) =>
+            p.x > b.minX &&
+            p.x < b.maxX &&
+            p.z > b.minZ &&
+            p.z < b.maxZ &&
+            inside(p, b.points),
+        )
+      )
+        continue;
+      if (
+        world.parkPolygons?.some(
           (b) =>
             p.x > b.minX &&
             p.x < b.maxX &&
@@ -126,10 +152,20 @@ export class LivingGrass {
         })
       )
         continue;
-      if (world.quocHocPark?.blocksGrass(p.x, p.z)) continue;
+      if (
+        world.quocHocPark?.blocksGrass(p.x, p.z) ||
+        world.quocHocCampus?.blocksGrass(p.x, p.z) ||
+        world.haiBaTrungCampus?.blocksGrass(p.x, p.z) ||
+        world.nguyenChiDieuCampus?.blocksGrass(p.x, p.z) ||
+        world.caoThangCampus?.blocksGrass(p.x, p.z) ||
+        world.quangTrungCampus?.blocksGrass(p.x, p.z) ||
+        world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
+        world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z)
+      )
+        continue;
       this.dummy.position.set(p.x, 0.055, p.z);
       this.dummy.rotation.y = random() * Math.PI;
-      this.dummy.scale.setScalar(0.5 + random() * 1.1);
+      this.dummy.scale.setScalar(0.6 + random() * 0.65);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(count++, this.dummy.matrix);
     }

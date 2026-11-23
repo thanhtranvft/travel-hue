@@ -8,6 +8,8 @@ const physicalKeys = {
   ArrowLeft: "arrowleft",
   ArrowRight: "arrowright",
   Space: " ",
+  ShiftLeft: "shift",
+  ShiftRight: "shift",
 };
 export function drivingKey(event) {
   return (
@@ -22,8 +24,10 @@ export function drivingKey(event) {
       "arrowleft",
       "arrowright",
       " ",
+      "shift",
     ].includes(event.key?.toLowerCase())
       ? event.key.toLowerCase()
       : null)
   );
 }
+

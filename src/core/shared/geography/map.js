@@ -115,9 +115,10 @@ const makeDistrict = (id, title, subtitle, color, points) => ({
   geo: true,
 });
 export const leLoiTruongTienJunction = pointsOf(byId(626373586))[0];
+const kqtCenter = centroid(byId(695775617));
 const mainTour = routeOnWays(
   roads.filter((r) => r.tags.name === "Lê Lợi" || r.tags.bridge === "yes"),
-  location("station"),
+  kqtCenter,
   leLoiTruongTienJunction,
 );
 const bridge = pointsOf(byId(174759688)).reverse();
@@ -149,8 +150,8 @@ const imperial = routeOnWays(
 export const geoDistricts = [
   makeDistrict(
     "quoc-hoc",
-    "Ga Huế → Tràng Tiền",
-    "Lê Lợi · Quốc Học → Phú Xuân → Tràng Tiền",
+    "Khoa Quốc tế → Tràng Tiền",
+    "Lê Lợi · ĐH Huế → Quốc Học → Tràng Tiền",
     "#e7bd77",
     mainTour,
   ),

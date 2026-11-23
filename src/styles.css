@@ -54,4 +54,6 @@ button { font: inherit; }
 .map-coords,.map-local-coords{margin-top:5px;text-align:center;font-variant-numeric:tabular-nums;line-height:1.35}
 .map-coords{font-size:10px;font-weight:600;color:#ffe29b}
 .map-local-coords{font-size:9px;color:#b9cdc0}
+@media(max-width:960px){.tour-toolbar{flex-wrap:wrap;justify-content:flex-end;border-radius:18px;max-width:min(380px,56vw);gap:4px;padding:5px}.tour-toolbar button{padding:7px 10px;font-size:11px}}
+
 

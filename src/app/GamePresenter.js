@@ -6,7 +6,7 @@ import { createAreaView } from "../modules/areas/AreaView.js";
 import * as THREE from "three";
 import { InputController } from "../core/input/InputController.js";
 import { TouringBike } from "../core/vehicle/TouringBike.js";
-import { geoDistricts as districts } from "../core/shared/geography/map.js";
+import { geoDistricts as districts } from "../modules/areas/AreaModel.js";
 import { damp, wrapAngle } from "../core/vehicle/BicycleMotion.js";
 import { CityAudio } from "../core/audio/CityAudio.js";
 import patrolConfig from "../data/world/police-patrols.json" with { type: "json" };
@@ -139,10 +139,12 @@ export class GamePresenter {
       )
         return;
       if (e.repeat) return;
-      if (e.key.toLowerCase() === "m")
+      const key = e.key.toLowerCase();
+      if (key === "m")
         document.querySelector("#map-panel").classList.toggle("expanded");
-      if (e.key.toLowerCase() === "t") this.toggleAutopilot();
-      if (e.key.toLowerCase() === "r") this.reset();
+      if (key === "t") this.toggleAutopilot();
+      if (key === "e") this.toggleTransportMode();
+      if (key === "r") this.reset();
     });
   }
   createRenderer(canvas) {
@@ -281,6 +283,17 @@ export class GamePresenter {
   syncMode() {
     this.view.syncMode(this);
   }
+  setAvatar(avatarId) {
+    const chosen = this.bike.setAvatar(avatarId);
+    this.syncMode();
+    return chosen;
+  }
+  toggleTransportMode() {
+    const next = this.bike.toggleTransportMode();
+    this.syncMode();
+    this.updateHud();
+    return next;
+  }
   toggleAutopilot() {
     if (!this.auto) {
       this.travelTo(this.district.id);
@@ -305,7 +318,8 @@ export class GamePresenter {
     }
     let throttle = this.input.throttle,
       steer = this.input.steer,
-      brake = this.input.brake;
+      brake = this.input.brake,
+      sprint = this.input.sprint;
     if (this.auto && (throttle || steer || brake)) {
       this.auto = false;
       this.syncMode();
@@ -351,6 +365,7 @@ export class GamePresenter {
         -1,
         1,
       );
+      sprint = this.bike.transportMode === "foot" && targetSpeed > 2.6;
       if (this.traffic.enabled && this.traffic.hasVehicleAhead(this.bike)) {
         throttle = 0;
         brake = true;
@@ -380,7 +395,7 @@ export class GamePresenter {
       steer = 0;
       brake = true;
     }
-    this.bike.update(dt, throttle, steer, brake);
+    this.bike.update(dt, throttle, steer, brake, { sprint });
     if (
       !Number.isFinite(this.bike.position.x) ||
       !Number.isFinite(this.bike.position.z) ||
@@ -452,9 +467,11 @@ export class GamePresenter {
     document.querySelector("#collision-message").textContent =
       (actor?.isPolice
         ? patrolConfig.dialogue
-        : actorType === "player"
-          ? `Bạn vừa va chạm với ${actor?.name || "người chơi khác"}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
-          : collisionDialogue[actorType]) ||
+        : actor?.isStudent
+          ? "Bạn vừa va chạm với học sinh trong sân trường! Hãy đi chậm lại và nhường đường cho các bạn học sinh."
+          : actorType === "player"
+            ? `Bạn vừa va chạm với ${actor?.name || "người chơi khác"}. Hãy giảm tốc và quan sát khi đi cùng nhau!`
+            : collisionDialogue[actorType]) ||
       `${headOn ? "Bạn đã đi đối đầu và va chạm với" : "Bạn vừa va chạm với"} ${label}. Hãy cẩn thận hơn, đi bên phải, giảm tốc và quan sát phía trước!`;
     document.querySelector("#collision-toast").hidden = false;
     this.audio.collision();
@@ -536,16 +553,20 @@ export class GamePresenter {
       : 0.38;
     const yaw = this.cameraYaw + dragYaw,
       speed = Math.abs(this.bike.motion.speed),
-      distance = 5.3 + speed * 0.07,
+      onBike = this.bike.stance === "bike",
+      baseDist = onBike ? 4.85 : 3.9,
+      camHeight = onBike ? 1.9 : 1.68,
+      lookLift = onBike ? 1.15 : 0.98,
+      distance = baseDist + speed * 0.07,
       p = this.bike.position;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))
       return;
     this.desired.set(
       p.x - Math.sin(yaw) * distance,
-      p.y + 2.0 + (dragPitch - 0.38) * 3,
+      p.y + camHeight + (dragPitch - 0.38) * 3,
       p.z - Math.cos(yaw) * distance,
     );
-    this.cameraTarget.set(p.x, p.y + 1.25, p.z);
+    this.cameraTarget.set(p.x, p.y + lookLift, p.z);
     this.rayDirection.copy(this.desired).sub(this.cameraTarget);
     const maxDistance = this.rayDirection.length();
     if (maxDistance > 1e-4) {

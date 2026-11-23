@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import {
+  cleanAvatarId,
   cleanPlayerName,
+  cleanStance,
   MAX_PLAYERS,
   PLAYER_COLORS,
   PROTOCOL_VERSION,
@@ -39,6 +41,7 @@ export class Room {
       return { error: "NAME", message: "Hãy nhập tên từ 1 đến 18 ký tự." };
     if (!this.areas.has(message.region))
       return { error: "AREA", message: "Khu vực này chưa mở." };
+    const avatar = cleanAvatarId(message.avatar);
     let p =
       message.token &&
       [...this.players.values()].find((p) => p.token === message.token);
@@ -58,6 +61,8 @@ export class Room {
         id: randomUUID(),
         token: randomUUID(),
         name,
+        avatar,
+        stance: "idle",
         color: PLAYER_COLORS.find((c) => !used.has(c)),
         region: message.region,
       };
@@ -65,6 +70,7 @@ export class Room {
       this.spawn(p, message.region);
     } else {
       p.name = name;
+      p.avatar = avatar;
       // Client scene may have changed while disconnected. Re-enter at a safe spawn.
       this.spawn(p, message.region);
     }
@@ -175,6 +181,8 @@ export class Room {
       heading: Math.atan2(Math.sin(m.heading), Math.cos(m.heading)),
       speed: m.speed,
       lean: m.lean,
+      avatar: m.avatar ? cleanAvatarId(m.avatar) : cleanAvatarId(p.avatar),
+      stance: cleanStance(m.stance, m.speed),
       ready: true,
       paused: false,
       activeAt: now,
@@ -231,11 +239,28 @@ export class Room {
     this.snapshot();
   }
   publicPlayer(p) {
-    const { id, name, color, region, x, y, z, heading, speed, lean, ready, paused } = p;
+    const {
+      id,
+      name,
+      color,
+      avatar,
+      stance,
+      region,
+      x,
+      y,
+      z,
+      heading,
+      speed,
+      lean,
+      ready,
+      paused,
+    } = p;
     return {
       id,
       name,
       color,
+      avatar: cleanAvatarId(avatar),
+      stance: cleanStance(stance, speed),
       region,
       x,
       y,

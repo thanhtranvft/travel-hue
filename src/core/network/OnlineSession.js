@@ -9,7 +9,11 @@ export class OnlineSession {
     this.areas = areas;
     this.avatars = new RemotePlayers({ mobile: !!game.quality?.mobile });
     this.attachScene(game.scene);
-    this.client = new OnlineClient(name, game.world.region.id);
+    this.client = new OnlineClient(
+      name,
+      game.world.region.id,
+      game.bike.avatarId,
+    );
     this.seq = 0;
     this.nextSend = 0;
     this.client.addEventListener("status", ({ detail }) => {
@@ -127,6 +131,8 @@ export class OnlineSession {
       heading: m.heading,
       speed: m.speed,
       lean: m.lean,
+      avatar: game.bike.avatarId,
+      stance: game.bike.stance,
     });
   }
   pauseRegion() {

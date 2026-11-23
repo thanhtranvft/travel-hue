@@ -4,17 +4,43 @@ export const damp = (from, to, rate, dt) =>
   from + (to - from) * (1 - Math.exp(-rate * dt));
 
 export class BicycleMotion {
-  constructor() {
+  constructor(mode = "bike") {
+    this.mode = mode === "foot" ? "foot" : "bike";
     this.reset();
   }
-  reset(heading = 0) {
+  reset(heading = 0, mode = this.mode) {
+    this.mode = mode === "foot" ? "foot" : "bike";
     this.speed = 0;
     this.steering = 0;
     this.heading = heading;
     this.lean = 0;
     this.distance = 0;
+    this.runCharge = 0;
+    this.stance = this.mode === "bike" ? "bike" : "idle";
   }
-  step(dt, throttle, steer, brake = false) {
+  setMode(mode) {
+    const next = mode === "foot" ? "foot" : "bike";
+    if (next === this.mode) return this.mode;
+    this.mode = next;
+    this.runCharge = 0;
+    if (next === "foot") {
+      this.speed = Math.max(-1.8, Math.min(5.6, this.speed));
+      this.lean = 0;
+      this.stance =
+        Math.abs(this.speed) >= 2.75
+          ? "run"
+          : Math.abs(this.speed) >= 0.14
+            ? "walk"
+            : "idle";
+    } else {
+      this.stance = "bike";
+    }
+    return this.mode;
+  }
+  step(dt, throttle, steer, brake = false, sprint = false) {
+    if (this.mode === "foot") {
+      return this.stepFoot(dt, throttle, steer, brake, sprint);
+    }
     const targetSteering = (steer * 0.55) / (1 + Math.abs(this.speed) * 0.07);
     // Do not retain left lock for several frames after a new right command.
     if (steer * this.steering < 0) this.steering = 0;
@@ -38,6 +64,55 @@ export class BicycleMotion {
       7,
       dt,
     );
+    this.stance = "bike";
+    const distance = this.speed * dt;
+    this.distance += Math.abs(distance);
+    return {
+      dx: Math.sin(this.heading) * distance,
+      dz: Math.cos(this.heading) * distance,
+    };
+  }
+  stepFoot(dt, throttle, steer, brake = false, sprint = false) {
+    const absThrottle = Math.abs(throttle);
+    if (throttle > 0.35 && !brake) {
+      this.runCharge = Math.min(1, this.runCharge + dt * (sprint ? 2.4 : 0.72));
+    } else {
+      this.runCharge = Math.max(0, this.runCharge - dt * 1.9);
+    }
+    // Walk briskly first (~2.4 m/s), then smoothly transition into running (~5.6 m/s) when holding forward or Shift.
+    const runRatio = sprint
+      ? 1
+      : Math.max(0, Math.min(1, (this.runCharge - 0.38) / 0.52));
+    const maxForward = 2.4 + runRatio * 3.2;
+    let targetSpeed = 0;
+    if (!brake && absThrottle > 0.04) {
+      targetSpeed =
+        throttle >= 0
+          ? Math.min(maxForward, throttle * maxForward)
+          : Math.max(-1.8, throttle * 1.8);
+    }
+    const accelRate = brake ? 16 : absThrottle > 0.04 ? 6.5 : 10.5;
+    this.speed = damp(this.speed, targetSpeed, accelRate, dt);
+    if (Math.abs(this.speed) < 0.03 && absThrottle <= 0.04) this.speed = 0;
+
+    // On foot: responsive turning even while standing still (turn in place).
+    this.steering = damp(this.steering, steer * 0.55, steer ? 18 : 16, dt);
+    const turnSpeed = 2.55 - Math.min(0.85, Math.abs(this.speed) * 0.14);
+    const reverseSign = this.speed < -0.25 ? -1 : 1;
+    this.heading = wrapAngle(
+      this.heading + steer * turnSpeed * reverseSign * dt,
+    );
+    this.lean = damp(
+      this.lean,
+      Math.max(-0.14, Math.min(0.14, -steer * Math.abs(this.speed) * 0.02)),
+      10,
+      dt,
+    );
+
+    const absSpeed = Math.abs(this.speed);
+    this.stance =
+      absSpeed >= 2.75 ? "run" : absSpeed >= 0.14 ? "walk" : "idle";
+
     const distance = this.speed * dt;
     this.distance += Math.abs(distance);
     return {
@@ -46,3 +121,4 @@ export class BicycleMotion {
     };
   }
 }
+
