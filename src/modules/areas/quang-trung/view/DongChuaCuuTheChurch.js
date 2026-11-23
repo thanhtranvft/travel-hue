@@ -9,7 +9,10 @@ import {
   nearestPoint,
 } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
+import {
+  applyWorldPlanarUVs,
+  createManicuredLawnMaterial,
+} from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -92,40 +95,170 @@ function createMonasteryPedimentTexture() {
 
 function createBasilicaStoneTexture() {
   return createCanvasTexture(512, 512, (ctx, w, h) => {
-    ctx.fillStyle = "#e5d7b4";
+    // Pale cool grey-blue Á Đông cathedral stucco (matching image_05b0999a.png)
+    ctx.fillStyle = "#cfd6dd";
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle limestone ashlar joints
-    ctx.strokeStyle = "rgba(140, 122, 88, 0.25)";
-    ctx.lineWidth = 2;
-    for (let y = 0; y < h; y += 32) {
+    for (let i = 0; i < 360; i++) {
+      ctx.fillStyle =
+        i % 2 === 0 ? "rgba(255,255,255,0.08)" : "rgba(80,95,112,0.06)";
+      ctx.fillRect((i * 157) % w, (i * 239) % h, 5, 4);
+    }
+
+    // Horizontal stone masonry lines
+    ctx.strokeStyle = "rgba(130, 140, 152, 0.22)";
+    ctx.lineWidth = 1.5;
+    for (let y = 0; y < h; y += 36) {
       ctx.beginPath?.();
       ctx.moveTo?.(0, y);
       ctx.lineTo?.(w, y);
       ctx.stroke?.();
     }
 
-    // Carved ground-floor limestone plinth & dado molding so windows sit gracefully above stairs
-    ctx.fillStyle = "#b8ab92";
-    ctx.fillRect(0, h - 118, w, 118);
-    ctx.fillStyle = "#f2ead6";
-    ctx.fillRect(0, h - 124, w, 10);
-    ctx.fillStyle = "#6c655a";
-    ctx.fillRect(0, h - 22, w, 22);
+    // Light granite plinth & crisp white stringcourse
+    ctx.fillStyle = "#d9d6ce";
+    ctx.fillRect(0, h - 88, w, 88);
+    ctx.fillStyle = "#eef1f4";
+    ctx.fillRect(0, h - 94, w, 8);
+    ctx.fillStyle = "#92979d";
+    ctx.fillRect(0, h - 18, w, 18);
 
-    // Tall cobalt-blue Gothic stained-glass lancet windows above ground plinth
-    for (const wx of [44, 184, 324, 444]) {
-      const ww = wx === 444 ? 48 : 88;
-      ctx.fillStyle = "#f5efdd";
-      ctx.fillRect(wx - 6, 48, ww + 12, h - 186);
-      ctx.fillStyle = "#195eb8";
-      ctx.fillRect(wx, 54, ww, h - 198);
-      ctx.fillStyle = "#4fa2f0";
-      ctx.fillRect(wx + ww * 0.18, 70, ww * 0.64, h - 230);
-      ctx.fillStyle = "#eef4fa";
-      ctx.fillRect(wx + ww * 0.46, 58, 5, h - 206);
-      ctx.fillRect(wx + 4, 186, ww - 8, 5);
+    // Side arched cobalt stained-glass lancet windows framed in white stucco
+    for (const wx of [48, 192, 336]) {
+      const ww = 74;
+      const archR = ww / 2;
+      const topY = 92;
+      const botY = h - 140;
+      ctx.fillStyle = "#edf1f5";
+      ctx.fillRect(wx - 7, topY + archR, ww + 14, botY - (topY + archR) + 8);
+      ctx.beginPath?.();
+      ctx.arc?.(wx + archR, topY + archR, archR + 7, Math.PI, 0);
+      ctx.fill?.();
+
+      ctx.fillStyle = "#194d9e";
+      ctx.fillRect(wx, topY + archR, ww, botY - (topY + archR));
+      ctx.beginPath?.();
+      ctx.arc?.(wx + archR, topY + archR, archR, Math.PI, 0);
+      ctx.fill?.();
+
+      ctx.fillStyle = "#2d6bc4";
+      ctx.fillRect(wx + 8, topY + archR + 8, ww - 16, botY - (topY + archR) - 16);
+      ctx.fillStyle = "#dce6f2";
+      ctx.fillRect(wx + archR - 2, topY + 6, 4, botY - topY - 12);
+      ctx.fillRect(wx + 4, topY + 120, ww - 8, 4);
+      ctx.fillRect(wx + 4, topY + 200, ww - 8, 4);
     }
+  });
+}
+
+function createChurchPlazaTexture() {
+  return createCanvasTexture(512, 512, (ctx, w, h) => {
+    // Crisp light grey stone/concrete church forecourt plaza (image_05b0999a.png)
+    ctx.fillStyle = "#d2d7dc";
+    ctx.fillRect(0, 0, w, h);
+
+    const cell = 64;
+    const tones = ["#d5dae0", "#cfd4da", "#d9dde2", "#ccd2d8"];
+    for (let r = 0; r < h / cell; r++) {
+      for (let c = 0; c < w / cell; c++) {
+        ctx.fillStyle = tones[(r * 7 + c * 11) % tones.length];
+        ctx.fillRect(c * cell + 1.5, r * cell + 1.5, cell - 3, cell - 3);
+      }
+    }
+
+    // Subtle expansion joints
+    ctx.strokeStyle = "rgba(130, 138, 146, 0.34)";
+    ctx.lineWidth = 2;
+    for (let k = 0; k <= w; k += cell) {
+      ctx.beginPath?.();
+      ctx.moveTo?.(k, 0);
+      ctx.lineTo?.(k, h);
+      ctx.stroke?.();
+      ctx.beginPath?.();
+      ctx.moveTo?.(0, k);
+      ctx.lineTo?.(w, k);
+      ctx.stroke?.();
+    }
+
+    for (let i = 0; i < 650; i++) {
+      ctx.fillStyle =
+        i % 2 === 0 ? "rgba(255,255,255,0.09)" : "rgba(90,98,106,0.07)";
+      ctx.fillRect((i * 193) % w, (i * 317) % h, 2, 2);
+    }
+  });
+}
+
+function createClayRoofTexture() {
+  return createCanvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = "#b85436";
+    ctx.fillRect(0, 0, w, h);
+    for (let x = 0; x < w; x += 16) {
+      ctx.fillStyle = x % 32 === 0 ? "#c45e3f" : "#aa4b2f";
+      ctx.fillRect(x, 0, 13, h);
+      ctx.fillStyle = "rgba(58, 22, 12, 0.25)";
+      ctx.fillRect(x + 13, 0, 3, h);
+    }
+    for (let y = 0; y < h; y += 24) {
+      ctx.fillStyle = "rgba(64, 24, 14, 0.22)";
+      ctx.fillRect(0, y, w, 2);
+    }
+  });
+}
+
+function createBasilicaFacadeStainedGlassTexture() {
+  return createCanvasTexture(512, 768, (ctx, w, h) => {
+    ctx.fillStyle = "#164187";
+    ctx.fillRect(0, 0, w, h);
+
+    // Rich cobalt blue stained-glass diamond/pane gradient
+    for (let y = 0; y < h; y += 36) {
+      for (let x = 0; x < w; x += 36) {
+        const shade = ((x + y) / 36) % 2 === 0 ? "#1b4fa3" : "#225ebe";
+        ctx.fillStyle = shade;
+        ctx.fillRect(x + 2, y + 2, 32, 32);
+      }
+    }
+
+    // Crisp vertical & horizontal window mullions
+    ctx.fillStyle = "#cfd6df";
+    for (let x = 0; x <= w; x += 36) {
+      ctx.fillRect(x - 2, 0, 4, h);
+    }
+    for (let y = 0; y <= h; y += 36) {
+      ctx.fillRect(0, y - 2, w, 4);
+    }
+  });
+}
+
+function createChurchClockTexture() {
+  return createCanvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = "#f2f4f7";
+    ctx.fillRect(0, 0, w, h);
+    const cx = w / 2;
+    const cy = h / 2;
+    ctx.strokeStyle = "#3c434d";
+    ctx.lineWidth = 6;
+    ctx.beginPath?.();
+    ctx.arc?.(cx, cy, w * 0.44, 0, Math.PI * 2);
+    ctx.stroke?.();
+
+    for (let i = 0; i < 12; i++) {
+      const a = (i * Math.PI) / 6;
+      const r0 = w * 0.34;
+      const r1 = w * 0.41;
+      ctx.lineWidth = i % 3 === 0 ? 6 : 3;
+      ctx.beginPath?.();
+      ctx.moveTo?.(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      ctx.lineTo?.(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+      ctx.stroke?.();
+    }
+    ctx.lineWidth = 7;
+    ctx.beginPath?.();
+    ctx.moveTo?.(cx, cy);
+    ctx.lineTo?.(cx, cy - w * 0.25);
+    ctx.moveTo?.(cx, cy);
+    ctx.lineTo?.(cx + w * 0.19, cy + w * 0.12);
+    ctx.stroke?.();
   });
 }
 
@@ -371,17 +504,26 @@ export class DongChuaCuuTheChurch {
   }
 
   buildGroundsAndFence() {
-    // Clean granite courtyard apron across compound
+    // Clean pale concrete/stone forecourt plaza floor across the entire compound (matching image_05b0999a.png)
+    const plazaTex = createChurchPlazaTexture();
+    const yardGeo = applyWorldPlanarUVs(polygonGeometry(this.ring, 0.12), 14);
     const yard = new THREE.Mesh(
-      polygonGeometry(this.ring, 0.12),
-      mat("#cec9be", 0.86),
+      yardGeo,
+      new THREE.MeshStandardMaterial({
+        color: plazaTex ? "#ffffff" : "#d2d7dc",
+        map: plazaTex,
+        roughness: 0.84,
+        metalness: 0.03,
+      }),
     );
+    yard.name = "dong-chua-cuu-the-plaza-floor";
     yard.position.y = 0.16;
     yard.receiveShadow = true;
     this.group.add(yard);
 
-    // Rich green monastery garden lawns around front promenade & Basilica plaza
+    // Rich green monastery garden lawns framed cleanly inside Tu viện front beds (keeping Basilica East plaza open stone)
     const lawnMat = createManicuredLawnMaterial(8, 8, { striped: false, rich: true });
+    const curbMat = mat("#c6c9cd", 0.8);
     const gWrapper = new THREE.Group();
     gWrapper.position.set(this.gatePivot.x, 0, this.gatePivot.z);
     gWrapper.rotation.y = this.roadYaw;
@@ -389,12 +531,14 @@ export class DongChuaCuuTheChurch {
     for (const [lx, lz, w, d] of [
       [-18, 38, 42, 16],
       [62, 39, 34, 14],
-      [176, 36, 48, 22],
     ]) {
-      const lawn = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), lawnMat);
-      lawn.position.set(lx, 0.25, lz);
+      const curb = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.16, d + 0.5), curbMat);
+      curb.position.set(lx, 0.24, lz);
+      curb.receiveShadow = true;
+      const lawn = new THREE.Mesh(new THREE.BoxGeometry(w, 0.17, d), lawnMat);
+      lawn.position.set(lx, 0.255, lz);
       lawn.receiveShadow = true;
-      gWrapper.add(lawn);
+      gWrapper.add(curb, lawn);
     }
 
     // Front garden shrine statue framed cleanly behind open Tu viện gate (per image_d57e1084.png)
@@ -796,12 +940,17 @@ export class DongChuaCuuTheChurch {
   buildBasilicaAndStatue() {
     const stoneTex = createBasilicaStoneTexture();
     const basilicaMat = new THREE.MeshStandardMaterial({
-      color: stoneTex ? "#ffffff" : "#e5d7b4",
+      color: stoneTex ? "#ffffff" : "#cfd6dd",
       map: stoneTex,
-      roughness: 0.68,
+      roughness: 0.72,
     });
-    const roofMat = mat("#6f392c", 0.72);
-    const blueGlassMat = mat("#236ed1", 0.35, 0.15);
+    const clayTex = createClayRoofTexture();
+    const roofMat = new THREE.MeshStandardMaterial({
+      color: clayTex ? "#ffffff" : "#b85436",
+      map: clayTex,
+      roughness: 0.72,
+      side: THREE.DoubleSide,
+    });
 
     const feature = getById(this.basilicaId);
     let bCenter = this.toWorld(108, -58);
@@ -810,13 +959,14 @@ export class DongChuaCuuTheChurch {
       const pts = getPointsOf(feature);
       basilicaPts = pts;
       this.buildingPolygons.push(pts);
-      const navH = 16.2;
-      const bodyGeo = polygonGeometry(pts, navH);
+      // Lower narthex & side aisle volume at 7.4m so the stepped East front facade & central nave rise clearly above
+      const lowerH = 7.4;
+      const bodyGeo = polygonGeometry(pts, lowerH);
       if (bodyGeo.attributes.uv) {
         const uv = bodyGeo.attributes.uv;
         const pos = bodyGeo.attributes.position;
         for (let i = 0; i < uv.count; i++) {
-          uv.setXY(i, (pos.getX(i) + pos.getZ(i)) / 10.0, pos.getY(i) / navH);
+          uv.setXY(i, (pos.getX(i) + pos.getZ(i)) / 10.0, pos.getY(i) / lowerH);
         }
       }
       const bodyMesh = new THREE.Mesh(bodyGeo, basilicaMat);
@@ -832,21 +982,9 @@ export class DongChuaCuuTheChurch {
       bCenter = { x: (minX + maxX) / 2, z: (minZ + maxZ) / 2 };
     }
 
-    // Grand sanctuary stone staircases & cathedral portals on all 4 facades of the Basilica
+    // Sanctuary stone staircases & cathedral portals on side/rear facades
     if (basilicaPts && basilicaPts.length >= 28) {
-      // 1) East Main Sanctuary Portal facing Jesus Christ statue & Ngã 3 Nguyễn Huệ × Nguyễn Khuyến
-      this.addPortalOnEdge(basilicaPts, 27, 0, {
-        name: "portal-basilica-east-main",
-        width: 11.4,
-        steps: 7,
-        stepDepth: 0.48,
-        stepRise: 0.18,
-        landingDepth: 2.1,
-        doorW: 4.8,
-        doorH: 5.4,
-        style: "basilica",
-      });
-      // 2) South Transept Cathedral Portal facing green courtyard lawn
+      // 1) South Transept Cathedral Portal facing green courtyard lawn
       this.addPortalOnEdge(basilicaPts, 4, 5, {
         name: "portal-basilica-south-transept",
         width: 8.6,
@@ -858,7 +996,7 @@ export class DongChuaCuuTheChurch {
         doorH: 4.6,
         style: "basilica",
       });
-      // 3) North Transept Cathedral Portal facing Nguyễn Huệ
+      // 2) North Transept Cathedral Portal facing Nguyễn Huệ
       this.addPortalOnEdge(basilicaPts, 22, 23, {
         name: "portal-basilica-north-transept",
         width: 8.6,
@@ -870,7 +1008,7 @@ export class DongChuaCuuTheChurch {
         doorH: 4.6,
         style: "basilica",
       });
-      // 4) West Apse Chapel Portal facing Tu viện courtyard
+      // 3) West Apse Chapel Portal facing Tu viện courtyard
       this.addPortalOnEdge(basilicaPts, 13, 14, {
         name: "portal-basilica-west-apse",
         width: 5.2,
@@ -884,59 +1022,58 @@ export class DongChuaCuuTheChurch {
       });
     }
 
-    // Cruciform Basilica gabled roofs & soaring Bell Tower aligned with Basilica's true OSM axis (~ +0.06 rad from E)
-    const basilicaYaw = this.roadYaw + 0.08;
-    const basilicaRoofAndTower = new THREE.Group();
-    basilicaRoofAndTower.name = "dong-chua-cuu-the-basilica";
-    basilicaRoofAndTower.position.set(bCenter.x, 0.28, bCenter.z);
-    basilicaRoofAndTower.rotation.y = basilicaYaw;
+    // Main Basilica Group: Upper Clerestory Nave + Transept + Iconic East Front Facade (image_05b0999a.png)
+    const basilicaGroup = new THREE.Group();
+    basilicaGroup.name = "dong-chua-cuu-the-basilica";
 
-    // Main vaulted nave pitched roof + perpendicular transept roof
-    const mainRoof = createGableRoof(64.0, 22.0, 5.2, roofMat);
-    mainRoof.position.y = 16.2;
-    const transeptRoof = createGableRoof(16.0, 44.0, 4.4, roofMat);
-    transeptRoof.rotation.y = Math.PI / 2;
-    transeptRoof.position.set(-10.0, 16.2, 0);
-    basilicaRoofAndTower.add(mainRoof, transeptRoof);
-
-    // Tall Basilica Facade & Bell Tower facing East toward the Christ Statue & Nguyễn Khuyến
-    const towerX = 33.5;
-    this.bellTowerPos = {
-      x: bCenter.x + Math.cos(basilicaYaw) * towerX,
-      z: bCenter.z - Math.sin(basilicaYaw) * towerX,
-    };
-    basilicaRoofAndTower.add(
-      box([6.6, 26.0, 7.2], "#e8dbb9", [towerX, 13.0, 0]),
-      box([5.4, 5.2, 5.4], "#efe4c7", [towerX, 28.0, 0]),
-    );
-    // Gothic blue stained-glass window panels on Basilica front facing Christ Statue
-    for (const wz of [-2.2, 0, 2.2]) {
-      const glass = new THREE.Mesh(new THREE.BoxGeometry(0.18, 7.8, 1.5), blueGlassMat);
-      glass.position.set(towerX + 3.32, 13.2, wz);
-      basilicaRoofAndTower.add(glass);
+    if (basilicaPts && basilicaPts.length >= 28) {
+      this.buildEastFrontFacade(basilicaPts, basilicaGroup, roofMat);
     }
-    const belfrySpire = new THREE.Mesh(
-      new THREE.ConeGeometry(3.4, 9.2, 4),
-      mat("#5e3c34", 0.65),
-    );
-    belfrySpire.rotation.y = Math.PI / 4;
-    belfrySpire.position.set(towerX, 34.8, 0);
-    belfrySpire.castShadow = true;
 
-    // Bright beacon Cross atop Basilica bell tower
-    const crossMat = new THREE.MeshStandardMaterial({
-      color: "#fff8df",
-      emissive: "#ffe49e",
-      emissiveIntensity: 0.45,
-      roughness: 0.35,
-    });
-    const spireCrossV = new THREE.Mesh(new THREE.BoxGeometry(0.32, 3.2, 0.32), crossMat);
-    spireCrossV.position.set(towerX, 40.6, 0);
-    const spireCrossH = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.32, 1.9), crossMat);
-    spireCrossH.position.set(towerX, 41.2, 0);
-    basilicaRoofAndTower.add(belfrySpire, spireCrossV, spireCrossH);
+    // Upper central nave & cross transept set back behind the stepped front facade
+    const pFrontA = basilicaPts?.[27];
+    const pFrontB = basilicaPts?.[0];
+    let naveAxisYaw = this.roadYaw + 0.08;
+    if (pFrontA && pFrontB) {
+      const fdx = pFrontB.x - pFrontA.x;
+      const fdz = pFrontB.z - pFrontA.z;
+      const flen = Math.hypot(fdx, fdz) || 1;
+      let fnx = -fdz / flen;
+      let fnz = fdx / flen;
+      const fmid = { x: (pFrontA.x + pFrontB.x) / 2, z: (pFrontA.z + pFrontB.z) / 2 };
+      if (inside({ x: fmid.x + fnx * 1.2, z: fmid.z + fnz * 1.2 }, basilicaPts)) {
+        fnx = -fnx;
+        fnz = -fnz;
+      }
+      // Eastward normal aligns local +X in naveFrame
+      naveAxisYaw = Math.atan2(-fnz, fnx);
+    }
 
-    this.group.add(basilicaRoofAndTower);
+    const naveGroup = new THREE.Group();
+    naveGroup.position.set(bCenter.x, 0.28, bCenter.z);
+    naveGroup.rotation.y = naveAxisYaw;
+
+    // Lower aisle pitched side roof accents (y = 7.4)
+    const aisleRoof = createGableRoof(64.0, 22.0, 2.2, roofMat);
+    aisleRoof.position.set(-4.0, 7.4, 0);
+    // Upper clerestory nave volume (width 15.8m, height 7.4..14.6m) behind the East tower
+    const upperNave = new THREE.Mesh(new THREE.BoxGeometry(58.0, 7.2, 15.8), basilicaMat);
+    upperNave.position.set(-4.5, 11.0, 0);
+    upperNave.castShadow = upperNave.receiveShadow = true;
+    const upperNaveRoof = createGableRoof(58.6, 16.4, 4.4, roofMat);
+    upperNaveRoof.position.set(-4.5, 14.6, 0);
+
+    // Cross transept clerestory & terracotta roof
+    const upperTransept = new THREE.Mesh(new THREE.BoxGeometry(14.5, 6.8, 41.0), basilicaMat);
+    upperTransept.position.set(-10.0, 10.8, 0);
+    upperTransept.castShadow = upperTransept.receiveShadow = true;
+    const transeptRoof = createGableRoof(15.2, 41.8, 3.8, roofMat);
+    transeptRoof.rotation.y = Math.PI / 2;
+    transeptRoof.position.set(-10.0, 14.2, 0);
+
+    naveGroup.add(aisleRoof, upperNave, upperNaveRoof, upperTransept, transeptRoof);
+    basilicaGroup.add(naveGroup);
+    this.group.add(basilicaGroup);
 
     // Monumental Tượng Chúa Giêsu dang tay at exact OSM node 10897887242 overlooking Ngã 3 Nguyễn Huệ × Nguyễn Khuyến
     const jPos = this.jesusStatuePos;
@@ -945,6 +1082,393 @@ export class DongChuaCuuTheChurch {
     const statue = createJesusStatueMonument(jPos.x, 0.28, jPos.z, jYaw);
     this.group.add(statue);
     this.obstacles.push({ x: jPos.x, z: jPos.z, radius: 4.1 });
+  }
+
+  buildEastFrontFacade(basilicaPts, basilicaGroup, roofMat) {
+    const a = basilicaPts[27];
+    const b = basilicaPts[0];
+    if (!a || !b) return;
+    const dx = b.x - a.x;
+    const dz = b.z - a.z;
+    const edgeLen = Math.hypot(dx, dz) || 1;
+    const mid = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
+    let nx = -dz / edgeLen;
+    let nz = dx / edgeLen;
+    if (inside({ x: mid.x + nx * 1.2, z: mid.z + nz * 1.2 }, basilicaPts)) {
+      nx = -nx;
+      nz = -nz;
+    }
+    const yaw = Math.atan2(nx, nz);
+
+    // Bell sound source right at the grand East front gable tower
+    this.bellTowerPos = {
+      x: mid.x - nx * 2.5,
+      z: mid.z - nz * 2.5,
+    };
+
+    const facade = new THREE.Group();
+    facade.name = "portal-basilica-east-main";
+    facade.position.set(mid.x, 0.28, mid.z);
+    facade.rotation.y = yaw;
+
+    const stuccoHex = "#cfd6dd";
+    const stuccoMat = mat(stuccoHex, 0.72);
+    const trimHex = "#eef2f5";
+    const trimMat = mat(trimHex, 0.62);
+    const graniteHex = "#d8d5cd";
+    const graniteMat = mat(graniteHex, 0.78);
+    const darkDoorHex = "#3a2217";
+    const doorFrameHex = "#26150e";
+    const roofTileHex = "#bc5436";
+
+    // 1) Wide Horizontal 5-Step Stone Staircase Terrace (image_05b0999a.png)
+    const stairWidth = 19.6;
+    const steps = 5;
+    const stepDepth = 0.45;
+    const stepRise = 0.16;
+    const landingDepth = 1.8;
+    const maxRise = steps * stepRise;
+    const totalDepth = landingDepth + steps * stepDepth;
+
+    const landing = new THREE.Mesh(
+      new THREE.BoxGeometry(stairWidth, maxRise, landingDepth + 1.2),
+      graniteMat,
+    );
+    landing.position.set(0, maxRise / 2, (landingDepth - 1.2) / 2);
+    landing.castShadow = landing.receiveShadow = true;
+    facade.add(landing);
+
+    for (let s = 0; s < steps; s++) {
+      const h = (steps - s) * stepRise;
+      const zCenter = landingDepth + s * stepDepth + stepDepth / 2;
+      const stepW = stairWidth + s * 0.35;
+      const stepMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(stepW, h, stepDepth + 0.04),
+        mat(s % 2 === 0 ? "#d2d5d8" : "#c0c4c9", 0.82),
+      );
+      stepMesh.position.set(0, h / 2, zCenter);
+      stepMesh.castShadow = stepMesh.receiveShadow = true;
+      facade.add(stepMesh);
+    }
+
+    // Register wide front staircase as walkable & inside stairPortals (preserves total portal count = 10)
+    this.stairPortals.push(facade);
+    this.stairZones.push({
+      cx: mid.x,
+      cz: mid.z,
+      nx,
+      nz,
+      tx: -nz,
+      tz: nx,
+      halfW: stairWidth / 2 + 0.25,
+      landingDepth,
+      totalDepth,
+      maxRise,
+    });
+
+    // 2) Swept Lower Front Wings (27.4m total span) with Limestone Plinth & Curved Terracotta Eaves
+    facade.add(
+      // Main lower front wall spanning across wing width
+      box([27.4, 6.9, 3.2], stuccoHex, [0, 3.45, -1.2]),
+      // Pale granite lower base plinth across entire facade
+      box([27.7, 1.35, 3.35], graniteHex, [0, 0.68, -1.2]),
+      // Center entrance bay slight forward projection behind canopy
+      box([14.8, 6.2, 1.2], stuccoHex, [0, 3.9, 0.15]),
+    );
+
+    // Swept Á Đông Wing Eaves on Left (-X) & Right (+X) flanks
+    for (const sx of [-1, 1]) {
+      // Corner pilasters & white dado coping
+      facade.add(
+        box([0.55, 7.2, 3.45], stuccoHex, [sx * 13.65, 3.6, -1.2]),
+        box([0.7, 0.28, 3.6], trimHex, [sx * 13.65, 7.2, -1.2]),
+      );
+
+      // Curved terracotta roof slopes connecting center tower edge (x=7.2, y=9.4) to swept wing tip (x=14.1, y=7.2)
+      const curveSegs = 6;
+      for (let i = 0; i < curveSegs; i++) {
+        const t0 = i / curveSegs;
+        const t1 = (i + 1) / curveSegs;
+        const x0 = sx * (7.2 + t0 * 6.9);
+        const x1 = sx * (7.2 + t1 * 6.9);
+        // Concave upward sweep toward wing corner
+        const y0 = 9.35 - 2.35 * Math.pow(t0, 0.72) + (t0 > 0.78 ? (t0 - 0.78) * 2.1 : 0);
+        const y1 = 9.35 - 2.35 * Math.pow(t1, 0.72) + (t1 > 0.78 ? (t1 - 0.78) * 2.1 : 0);
+        const cx = (x0 + x1) / 2;
+        const cy = (y0 + y1) / 2;
+        const segLen = Math.hypot(x1 - x0, y1 - y0) + 0.12;
+        const angle = Math.atan2(y1 - y0, x1 - x0);
+        const wallFillH = Math.max(0.2, cy - 6.8);
+        const filler = new THREE.Mesh(
+          new THREE.BoxGeometry(Math.abs(x1 - x0) + 0.1, wallFillH, 3.15),
+          stuccoMat,
+        );
+        filler.position.set(cx, 6.8 + wallFillH / 2 - 0.05, -1.2);
+        facade.add(filler);
+
+        const eave = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.24, 3.7), roofMat);
+        eave.position.set(cx, cy, -1.15);
+        eave.rotation.z = angle;
+        eave.castShadow = true;
+        const rim = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.14, 3.76), trimMat);
+        rim.position.set(cx, cy - 0.16, -1.15);
+        rim.rotation.z = angle;
+        facade.add(eave, rim);
+      }
+    }
+
+    // 3) Three Grand Carved Dark-Wood Entrance Doors + Red-Tiled Porch Canopy (image_05b0999a.png)
+    const doorBaseY = maxRise;
+    for (const dxDoor of [-4.2, 0, 4.2]) {
+      facade.add(
+        // Door recessed dark stone surround
+        box([3.05, 4.35, 0.24], trimHex, [dxDoor, doorBaseY + 2.18, 0.72]),
+        // Dark mahogany double door leaf
+        box([2.65, 4.05, 0.28], darkDoorHex, [dxDoor, doorBaseY + 2.02, 0.74]),
+        // Central door mullion & brass handles
+        box([0.1, 4.05, 0.32], doorFrameHex, [dxDoor, doorBaseY + 2.02, 0.76]),
+        box([0.1, 0.36, 0.08], "#d8b45c", [dxDoor - 0.22, doorBaseY + 1.45, 0.9]),
+        box([0.1, 0.36, 0.08], "#d8b45c", [dxDoor + 0.22, doorBaseY + 1.45, 0.9]),
+      );
+    }
+
+    // Pitched red clay tile porch canopy over the 3 doors
+    const canopyMesh = new THREE.Mesh(new THREE.BoxGeometry(15.2, 0.26, 2.85), roofMat);
+    canopyMesh.position.set(0, doorBaseY + 4.95, 1.85);
+    canopyMesh.rotation.x = 0.28;
+    canopyMesh.castShadow = canopyMesh.receiveShadow = true;
+    facade.add(
+      canopyMesh,
+      // Crisp white porch fascia beam & soffit
+      box([15.4, 0.24, 0.24], trimHex, [0, doorBaseY + 4.55, 3.18]),
+      box([14.8, 0.22, 2.45], trimHex, [0, doorBaseY + 4.46, 1.85]),
+      // End corbel brackets supporting canopy overhang
+      box([0.36, 0.75, 1.4], trimHex, [-7.1, doorBaseY + 4.12, 1.5]),
+      box([0.36, 0.75, 1.4], trimHex, [7.1, doorBaseY + 4.12, 1.5]),
+    );
+
+    // 4) Towering Central Stepped Á Đông–Gothic Gable (y = 7.0 .. 27.6m)
+    const steppedTiers = [
+      { w: 14.4, y0: 6.9, h: 11.3, d: 3.4 },
+      { w: 11.4, y0: 18.2, h: 2.3, d: 3.2 },
+      { w: 8.6, y0: 20.5, h: 1.9, d: 3.0 },
+      { w: 6.0, y0: 22.4, h: 1.7, d: 2.8 },
+      { w: 3.5, y0: 24.1, h: 2.8, d: 2.6 },
+    ];
+    for (const tier of steppedTiers) {
+      facade.add(
+        box([tier.w, tier.h, tier.d], stuccoHex, [0, tier.y0 + tier.h / 2, -0.7]),
+        // Stepped white cornice + red clay tile coping strip on each shoulder
+        box([tier.w + 0.42, 0.22, tier.d + 0.3], trimHex, [0, tier.y0 + tier.h + 0.08, -0.7]),
+        box([tier.w + 0.34, 0.16, tier.d + 0.26], roofTileHex, [0, tier.y0 + tier.h + 0.24, -0.7]),
+      );
+    }
+
+    // 5) Grand Central Arched Cobalt-Blue Stained-Glass Window + 3D Carved White Cross (image_05b0999a.png)
+    const glassTex = createBasilicaFacadeStainedGlassTexture();
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: glassTex ? "#ffffff" : "#1c54ad",
+      map: glassTex,
+      roughness: 0.28,
+      metalness: 0.12,
+    });
+    const winW = 5.5;
+    const winRectH = 6.9;
+    const winBotY = 7.9;
+    const archCenterY = winBotY + winRectH;
+    const archR = winW / 2;
+
+    // White carved perforated archway border + stone sill
+    facade.add(
+      box([winW + 1.4, 0.45, 0.4], trimHex, [0, winBotY - 0.22, 0.96]),
+      box([0.65, winRectH + 0.3, 0.36], trimHex, [-winW / 2 - 0.32, winBotY + winRectH / 2, 0.96]),
+      box([0.65, winRectH + 0.3, 0.36], trimHex, [winW / 2 + 0.32, winBotY + winRectH / 2, 0.96]),
+    );
+    const archRing = new THREE.Mesh(
+      new THREE.TorusGeometry(archR + 0.34, 0.34, 8, 24, Math.PI),
+      trimMat,
+    );
+    archRing.position.set(0, archCenterY, 0.96);
+    facade.add(archRing);
+
+    // Decorative lattice blocks around window frame (matching image_05b0999a.png)
+    for (let ly = winBotY + 0.5; ly < archCenterY; ly += 1.05) {
+      for (const sx of [-1, 1]) {
+        facade.add(box([0.28, 0.36, 0.08], "#7e8a98", [sx * (winW / 2 + 0.32), ly, 1.15]));
+      }
+    }
+    for (let i = 1; i < 8; i++) {
+      const a = (i * Math.PI) / 8;
+      facade.add(
+        box([0.26, 0.26, 0.08], "#7e8a98", [
+          Math.cos(a) * (archR + 0.34),
+          archCenterY + Math.sin(a) * (archR + 0.34),
+          1.15,
+        ]),
+      );
+    }
+
+    // Cobalt-blue glass planes (rectangular lower + arched upper semicircle)
+    const lowerGlass = new THREE.Mesh(new THREE.PlaneGeometry(winW, winRectH), glassMat);
+    lowerGlass.position.set(0, winBotY + winRectH / 2, 1.02);
+    const upperGlass = new THREE.Mesh(new THREE.CircleGeometry(archR, 24, 0, Math.PI), glassMat);
+    upperGlass.position.set(0, archCenterY, 1.02);
+    facade.add(lowerGlass, upperGlass);
+
+    // Large Prominent 3D White Stone Cross inside the arched stained-glass window!
+    facade.add(
+      box([0.52, 6.2, 0.22], trimHex, [0, winBotY + 4.35, 1.12]),
+      box([3.2, 0.52, 0.22], trimHex, [0, winBotY + 5.75, 1.12]),
+    );
+
+    // 6) Flanking Circular Oculus Vents curving along upper facade + Round Clock + Top Niche Statue + Summit Cross
+    for (const [ox, oy] of [
+      [-4.6, 8.8],
+      [-4.6, 11.4],
+      [-4.5, 14.0],
+      [-3.7, 16.5],
+      [-2.3, 18.6],
+      [4.6, 8.8],
+      [4.6, 11.4],
+      [4.5, 14.0],
+      [3.7, 16.5],
+      [2.3, 18.6],
+    ]) {
+      const rim = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.2, 14), trimMat);
+      rim.rotation.x = Math.PI / 2;
+      rim.position.set(ox, oy, 1.02);
+      const core = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.18, 0.24, 12),
+        mat("#2f3842", 0.5),
+      );
+      core.rotation.x = Math.PI / 2;
+      core.position.set(ox, oy, 1.04);
+      facade.add(rim, core);
+    }
+
+    // Round Clock Face centered above the arched stained-glass window
+    const clockTex = createChurchClockTexture();
+    const clockBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.95, 0.95, 0.22, 24),
+      trimMat,
+    );
+    clockBody.rotation.x = Math.PI / 2;
+    clockBody.position.set(0, 19.65, 0.94);
+    const clockFace = new THREE.Mesh(
+      new THREE.CircleGeometry(0.84, 24),
+      new THREE.MeshStandardMaterial({
+        color: clockTex ? "#ffffff" : "#f2f4f7",
+        map: clockTex,
+        roughness: 0.45,
+      }),
+    );
+    clockFace.position.set(0, 19.65, 1.06);
+    facade.add(clockBody, clockFace);
+
+    // Recessed Niche & White Statue near top gable pinnacle
+    facade.add(
+      box([1.45, 2.1, 0.24], "#7e8a98", [0, 25.4, 0.64]),
+      box([0.52, 1.15, 0.36], "#f5f7f9", [0, 25.25, 0.76]),
+    );
+    const statueHead = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 10), trimMat);
+    statueHead.position.set(0, 26.02, 0.76);
+    facade.add(statueHead);
+
+    // Summit Pinnacle Cross (bright crisp silhouette against sky)
+    const summitCrossMat = new THREE.MeshStandardMaterial({
+      color: "#ffffff",
+      emissive: "#ffeec4",
+      emissiveIntensity: 0.22,
+      roughness: 0.35,
+    });
+    const scV = new THREE.Mesh(new THREE.BoxGeometry(0.24, 2.35, 0.24), summitCrossMat);
+    scV.position.set(0, 28.25, -0.7);
+    const scH = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 0.22), summitCrossMat);
+    scH.position.set(0, 28.7, -0.7);
+    facade.add(scV, scH);
+
+    // 7) Twin Flanking Recessed Side Belfry Towers (louvered upper tiers + terracotta tiled roofs)
+    for (const sx of [-1, 1]) {
+      const tx = sx * 9.95;
+      const tz = -3.85;
+      facade.add(
+        // Mid tower block
+        box([4.9, 6.2, 4.4], stuccoHex, [tx, 10.6, tz]),
+        box([5.2, 0.22, 4.7], trimHex, [tx, 13.75, tz]),
+        box([5.0, 0.9, 4.5], roofTileHex, [tx, 14.3, tz]),
+        // Upper louvered belfry turret
+        box([4.2, 3.6, 3.8], stuccoHex, [tx, 16.5, tz]),
+        box([4.5, 0.24, 4.1], trimHex, [tx, 18.4, tz]),
+      );
+      // White vertical belfry louvers on front face
+      for (const lx of [-1.15, -0.38, 0.38, 1.15]) {
+        facade.add(box([0.28, 1.95, 0.22], "#4e5964", [tx + lx, 16.5, tz + 1.88]));
+        facade.add(box([0.36, 2.05, 0.08], trimHex, [tx + lx, 16.5, tz + 1.96]));
+      }
+      // Corner louver posts on side turrets
+      const turretCap = new THREE.Mesh(new THREE.ConeGeometry(2.6, 1.35, 4), roofMat);
+      turretCap.rotation.y = Math.PI / 4;
+      turretCap.position.set(tx, 19.15, tz);
+      facade.add(turretCap);
+    }
+
+    // 8) Festive Multi-colored Radiating Triangle Bunting Garlands across East Forecourt (image_05b0999a.png)
+    const buntingGroup = new THREE.Group();
+    buntingGroup.name = "dong-chua-cuu-the-bunting";
+    const flagColors = ["#e24136", "#f2c12e", "#209ad6", "#2ea355", "#f6f7f9", "#ef7b2c"];
+    const flagMats = flagColors.map(
+      (col) =>
+        new THREE.MeshStandardMaterial({
+          color: col,
+          roughness: 0.65,
+          side: THREE.DoubleSide,
+        }),
+    );
+    const triGeo = new THREE.BufferGeometry();
+    triGeo.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute([-0.19, 0.16, 0, 0.19, 0.16, 0, 0, -0.26, 0], 3),
+    );
+    triGeo.computeVertexNormals();
+
+    const ropeMat = mat("#dde1e6", 0.7);
+    const garlandLines = [
+      // Radiating from top gable shoulders outward over the plaza
+      { start: [-1.4, 26.8, -0.6], end: [-26.0, 5.4, 26.0], count: 24 },
+      { start: [-1.4, 26.4, -0.6], end: [-24.0, 5.2, 42.0], count: 26 },
+      { start: [0.0, 27.0, -0.6], end: [0.0, 6.2, 52.0], count: 26 },
+      { start: [1.4, 26.4, -0.6], end: [24.0, 5.2, 42.0], count: 26 },
+      { start: [1.4, 26.8, -0.6], end: [26.0, 5.4, 26.0], count: 24 },
+      // Side turret diagonals down toward outer fence
+      { start: [-11.5, 16.5, -2.5], end: [-24.5, 4.4, 16.0], count: 16 },
+      { start: [11.5, 16.5, -2.5], end: [24.5, 4.4, 16.0], count: 16 },
+    ];
+    for (const line of garlandLines) {
+      const p0 = new THREE.Vector3(...line.start);
+      const p1 = new THREE.Vector3(...line.end);
+      const dist = p0.distanceTo(p1);
+      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, dist, 5), ropeMat);
+      wire.position.copy(p0).add(p1).multiplyScalar(0.5);
+      wire.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        p1.clone().sub(p0).normalize(),
+      );
+      buntingGroup.add(wire);
+
+      const lineYaw = Math.atan2(p1.x - p0.x, p1.z - p0.z);
+      for (let i = 1; i < line.count; i++) {
+        const t = i / line.count;
+        const pos = p0.clone().lerp(p1, t);
+        pos.y -= Math.sin(Math.PI * t) * 1.1;
+        const flag = new THREE.Mesh(triGeo, flagMats[i % flagMats.length]);
+        flag.position.copy(pos);
+        flag.rotation.y = lineYaw + Math.PI / 2;
+        buntingGroup.add(flag);
+      }
+    }
+    facade.add(buntingGroup);
+
+    basilicaGroup.add(facade);
   }
 
   addPortalOnEdge(
@@ -1180,7 +1704,8 @@ export class DongChuaCuuTheChurch {
   }
 
   blocksGrass(wx, wz) {
-    return this.inCompound(wx, wz);
+    if (this.inCompound(wx, wz)) return true;
+    return nearestPoint({ x: wx, z: wz }, this.ring).distance <= 1.4;
   }
 
   blocksTree(wx, wz) {

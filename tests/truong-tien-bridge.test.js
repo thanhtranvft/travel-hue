@@ -212,6 +212,30 @@ test("Cầu Trường Tiền builds 6 vài 12 nhịp, 5 masonry river piers, 2 o
         `Pedestrian lat=${lat} walks cleanly on outer pedestrian lane`,
       );
     }
+
+    // Verify player groundAt across full Truong Tien span (including s=30 and s=370 over underpass footpaths)
+    for (const s of [15, 30, 60, 120, 200, 280, 350, 370, 390]) {
+      const sx = m.a.x + m.tx * s;
+      const sz = m.a.z + m.tz * s;
+      const expected = truongTienElevation(s / m.length);
+      const yNoRef = world.groundAt(sx, sz);
+      const yApproach = world.groundAt(sx, sz, 0.32);
+      assert.ok(
+        yNoRef >= expected + 0.015 && yApproach >= expected + 0.015,
+        `Truong Tien roadway s=${s} clears asphalt surface (${yNoRef}, ${yApproach} >= ${expected + 0.015})`,
+      );
+      for (const side of [-1, 1]) {
+        const wx = sx + m.nx * side * 8.55;
+        const wz = sz + m.nz * side * 8.55;
+        const wyNoRef = world.groundAt(wx, wz);
+        const wyApproach = world.groundAt(wx, wz, 0.32);
+        assert.ok(
+          wyNoRef >= expected + TRUONG_TIEN_WALK_LIFT + 0.004 &&
+            wyApproach >= expected + TRUONG_TIEN_WALK_LIFT + 0.004,
+          `Truong Tien walkway s=${s} side=${side} clears stone deck (${wyNoRef}, ${wyApproach})`,
+        );
+      }
+    }
   } finally {
     restoreDoc();
   }

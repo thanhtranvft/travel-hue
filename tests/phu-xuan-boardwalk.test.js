@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import * as THREE from "three";
 import { roads, mainRoads } from "../src/core/shared/geography/map.js";
-import { nearestPoint } from "../src/core/shared/geography/geometry.js";
+import { nearestPoint, inside } from "../src/core/shared/geography/geometry.js";
 import {
   GeographicTraffic,
   stitchBridgeRoutes,
@@ -177,6 +177,41 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
     traffic.step(0.05, dummyBike);
     for (const actor of phuXuanActors) {
       assert.ok(Number.isFinite(actor.mesh.position.y));
+    }
+
+    // 6. Cầu Gỗ Lim deck height never clips down to 0.07m/0.12m across any segment or corner
+    for (const id of [683633953, 1167513733, 1167513732]) {
+      const road = roads.find((r) => r.id === id);
+      for (let i = 1; i < road.points.length; i++) {
+        const a = road.points[i - 1];
+        const b = road.points[i];
+        const mx = (a.x + b.x) / 2;
+        const mz = (a.z + b.z) / 2;
+        const yNoRef = world.groundAt(mx, mz);
+        const yFromLow = world.groundAt(mx, mz, 0.12);
+        assert.ok(
+          yNoRef >= BOARDWALK_Y + 0.004 && yFromLow >= BOARDWALK_Y + 0.004,
+          `Boardwalk ${id} seg ${i} stays flush on deck (yNoRef=${yNoRef}, yFromLow=${yFromLow})`,
+        );
+        assert.equal(world.canRide(mx, mz, yNoRef), true);
+      }
+    }
+    // Check river water 2.7m outside boardwalk railing on segment 683633953 is NEVER rideable
+    const riverWalkRoad = roads.find((r) => r.id === 683633953);
+    const ra = riverWalkRoad.points[0];
+    const rb = riverWalkRoad.points[1];
+    const rLen = Math.hypot(rb.x - ra.x, rb.z - ra.z) || 1;
+    const rnx = -(rb.z - ra.z) / rLen;
+    const rnz = (rb.x - ra.x) / rLen;
+    const rmx = (ra.x + rb.x) / 2;
+    const rmz = (ra.z + rb.z) / 2;
+    for (const side of [-1, 1]) {
+      const ox = rmx + rnx * side * 2.7;
+      const oz = rmz + rnz * side * 2.7;
+      if (world.riverRings.some((ring) => inside({ x: ox, z: oz }, ring))) {
+        assert.equal(world.boardwalkView.queryDeck(ox, oz).onBoardwalk, false);
+        assert.equal(world.canPlaceCharm(ox, oz), false, `Outside boardwalk water at (${ox}, ${oz}) should never allow charms`);
+      }
     }
   } finally {
     restoreDoc();

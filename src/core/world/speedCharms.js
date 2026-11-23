@@ -182,11 +182,12 @@ export function generateRegionCharms(
   for (const tier of tiers) {
     let placed = 0;
     let attempts = 0;
-    const maxAttempts = tier.count * 28;
+    const maxAttempts = tier.count * 90;
     while (placed < tier.count && attempts < maxAttempts) {
       attempts++;
       const anchor = anchors[Math.floor(rng() * anchors.length)];
-      const lateral = (rng() * 2 - 1) * anchor.halfWidth;
+      const spread = attempts > maxAttempts * 0.45 ? 0.35 : 0.72;
+      const lateral = (rng() * 2 - 1) * anchor.halfWidth * spread;
       const jitterAlong = (rng() * 2 - 1) * 5;
       const tx = -anchor.nz;
       const tz = anchor.nx;
@@ -194,7 +195,7 @@ export function generateRegionCharms(
       const z = Number((anchor.z + anchor.nz * lateral + tz * jitterAlong).toFixed(2));
       if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
       if (!canPlace(x, z)) continue;
-      const spacing = attempts > maxAttempts * 0.65 ? minSpacing * 0.5 : minSpacing;
+      const spacing = attempts > maxAttempts * 0.65 ? minSpacing * 0.45 : minSpacing;
       if (spawned.some((other) => Math.hypot(other.x - x, other.z - z) < spacing)) {
         continue;
       }

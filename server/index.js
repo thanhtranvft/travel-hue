@@ -10,6 +10,7 @@ import {
   constants as zlibConstants,
 } from "node:zlib";
 import { WebSocketServer, WebSocket } from "ws";
+import { joinLines, project } from "../src/core/shared/geography/geometry.js";
 import { Room } from "./Room.js";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -65,13 +66,37 @@ export async function attachOnlineServer(
     (a) => a.enabled !== false && a.disabled !== true,
   )) {
     if (!/^[a-z0-9-]+$/.test(area.id)) throw new Error("Invalid area id");
-    const { region } = JSON.parse(
+    const data = JSON.parse(
       await readFile(
         resolve(root, `src/modules/areas/${area.id}/model/osm.json`),
         "utf8",
       ),
     );
-    areas.set(area.id, { ...area, region });
+    const pointsOf = (feature) =>
+      (feature?.geometry || [])
+        .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lon))
+        .map(project);
+    const elements = data.elements || [];
+    const roads = elements
+      .filter(
+        (f) =>
+          f.type === "way" &&
+          f.tags?.highway &&
+          f.geometry?.length > 1 &&
+          !["steps", "construction", "proposed"].includes(f.tags.highway),
+      )
+      .map((f) => ({ ...f, points: pointsOf(f) }));
+    const riverFeature = elements.find((f) => f.id === 2393612);
+    const riverRings = riverFeature
+      ? riverFeature.type === "way"
+        ? [pointsOf(riverFeature)]
+        : joinLines(
+            (riverFeature.members || [])
+              .filter((m) => m.role === "outer" && m.geometry)
+              .map(pointsOf),
+          )
+      : [];
+    areas.set(area.id, { ...area, region: data.region, roads, riverRings });
   }
   const room = new Room(areas, {
     now,

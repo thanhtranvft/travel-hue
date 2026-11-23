@@ -439,11 +439,18 @@ test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòn
 
     assert.ok(
       church.stairPortals.length === 10 &&
+        church.group.getObjectByName("dong-chua-cuu-the-plaza-floor") &&
+        church.group.getObjectByName("dong-chua-cuu-the-bunting") &&
         church.group.getObjectByName("portal-basilica-east-main") &&
         church.group.getObjectByName("portal-basilica-south-transept") &&
         church.group.getObjectByName("portal-basilica-north-transept") &&
         church.group.getObjectByName("portal-tuvien-north"),
-      "all Colonial Tu viện & Basilica buildings feature stone stair portals",
+      "all Colonial Tu viện & Basilica buildings feature stone stair portals, clean plaza floor & festive East front facade",
+    );
+    const eastMainStairY = church.groundAt(1892.0, -169.2);
+    assert.ok(
+      eastMainStairY > 0.45 && church.canRide(1892.0, -169.2) === true,
+      "wide horizontal East front Basilica staircase elevates player cleanly",
     );
     const southTranseptStairY = church.groundAt(1845.5, -139.0);
     assert.ok(

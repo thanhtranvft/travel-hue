@@ -81,12 +81,17 @@ export function truongTienDeckQuery(road, x, z) {
   const rx = x - m.a.x;
   const rz = z - m.a.z;
   const along = rx * m.tx + rz * m.tz;
-  const lat = rx * m.nx + rz * m.nz;
+  const t = Math.max(0, Math.min(1, along / m.length));
+  const pMid = road.points.length > 2 ? road.points[1] : null;
+  const midLat = pMid
+    ? (pMid.x - m.a.x) * m.nx + (pMid.z - m.a.z) * m.nz
+    : 0;
+  const latShift = 4 * t * (1 - t) * midLat;
+  const lat = rx * m.nx + rz * m.nz - latShift;
   const absLat = Math.abs(lat);
   if (along < -1.5 || along > m.length + 1.5 || absLat > 12.2) {
     return { onBridge: false };
   }
-  const t = Math.max(0, Math.min(1, along / m.length));
   const baseY = truongTienElevation(t);
   const inTrussZone =
     along >= TRUONG_TIEN_TRUSS_START_S && along <= TRUONG_TIEN_TRUSS_END_S;
@@ -97,7 +102,8 @@ export function truongTienDeckQuery(road, x, z) {
     return {
       onBridge: true,
       allowed,
-      deckY: baseY + (isSidewalk ? TRUONG_TIEN_WALK_LIFT : 0),
+      deckY:
+        baseY + (isSidewalk ? TRUONG_TIEN_WALK_LIFT + 0.008 : 0.018),
       along,
       lat,
     };
@@ -105,11 +111,11 @@ export function truongTienDeckQuery(road, x, z) {
 
   // Inside 6-span truss corridor: separate roadway vs 2 outer walkways + 5 balcony pairs
   if (absLat <= TRUONG_TIEN_ROAD_HALF - 0.12) {
-    return { onBridge: true, allowed: true, deckY: baseY, along, lat };
+    return { onBridge: true, allowed: true, deckY: baseY + 0.018, along, lat };
   }
-  // Physical barrier along the left/right steel truss lines (±3.82m)
+  // Physical barrier along the left/right steel truss lines
   if (absLat < TRUONG_TIEN_WALK_INNER - 0.05) {
-    return { onBridge: true, allowed: false, deckY: baseY, along, lat };
+    return { onBridge: true, allowed: false, deckY: baseY + 0.018, along, lat };
   }
   const nearPier = m.pierStations.find(
     (ps) => Math.abs(along - ps) <= BALCONY_HALF_LEN,
@@ -130,7 +136,7 @@ export function truongTienDeckQuery(road, x, z) {
   return {
     onBridge: true,
     allowed,
-    deckY: baseY + TRUONG_TIEN_WALK_LIFT,
+    deckY: baseY + TRUONG_TIEN_WALK_LIFT + 0.008,
     along,
     lat,
   };

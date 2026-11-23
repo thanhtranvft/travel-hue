@@ -254,3 +254,104 @@ test("bindMultiTouchAction fires immediately on pointerdown, skips duplicate cli
   listeners.get("click")({ stopPropagation() {} });
   assert.equal(count, 5);
 });
+
+test("Speed charms stay strictly on roads or bridge decks and never spawn on Perfume River water", async () => {
+  const THREE = await import("three");
+  const { loadGeography } = await import("../src/modules/areas/AreaModel.js");
+  const { GeographicWorld } = await import("../src/core/world/GeographicWorld.js");
+  const { inside } = await import("../src/core/shared/geography/geometry.js");
+  const { truongTienDeckQuery } = await import("../src/modules/areas/truong-tien/view/BridgeView.js");
+  const { getRoads, getRiver } = await import("../src/core/shared/geography/activeGeography.js");
+
+  const prevDoc = globalThis.document;
+  const noop = () => {};
+  const ctx = {
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    font: "",
+    textAlign: "center",
+    fillRect: noop,
+    strokeRect: noop,
+    clearRect: noop,
+    beginPath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    stroke: noop,
+    fill: noop,
+    roundRect: noop,
+    fillText: noop,
+    scale: noop,
+    measureText: () => ({ width: 40 }),
+    createLinearGradient: () => ({ addColorStop: noop }),
+  };
+  globalThis.document = {
+    createElement: () => ({ width: 256, height: 256, getContext: () => ctx }),
+  };
+  try {
+    for (const areaId of ["south-bank", "truong-tien", "quoc-hoc"]) {
+      const region = await loadGeography(areaId);
+      const world = new GeographicWorld(new THREE.Scene());
+      world.region = region;
+      world.build();
+
+      const charms = generateRegionCharms(region, {
+        idPrefix: `${areaId}-river-check`,
+        extraRoads: world.renderRoads,
+        canPlace: (x, z) => world.canPlaceCharm(x, z),
+        groundAt: (x, z) => world.groundAt(x, z),
+      });
+      assert.equal(charms.length, 28, `${areaId} spawns full 28 charms`);
+      for (const c of charms) {
+        const inRiver = world.riverRings.some((r) => inside({ x: c.x, z: c.z }, r));
+        if (inRiver) {
+          const onTruongTien =
+            world.truongTienRoad && truongTienDeckQuery(world.truongTienRoad, c.x, c.z).allowed;
+          const onBoardwalk = world.boardwalkView?.queryDeck(c.x, c.z)?.insideSafeMargin;
+          const hit = world.nearestRoad(c.x, c.z);
+          const onPhuXuan =
+            hit.road &&
+            (hit.road.tags?.name === "Cầu Phú Xuân" || hit.road.tags?.bridge === "yes") &&
+            hit.distance <= 6.4;
+          assert.ok(
+            onTruongTien || onBoardwalk || onPhuXuan,
+            `${areaId} charm (${c.x}, ${c.z}, y=${c.y}) in river polygon must sit on bridge/boardwalk deck`,
+          );
+        }
+      }
+
+      // Also verify server Room with loaded roads & riverRings keeps charms off river water
+      const activeRoads = getRoads();
+      const activeRiver = getRiver();
+      const areas = new Map([
+        [
+          areaId,
+          {
+            spawn: { x: region.path[0][0], z: region.path[0][1], heading: 0 },
+            region,
+            roads: activeRoads,
+            riverRings: activeRiver,
+          },
+        ],
+      ]);
+      const room = new Room(areas);
+      const entry = room.ensureRegionCharms(areaId);
+      assert.equal(entry.charms.length, 28, `server Room ${areaId} spawns 28 charms`);
+      for (const c of entry.charms) {
+        const inRiver = activeRiver.some((r) => inside({ x: c.x, z: c.z }, r));
+        if (inRiver) {
+          const onBridgeRoad = activeRoads.some(
+            (r) =>
+              (r.tags?.name === "Cầu Phú Xuân" ||
+                r.tags?.bridge === "yes" ||
+                [683633953, 1167513733, 1167513732, 1473289702, 1493443035, 1493443034, 1493443036].includes(r.id)) &&
+              c.y >= 0.3,
+          );
+          assert.ok(onBridgeRoad, `server charm (${c.x}, ${c.z}) must sit on bridge/boardwalk`);
+        }
+      }
+    }
+  } finally {
+    globalThis.document = prevDoc;
+  }
+});

@@ -16,7 +16,22 @@ import {
   randomCharmRefreshMs,
 } from "../src/core/world/speedCharms.js";
 import { nearestPoint, inside } from "../src/core/shared/geography/geometry.js";
+import { roadWidth } from "../src/core/world/roadProfile.js";
+import {
+  BOARDWALK_Y,
+  TRUONG_TIEN_ID,
+  roadSurfaceHeight,
+} from "../src/core/world/roadSurface.js";
+import {
+  TRUONG_TIEN_ROAD_HALF,
+  TRUONG_TIEN_WALK_INNER,
+  TRUONG_TIEN_WALK_OUTER,
+  truongTienDeckQuery,
+} from "../src/modules/areas/truong-tien/view/BridgeView.js";
 import { spacedSpawn } from './spawn.js';
+
+const BOARDWALK_WAY_IDS = new Set([683633953, 1167513733, 1167513732]);
+const LATERAL_BOARDWALK_IDS = new Set([1473289702, 1493443035, 1493443034, 1493443036]);
 
 // One room per process. Production must run one instance until a shared room store is added.
 export class Room {
@@ -187,10 +202,66 @@ export class Room {
     const now = this.now();
     if (existing && !forceRefresh) return existing;
     const seq = (existing?.seq || 0) + 1;
+    const areaRoads = Array.isArray(area.roads) ? area.roads : [];
+    const riverRings = Array.isArray(area.riverRings) ? area.riverRings : [];
+    const truongTienRoad = areaRoads.find((r) => r.id === TRUONG_TIEN_ID);
+    const nearestAreaRoad = (x, z) => {
+      let best = { distance: Infinity, road: null, index: 1, t: 0 };
+      for (const road of areaRoads) {
+        if (!road?.points?.length) continue;
+        const hit = nearestPoint({ x, z }, road.points);
+        if (hit.distance < best.distance) {
+          best = { ...hit, road };
+        }
+      }
+      return best;
+    };
     const charms = generateRegionCharms(area.region, {
       idPrefix: `${regionId}-${seq}`,
-      canPlace: (x, z) => this.contains(area.region, x, z),
-      groundAt: () => 0.25,
+      extraRoads: areaRoads,
+      canPlace: (x, z) => {
+        if (!this.contains(area.region, x, z)) return false;
+        if (!areaRoads.length) return true;
+        if (truongTienRoad) {
+          const q = truongTienDeckQuery(truongTienRoad, x, z);
+          if (q.onBridge) {
+            if (!q.allowed) return false;
+            const absLat = Math.abs(q.lat);
+            return (
+              absLat <= TRUONG_TIEN_ROAD_HALF - 0.65 ||
+              (absLat >= TRUONG_TIEN_WALK_INNER + 0.25 &&
+                absLat <= TRUONG_TIEN_WALK_OUTER - 0.45)
+            );
+          }
+        }
+        const hit = nearestAreaRoad(x, z);
+        if (!hit.road) return false;
+        const inRiver = riverRings.some((r) => inside({ x, z }, r));
+        if (inRiver) {
+          const isBridgeOrBoardwalk =
+            hit.road.tags?.name === "Cầu Phú Xuân" ||
+            hit.road.tags?.bridge === "yes" ||
+            BOARDWALK_WAY_IDS.has(hit.road.id) ||
+            LATERAL_BOARDWALK_IDS.has(hit.road.id);
+          if (!isBridgeOrBoardwalk) return false;
+        }
+        const half = roadWidth(hit.road) / 2;
+        return hit.distance <= Math.max(0.45, half - 0.5);
+      },
+      groundAt: (x, z) => {
+        if (!areaRoads.length) return 0.25;
+        if (truongTienRoad) {
+          const q = truongTienDeckQuery(truongTienRoad, x, z);
+          if (q.onBridge) return q.deckY;
+        }
+        const hit = nearestAreaRoad(x, z);
+        if (!hit.road) return 0.25;
+        if (BOARDWALK_WAY_IDS.has(hit.road.id)) return BOARDWALK_Y + 0.008;
+        const i = Math.max(1, hit.index || 1);
+        const y0 = roadSurfaceHeight(hit.road, i - 1);
+        const y1 = roadSurfaceHeight(hit.road, i);
+        return y0 * (1 - (hit.t || 0)) + y1 * (hit.t || 0);
+      },
     });
     const entry = {
       seq,

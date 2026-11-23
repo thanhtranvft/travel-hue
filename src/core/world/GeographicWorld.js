@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import {
   addTruongTienBridge,
+  TRUONG_TIEN_ROAD_HALF,
+  TRUONG_TIEN_WALK_INNER,
+  TRUONG_TIEN_WALK_OUTER,
   truongTienDeckQuery,
 } from "../../modules/areas/truong-tien/view/BridgeView.js";
 import { addPhuXuanBridge } from "../../modules/areas/quoc-hoc/view/PhuXuanBridgeView.js";
@@ -1011,6 +1014,21 @@ export class GeographicWorld {
       this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
       this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
+    if (this.truongTienRoad) {
+      const q = truongTienDeckQuery(this.truongTienRoad, x, z);
+      if (
+        q.onBridge &&
+        (q.allowed || !Number.isFinite(referenceY)) &&
+        (!Number.isFinite(referenceY) ||
+          referenceY >= 0.28 ||
+          q.deckY < 1.85 ||
+          Math.abs(q.deckY - referenceY) < 1.8)
+      ) {
+        return q.deckY;
+      }
+    }
+    const boardwalkY = this.boardwalkView?.groundAt?.(x, z, referenceY);
+    if (boardwalkY !== null && boardwalkY !== undefined) return boardwalkY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
       parkY !== null &&
@@ -1020,18 +1038,20 @@ export class GeographicWorld {
       return parkY;
     }
     const candidates = [];
-    if (this.truongTienRoad) {
-      const q = truongTienDeckQuery(this.truongTienRoad, x, z);
-      if (q.onBridge) {
-        candidates.push({ y: q.deckY, distance: Math.abs(q.lat) });
-      }
-    }
     for (const segment of this.roadGrid.get(
       `${Math.floor(x / 64)},${Math.floor(z / 64)}`,
     ) || []) {
       if (
         segment.road.id === TRUONG_TIEN_ID ||
         TRUONG_TIEN_SIDEWALK_IDS.has(segment.road.id)
+      ) {
+        continue;
+      }
+      if (
+        this.boardwalkView &&
+        (!Number.isFinite(referenceY) || referenceY < 2.2) &&
+        ([683633953, 1167513733, 1167513732].includes(segment.road.id) ||
+          LATERAL_BRIDGE_IDS.includes(segment.road.id))
       ) {
         continue;
       }
@@ -1176,7 +1196,19 @@ export class GeographicWorld {
     if (churchRide === false) return false;
     const eastRide = this.quangTrungEastPrecinct?.canRide(x, z);
     if (eastRide === false) return false;
-    const parkRide = this.quocHocPark?.canRide(x, z);
+    const activeRiver = this.riverRings || getRiver();
+    const inRiver = activeRiver.some((r) => inside({ x, z }, r));
+    if (this.boardwalkView && (!Number.isFinite(referenceY) || referenceY < 2.2)) {
+      const bw = this.boardwalkView.queryDeck(x, z);
+      if (bw.onBoardwalk) {
+        if (bw.insideDeck && !this.hitsTree(x, z, referenceY)) return true;
+        if (inRiver) return false;
+      }
+    }
+    const parkRide =
+      Number.isFinite(referenceY) && referenceY >= 1.8
+        ? null
+        : this.quocHocPark?.canRide(x, z);
     if (parkRide !== null && parkRide !== undefined) return parkRide;
     const campusRide =
       this.quocHocCampus?.canRide(x, z) ??
@@ -1198,20 +1230,32 @@ export class GeographicWorld {
       );
       if (!blockedByBuilding) return true;
     }
-    const activeRiver = this.riverRings || getRiver();
     if (this.truongTienRoad) {
       const q = truongTienDeckQuery(this.truongTienRoad, x, z);
       if (
         q.onBridge &&
-        (!Number.isFinite(referenceY) || Math.abs(q.deckY - referenceY) < 1.8)
+        (!Number.isFinite(referenceY) ||
+          referenceY >= 0.28 ||
+          q.deckY < 1.85 ||
+          Math.abs(q.deckY - referenceY) < 1.8)
       ) {
         if (q.allowed) return true;
-        if (activeRiver.some((r) => inside({ x, z }, r))) return false;
+        if (inRiver) return false;
       }
     }
     const hit = this.nearestRoad(x, z);
+    if (inRiver) {
+      if (
+        hit.road &&
+        (hit.road.tags?.bridge === "yes" ||
+          hit.road.tags?.name === "Cầu Phú Xuân") &&
+        hit.distance <= roadWidth(hit.road) / 2 + 0.4
+      ) {
+        return true;
+      }
+      return false;
+    }
     if (hit.road && hit.distance < roadWidth(hit.road) / 2 + 1.2) return true;
-    if (activeRiver.some((r) => inside({ x, z }, r))) return false;
     return !this.buildingPolygons.some(
       (b) =>
         x > b.minX &&
@@ -1219,6 +1263,56 @@ export class GeographicWorld {
         z > b.minZ &&
         z < b.maxZ &&
         inside({ x, z }, b.points),
+    );
+  }
+  canPlaceCharm(x, z) {
+    if (!regionContains(this.region, x, z)) return false;
+    if (
+      x < this.bounds.minX ||
+      x > this.bounds.maxX ||
+      z < this.bounds.minZ ||
+      z > this.bounds.maxZ
+    ) {
+      return false;
+    }
+    const y = this.groundAt(x, z);
+    if (!this.canRide(x, z, y)) return false;
+
+    if (this.truongTienRoad) {
+      const q = truongTienDeckQuery(this.truongTienRoad, x, z);
+      if (q.onBridge) {
+        if (!q.allowed) return false;
+        const absLat = Math.abs(q.lat);
+        const onRoadway = absLat <= TRUONG_TIEN_ROAD_HALF - 0.65;
+        const onWalkway =
+          absLat >= TRUONG_TIEN_WALK_INNER + 0.25 &&
+          absLat <= TRUONG_TIEN_WALK_OUTER - 0.45;
+        return onRoadway || onWalkway;
+      }
+    }
+
+    if (this.boardwalkView) {
+      const bw = this.boardwalkView.queryDeck(x, z);
+      if (bw.onBoardwalk) {
+        return Boolean(bw.insideSafeMargin);
+      }
+    }
+
+    const activeRiver = this.riverRings || getRiver();
+    const inRiver = activeRiver.some((r) => inside({ x, z }, r));
+    const hit = this.nearestRoad(x, z);
+    if (inRiver) {
+      return Boolean(
+        hit.road &&
+          (hit.road.tags?.name === "Cầu Phú Xuân" ||
+            hit.road.tags?.bridge === "yes") &&
+          hit.distance <= Math.max(0.5, roadWidth(hit.road) / 2 - 0.6),
+      );
+    }
+
+    return Boolean(
+      hit.road &&
+        hit.distance <= Math.max(0.45, roadWidth(hit.road) / 2 - 0.45),
     );
   }
   update(time, position) {

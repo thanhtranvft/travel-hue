@@ -57,7 +57,10 @@ export class CharmController {
     this.charms = generateRegionCharms(region, {
       idPrefix: `${region.id}-${Date.now()}`,
       extraRoads: world.renderRoads || [],
-      canPlace: (x, z) => world.canRide(x, z),
+      canPlace: (x, z) =>
+        typeof world.canPlaceCharm === "function"
+          ? world.canPlaceCharm(x, z)
+          : world.canRide(x, z),
       groundAt: (x, z) => world.groundAt(x, z),
     });
     this.nextRefreshAt = Date.now() + randomCharmRefreshMs();
