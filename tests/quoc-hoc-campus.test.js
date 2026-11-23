@@ -138,6 +138,17 @@ test("Quốc Học Tam Quan gate, lotus-finial walls, statue dais, twin flagpole
       true,
     );
 
+    const benchObjects = [];
+    campus.group.traverse((o) => {
+      if (o.name === "campus-stone-bench") benchObjects.push(o);
+    });
+    assert.ok(campus.benches.length >= 36, "Quốc Học has organized rows of stone benches");
+    assert.equal(benchObjects.length, campus.benches.length);
+    for (const bench of campus.benches) {
+      assert.equal(campus.inCampus(bench.x, bench.z), true, "bench stays inside Quốc Học campus");
+      assert.equal(campus.canRide(bench.x, bench.z), false, "bench blocks riding through it");
+    }
+
     // Outside campus returns null
     const outsidePos = campus.toWorld(0, -40);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);

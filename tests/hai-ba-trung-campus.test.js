@@ -149,6 +149,17 @@ test("Hai Bà Trưng Tam Quan gate, baluster fence, 12 buildings, flagpole islan
       true,
     );
 
+    const benchObjects = [];
+    campus.group.traverse((o) => {
+      if (o.name === "campus-stone-bench") benchObjects.push(o);
+    });
+    assert.ok(campus.benches.length >= 40, "Hai Bà Trưng has organized rows of stone benches");
+    assert.equal(benchObjects.length, campus.benches.length);
+    for (const bench of campus.benches) {
+      assert.equal(campus.inCampus(bench.x, bench.z), true, "bench stays inside Hai Bà Trưng campus");
+      assert.equal(campus.canRide(bench.x, bench.z), false, "bench blocks riding through it");
+    }
+
     const outsidePos = campus.toWorld(0, -40);
     assert.equal(campus.groundAt(outsidePos.x, outsidePos.z), null);
     assert.equal(campus.canRide(outsidePos.x, outsidePos.z), null);

@@ -223,6 +223,31 @@ function createBulletinBoardTexture() {
   });
 }
 
+function createStoneBenchTexture() {
+  return createCanvasTexture(
+    256,
+    256,
+    (ctx, w, h) => {
+      // Pale granite terrazzo (ghế đá mài) with subtle stone chips
+      ctx.fillStyle = "#ded8ca";
+      ctx.fillRect(0, 0, w, h);
+      const chips = ["#b9b2a2", "#f2ede2", "#9f9789", "#cac1b0", "#878074"];
+      for (let i = 0; i < 480; i++) {
+        const x = (i * 157 + 19) % w;
+        const y = (i * 263 + 31) % h;
+        const s = 1 + (i % 3);
+        ctx.fillStyle = chips[i % chips.length];
+        ctx.fillRect(x, y, s, s);
+      }
+      ctx.strokeStyle = "rgba(128,120,108,0.28)";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+    },
+    1,
+    1,
+  );
+}
+
 function createVietnamFlagTexture() {
   return createCanvasTexture(512, 340, (ctx, w, h) => {
     ctx.fillStyle = "#da251d";
@@ -466,19 +491,90 @@ function createHaiBaTrungFlagpole(x, y, z, flagTex) {
   return { group, flagMesh };
 }
 
-function createCampusBench(x, y, z, yaw = 0) {
+function createCampusBenchAssets() {
+  const tex = createStoneBenchTexture();
+  const seatMat = new THREE.MeshStandardMaterial({
+    color: tex ? "#ffffff" : "#ded8ca",
+    map: tex,
+    roughness: 0.36,
+    metalness: 0.05,
+  });
+  const legMat = mat("#b6ae9e", 0.84, 0.02);
+  const trimMat = mat("#efe9dc", 0.52, 0.04);
+  const padMat = mat("#bfb9ac", 0.86, 0.02);
+
+  return {
+    seatMat,
+    legMat,
+    trimMat,
+    padMat,
+    footGeo: new THREE.BoxGeometry(0.18, 0.08, 0.56),
+    legGeo: new THREE.BoxGeometry(0.14, 0.34, 0.44),
+    braceGeo: new THREE.BoxGeometry(1.18, 0.1, 0.14),
+    seatGeo: new THREE.BoxGeometry(1.74, 0.09, 0.48),
+    bullnoseGeo: new THREE.CylinderGeometry(0.045, 0.045, 1.74, 8),
+    backGeo: new THREE.BoxGeometry(1.74, 0.38, 0.08),
+    capGeo: new THREE.BoxGeometry(1.78, 0.05, 0.1),
+    armGeo: new THREE.BoxGeometry(0.1, 0.14, 0.42),
+    armPostGeo: new THREE.BoxGeometry(0.1, 0.12, 0.1),
+    padGeo: new THREE.BoxGeometry(2.15, 0.06, 1.1),
+  };
+}
+
+function createCampusBench(x, y, z, yaw = 0, assets = createCampusBenchAssets(), { withPad = false } = {}) {
   const g = new THREE.Group();
+  g.name = "campus-stone-bench";
   g.position.set(x, y, z);
   g.rotation.y = yaw;
-  const stone = "#d2cbbe";
-  const seat = "#bfb6a6";
-  for (const sx of [-0.62, 0.62]) {
-    g.add(box([0.14, 0.42, 0.44], stone, [sx, 0.21, 0]));
+
+  if (withPad) {
+    const pad = new THREE.Mesh(assets.padGeo, assets.padMat);
+    pad.position.set(0, -0.02, 0.08);
+    pad.receiveShadow = true;
+    g.add(pad);
   }
-  g.add(
-    box([1.68, 0.09, 0.46], seat, [0, 0.44, 0.02]),
-    box([1.68, 0.38, 0.08], seat, [0, 0.68, -0.18]),
-  );
+
+  for (const sx of [-0.66, 0.66]) {
+    const foot = new THREE.Mesh(assets.footGeo, assets.legMat);
+    foot.position.set(sx, 0.04, 0);
+    foot.castShadow = foot.receiveShadow = true;
+    const leg = new THREE.Mesh(assets.legGeo, assets.legMat);
+    leg.position.set(sx, 0.25, 0);
+    leg.castShadow = leg.receiveShadow = true;
+    g.add(foot, leg);
+  }
+
+  const brace = new THREE.Mesh(assets.braceGeo, assets.legMat);
+  brace.position.set(0, 0.22, -0.02);
+  g.add(brace);
+
+  const seat = new THREE.Mesh(assets.seatGeo, assets.seatMat);
+  seat.position.set(0, 0.445, 0.03);
+  seat.castShadow = seat.receiveShadow = true;
+
+  const bullnose = new THREE.Mesh(assets.bullnoseGeo, assets.trimMat);
+  bullnose.rotation.z = Math.PI / 2;
+  bullnose.position.set(0, 0.445, 0.27);
+
+  const back = new THREE.Mesh(assets.backGeo, assets.seatMat);
+  back.position.set(0, 0.67, -0.19);
+  back.rotation.x = -0.14;
+  back.castShadow = back.receiveShadow = true;
+
+  const cap = new THREE.Mesh(assets.capGeo, assets.trimMat);
+  cap.position.set(0, 0.87, -0.22);
+  cap.rotation.x = -0.14;
+  g.add(seat, bullnose, back, cap);
+
+  for (const sx of [-0.82, 0.82]) {
+    const arm = new THREE.Mesh(assets.armGeo, assets.trimMat);
+    arm.position.set(sx, 0.59, 0.02);
+    arm.castShadow = arm.receiveShadow = true;
+    const armPost = new THREE.Mesh(assets.armPostGeo, assets.legMat);
+    armPost.position.set(sx, 0.5, 0.16);
+    g.add(arm, armPost);
+  }
+
   return g;
 }
 
@@ -687,6 +783,7 @@ export class HaiBaTrungSchoolCampus {
     this.animatedObjects = [];
     this.campusBuildingPolygons = [];
     this.plazaPlanters = [];
+    this.benches = [];
 
     this.buildBuildings();
     this.buildCourtyard();
@@ -1234,12 +1331,54 @@ export class HaiBaTrungSchoolCampus {
     this.flags.push(fp.flagMesh);
     this.animatedObjects.push(fp.flagMesh);
 
-    // 6. Campus Stone Benches, Bulletin Boards (Bảng tin) & Globe Lamps
-    for (let bz = -62; bz >= -124; bz -= 15.5) {
-      yard.add(
-        createCampusBench(-28.0, 0.34, bz, Math.PI / 2),
-        createCampusBench(29.3, 0.34, bz, -Math.PI / 2),
+    // 6. Campus Stone Bench Rows (Dãy ghế đá), Bulletin Boards (Bảng tin) & Globe Lamps
+    const benchSpecs = [];
+    // Rows flanking front & central entry avenue curbs
+    for (const bf of [16, 32, 46, 68, 82, 108, 118]) {
+      benchSpecs.push(
+        { side: -4.9, fwd: bf, yaw: Math.PI / 2, y: 0.31, withPad: true },
+        { side: 5.9, fwd: bf, yaw: -Math.PI / 2, y: 0.31, withPad: true },
       );
+    }
+    // Rows along central cross-courtyard walkways (fwd = 54 and fwd = 92)
+    for (const side of [-21, -15, 17, 23]) {
+      benchSpecs.push(
+        { side, fwd: 56.8, yaw: 0, y: 0.34, withPad: true },
+        { side, fwd: 89.2, yaw: Math.PI, y: 0.34, withPad: true },
+      );
+    }
+    // 4 curved benches framing Flagpole Circular Island quadrants facing flagpole
+    for (const [dx, df] of [
+      [-8.6, -8.6],
+      [8.6, -8.6],
+      [-8.6, 8.6],
+      [8.6, 8.6],
+    ]) {
+      const side = this.flagpoleLocal.side + dx;
+      const fwd = this.flagpoleLocal.fwd + df;
+      const yaw = Math.atan2(-dx, df);
+      benchSpecs.push({ side, fwd, yaw, y: 0.34, withPad: false });
+    }
+    // Forecourt row in front of Nhà chơi Main Hall looking out to Flagpole Plaza
+    for (const side of [-11, -5.5, 7.5, 13]) {
+      benchSpecs.push({ side, fwd: 164.5, yaw: 0, y: 0.34, withPad: false });
+    }
+    // Shaded stone bench rows along left & right classroom wing walkways
+    for (const bf of [42, 62, 72, 82, 102, 112, 120, 142]) {
+      benchSpecs.push(
+        { side: -27.6, fwd: bf, yaw: Math.PI / 2, y: 0.34, withPad: false },
+        { side: 29.0, fwd: bf, yaw: -Math.PI / 2, y: 0.34, withPad: false },
+      );
+    }
+    // Spectator stone bench row overlooking rear sports yard
+    for (const side of [-22, -18, -10, -6]) {
+      benchSpecs.push({ side, fwd: 251.5, yaw: Math.PI, y: 0.24, withPad: true });
+    }
+    const benchAssets = createCampusBenchAssets();
+    for (const b of benchSpecs) {
+      const wp = this.toWorld(b.side, b.fwd);
+      this.benches.push({ ...b, x: wp.x, z: wp.z });
+      yard.add(createCampusBench(b.side, b.y, -b.fwd, b.yaw, benchAssets, { withPad: b.withPad }));
     }
     for (const [bx, bz, yaw] of [
       [-12.5, -52.5, 0],
@@ -1413,12 +1552,15 @@ export class HaiBaTrungSchoolCampus {
       if (df <= 1.4 && ds <= 11.0) return true;
       return false;
     }
-    // Block campus stone benches & bulletin boards
-    for (let bz = 62; bz <= 124; bz += 15.5) {
-      if (
-        Math.abs(fwd - bz) < 0.45 &&
-        (Math.abs(side + 28.0) < 0.95 || Math.abs(side - 29.3) < 0.95)
-      ) {
+    // Block all campus stone benches & bulletin boards
+    for (const b of this.benches) {
+      const dx = side - b.side;
+      const dz = b.fwd - fwd;
+      const cos = Math.cos(b.yaw);
+      const sin = Math.sin(b.yaw);
+      const lx = dx * cos - dz * sin;
+      const lz = dx * sin + dz * cos;
+      if (Math.abs(lx) < 0.96 && Math.abs(lz) < 0.42) {
         return false;
       }
     }
