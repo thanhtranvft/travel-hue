@@ -11,10 +11,6 @@ export class InputController {
       if (!key) return;
       e.preventDefault();
       this.keys.add(key);
-      if (!e.repeat && !this.drag.active) {
-        this.drag.yaw = 0;
-        this.recenterRequested = true;
-      }
     });
     addEventListener("keyup", (e) => {
       const key = drivingKey(e);
@@ -36,6 +32,25 @@ export class InputController {
     this.keys.clear();
     this.touch.reset();
   }
+  get hasKeyboardInput() {
+    return (
+      this.keys.has("w") ||
+      this.keys.has("arrowup") ||
+      this.keys.has("s") ||
+      this.keys.has("arrowdown") ||
+      this.keys.has("a") ||
+      this.keys.has("arrowleft") ||
+      this.keys.has("d") ||
+      this.keys.has("arrowright")
+    );
+  }
+  get touchVector() {
+    return {
+      active: this.touch.power > 0 && !this.hasKeyboardInput,
+      power: this.touch.power,
+      angle: this.touch.angle,
+    };
+  }
   get throttle() {
     const keyboard =
       (this.keys.has("w") || this.keys.has("arrowup") ? 1 : 0) -
@@ -52,7 +67,7 @@ export class InputController {
     return this.keys.has(" ") || this.touch.braking;
   }
   get sprint() {
-    return this.keys.has("shift") || this.touch.throttle > 0.88;
+    return this.keys.has("shift") || this.touch.power > 0.85;
   }
 }
 

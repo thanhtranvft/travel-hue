@@ -1,4 +1,4 @@
-import { stickInput } from "./touchMath.js";
+import { stickInput, stickVector } from "./touchMath.js";
 
 export function bindMultiTouchAction(button, handler, now = () => Date.now()) {
   if (!button || typeof handler !== "function") return;
@@ -40,6 +40,10 @@ export class TouchControls {
     this.drag = drag;
     this.throttle = 0;
     this.steer = 0;
+    this.power = 0;
+    this.angle = 0;
+    this.dirX = 0;
+    this.dirY = 0;
     this.braking = false;
     this.moveId = null;
     this.cameraId = null;
@@ -49,7 +53,10 @@ export class TouchControls {
     const brake = document.querySelector("#touch-brake");
     if (this.stick) {
       this.stick.addEventListener("pointerdown", (e) => {
-        if (this.moveId !== null || (e.pointerType === "mouse" && e.button !== 0))
+        if (
+          (this.moveId !== null && !e.isPrimary) ||
+          (e.pointerType === "mouse" && e.button !== 0)
+        )
           return;
         const bounds = this.stick.getBoundingClientRect();
         if (!(bounds.width > 0)) return;
@@ -62,7 +69,7 @@ export class TouchControls {
           x: bounds.left + bounds.width / 2,
           y: bounds.top + bounds.height / 2,
         };
-        this.radius = bounds.width * 0.32;
+        this.radius = bounds.width * 0.34;
         this.stick.classList.add("engaged");
         this.move(e);
       });
@@ -75,8 +82,8 @@ export class TouchControls {
         this.stick.addEventListener(event, (e) => {
           if (e.pointerId === this.moveId) {
             this.moveId = null;
-            this.throttle = this.steer = 0;
-            if (this.thumb) this.thumb.style.transform = "translate(0px,0px)";
+            this.throttle = this.steer = this.power = this.angle = this.dirX = this.dirY = 0;
+            if (this.thumb?.style) this.thumb.style.transform = "translate(0px,0px)";
             this.stick.classList.remove("engaged");
           }
         });
@@ -116,14 +123,18 @@ export class TouchControls {
       !Number.isFinite(event.clientY)
     )
       return;
-    const value = stickInput(
-      event.clientX - this.center.x,
-      event.clientY - this.center.y,
-      this.radius,
-    );
+    const dx = event.clientX - this.center.x;
+    const dy = event.clientY - this.center.y;
+    const value = stickInput(dx, dy, this.radius);
+    const vec = stickVector(dx, dy, this.radius);
     this.throttle = value.throttle;
     this.steer = value.steer;
-    this.thumb.style.transform = `translate(${value.x}px,${value.y}px)`;
+    this.power = vec.power;
+    this.angle = vec.angle;
+    this.dirX = vec.dirX;
+    this.dirY = vec.dirY;
+    if (this.thumb?.style)
+      this.thumb.style.transform = `translate(${vec.x}px,${vec.y}px)`;
   }
   bindCamera(surface) {
     if (!surface) return;
@@ -178,10 +189,10 @@ export class TouchControls {
   }
   reset() {
     this.moveId = this.cameraId = this.brakeId = null;
-    this.throttle = this.steer = 0;
+    this.throttle = this.steer = this.power = this.angle = this.dirX = this.dirY = 0;
     this.braking = false;
     this.drag.active = false;
-    this.thumb.style.transform = "translate(0px,0px)";
+    if (this.thumb?.style) this.thumb.style.transform = "translate(0px,0px)";
     document
       .querySelectorAll(".touch-controls .engaged, #game.engaged")
       .forEach((e) => e.classList.remove("engaged"));

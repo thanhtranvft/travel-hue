@@ -62,7 +62,11 @@ export class BicycleMotion {
       );
     }
     if (Math.abs(this.speed) < 0.025 && !throttle) this.speed = 0;
-    const yawRate = (this.speed * Math.tan(this.steering)) / 1.18;
+    const turnSpeed =
+      this.speed >= 0
+        ? Math.max(this.speed, throttle > 0.05 ? 2.2 : 0)
+        : this.speed;
+    const yawRate = (turnSpeed * Math.tan(this.steering)) / 1.18;
     this.heading = wrapAngle(this.heading + yawRate * dt);
     this.lean = damp(
       this.lean,

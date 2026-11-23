@@ -354,7 +354,8 @@ export class GamePresenter {
       steer = this.input.steer,
       brake = this.input.brake,
       sprint = this.input.sprint;
-    if (this.auto && (throttle || steer || brake)) {
+    const touchVec = this.input.touchVector;
+    if (this.auto && (throttle || steer || brake || touchVec?.active)) {
       this.auto = false;
       this.syncMode();
     }
@@ -412,6 +413,32 @@ export class GamePresenter {
         steer = 0;
         this.syncMode();
       }
+    } else if (touchVec?.active) {
+      const viewYaw =
+        (Number.isFinite(this.cameraYaw)
+          ? this.cameraYaw
+          : this.bike.motion.heading) +
+        (Number.isFinite(this.input.drag.yaw) ? this.input.drag.yaw : 0);
+      const desiredHeading = wrapAngle(viewYaw - touchVec.angle);
+      const delta = wrapAngle(desiredHeading - this.bike.motion.heading);
+      const absDelta = Math.abs(delta);
+      const onBike = this.bike.transportMode === "bike";
+
+      if (absDelta < 0.04) {
+        steer = 0;
+      } else {
+        steer = THREE.MathUtils.clamp(delta / (onBike ? 0.55 : 0.42), -1, 1);
+      }
+      const turnThrottleFactor =
+        absDelta > 1.75
+          ? onBike
+            ? 0.45
+            : 0.35
+          : absDelta > 0.9
+            ? 0.72
+            : 1;
+      throttle = touchVec.power * turnThrottleFactor;
+      sprint = sprint && absDelta < 1.1;
     }
     if (
       !Number.isFinite(this.bike.position.x) ||
@@ -431,30 +458,42 @@ export class GamePresenter {
     }
     const speedMultiplier = this.charms?.speedMultiplier || 1;
     this.bike.update(dt, throttle, steer, brake, { sprint, speedMultiplier });
+    const nextX = this.bike.position.x,
+      nextZ = this.bike.position.z;
     if (
-      !Number.isFinite(this.bike.position.x) ||
-      !Number.isFinite(this.bike.position.z) ||
-      !this.world.canRide(
-        this.bike.position.x,
-        this.bike.position.z,
-        this.bike.position.y,
-      )
+      !Number.isFinite(nextX) ||
+      !Number.isFinite(nextZ) ||
+      !this.world.canRide(nextX, nextZ, this.bike.position.y)
     ) {
       if (
-        Number.isFinite(this.bike.position.x) &&
-        Number.isFinite(this.bike.position.z) &&
-        !regionContains(
-          this.world.region,
-          this.bike.position.x,
-          this.bike.position.z,
-        )
+        Number.isFinite(nextX) &&
+        Number.isFinite(nextZ) &&
+        this.world.canRide(nextX, oldZ, this.bike.position.y)
       ) {
-        this.boundaryHint.hidden = false;
-        this.boundaryHintUntil = this.elapsed + 2;
+        this.bike.position.x = nextX;
+        this.bike.position.z = oldZ;
+        this.bike.motion.speed *= 0.92;
+      } else if (
+        Number.isFinite(nextX) &&
+        Number.isFinite(nextZ) &&
+        this.world.canRide(oldX, nextZ, this.bike.position.y)
+      ) {
+        this.bike.position.x = oldX;
+        this.bike.position.z = nextZ;
+        this.bike.motion.speed *= 0.92;
+      } else {
+        if (
+          Number.isFinite(nextX) &&
+          Number.isFinite(nextZ) &&
+          !regionContains(this.world.region, nextX, nextZ)
+        ) {
+          this.boundaryHint.hidden = false;
+          this.boundaryHintUntil = this.elapsed + 2;
+        }
+        this.bike.position.x = oldX;
+        this.bike.position.z = oldZ;
+        this.bike.motion.speed = 0;
       }
-      this.bike.position.x = oldX;
-      this.bike.position.z = oldZ;
-      this.bike.motion.speed = 0;
     }
     const targetY = this.world.groundAt(
       this.bike.position.x,
@@ -599,9 +638,31 @@ export class GamePresenter {
         : 0;
       this.input.recenterRequested = false;
     }
-    this.cameraYaw +=
-      wrapAngle(this.bike.motion.heading - this.cameraYaw) *
-      (1 - Math.exp(-12 * dt));
+    const touchVec = !this.auto ? this.input.touchVector : null;
+    let followRate = 12;
+    let shouldEaseDrag =
+      !this.input.drag.active && Math.abs(this.bike.motion.speed) > 0.25;
+    if (touchVec?.active) {
+      const forwardAlign = Math.cos(touchVec.angle);
+      if (forwardAlign > 0.35) {
+        followRate = 2.8 + 7.2 * forwardAlign;
+      } else if (forwardAlign > -0.25) {
+        followRate = 0.85;
+        shouldEaseDrag = false;
+      } else {
+        followRate = 0;
+        shouldEaseDrag = false;
+      }
+    }
+    if (followRate > 0) {
+      this.cameraYaw +=
+        wrapAngle(this.bike.motion.heading - this.cameraYaw) *
+        (1 - Math.exp(-followRate * dt));
+    }
+    if (shouldEaseDrag && Number.isFinite(this.input.drag.yaw)) {
+      this.input.drag.yaw = damp(this.input.drag.yaw, 0, 2.8, dt);
+      if (Math.abs(this.input.drag.yaw) < 0.002) this.input.drag.yaw = 0;
+    }
     const dragYaw = Number.isFinite(this.input.drag.yaw)
       ? this.input.drag.yaw
       : 0;
