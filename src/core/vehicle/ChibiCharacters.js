@@ -1046,7 +1046,7 @@ function buildAnimalRig(avatarId) {
   };
 }
 
-export function buildChibiActor(avatarId = "boy") {
+export function buildChibiActor(avatarId = "boy", { includeBike = true } = {}) {
   const id = cleanAvatarId(avatarId);
   const meta = getAvatarMeta(id);
   const actor = new THREE.Group();
@@ -1054,10 +1054,12 @@ export function buildChibiActor(avatarId = "boy") {
 
   const character =
     meta.kind === "human" ? buildHumanRig(id) : buildAnimalRig(id);
-  const bike = buildChibiBicycle(meta.bikeColor);
-  bike.group.visible = false;
+  const bike = includeBike ? buildChibiBicycle(meta.bikeColor) : null;
+  if (bike) {
+    bike.group.visible = false;
+    actor.add(bike.group);
+  }
 
-  actor.add(bike.group);
   actor.add(character.root);
 
   return {
@@ -1066,8 +1068,8 @@ export function buildChibiActor(avatarId = "boy") {
     actor,
     character,
     bike,
-    wheels: bike.wheels,
-    crank: bike.crank,
+    wheels: bike?.wheels || [],
+    crank: bike?.crank || null,
     headTopY: character.headTopY,
   };
 }
@@ -1086,16 +1088,18 @@ export function animateChibiActor(
   if (!rig || !rig.character) return;
   const char = rig.character;
   const bike = rig.bike;
-  const isBike = stance === "bike";
+  const isBike = Boolean(bike) && stance === "bike";
   const isRun = stance === "run";
   const isWalk = stance === "walk";
   const absSpeed = Math.abs(speed);
 
-  bike.group.visible = isBike;
-  if (isBike && bike.steerPivot) {
-    bike.steerPivot.rotation.y = steer * 0.42;
-    bike.pedalL.rotation.x = -pedalPhase;
-    bike.pedalR.rotation.x = -pedalPhase;
+  if (bike) {
+    bike.group.visible = isBike;
+    if (isBike && bike.steerPivot) {
+      bike.steerPivot.rotation.y = steer * 0.42;
+      bike.pedalL.rotation.x = -pedalPhase;
+      bike.pedalR.rotation.x = -pedalPhase;
+    }
   }
 
   if (char.kind === "human") {

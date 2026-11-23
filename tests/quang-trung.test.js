@@ -253,6 +253,29 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
       counts.boys > 0 && counts.girls > 0,
       "Quang Trung campus has both boy and girl students",
     );
+    for (const s of campus.students.students) {
+      assert.equal(s.rig.bike, null, "Quang Trung students do not have bicycles");
+      assert.notEqual(s.animState.stance, "bike", "Quang Trung students walk or stand, never ride");
+      let hasBikeMesh = false;
+      s.rig.actor.traverse((o) => {
+        if (o.name === "chibi-bicycle") hasBikeMesh = true;
+      });
+      assert.equal(hasBikeMesh, false, "no chibi-bicycle descendant under Quang Trung student");
+    }
+
+    const teachersGroup = campus.group.getObjectByName("quang-trung-teachers-group");
+    assert.ok(teachersGroup, "group of chatting female teachers in áo dài built");
+    const teacherActors = [];
+    teachersGroup.traverse((o) => {
+      if (o.name === "quang-trung-ao-dai-teacher") teacherActors.push(o);
+    });
+    assert.equal(teacherActors.length, 4, "4 female teachers wearing áo dài in group");
+    const teacherPos = campus.toWorld(6.8, 24.8);
+    assert.equal(campus.inCampus(teacherPos.x, teacherPos.z), true, "teachers positioned inside campus");
+    assert.equal(campus.canRide(teacherPos.x, teacherPos.z), false, "teacher chat circle blocks riding through");
+    const yawBefore = teacherActors[0].rotation.y;
+    campus.update(2.4);
+    assert.notEqual(teacherActors[0].rotation.y, yawBefore, "teachers animate subtly while chatting");
 
     const yardPt = campus.toWorld(0, 12);
     assert.equal(campus.groundAt(yardPt.x, yardPt.z), 0.3);

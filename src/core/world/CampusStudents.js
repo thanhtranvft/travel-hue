@@ -17,6 +17,7 @@ export class CampusStudents {
     chatSpots = [],
     distanceCutoff = 120,
     scale = 1.0,
+    includeBike = false,
   } = {}) {
     this.target = parent || scene;
     this.toWorld = toWorld || ((side, fwd) => ({ x: side, z: fwd }));
@@ -30,7 +31,7 @@ export class CampusStudents {
 
     for (const spec of walkers) {
       const gender = spec.gender === "girl" ? "girl" : "boy";
-      const rig = buildChibiActor(gender);
+      const rig = buildChibiActor(gender, { includeBike });
       const pts = (spec.points || []).map(([side, fwd]) => this.toWorld(side, fwd));
       if (pts.length < 2) continue;
 
@@ -97,7 +98,7 @@ export class CampusStudents {
         const wz = center.z + Math.sin(a) * radius;
         const y = this.groundAt(wx, wz) ?? 0.34;
 
-        const rig = buildChibiActor(gender);
+        const rig = buildChibiActor(gender, { includeBike });
         rig.actor.name = `campus-student-${gender}`;
         rig.actor.userData.studentGender = gender;
         rig.actor.scale.setScalar(spot.scale || scale);

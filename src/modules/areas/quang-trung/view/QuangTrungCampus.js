@@ -20,6 +20,7 @@ import {
   buildRoseGardenCafe,
   buildNguyenHueCafeStrip,
 } from "./QuangTrungCafes.js";
+import { createTeachersChatGroup } from "./QuangTrungTeachers.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -1123,6 +1124,7 @@ export class QuangTrungCampus {
     this.buildStreetVendors();
     this.buildCafes();
     this.buildStudents();
+    this.buildTeachers();
 
     world.scene.add(this.group);
   }
@@ -1814,6 +1816,7 @@ export class QuangTrungCampus {
     });
 
     this.sidewalkVendors = sidewalk;
+    this.animatedObjects.push(sidewalk);
     this.group.add(sidewalk);
   }
 
@@ -1876,8 +1879,23 @@ export class QuangTrungCampus {
       walkers,
       chatSpots,
       scale: 0.86,
+      includeBike: false,
     });
     this.animatedObjects.push(...this.students.animatedObjects);
+  }
+
+  buildTeachers() {
+    const center = this.toWorld(6.8, 24.8);
+    const chat = createTeachersChatGroup();
+    chat.group.position.set(center.x, 0.3, center.z);
+    chat.group.rotation.y = this.facingGateYaw;
+    this.teachersCenter = center;
+    this.teachersGroup = chat.group;
+    this.teachersActors = chat.actors;
+    this.teachersUpdate = chat.update;
+    this.animatedObjects.push(chat.group);
+    this.group.add(chat.group);
+    this.obstacles.push({ side: 6.8, fwd: 24.8, radius: 1.65 });
   }
 
   groundAt(wx, wz, referenceY) {
@@ -1949,6 +1967,19 @@ export class QuangTrungCampus {
       this.sidewalkVendors.visible = inRange;
       if (inRange) {
         for (const fn of this.vendorAnimations) fn(time);
+      }
+    }
+
+    if (this.teachersGroup && this.teachersCenter) {
+      const inRange =
+        !playerPos ||
+        Math.hypot(
+          playerPos.x - this.teachersCenter.x,
+          playerPos.z - this.teachersCenter.z,
+        ) < 120;
+      this.teachersGroup.visible = inRange;
+      if (inRange) {
+        this.teachersUpdate?.(time);
       }
     }
 

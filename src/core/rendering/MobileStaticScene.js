@@ -15,6 +15,7 @@ export function optimizeMobileStaticScene(world) {
       ...(world.haiBaTrungCampus?.animatedObjects || []),
       ...(world.nguyenChiDieuCampus?.animatedObjects || []),
       ...(world.caoThangCampus?.animatedObjects || []),
+      ...(world.quangTrungCampus?.animatedObjects || []),
       ...(world.vincomPlaza?.animatedObjects || []),
     ]),
     batches = new Map(),
@@ -23,6 +24,7 @@ export function optimizeMobileStaticScene(world) {
     remainingObstacles = world.cameraObstacles.slice();
   world.scene.updateMatrixWorld(true);
   const collect = (object, dynamic = false) => {
+    if (!object.visible) return;
     dynamic ||= excluded.has(object);
     if (dynamic) return;
     const material = object.material;
