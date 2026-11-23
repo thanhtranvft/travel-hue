@@ -63,7 +63,7 @@ function createAsphaltTexture(mobile = false) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = mobile ? 2 : 4;
+  texture.anisotropy = 4;
   return texture;
 }
 
@@ -101,7 +101,7 @@ function createConcreteTexture(mobile = false) {
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = mobile ? 2 : 4;
+  texture.anisotropy = 4;
   return texture;
 }
 

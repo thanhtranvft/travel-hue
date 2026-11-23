@@ -31,13 +31,13 @@ document.querySelector("#app").innerHTML = `
   <div class="hud">
     <div class="topbar">
       <div class="brand"><div><small>Huế · City Tour</small><h1>Chibi dạo phố Huế</h1><div class="map-note">Tọa độ OSM · kiến trúc ước lượng</div></div><div class="brand-account" id="brand-account" hidden><span id="current-user-name"></span><button id="logout-btn" type="button" title="Đăng xuất để đổi tên">Đăng xuất</button></div></div>
-      <div class="tour-toolbar"><button id="free-roam" class="mode-pill"><span id="mode-label">Đang đứng · Vẫy tay</span></button><button id="transport-toggle" type="button" title="Chuyển Đi bộ / Đạp xe [E]" aria-pressed="false">🚶 Đi bộ</button><button id="avatar-toggle" type="button" title="Đổi mẫu nhân vật Chibi" aria-expanded="false">🎭 Nhân vật</button><button id="autopilot">T · Tham quan</button><button id="reset" title="Về đầu khu vực [R]">↺</button></div>
+      <div class="tour-toolbar"><button id="free-roam" class="mode-pill"><span id="mode-label">Đang đứng · Vẫy tay</span></button><button id="transport-toggle" type="button" title="Chuyển Đi bộ / Đạp xe [E]" aria-pressed="false">🚶 Đi bộ</button><button id="avatar-toggle" type="button" title="Đổi mẫu nhân vật Chibi" aria-expanded="false">🎭 Nhân vật</button><button id="map-toggle" type="button" title="Hiện / Ẩn bản đồ khu vực [M]" aria-pressed="false" aria-expanded="false" aria-controls="map-panel">🗺 Bản đồ</button><button id="autopilot">T · Tham quan</button><button id="reset" title="Về đầu khu vực [R]">↺</button></div>
     </div>
     <nav class="destinations" aria-label="Chọn khu vực"><button id="toggle-districts" aria-expanded="true" aria-controls="district-list">☰ Khu vực <span aria-hidden="true">⌄</span></button><div id="district-list">${districts.map((p, i) => `<button data-district="${p.id}" aria-pressed="false" style="--district-color:${p.color}"><small>0${i + 1}</small><span>${p.title}<em>${p.subtitle}</em></span><b>↗</b></button>`).join("")}<p>Chọn để đến ngay · T để tự lái</p></div></nav>
     <div class="utility-toolbar"><div class="utility-buttons"><button id="audio-toggle" aria-pressed="false">♫ Bật nhạc</button><button id="landscape-toggle" aria-pressed="false">↔ Chơi ngang</button></div><div id="sound-settings" hidden><label>Âm lượng <input id="audio-volume" type="range" min="0" max="100" value="45" aria-label="Âm lượng game"></label><span id="sound-location">Giai điệu bên sông Hương</span></div><span id="audio-status" role="status"></span></div>
     <div class="bottom">
-      <section class="map-panel" id="map-panel"><button id="expand-map" title="Mở rộng bản đồ [M]">M · BẢN ĐỒ KHU VỰC ↗</button><div class="map-area-title" id="map-area-title">Khoa Quốc tế → Tràng Tiền</div><canvas id="minimap" width="480" height="340" aria-label="Bản đồ khu vực và tọa độ di chuyển"></canvas><div class="map-coords" id="map-coords">16.45898°N · 107.58096°E</div><div class="map-local-coords" id="map-local-coords">X: 313 m · Z: -283 m</div><a id="open-osm" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Đối chiếu OSM ↗</a></section>
-      <div class="touch-controls"><div class="thumbstick" id="move-stick" role="group" aria-label="Cần lái bên trái: kéo nhẹ để đi bộ, kéo hết mức để chạy, hoặc rẽ"><span class="stick-arrows" aria-hidden="true">＋</span><span id="stick-thumb" aria-hidden="true"></span><span class="touch-caption">ĐI / RẼ</span></div><div class="camera-pad" id="look-pad" role="group" aria-label="Vùng vuốt bên phải để xoay góc nhìn"><span aria-hidden="true">⌖</span><span class="touch-caption">VUỐT NHÌN</span></div><button id="touch-transport" type="button" aria-label="Chuyển sang đạp xe đạp">🚲</button><button id="touch-brake" type="button" aria-label="Giữ để dừng">■<span>DỪNG</span></button></div>
+      <section class="map-panel" id="map-panel" hidden><div class="map-panel-head"><button id="expand-map" title="Mở rộng / Thu nhỏ bản đồ">BẢN ĐỒ KHU VỰC ↗</button><button id="close-map" type="button" title="Ẩn bản đồ [M]" aria-label="Ẩn bản đồ">✕</button></div><div class="map-area-title" id="map-area-title">Khoa Quốc tế → Tràng Tiền</div><canvas id="minimap" width="480" height="340" aria-label="Bản đồ khu vực và tọa độ di chuyển"></canvas><div class="map-coords" id="map-coords">16.45898°N · 107.58096°E</div><div class="map-local-coords" id="map-local-coords">X: 313 m · Z: -283 m</div><a id="open-osm" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Đối chiếu OSM ↗</a></section>
+      <div class="touch-controls"><div class="thumbstick" id="move-stick" role="group" aria-label="Cần lái bên trái: kéo nhẹ để đi bộ, kéo hết mức để chạy, hoặc rẽ"><span class="stick-arrows" aria-hidden="true">＋</span><span id="stick-thumb" aria-hidden="true"></span><span class="touch-caption">ĐI / RẼ</span></div><button id="touch-transport" type="button" aria-label="Chuyển sang đạp xe đạp">🚲</button></div>
       <div class="ride-panel"><div class="status"><strong id="destination">Quốc Học · Lê Lợi</strong><div id="distance">Đang đứng · Vẫy tay</div><div class="progress"><i id="progress"></i></div></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span></div><div class="guide"><b>WASD</b> đi/lái · <b>Shift</b> chạy · <b>E</b> xe đạp · <b>Space</b> dừng</div></div>
     </div>
   </div>
@@ -162,11 +162,22 @@ if (game) {
         game.travelTo(button.dataset.district),
       ),
     );
+  const mapPanelEl = document.querySelector("#map-panel");
+  const mapToggleBtn = document.querySelector("#map-toggle");
+  const setMapOpen = (open) => {
+    mapPanelEl.hidden = !open;
+    mapToggleBtn.setAttribute("aria-pressed", String(open));
+    mapToggleBtn.setAttribute("aria-expanded", String(open));
+    mapToggleBtn.classList.toggle("active", open);
+    if (open) game.drawMap();
+  };
+  mapToggleBtn.addEventListener("click", () => setMapOpen(mapPanelEl.hidden));
+  document
+    .querySelector("#close-map")
+    .addEventListener("click", () => setMapOpen(false));
   document
     .querySelector("#expand-map")
-    .addEventListener("click", () =>
-      document.querySelector("#map-panel").classList.toggle("expanded"),
-    );
+    .addEventListener("click", () => mapPanelEl.classList.toggle("expanded"));
   initializeMobileUI();
   initializeAudioUI(game.audio);
 } else {

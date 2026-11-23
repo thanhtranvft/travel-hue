@@ -8,12 +8,11 @@ import { buildingDetails } from "../shared/data/buildingCatalog.js";
 import { trafficBoard, postedBoard } from "./TrafficBoard.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
 
-function sign(text, width = 7, mobile = false) {
+function sign(text, width = 7) {
   const canvas = document.createElement("canvas");
-  canvas.width = mobile ? 512 : 1024;
-  canvas.height = mobile ? 80 : 160;
+  canvas.width = 1024;
+  canvas.height = 160;
   const c = canvas.getContext("2d");
-  if (mobile) c.scale(0.5, 0.5);
   c.fillStyle = "#174b56";
   c.fillRect(0, 0, 1024, 160);
   c.strokeStyle = "#f0ead6";
@@ -28,10 +27,7 @@ function sign(text, width = 7, mobile = false) {
   c.fillText(text, 512, 103);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  if (mobile) {
-    texture.generateMipmaps = false;
-    texture.minFilter = THREE.LinearFilter;
-  }
+  texture.anisotropy = 4;
   return new THREE.Mesh(
     new THREE.PlaneGeometry(width, width / 6.4),
     new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide }),

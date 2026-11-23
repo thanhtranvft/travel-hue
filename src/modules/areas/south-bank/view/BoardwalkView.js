@@ -72,7 +72,7 @@ function createLimWoodTexture(mobile = false) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = mobile ? 2 : 4;
+  texture.anisotropy = 4;
   return texture;
 }
 

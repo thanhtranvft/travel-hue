@@ -194,7 +194,7 @@ function createBridgeAsphaltTexture(mobile = false) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = mobile ? 2 : 4;
+  tex.anisotropy = 4;
   return tex;
 }
 
@@ -245,7 +245,7 @@ function createWalkwayStoneTexture(mobile = false) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.anisotropy = mobile ? 2 : 4;
+  tex.anisotropy = 4;
   return tex;
 }
 

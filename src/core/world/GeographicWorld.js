@@ -140,12 +140,11 @@ function polygonGeometry(points, height = 0) {
   g.rotateX(-Math.PI / 2);
   return g;
 }
-function board(title, subtitle, mobile = false) {
+function board(title, subtitle) {
   const canvas = document.createElement("canvas");
-  canvas.width = mobile ? 512 : 1024;
-  canvas.height = mobile ? 128 : 256;
+  canvas.width = 1024;
+  canvas.height = 256;
   const ctx = canvas.getContext("2d");
-  if (mobile) ctx.scale(0.5, 0.5);
   ctx.fillStyle = "#143c35";
   ctx.fillRect(0, 0, 1024, 256);
   ctx.strokeStyle = "#dfc78c";
@@ -163,10 +162,7 @@ function board(title, subtitle, mobile = false) {
   ctx.fillText(subtitle, 512, 182);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  if (mobile) {
-    texture.generateMipmaps = false;
-    texture.minFilter = THREE.LinearFilter;
-  }
+  texture.anisotropy = 4;
   const mesh = new THREE.Mesh(
     new THREE.PlaneGeometry(7, 1.75),
     new THREE.MeshStandardMaterial({

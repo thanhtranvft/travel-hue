@@ -18,7 +18,7 @@ export async function loadMobileTrees(world) {
     height = bounds.max.y - bounds.min.y,
     center = bounds.getCenter(new THREE.Vector3()),
     parts = [],
-    capacity = 24;
+    capacity = 42;
   template.traverse((o) => {
     if (!o.isMesh) return;
     const mesh = new THREE.InstancedMesh(o.geometry, o.material, capacity);
@@ -65,9 +65,9 @@ export async function loadMobileTrees(world) {
             i,
             d: (p.x - position.x) ** 2 + (p.z - position.z) ** 2,
           }))
-          .filter((p) => p.i % 7 !== 0 && p.d < 320 ** 2)
+          .filter((p) => p.d < 700 ** 2)
           .sort((a, b) => a.d - b.d),
-        near = ordered.filter((p) => p.d < 85 ** 2).slice(0, capacity),
+        near = ordered.filter((p) => p.d < 115 ** 2).slice(0, capacity),
         nearIds = new Set(near.map((p) => p.i));
       for (const [j, { p, i }] of near.entries()) {
         const scale = (i % 5 === 0 ? 3 : 6 + (i % 6)) / height;

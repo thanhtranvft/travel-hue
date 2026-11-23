@@ -32,6 +32,10 @@ export function optimizeMobileStaticScene(world) {
       material?.isMeshStandardMaterial &&
       !material.map &&
       !material.transparent &&
+      !material.vertexColors &&
+      !material.flatShading &&
+      !(material.emissive && material.emissive.getHex() !== 0) &&
+      !object.geometry?.attributes?.color &&
       !material.onBeforeCompile.toString().includes("landscapeTime") &&
       !material.isMeshPhysicalMaterial
     ) {

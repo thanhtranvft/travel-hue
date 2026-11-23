@@ -30,6 +30,15 @@ export class GameView {
       mapLocalCoords: document.querySelector("#map-local-coords"),
       osmLink: document.querySelector("#open-osm"),
     };
+    this.activeLandmarkKey = null;
+    this.lastShownLandmarkKey = null;
+    this.landmarkDismissAt = 0;
+  }
+  resetLandmarkNotice() {
+    this.activeLandmarkKey = null;
+    this.lastShownLandmarkKey = null;
+    this.landmarkDismissAt = 0;
+    this.hud.card?.classList.remove("visible");
   }
   syncMode(game) {
     const isBike = game.bike.transportMode === "bike";
@@ -103,13 +112,33 @@ export class GameView {
         near = lm;
       }
     }
-    game.hud.card.classList.toggle("visible", !!near);
-    if (near) {
-      game.hud.card.querySelector("h2").textContent = near.title;
-      game.hud.card.querySelector("p").textContent = near.description;
+    const nearKey = near ? near.id || near.title : null;
+    const now = Date.now();
+    if (near && nearKey) {
+      if (nearKey !== this.lastShownLandmarkKey) {
+        this.activeLandmarkKey = nearKey;
+        this.lastShownLandmarkKey = nearKey;
+        this.landmarkDismissAt = now + 4200;
+        game.hud.card.querySelector("h2").textContent = near.title;
+        game.hud.card.querySelector("p").textContent = near.description;
+        game.hud.card.classList.add("visible");
+      } else if (now >= this.landmarkDismissAt) {
+        game.hud.card.classList.remove("visible");
+      }
+    } else {
+      this.activeLandmarkKey = null;
+      this.lastShownLandmarkKey = null;
+      this.landmarkDismissAt = 0;
+      game.hud.card.classList.remove("visible");
     }
   }
   drawMap(game) {
+    if (
+      typeof document !== "undefined" &&
+      document.querySelector("#map-panel")?.hidden
+    ) {
+      return;
+    }
     if (game.world.drawMap) {
       const remotePlayers = game.online?.avatars?.entries
         ? [...game.online.avatars.entries.values()]

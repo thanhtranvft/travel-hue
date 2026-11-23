@@ -33,7 +33,7 @@ export class GamePresenter {
       57,
       innerWidth / innerHeight,
       0.1,
-      this.quality.mobile ? 1300 : 5000,
+      this.quality.mobile ? 2800 : 5000,
     );
     this.renderer = this.createRenderer(canvas);
     this.contextLost = false;
@@ -148,8 +148,17 @@ export class GamePresenter {
         return;
       if (e.repeat) return;
       const key = e.key.toLowerCase();
-      if (key === "m")
-        document.querySelector("#map-panel").classList.toggle("expanded");
+      if (key === "m") {
+        const toggleBtn = document.querySelector("#map-toggle");
+        if (toggleBtn) toggleBtn.click();
+        else {
+          const mapPanel = document.querySelector("#map-panel");
+          if (mapPanel) {
+            mapPanel.hidden = !mapPanel.hidden;
+            if (!mapPanel.hidden) this.drawMap();
+          }
+        }
+      }
       if (key === "t") this.toggleAutopilot();
       if (key === "e") this.toggleTransportMode();
       if (key === "r") this.reset();
@@ -158,8 +167,8 @@ export class GamePresenter {
   createRenderer(canvas) {
     const renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: !this.quality.mobile,
-      powerPreference: this.quality.mobile ? "default" : "high-performance",
+      antialias: true,
+      powerPreference: "high-performance",
     });
     renderer.setPixelRatio(this.quality.pixelRatio);
     if (innerWidth > 0 && innerHeight > 0) {
@@ -237,6 +246,7 @@ export class GamePresenter {
     this.impact.visible = false;
     this.boundaryHint.hidden = true;
     document.querySelector("#collision-toast").hidden = true;
+    this.view?.resetLandmarkNotice?.();
     const { x, z, heading } = district.spawn;
     this.bike.reset(x, z, heading);
     this.bike.position.y = this.world.groundAt(x, z);
@@ -640,6 +650,9 @@ export class GamePresenter {
   }
   resize() {
     if (innerWidth <= 0 || innerHeight <= 0) return;
+    const dpr = Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+    this.quality.pixelRatio = Math.min(dpr, this.quality.mobile ? 2 : 1.8);
+    this.renderer.setPixelRatio(this.quality.pixelRatio);
     this.camera.aspect = innerWidth / innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(innerWidth, innerHeight);
