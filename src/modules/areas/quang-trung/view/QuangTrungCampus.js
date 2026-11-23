@@ -12,6 +12,10 @@ import {
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { CampusStudents } from "../../../../core/world/CampusStudents.js";
+import {
+  createComNamHawker,
+  createXoiPushcartCouple,
+} from "./QuangTrungVendors.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -30,18 +34,15 @@ function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
 
 function createIceBlueWingWallTexture(floors = 3) {
   return createCanvasTexture(512, 512, (ctx, w, h) => {
-    // Pale ice-blue & crisp cream-white classroom facade matching Quang Trung photo
     ctx.fillStyle = "#b7cce0";
     ctx.fillRect(0, 0, w, h);
 
-    // Subtle stucco speckle
     for (let i = 0; i < 280; i++) {
       ctx.fillStyle =
         i % 2 === 0 ? "rgba(255,255,255,0.09)" : "rgba(70,105,145,0.06)";
       ctx.fillRect((i * 151) % w, (i * 271) % h, 5, 4);
     }
 
-    // Ground stone plinth
     ctx.fillStyle = "#8a9199";
     ctx.fillRect(0, h - 42, w, 42);
     ctx.fillStyle = "#f2f5f8";
@@ -50,17 +51,14 @@ function createIceBlueWingWallTexture(floors = 3) {
     const floorStep = Math.floor((h - 46) / floors);
     for (let f = 0; f < floors; f++) {
       const topY = f * floorStep;
-      // Crisp white veranda parapet / cornice slab
       ctx.fillStyle = "#f3f6f9";
       ctx.fillRect(0, topY, w, 16);
-      // Soft teal awning trim bar
       ctx.fillStyle = "#4d9bd9";
       ctx.fillRect(0, topY + 16, w, 7);
 
       const winY = topY + 34;
       const winH = Math.max(58, floorStep - 52);
 
-      // Left & right bay tall dark windows + center staircase white horizontal louvers
       for (const [wx, isLouver] of [
         [28, false],
         [192, true],
@@ -78,7 +76,6 @@ function createIceBlueWingWallTexture(floors = 3) {
         } else {
           ctx.fillStyle = "#1f3242";
           ctx.fillRect(wx, winY, 122, winH);
-          // Sky/tree reflection & crisp white security mullions
           ctx.fillStyle = "rgba(130, 185, 220, 0.24)";
           ctx.fillRect(wx + 6, winY + 6, 52, winH - 12);
           ctx.fillStyle = "#dbe4ec";
@@ -90,39 +87,115 @@ function createIceBlueWingWallTexture(floors = 3) {
   });
 }
 
-function createCheckeredSchoolyardTexture() {
-  // Checkered warm terracotta-rose & cool light-grey terrazzo pavers matching Quang Trung photo
-  return createCanvasTexture(
+function createQuangTrungBrickYardTexture() {
+  // Interlocking warm sandstone, cool granite-grey & terracotta-framed schoolyard pavers
+  const tex = createCanvasTexture(
     512,
     512,
     (ctx, w, h) => {
-      ctx.fillStyle = "#d5d2cc";
+      ctx.fillStyle = "#928b83";
       ctx.fillRect(0, 0, w, h);
 
-      const cell = 64;
-      for (let gx = 0; gx < w; gx += cell) {
-        for (let gy = 0; gy < h; gy += cell) {
-          const isRose = ((gx / cell + gy / cell) & 1) === 0;
-          ctx.fillStyle = isRose ? "#c78e84" : "#d9d7d1";
-          ctx.fillRect(gx + 1, gy + 1, cell - 2, cell - 2);
-          // Subtle recessed court circle / diagonal sheen
-          ctx.fillStyle = isRose
-            ? "rgba(255,235,228,0.09)"
-            : "rgba(90,88,82,0.06)";
-          ctx.fillRect(gx + 5, gy + 5, cell - 10, cell - 10);
+      const cols = 8;
+      const rows = 8;
+      const warmPalette = ["#ded7ca", "#d6cfc2", "#e3dcd0", "#d9d2c5"];
+      const coolPalette = ["#d2d4cf", "#c9ccc7", "#d8dad5"];
+      const accentPalette = ["#c48f7e", "#bc8675", "#cb9685"];
+      const gap = 3;
+
+      for (let c = 0; c < cols; c++) {
+        const x0 = Math.round((c * w) / cols);
+        const x1 = Math.round(((c + 1) * w) / cols);
+        const bw = x1 - x0 - gap;
+        const stagger = c % 2 === 1 ? Math.round(h / (rows * 2)) : 0;
+
+        for (let r = -1; r <= rows; r++) {
+          const wr = ((r % rows) + rows) % rows;
+          const y0 = Math.round((r * h) / rows) + stagger;
+          const y1 = Math.round(((r + 1) * h) / rows) + stagger;
+          const bh = y1 - y0 - gap;
+
+          const isAccentBand = c === 0 || c === 4 || wr === 0 || wr === 4;
+          const seed = (c * 43 + wr * 79) & 255;
+          const palette = isAccentBand
+            ? accentPalette
+            : (c + wr) % 2 === 0
+              ? warmPalette
+              : coolPalette;
+
+          ctx.fillStyle = palette[seed % palette.length];
+          ctx.fillRect(x0 + 1, y0 + 1, bw, bh);
+
+          // Crisp bevel highlight & shadow for individual paver depth
+          ctx.fillStyle = "rgba(255, 252, 246, 0.24)";
+          ctx.fillRect(x0 + 1, y0 + 1, bw, 2);
+          ctx.fillRect(x0 + 1, y0 + 1, 2, bh);
+          ctx.fillStyle = "rgba(70, 64, 58, 0.16)";
+          ctx.fillRect(x0 + 1, y0 + bh - 1, bw, 2);
         }
       }
 
-      // Terrazzo stone speckles
-      for (let i = 0; i < 900; i++) {
+      for (let i = 0; i < 1100; i++) {
         ctx.fillStyle =
-          i % 3 === 0 ? "rgba(75,72,68,0.09)" : "rgba(255,255,255,0.13)";
-        ctx.fillRect((i * 197) % w, (i * 331) % h, 3, 3);
+          i % 2 === 0 ? "rgba(72, 68, 62, 0.08)" : "rgba(255, 255, 252, 0.09)";
+        ctx.fillRect((i * 197 + 11) % w, (i * 331 + 23) % h, 2, 2);
       }
     },
-    14,
-    14,
+    1,
+    1,
   );
+  if (tex) tex.anisotropy = 8;
+  return tex;
+}
+
+function createCentralLaneTexture() {
+  const tex = createCanvasTexture(
+    512,
+    512,
+    (ctx, w, h) => {
+      ctx.fillStyle = "#b0aba2";
+      ctx.fillRect(0, 0, w, h);
+
+      const cols = 4;
+      const rows = 8;
+      const granite = ["#dbd8d0", "#d4d1c9", "#e0ddd6", "#cfccc3"];
+      for (let c = 0; c < cols; c++) {
+        const x0 = Math.round((c * w) / cols);
+        const x1 = Math.round(((c + 1) * w) / cols);
+        for (let r = 0; r < rows; r++) {
+          const y0 = Math.round((r * h) / rows);
+          const y1 = Math.round(((r + 1) * h) / rows);
+          const seed = (c * 53 + r * 97) & 255;
+          ctx.fillStyle = granite[seed % granite.length];
+          ctx.fillRect(x0 + 2, y0 + 2, x1 - x0 - 4, y1 - y0 - 4);
+          ctx.fillStyle = "rgba(255,255,255,0.22)";
+          ctx.fillRect(x0 + 2, y0 + 2, x1 - x0 - 4, 2);
+        }
+      }
+      for (let i = 0; i < 700; i++) {
+        ctx.fillStyle =
+          i % 2 === 0 ? "rgba(70,68,62,0.06)" : "rgba(255,255,255,0.08)";
+        ctx.fillRect((i * 181) % w, (i * 293) % h, 2, 2);
+      }
+    },
+    1,
+    1,
+  );
+  if (tex) tex.anisotropy = 8;
+  return tex;
+}
+
+function createSoccerBallTexture() {
+  return createCanvasTexture(256, 128, (ctx, w, h) => {
+    ctx.fillStyle = "#f4f6f8";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#1f2428";
+    for (let x = 22; x < w; x += 52) {
+      for (let y = 22; y < h; y += 44) {
+        ctx.fillRect(x - 10, y - 10, 20, 20);
+      }
+    }
+  });
 }
 
 function createBannerTexture(topText, bottomText, bg = "#0b68bd") {
@@ -160,7 +233,6 @@ function createStageBackdropTexture() {
     ctx.lineWidth = 10;
     ctx.strokeRect(24, 24, w - 48, h - 48);
 
-    // Subtle red curtain valance at top
     ctx.fillStyle = "#b92228";
     ctx.fillRect(24, 24, w - 48, 56);
 
@@ -175,6 +247,32 @@ function createStageBackdropTexture() {
     ctx.fillStyle = "#d9ecff";
     ctx.font = "600 32px 'Be Vietnam Pro', Arial, sans-serif";
     ctx.fillText("83 NGUYỄN HUỆ · PHƯỜNG THUẬN HÓA · TP. HUẾ", w / 2, 360, w - 100);
+  });
+}
+
+function createNoticeBoardTexture() {
+  return createCanvasTexture(512, 320, (ctx, w, h) => {
+    ctx.fillStyle = "#0e67be";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#b92228";
+    ctx.fillRect(14, 14, w - 28, 58);
+    ctx.fillStyle = "#fff8dc";
+    ctx.fillRect(18, 82, w - 36, h - 100);
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffe57a";
+    ctx.font = "bold 26px 'Be Vietnam Pro', Arial, sans-serif";
+    ctx.fillText("BẢNG TIN LIÊN ĐỘI · HOA ĐIỂM MƯỜI", w / 2, 43, w - 40);
+
+    ctx.fillStyle = "#1a4d80";
+    ctx.font = "bold 22px 'Be Vietnam Pro', Arial, sans-serif";
+    ctx.fillText("THI ĐUA DẠY TỐT - HỌC TỐT", w / 2, 126, w - 60);
+    ctx.fillStyle = "#2b6b3e";
+    ctx.font = "600 18px 'Be Vietnam Pro', Arial, sans-serif";
+    ctx.fillText("5 ĐIỀU BÁC HỒ DẠY THIẾU NIÊN NHI ĐỒNG", w / 2, 174, w - 60);
+    ctx.fillStyle = "#c9382b";
+    ctx.fillText("AN TOÀN GIAO THÔNG CỔNG TRƯỜNG", w / 2, 224, w - 60);
   });
 }
 
@@ -238,20 +336,78 @@ function createHipRoofMesh(length, depth, ridgeHeight, material) {
   return mesh;
 }
 
+function createRoundedTreeCurb(x, y, z, outerR = 1.24) {
+  const curbGroup = new THREE.Group();
+  curbGroup.name = "quang-trung-tree-curb";
+  curbGroup.position.set(x, y, z);
+
+  // Rounded masonry ring via LatheGeometry (whitewashed base + sky-blue cap lip)
+  const innerR = outerR - 0.22;
+  const wallProfile = [
+    new THREE.Vector2(innerR, 0),
+    new THREE.Vector2(outerR + 0.04, 0),
+    new THREE.Vector2(outerR, 0.24),
+    new THREE.Vector2(outerR + 0.05, 0.25),
+    new THREE.Vector2(outerR + 0.05, 0.31),
+    new THREE.Vector2(innerR - 0.02, 0.31),
+    new THREE.Vector2(innerR, 0.24),
+    new THREE.Vector2(innerR, 0),
+  ];
+  const curbWall = new THREE.Mesh(
+    new THREE.LatheGeometry(wallProfile, 24),
+    mat("#f2f5f8", 0.78),
+  );
+  curbWall.castShadow = curbWall.receiveShadow = true;
+
+  const blueCoping = new THREE.Mesh(
+    new THREE.TorusGeometry(outerR - 0.08, 0.075, 8, 24),
+    mat("#2479cb", 0.62, 0.05),
+  );
+  blueCoping.rotation.x = Math.PI / 2;
+  blueCoping.position.y = 0.295;
+  blueCoping.receiveShadow = true;
+
+  // Dark rich garden soil bed & low circular grass collar inside curb
+  const soil = new THREE.Mesh(
+    new THREE.CylinderGeometry(innerR - 0.01, innerR, 0.22, 20),
+    mat("#4e3c2b", 0.96),
+  );
+  soil.position.y = 0.11;
+  soil.receiveShadow = true;
+
+  const grassRing = new THREE.Mesh(
+    new THREE.CylinderGeometry(innerR - 0.06, innerR - 0.04, 0.04, 20),
+    mat("#468538", 0.92),
+  );
+  grassRing.position.y = 0.23;
+  grassRing.receiveShadow = true;
+
+  curbGroup.add(curbWall, blueCoping, soil, grassRing);
+  return curbGroup;
+}
+
 function createBroadShadeTree(x, y, z, scale = 1, seed = 1) {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = seed * 1.618;
   const trunkMat = mat("#5e4b3a", 0.92);
   const trunkH = 3.4 * scale;
-  const trunkR = 0.28 * scale;
+  const trunkR = 0.27 * scale;
   const trunk = new THREE.Mesh(
     new THREE.CylinderGeometry(trunkR * 0.68, trunkR * 1.25, trunkH, 8),
     trunkMat,
   );
-  trunk.position.y = trunkH / 2;
+  trunk.position.y = trunkH / 2 + 0.15;
   trunk.castShadow = trunk.receiveShadow = true;
   g.add(trunk);
+
+  // Whitewashed trunk base common in Hue schools
+  const limeBand = new THREE.Mesh(
+    new THREE.CylinderGeometry(trunkR * 0.92, trunkR * 1.28, 0.85, 8),
+    mat("#eef2f6", 0.85),
+  );
+  limeBand.position.y = 0.56;
+  g.add(limeBand);
 
   for (let b = 0; b < 4; b++) {
     const a = (b * Math.PI * 2) / 4 + 0.4;
@@ -261,7 +417,7 @@ function createBroadShadeTree(x, y, z, scale = 1, seed = 1) {
     );
     branch.position.set(
       Math.cos(a) * 0.72 * scale,
-      trunkH + 0.65 * scale,
+      trunkH + 0.72 * scale,
       Math.sin(a) * 0.72 * scale,
     );
     branch.rotation.z = -Math.cos(a) * 0.64;
@@ -272,18 +428,18 @@ function createBroadShadeTree(x, y, z, scale = 1, seed = 1) {
 
   const greens = ["#2f6b2b", "#3d7c35", "#4f8f40", "#629d4c"];
   [
-    [0, trunkH + 2.1 * scale, 0, 2.45 * scale, 0.58],
-    [1.65 * scale, trunkH + 1.55 * scale, 0.9 * scale, 1.8 * scale, 0.56],
-    [-1.6 * scale, trunkH + 1.6 * scale, 0.85 * scale, 1.82 * scale, 0.56],
-    [0.3 * scale, trunkH + 1.5 * scale, -1.65 * scale, 1.75 * scale, 0.58],
-    [-1.0 * scale, trunkH + 2.2 * scale, -0.9 * scale, 1.6 * scale, 0.54],
+    [0, trunkH + 2.1 * scale, 0, 2.35 * scale, 0.58],
+    [1.6 * scale, trunkH + 1.55 * scale, 0.9 * scale, 1.72 * scale, 0.56],
+    [-1.55 * scale, trunkH + 1.6 * scale, 0.85 * scale, 1.74 * scale, 0.56],
+    [0.3 * scale, trunkH + 1.5 * scale, -1.55 * scale, 1.68 * scale, 0.58],
+    [-0.95 * scale, trunkH + 2.15 * scale, -0.85 * scale, 1.54 * scale, 0.54],
   ].forEach(([cx, cy, cz, r, sy], i) => {
     const c = new THREE.Mesh(
       new THREE.DodecahedronGeometry(r, 1),
       mat(greens[i % greens.length], 0.86),
     );
     c.position.set(cx, cy, cz);
-    c.scale.set(1.24, sy, 1.2);
+    c.scale.set(1.22, sy, 1.18);
     c.castShadow = c.receiveShadow = true;
     g.add(c);
   });
@@ -303,7 +459,6 @@ function createBuntingStrand(pA, pB, sag = 0.55) {
   const count = Math.floor(dist / step);
   const yaw = Math.atan2(dx, dz);
 
-  // Thin cord segments
   const cord = new THREE.Mesh(
     new THREE.BoxGeometry(0.03, 0.03, dist),
     mat("#ebe7dc", 0.6),
@@ -363,25 +518,53 @@ function createBasketballHoop(x, y, z, yaw = 0) {
   return g;
 }
 
-function createMiniGoal(x, y, z, yaw = 0) {
+function createMiniGoal(x, y, z, yaw = 0, name = "quang-trung-mini-goal") {
   const g = new THREE.Group();
-  g.name = "quang-trung-mini-goal";
+  g.name = name;
+  g.userData.isMiniGoal = true;
   g.position.set(x, y, z);
   g.rotation.y = yaw;
-  const w = 3.2;
-  const h = 1.95;
-  const d = 1.05;
-  const white = "#f2f5f8";
+
+  const w = 3.6;
+  const h = 2.0;
+  const d = 1.15;
+  const white = "#f4f7fa";
+  const postMat = mat(white, 0.42, 0.25);
+  const redTrim = "#d63b3b";
+
+  // Rounded tubular posts & crossbar
+  for (const sx of [-w / 2, w / 2]) {
+    const post = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, h, 10),
+      postMat,
+    );
+    post.position.set(sx, h / 2, 0);
+    post.castShadow = true;
+    const baseCuff = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.075, 0.085, 0.24, 10),
+      mat(redTrim, 0.55),
+    );
+    baseCuff.position.set(sx, 0.12, 0);
+    g.add(post, baseCuff);
+  }
+  const crossbar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.05, w + 0.1, 10),
+    postMat,
+  );
+  crossbar.rotation.z = Math.PI / 2;
+  crossbar.position.set(0, h, 0);
+  crossbar.castShadow = true;
+  g.add(crossbar);
+
   g.add(
-    box([0.09, h, 0.09], white, [-w / 2, h / 2, 0]),
-    box([0.09, h, 0.09], white, [w / 2, h / 2, 0]),
-    box([w + 0.09, 0.09, 0.09], white, [0, h, 0]),
-    box([0.07, 0.07, d], white, [-w / 2, 0.04, -d / 2]),
-    box([0.07, 0.07, d], white, [w / 2, 0.04, -d / 2]),
-    box([w, 0.07, 0.07], white, [0, 0.04, -d]),
+    box([0.07, 0.07, d], white, [-w / 2, 0.035, -d / 2]),
+    box([0.07, 0.07, d], white, [w / 2, 0.035, -d / 2]),
+    box([w, 0.07, 0.07], white, [0, 0.035, -d]),
     box([0.06, h, 0.06], white, [-w / 2, h / 2, -d * 0.72]),
     box([0.06, h, 0.06], white, [w / 2, h / 2, -d * 0.72]),
+    box([w, 0.06, 0.06], white, [0, h, -d * 0.72]),
   );
+
   const netMesh = new THREE.Mesh(
     new THREE.BoxGeometry(w - 0.12, h - 0.1, d * 0.7),
     new THREE.MeshStandardMaterial({
@@ -394,6 +577,194 @@ function createMiniGoal(x, y, z, yaw = 0) {
   );
   netMesh.position.set(0, h / 2, -d * 0.36);
   g.add(netMesh);
+  return g;
+}
+
+function createCourtLineStrip(w, d, x, y, z) {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, d),
+    new THREE.MeshStandardMaterial({
+      color: "#f7fafc",
+      transparent: true,
+      opacity: 0.86,
+      roughness: 0.88,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    }),
+  );
+  mesh.rotation.x = -Math.PI / 2;
+  mesh.position.set(x, y, z);
+  return mesh;
+}
+
+function createGuardHouse(x, y, z, yaw = 0) {
+  const g = new THREE.Group();
+  g.name = "quang-trung-guard-house";
+  g.position.set(x, y, z);
+  g.rotation.y = yaw;
+
+  g.add(
+    box([2.5, 0.16, 2.3], "#9ca4ad", [0, 0.08, 0]),
+    box([2.3, 2.35, 2.1], "#eaf2f9", [0, 1.32, 0]),
+    box([2.34, 0.75, 2.14], "#b7cce0", [0, 0.54, 0]),
+    box([1.45, 0.9, 0.08], "#24435c", [0, 1.65, 1.05]),
+    box([1.55, 0.12, 0.2], "#f4f7fa", [0, 1.18, 1.06]),
+    box([2.7, 0.24, 2.5], "#1c74c7", [0, 2.6, 0]),
+    box([2.85, 0.1, 2.65], "#f4f7fa", [0, 2.75, 0]),
+  );
+  const signTex = createBannerTexture("PHÒNG BẢO VỆ", "", "#0e67be");
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(1.75, 0.36),
+    new THREE.MeshStandardMaterial({
+      color: signTex ? "#ffffff" : "#0e67be",
+      map: signTex,
+      roughness: 0.45,
+    }),
+  );
+  sign.position.set(0, 2.32, 1.08);
+  g.add(sign);
+  return g;
+}
+
+function createSchoolDrumStand(x, y, z, yaw = 0) {
+  const g = new THREE.Group();
+  g.name = "quang-trung-school-drum";
+  g.position.set(x, y, z);
+  g.rotation.y = yaw;
+
+  const woodMat = mat("#6b3f23", 0.76);
+  for (const sx of [-0.36, 0.36]) {
+    const legA = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.25, 0.08), woodMat);
+    legA.position.set(sx, 0.56, 0);
+    legA.rotation.x = 0.42;
+    const legB = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.25, 0.08), woodMat);
+    legB.position.set(sx, 0.56, 0);
+    legB.rotation.x = -0.42;
+    g.add(legA, legB);
+  }
+  const barrel = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.32, 0.82, 14),
+    mat("#b82924", 0.55),
+  );
+  barrel.rotation.z = Math.PI / 2;
+  barrel.position.y = 0.96;
+  barrel.castShadow = true;
+  const head = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.31, 0.31, 0.84, 14),
+    mat("#ede1c2", 0.82),
+  );
+  head.rotation.z = Math.PI / 2;
+  head.position.y = 0.96;
+  g.add(barrel, head);
+  return g;
+}
+
+function createBikeShed(x, y, z, yaw = 0) {
+  const g = new THREE.Group();
+  g.name = "quang-trung-bike-shed";
+  g.position.set(x, y, z);
+  g.rotation.y = yaw;
+
+  const w = 3.2;
+  const d = 9.2;
+  const steel = "#dde3ea";
+  for (const sx of [-w / 2 + 0.2, w / 2 - 0.2]) {
+    for (const sz of [-d / 2 + 0.4, 0, d / 2 - 0.4]) {
+      g.add(box([0.1, 2.35, 0.1], steel, [sx, 1.18, sz]));
+    }
+  }
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(w + 0.5, 0.12, d + 0.6),
+    mat("#1d73c4", 0.52, 0.18),
+  );
+  roof.position.set(0, 2.42, 0);
+  roof.rotation.z = 0.1;
+  roof.castShadow = true;
+  g.add(roof);
+
+  // Miniature parked student bicycles
+  const bikeColors = ["#e04b5a", "#2684d4", "#31a354", "#f0b429", "#7b5cc7"];
+  for (let i = 0; i < 5; i++) {
+    const bz = -3.4 + i * 1.7;
+    const c = bikeColors[i];
+    const bike = new THREE.Group();
+    bike.position.set(0, 0, bz);
+    for (const wx of [-0.42, 0.42]) {
+      const wheel = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.032, 6, 14),
+        mat("#23272b", 0.85),
+      );
+      wheel.position.set(wx, 0.24, 0);
+      bike.add(wheel);
+    }
+    bike.add(
+      box([0.65, 0.05, 0.05], c, [0, 0.52, 0]),
+      box([0.05, 0.45, 0.05], c, [-0.15, 0.42, 0]),
+      box([0.05, 0.56, 0.05], "#cfd6dd", [0.32, 0.5, 0]),
+      box([0.12, 0.05, 0.34], "#262a2e", [0.32, 0.78, 0]),
+    );
+    g.add(bike);
+  }
+  return g;
+}
+
+function createGreenLibraryZone(x, y, z, yaw = 0) {
+  const g = new THREE.Group();
+  g.name = "quang-trung-green-library";
+  g.position.set(x, y, z);
+  g.rotation.y = yaw;
+
+  // Pergola shade frame & green roof louvers
+  const frameMat = mat("#f3f6f9", 0.72);
+  for (const sx of [-1.7, 1.7]) {
+    for (const sz of [-2.6, 2.6]) {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.7, 0.16), frameMat);
+      col.position.set(sx, 1.35, sz);
+      col.castShadow = true;
+      g.add(col);
+    }
+  }
+  for (let bz = -2.7; bz <= 2.7; bz += 0.65) {
+    g.add(box([3.8, 0.08, 0.12], "#2b7ec9", [0, 2.74, bz]));
+  }
+  g.add(
+    box([0.55, 0.08, 4.4], "#d9b066", [-0.7, 0.44, 0]),
+    box([0.55, 0.08, 4.4], "#d9b066", [0.7, 0.44, 0]),
+    box([0.8, 0.65, 3.8], "#1c78c8", [0, 0.55, 0]),
+    box([0.95, 0.08, 4.0], "#f7f4ec", [0, 0.9, 0]),
+  );
+
+  // Ceramic student handwash trough (bồn rửa tay học sinh) at front edge
+  g.add(
+    box([2.2, 0.65, 0.58], "#eef4f7", [0, 0.325, 3.6]),
+    box([2.1, 0.08, 0.48], "#7ec4cf", [0, 0.66, 3.6]),
+    box([0.08, 0.25, 0.08], "#c8d2dc", [-0.6, 0.8, 3.45]),
+    box([0.08, 0.25, 0.08], "#c8d2dc", [0, 0.8, 3.45]),
+    box([0.08, 0.25, 0.08], "#c8d2dc", [0.6, 0.8, 3.45]),
+  );
+  return g;
+}
+
+function createFlowerPlanterPot(x, y, z) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  const pot = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.22, 0.36, 12),
+    mat("#d96b43", 0.82),
+  );
+  pot.position.y = 0.18;
+  const foliage = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.36, 1),
+    mat("#3e8238", 0.88),
+  );
+  foliage.position.y = 0.44;
+  const blossoms = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.28, 0),
+    mat("#f6c632", 0.72),
+  );
+  blossoms.position.y = 0.58;
+  g.add(pot, foliage, blossoms);
   return g;
 }
 
@@ -418,12 +789,12 @@ function createFlagpole(x, y, z, flagTex) {
 
   const baseMat = mat("#e3ddd0", 0.78);
   const plinth = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.45, 0.56, 0.3, 12),
+    new THREE.CylinderGeometry(0.48, 0.6, 0.3, 12),
     baseMat,
   );
   plinth.position.y = 0.15;
   const collar = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.24, 0.34, 0.24, 12),
+    new THREE.CylinderGeometry(0.26, 0.36, 0.24, 12),
     baseMat,
   );
   collar.position.y = 0.4;
@@ -485,12 +856,16 @@ export class QuangTrungCampus {
     this.group.name = "quang-trung-campus";
     this.flags = [];
     this.animatedObjects = [];
+    this.vendorAnimations = [];
     this.campusBuildingPolygons = [];
     this.obstacles = [];
+    this.outsideObstacles = [];
 
     this.buildCourtyard();
     this.buildBuildings();
     this.buildGreenery();
+    this.buildPrimarySchoolProps();
+    this.buildStreetVendors();
     this.buildStudents();
 
     world.scene.add(this.group);
@@ -516,18 +891,37 @@ export class QuangTrungCampus {
     return this.campusRings.some((r) => inside({ x: wx, z: wz }, r));
   }
 
+  hitsOutsideProp(wx, wz, extraPad = 0) {
+    if (!this.outsideObstacles.length) return false;
+    const { side, fwd } = this.toLocal(wx, wz);
+    return this.outsideObstacles.some(
+      (o) => Math.hypot(side - o.side, fwd - o.fwd) < o.radius + extraPad,
+    );
+  }
+
   buildCourtyard() {
-    const tileTex = createCheckeredSchoolyardTexture();
+    const yardTex = createQuangTrungBrickYardTexture();
+    const laneTex = createCentralLaneTexture();
     const flagTex = createVietnamFlagTexture();
+    const tileMeters = 2.4;
 
     const yardMat = new THREE.MeshStandardMaterial({
-      color: tileTex ? "#ffffff" : "#ceb8b0",
-      map: tileTex,
-      roughness: 0.84,
-      metalness: 0.03,
+      color: yardTex ? "#ffffff" : "#d6cfc2",
+      map: yardTex,
+      roughness: 0.86,
+      metalness: 0.02,
       side: THREE.DoubleSide,
     });
     const yardGeo = polygonGeometry(this.campusRings[0], 0.14);
+    if (yardGeo.attributes.uv && yardGeo.attributes.position) {
+      const uv = yardGeo.attributes.uv;
+      const pos = yardGeo.attributes.position;
+      for (let i = 0; i < uv.count; i++) {
+        const { side, fwd } = this.toLocal(pos.getX(i), pos.getZ(i));
+        uv.setXY(i, side / tileMeters, -fwd / tileMeters);
+      }
+      uv.needsUpdate = true;
+    }
     const yardMesh = new THREE.Mesh(yardGeo, yardMat);
     yardMesh.position.y = 0.16;
     yardMesh.receiveShadow = true;
@@ -538,64 +932,92 @@ export class QuangTrungCampus {
     yard.position.set(this.gate.x, 0, this.gate.z);
     yard.rotation.y = this.facingGateYaw;
 
-    // Paved central drive extending from 83 Nguyễn Huệ gate toward ceremony stage
-    const entryDrive = new THREE.Mesh(
-      new THREE.BoxGeometry(8.2, 0.04, 16.0),
-      mat("#c9c5bb", 0.86),
+    // Straight central avenue from school gate (fwd = -0.8) straight to ceremonial stage (fwd = 54.5)
+    const laneLen = 55.3;
+    const laneGeo = new THREE.BoxGeometry(6.4, 0.032, laneLen);
+    if (laneGeo.attributes.uv && laneGeo.attributes.position) {
+      const uv = laneGeo.attributes.uv;
+      const pos = laneGeo.attributes.position;
+      for (let i = 0; i < uv.count; i++) {
+        uv.setXY(i, pos.getX(i) / 3.0, pos.getZ(i) / 3.0);
+      }
+      uv.needsUpdate = true;
+    }
+    const centralLane = new THREE.Mesh(
+      laneGeo,
+      new THREE.MeshStandardMaterial({
+        color: laneTex ? "#ffffff" : "#d8d5cd",
+        map: laneTex,
+        roughness: 0.8,
+        metalness: 0.03,
+      }),
     );
-    entryDrive.position.set(0, 0.295, -8.0);
-    entryDrive.receiveShadow = true;
-    yard.add(entryDrive);
+    centralLane.name = "quang-trung-central-lane";
+    centralLane.position.set(0, 0.298, -26.85);
+    centralLane.receiveShadow = true;
+    yard.add(centralLane);
 
-    // Ceremonial red runner carpet running through center yard to stage (matching image_c4ad515e.png)
+    // Crisp curb borders along both edges of the central avenue
+    for (const sx of [-3.28, 3.28]) {
+      yard.add(box([0.16, 0.055, laneLen], "#f3f6f9", [sx, 0.305, -26.85]));
+    }
+
+    // Ceremonial red carpet runner down center avenue approaching stage
     const carpet = new THREE.Mesh(
-      new THREE.BoxGeometry(3.8, 0.025, 34.0),
+      new THREE.BoxGeometry(2.6, 0.018, 36.0),
       mat("#a72631", 0.9),
     );
-    carpet.position.set(1.5, 0.312, -33.0);
+    carpet.position.set(0, 0.318, -36.5);
     carpet.receiveShadow = true;
     yard.add(carpet);
 
-    // Ceremonial elevated stage & backdrop pavilion in front of north classroom wing
+    // Ceremonial elevated stage & backdrop pavilion in front of North classroom wing
     const stageGroup = new THREE.Group();
     stageGroup.name = "quang-trung-stage";
-    stageGroup.position.set(1.5, 0.3, -51.8);
-    const stageDeck = box([11.4, 0.42, 4.4], "#d2ccc0", [0, 0.21, 0]);
-    const stageCarpet = box([10.8, 0.04, 3.8], "#a72631", [0, 0.44, 0]);
+    stageGroup.position.set(0, 0.3, -57.2);
+    const stageDeck = box([12.2, 0.44, 4.6], "#d6d1c6", [0, 0.22, 0]);
+    const stageSteps = box([6.6, 0.22, 0.75], "#e2ddd3", [0, 0.11, 2.65]);
+    const stageCarpet = box([11.4, 0.04, 4.0], "#a72631", [0, 0.46, 0]);
+    const podium = box([0.82, 1.08, 0.56], "#7a3b20", [-3.8, 0.98, 1.15]);
     const backdropTex = createStageBackdropTexture();
     const backdropPanel = new THREE.Mesh(
-      new THREE.BoxGeometry(9.6, 4.1, 0.16),
+      new THREE.BoxGeometry(10.2, 4.2, 0.16),
       new THREE.MeshStandardMaterial({
         color: backdropTex ? "#ffffff" : "#195ca6",
         map: backdropTex,
         roughness: 0.55,
       }),
     );
-    backdropPanel.position.set(0, 2.5, -1.9);
-    const stageRoof = box([11.2, 0.16, 4.4], "#3182d1", [0, 4.68, -0.2]);
+    backdropPanel.position.set(0, 2.55, -2.0);
+    const stageRoof = box([11.8, 0.18, 4.6], "#2b7ecb", [0, 4.78, -0.2]);
     stageGroup.add(
       stageDeck,
+      stageSteps,
       stageCarpet,
+      podium,
       backdropPanel,
       stageRoof,
-      box([0.2, 4.2, 0.2], "#f4f6f9", [-5.1, 2.5, 1.8]),
-      box([0.2, 4.2, 0.2], "#f4f6f9", [5.1, 2.5, 1.8]),
+      box([0.22, 4.3, 0.22], "#f4f6f9", [-5.4, 2.55, 1.9]),
+      box([0.22, 4.3, 0.22], "#f4f6f9", [5.4, 2.55, 1.9]),
     );
+    for (const px of [-5.2, -3.9, 3.9, 5.2]) {
+      stageGroup.add(createFlowerPlanterPot(px, 0.0, 2.45));
+    }
     yard.add(stageGroup);
-    this.obstacles.push({ side: 1.5, fwd: 51.8, radius: 3.4 });
+    this.obstacles.push({ side: 0, fwd: 57.2, radius: 3.6 });
 
     // Ceremonial flagpole (just left of stage)
-    const fp = createFlagpole(-6.8, 0.3, -46.8, flagTex);
+    const fp = createFlagpole(-8.4, 0.3, -52.2, flagTex);
     yard.add(fp.group);
     this.flags.push(fp.flagMesh);
     this.animatedObjects.push(fp.flagMesh);
-    this.obstacles.push({ side: -6.8, fwd: 46.8, radius: 1.1 });
+    this.obstacles.push({ side: -8.4, fwd: 52.2, radius: 1.15 });
 
-    // Courtyard planter beds flanking gate inside wall
+    // Courtyard manicured front border garden beds flanking the twin gate-pillar tree rows
     const lawnMat = createManicuredLawnMaterial(4, 4, { striped: false, rich: true });
     for (const [lx, lz, w, d] of [
-      [-15.5, -4.6, 12.0, 3.6],
-      [15.5, -4.6, 12.0, 3.6],
+      [-18.0, -3.2, 16.0, 3.2],
+      [18.5, -3.2, 16.0, 3.2],
     ]) {
       const bed = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), lawnMat);
       bed.position.set(lx, 0.3, lz);
@@ -603,45 +1025,104 @@ export class QuangTrungCampus {
       yard.add(bed);
     }
 
-    // Sports zone at right-front yard matching image_d2976dd6.png: basketball hoop + mini soccer goal
-    yard.add(createBasketballHoop(23.5, 0.3, -18.5, -Math.PI * 0.42));
-    this.obstacles.push({ side: 23.5, fwd: 18.5, radius: 1.4 });
-    yard.add(createMiniGoal(21.0, 0.3, -10.8, 0.08));
-    this.obstacles.push({ side: 21.0, fwd: 10.8, radius: 1.8 });
+    // LEFT BRICK COURTYARD: 2 football goals facing each other on brick pavement (side = -14.8, fwd = 14.2 .. 43.8)
+    const pitchGroup = new THREE.Group();
+    pitchGroup.name = "quang-trung-left-pitch";
+    const pitchSide = -14.8;
+    const pitchCenterFwd = 29.0;
+    const pitchW = 11.4;
+    const pitchL = 29.6;
+    const lineY = 0.312;
 
-    // Crisscross festive triangular bunting strands high above central courtyard (y ~ 6.4..7.0m, well clear of rider!)
-    const anchorA = new THREE.Vector3(-23.5, 6.8, -22.0);
-    const anchorB = new THREE.Vector3(24.0, 6.8, -22.0);
-    const anchorC = new THREE.Vector3(-23.5, 6.9, -42.0);
-    const anchorD = new THREE.Vector3(24.0, 6.9, -42.0);
-    const anchorE = new THREE.Vector3(-12.0, 7.0, -55.0);
-    const anchorF = new THREE.Vector3(14.0, 7.0, -55.0);
-    const buntingPairs = [
+    pitchGroup.add(
+      createCourtLineStrip(pitchW, 0.11, pitchSide, lineY, -(pitchCenterFwd - pitchL / 2)),
+      createCourtLineStrip(pitchW, 0.11, pitchSide, lineY, -(pitchCenterFwd + pitchL / 2)),
+      createCourtLineStrip(0.11, pitchL, pitchSide - pitchW / 2, lineY, -pitchCenterFwd),
+      createCourtLineStrip(0.11, pitchL, pitchSide + pitchW / 2, lineY, -pitchCenterFwd),
+      createCourtLineStrip(pitchW, 0.11, pitchSide, lineY, -pitchCenterFwd),
+    );
+    // Penalty area lines in front of both goals
+    for (const [gFwd, dir] of [
+      [14.2, -1],
+      [43.8, 1],
+    ]) {
+      pitchGroup.add(
+        createCourtLineStrip(5.6, 0.1, pitchSide, lineY, -(gFwd - dir * 3.2)),
+        createCourtLineStrip(0.1, 3.2, pitchSide - 2.8, lineY, -(gFwd - dir * 1.6)),
+        createCourtLineStrip(0.1, 3.2, pitchSide + 2.8, lineY, -(gFwd - dir * 1.6)),
+      );
+    }
+    const centerCircle = new THREE.Mesh(
+      new THREE.RingGeometry(2.1, 2.22, 28),
+      new THREE.MeshStandardMaterial({
+        color: "#f7fafc",
+        transparent: true,
+        opacity: 0.85,
+        roughness: 0.88,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
+    );
+    centerCircle.rotation.x = -Math.PI / 2;
+    centerCircle.position.set(pitchSide, lineY, -pitchCenterFwd);
+    pitchGroup.add(centerCircle);
+
+    // Classic soccer ball resting near center spot
+    const ballTex = createSoccerBallTexture();
+    const soccerBall = new THREE.Mesh(
+      new THREE.SphereGeometry(0.21, 14, 12),
+      new THREE.MeshStandardMaterial({
+        color: ballTex ? "#ffffff" : "#f4f6f8",
+        map: ballTex,
+        roughness: 0.52,
+      }),
+    );
+    soccerBall.name = "quang-trung-soccer-ball";
+    soccerBall.position.set(pitchSide + 0.6, 0.51, -pitchCenterFwd + 1.2);
+    soccerBall.castShadow = true;
+    pitchGroup.add(soccerBall);
+    yard.add(pitchGroup);
+
+    // 2 football goals on the left brick courtyard
+    yard.add(
+      createMiniGoal(pitchSide, 0.3, -14.2, Math.PI, "quang-trung-mini-goal"),
+    );
+    this.obstacles.push({ side: pitchSide, fwd: 13.7, radius: 1.55 });
+    yard.add(
+      createMiniGoal(pitchSide, 0.3, -43.8, 0, "quang-trung-mini-goal-north"),
+    );
+    this.obstacles.push({ side: pitchSide, fwd: 44.3, radius: 1.55 });
+
+    // Right courtyard mini basketball half-court on brick yard
+    yard.add(createBasketballHoop(26.6, 0.3, -20.5, -Math.PI * 0.5));
+    this.obstacles.push({ side: 26.6, fwd: 20.5, radius: 1.35 });
+    yard.add(
+      createCourtLineStrip(0.11, 12.0, 16.5, lineY, -20.5),
+      createCourtLineStrip(10.0, 0.11, 21.5, lineY, -14.5),
+      createCourtLineStrip(10.0, 0.11, 21.5, lineY, -26.5),
+    );
+
+    // Festive overhead bunting strands above expanded primary courtyard
+    const buntingGroup = new THREE.Group();
+    buntingGroup.name = "quang-trung-bunting";
+    const anchorA = new THREE.Vector3(-24.0, 6.8, -21.0);
+    const anchorB = new THREE.Vector3(28.0, 6.8, -21.0);
+    const anchorC = new THREE.Vector3(-24.0, 6.9, -44.0);
+    const anchorD = new THREE.Vector3(28.0, 6.9, -44.0);
+    const anchorE = new THREE.Vector3(-14.0, 7.0, -59.0);
+    const anchorF = new THREE.Vector3(14.0, 7.0, -59.0);
+    for (const [p1, p2] of [
       [anchorA, anchorB],
       [anchorC, anchorD],
       [anchorA, anchorD],
       [anchorB, anchorC],
       [anchorC, anchorF],
       [anchorD, anchorE],
-    ];
-    const buntingGroup = new THREE.Group();
-    buntingGroup.name = "quang-trung-bunting";
-    for (const [p1, p2] of buntingPairs) {
+    ]) {
       buntingGroup.add(createBuntingStrand(p1, p2, 0.72));
     }
     yard.add(buntingGroup);
-
-    // Courtyard stone benches under right-side & gate-side shade trees
-    for (const [bx, bf, yaw] of [
-      [-10.2, 9.6, Math.PI * 0.24],
-      [10.2, 9.6, -Math.PI * 0.24],
-      [25.5, 29.0, -Math.PI * 0.5],
-      [25.5, 39.5, -Math.PI * 0.5],
-      [-21.2, 24.5, Math.PI * 0.5],
-    ]) {
-      yard.add(createBench(bx, 0.3, -bf, yaw));
-      this.obstacles.push({ side: bx, fwd: bf, radius: 1.0 });
-    }
 
     this.group.add(yard);
   }
@@ -681,14 +1162,12 @@ export class QuangTrungCampus {
       this.group.add(bodyMesh);
       this.world.cameraObstacles.push(bodyMesh);
 
-      // Sloped hip roof atop West wing
       const wingCenter = this.toWorld(-28.75, 38.1);
       const wingRoof = createHipRoofMesh(44.4, 8.6, 2.2, roofMat);
       wingRoof.position.set(wingCenter.x, 0.28 + wallHeight, wingCenter.z);
       wingRoof.rotation.y = this.facingGateYaw + Math.PI * 0.5;
       this.group.add(wingRoof);
 
-      // Iconic sky-blue 1st-floor verandah canopy & crisp white square columns along eastern face (matching image_d2976dd6.png)
       const awningStart = this.toWorld(-24.2, 38.1);
       const awning = new THREE.Mesh(
         new THREE.BoxGeometry(2.1, 0.22, 43.2),
@@ -707,7 +1186,6 @@ export class QuangTrungCampus {
         colonnadeParts.push(col);
       }
 
-      // 2nd/3rd floor terracotta flower planter boxes on West wing facade
       for (const lvY of [4.25, 7.65]) {
         for (let f = 19.0; f <= 57.0; f += 4.2) {
           const pp = this.toWorld(-24.65, f);
@@ -722,21 +1200,21 @@ export class QuangTrungCampus {
       }
     }
 
-    // 2) North Rear 3-story classroom wing inside campus polygon (side -21..+24, fwd 56.5..66.5) matching image_c4ad515e.png
-    const nW = 45.0;
+    // 2) North Rear 3-story classroom wing positioned cleanly in expanded yard (fwd 61.5..70.9)
+    const nW = 46.0;
     const nD = 9.4;
     const nH = 10.6;
     const northCorners = [
-      this.toWorld(-21.0, 56.5),
-      this.toWorld(24.0, 56.5),
-      this.toWorld(24.0, 65.9),
-      this.toWorld(-21.0, 65.9),
+      this.toWorld(-21.5, 61.5),
+      this.toWorld(24.5, 61.5),
+      this.toWorld(24.5, 70.9),
+      this.toWorld(-21.5, 70.9),
     ];
     this.campusBuildingPolygons.push([...northCorners, northCorners[0]]);
 
     const northWingGroup = new THREE.Group();
     northWingGroup.name = "quang-trung-north-wing";
-    const nc = this.toWorld(1.5, 61.2);
+    const nc = this.toWorld(1.5, 66.2);
     northWingGroup.position.set(nc.x, 0.28, nc.z);
     northWingGroup.rotation.y = this.facingGateYaw;
 
@@ -757,27 +1235,25 @@ export class QuangTrungCampus {
     nRoof.position.y = nH;
     northWingGroup.add(nRoof);
 
-    // Front verandah pillars & sky-blue overhang roof on north wing
     const nAwning = new THREE.Mesh(
       new THREE.BoxGeometry(nW - 0.5, 0.22, 1.85),
       canopyMat,
     );
     nAwning.position.set(0, 3.6, nD / 2 + 0.85);
     northWingGroup.add(nAwning);
-    for (let sx = -20.5; sx <= 20.5; sx += 5.1) {
+    for (let sx = -21.0; sx <= 21.0; sx += 5.25) {
       northWingGroup.add(
         box([0.38, 3.6, 0.38], "#f3f6fa", [sx, 1.8, nD / 2 + 1.45]),
       );
     }
 
-    // Iconic slogan banner perched high on top fascia of North wing matching image_c4ad515e.png
     const sloganTex = createBannerTexture(
       "VÌ LỢI ÍCH MƯỜI NĂM TRỒNG CÂY, VÌ LỢI ÍCH TRĂM NĂM TRỒNG NGƯỜI",
       "",
       "#0a63bd",
     );
     const sloganPanel = new THREE.Mesh(
-      new THREE.PlaneGeometry(19.5, 1.55),
+      new THREE.PlaneGeometry(20.0, 1.55),
       new THREE.MeshStandardMaterial({
         color: "#ffffff",
         map: sloganTex,
@@ -815,25 +1291,139 @@ export class QuangTrungCampus {
   }
 
   buildGreenery() {
+    // 2 parallel avenues of shade trees aligned with gate pillars (side = ±5.4), plus right & corner shade trees
     const trees = [
-      [-14.5, 7.2, 1.08, 1],
-      [-17.2, 17.5, 1.16, 2],
-      [-17.8, 31.0, 1.12, 3],
-      [-17.2, 44.5, 1.08, 4],
-      [14.5, 7.2, 1.1, 5],
-      [17.5, 22.0, 1.14, 6],
-      [28.0, 13.0, 1.05, 7],
-      [27.8, 30.5, 1.14, 8],
-      [27.5, 46.5, 1.1, 9],
-      [-26.5, 62.5, 1.05, 10],
+      // Left avenue row parallel to left gate pillar
+      [-5.4, 9.0, 1.06, 1],
+      [-5.4, 19.5, 1.08, 2],
+      [-5.4, 30.0, 1.05, 3],
+      [-5.4, 40.5, 1.08, 4],
+      [-5.4, 51.0, 1.04, 5],
+      // Right avenue row parallel to right gate pillar
+      [5.4, 9.0, 1.06, 6],
+      [5.4, 19.5, 1.08, 7],
+      [5.4, 30.0, 1.05, 8],
+      [5.4, 40.5, 1.08, 9],
+      [5.4, 51.0, 1.04, 10],
+      // Perimeter & garden shade trees
+      [31.5, 11.0, 1.08, 11],
+      [31.5, 25.0, 1.12, 12],
+      [31.5, 39.5, 1.1, 13],
+      [31.5, 55.0, 1.06, 14],
+      [-29.5, 6.8, 1.04, 15],
+      [-29.5, 68.0, 1.06, 16],
+      [30.0, 66.0, 1.05, 17],
     ];
+
     for (const [side, fwd, scale, seed] of trees) {
       const p = this.toWorld(side, fwd);
       if (!this.inCampus(p.x, p.z)) continue;
       if (this.campusBuildingPolygons.some((poly) => inside(p, poly))) continue;
+
+      // Every tree gets a circular masonry tree-well curb around its base
+      this.group.add(createRoundedTreeCurb(p.x, 0.3, p.z, 1.24));
       this.group.add(createBroadShadeTree(p.x, 0.3, p.z, scale, seed));
-      this.obstacles.push({ side, fwd, radius: 1.05 });
+      this.obstacles.push({ side, fwd, radius: 1.38 });
     }
+  }
+
+  buildPrimarySchoolProps() {
+    const yardProps = new THREE.Group();
+    yardProps.name = "quang-trung-primary-props";
+    yardProps.position.set(this.gate.x, 0, this.gate.z);
+    yardProps.rotation.y = this.facingGateYaw;
+
+    // 1) Guard house just inside the right side of gate
+    yardProps.add(createGuardHouse(10.2, 0.3, -3.6, -0.35));
+    this.obstacles.push({ side: 10.2, fwd: 3.6, radius: 1.7 });
+
+    // 2) Student Liên Đội bulletin board along the right tree avenue
+    const boardGroup = new THREE.Group();
+    boardGroup.name = "quang-trung-notice-board";
+    boardGroup.position.set(9.2, 0.3, -12.2);
+    boardGroup.rotation.y = -Math.PI * 0.35;
+    boardGroup.add(
+      box([0.1, 2.2, 0.1], "#1c73c7", [-1.15, 1.1, 0]),
+      box([0.1, 2.2, 0.1], "#1c73c7", [1.15, 1.1, 0]),
+      box([2.6, 0.16, 0.52], "#1c73c7", [0, 2.28, 0]),
+      box([2.25, 1.35, 0.12], "#f4f7fa", [0, 1.48, 0]),
+    );
+    const boardTex = createNoticeBoardTexture();
+    const boardFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.12, 1.25),
+      new THREE.MeshStandardMaterial({
+        color: boardTex ? "#ffffff" : "#0e67be",
+        map: boardTex,
+        roughness: 0.42,
+      }),
+    );
+    boardFace.position.set(0, 1.48, 0.07);
+    boardGroup.add(boardFace);
+    yardProps.add(boardGroup);
+    this.obstacles.push({ side: 9.2, fwd: 12.2, radius: 1.0 });
+
+    // 3) Traditional wooden school drum near West classroom verandah
+    yardProps.add(createSchoolDrumStand(-22.4, 0.3, -52.5, Math.PI * 0.5));
+    this.obstacles.push({ side: -22.4, fwd: 52.5, radius: 0.9 });
+
+    // 4) Green library pergola & student handwash station on right yard
+    yardProps.add(createGreenLibraryZone(25.2, 0.3, -35.5, 0));
+    this.obstacles.push({ side: 25.2, fwd: 35.5, radius: 2.3 });
+
+    // 5) Covered student bicycle shed along right-rear yard
+    yardProps.add(createBikeShed(27.5, 0.3, -49.5, 0));
+    this.obstacles.push({ side: 27.5, fwd: 49.5, radius: 2.6 });
+
+    // 6) Stone courtyard benches neatly tucked beside tree curbs
+    for (const [bx, bf, yaw] of [
+      [-7.6, 15.0, -Math.PI * 0.5],
+      [7.6, 15.0, Math.PI * 0.5],
+      [-7.6, 35.0, -Math.PI * 0.5],
+      [7.6, 35.0, Math.PI * 0.5],
+      [14.0, 29.0, 0],
+      [-21.8, 28.5, Math.PI * 0.5],
+    ]) {
+      yardProps.add(createBench(bx, 0.3, -bf, yaw));
+      this.obstacles.push({ side: bx, fwd: bf, radius: 0.95 });
+    }
+
+    this.group.add(yardProps);
+  }
+
+  buildStreetVendors() {
+    const sidewalk = new THREE.Group();
+    sidewalk.name = "quang-trung-street-vendors";
+    sidewalk.position.set(this.gate.x, 0.17, this.gate.z);
+    sidewalk.rotation.y = this.facingGateYaw;
+
+    // 1) Husband-and-wife xôi pushcart outside right gate fence on Nguyễn Huệ sidewalk
+    const xoi = createXoiPushcartCouple();
+    xoi.group.position.set(10.6, 0, 2.05);
+    xoi.group.rotation.y = -0.15;
+    sidewalk.add(xoi.group);
+    this.vendorAnimations.push(...xoi.animated);
+    this.outsideObstacles.push({ side: 10.6, fwd: -2.05, radius: 1.3 });
+
+    // 2) Rice-ball (cơm nắm) & street hawker women along the sidewalk outside the school gate
+    const hawkerSpecs = [
+      { side: -9.8, fwd: -1.9, style: "ganh", shirt: "#8d6b4f", yaw: 0.22 },
+      { side: -14.2, fwd: -2.1, style: "met", shirt: "#6c5d87", yaw: 0.1 },
+      { side: 16.4, fwd: -1.95, style: "ganh", shirt: "#7f8f69", yaw: -0.2 },
+    ];
+    for (const h of hawkerSpecs) {
+      const hawker = createComNamHawker({
+        style: h.style,
+        shirtColor: h.shirt,
+        facingYaw: h.yaw,
+      });
+      hawker.group.position.set(h.side, 0, -h.fwd);
+      sidewalk.add(hawker.group);
+      this.vendorAnimations.push(...hawker.animated);
+      this.outsideObstacles.push({ side: h.side, fwd: h.fwd, radius: 0.95 });
+    }
+
+    this.sidewalkVendors = sidewalk;
+    this.group.add(sidewalk);
   }
 
   buildStudents() {
@@ -848,16 +1438,22 @@ export class QuangTrungCampus {
     };
 
     const walkers = [
-      { gender: "boy", points: [[-2.0, 4.5], [-2.0, 36.0]], speed: 1.32, offset: 0.12 },
-      { gender: "girl", points: [[4.5, 38.0], [4.5, 6.0]], speed: 1.28, offset: 0.52 },
-      { gender: "girl", points: [[-10.5, 21.0], [11.0, 21.0]], speed: 1.24, offset: 0.25 },
-      { gender: "boy", points: [[11.0, 41.5], [-10.0, 41.5]], speed: 1.35, offset: 0.68 },
+      // Students walking straight down the central gate avenue
+      { gender: "boy", points: [[-1.6, 3.5], [-1.6, 48.0]], speed: 1.28, offset: 0.1 },
+      { gender: "girl", points: [[1.6, 48.0], [1.6, 4.0]], speed: 1.24, offset: 0.45 },
+      // Primary students running/playing across the left brick football pitch
+      { gender: "boy", points: [[-18.0, 19.0], [-11.5, 36.5]], speed: 1.48, offset: 0.2 },
+      { gender: "boy", points: [[-11.8, 22.0], [-17.8, 38.0]], speed: 1.42, offset: 0.65 },
+      // Students walking across courtyard toward library & notice board
+      { gender: "girl", points: [[-9.5, 48.5], [14.5, 48.5]], speed: 1.22, offset: 0.3 },
+      { gender: "girl", points: [[14.0, 26.0], [21.0, 34.0]], speed: 1.26, offset: 0.72 },
     ].filter((w) => w.points.every(([s, f]) => isWalkSafe(s, f)));
 
     const chatSpots = [
-      { side: -7.5, fwd: 14.5, members: ["boy", "girl", "boy"], radius: 0.85 },
-      { side: 10.5, fwd: 27.5, members: ["girl", "boy", "girl"], radius: 0.85 },
-      { side: 16.5, fwd: 15.5, members: ["boy", "girl"], radius: 0.8 },
+      { side: 10.6, fwd: 14.5, members: ["boy", "girl", "boy"], radius: 0.85 },
+      { side: 19.8, fwd: 34.5, members: ["girl", "boy", "girl"], radius: 0.85 },
+      { side: -14.8, fwd: 27.5, members: ["boy", "boy", "girl"], radius: 1.1 },
+      { side: 12.2, fwd: 47.0, members: ["girl", "boy"], radius: 0.8 },
     ].filter((c) => isWalkSafe(c.side, c.fwd));
 
     this.students = new CampusStudents({
@@ -866,7 +1462,7 @@ export class QuangTrungCampus {
       groundAt: () => 0.3,
       walkers,
       chatSpots,
-      scale: 0.94,
+      scale: 0.86,
     });
     this.animatedObjects.push(...this.students.animatedObjects);
   }
@@ -878,6 +1474,7 @@ export class QuangTrungCampus {
   }
 
   canRide(wx, wz) {
+    if (this.hitsOutsideProp(wx, wz)) return false;
     if (!this.inCampus(wx, wz)) return null;
     if (this.campusBuildingPolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
       return false;
@@ -894,11 +1491,11 @@ export class QuangTrungCampus {
   }
 
   blocksGrass(wx, wz) {
-    return this.inCampus(wx, wz);
+    return this.inCampus(wx, wz) || this.hitsOutsideProp(wx, wz, 2.0);
   }
 
   blocksTree(wx, wz) {
-    return this.inCampus(wx, wz);
+    return this.inCampus(wx, wz) || this.hitsOutsideProp(wx, wz, 2.6);
   }
 
   update(time, playerPos = null) {
@@ -920,6 +1517,17 @@ export class QuangTrungCampus {
       pos.needsUpdate = true;
       flag.geometry.computeVertexNormals();
     }
+
+    if (this.sidewalkVendors) {
+      const inRange =
+        !playerPos ||
+        Math.hypot(playerPos.x - this.gate.x, playerPos.z - this.gate.z) < 120;
+      this.sidewalkVendors.visible = inRange;
+      if (inRange) {
+        for (const fn of this.vendorAnimations) fn(time);
+      }
+    }
+
     this.students?.update(time, playerPos);
   }
 }

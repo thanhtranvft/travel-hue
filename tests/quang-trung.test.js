@@ -184,9 +184,35 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
     );
     assert.ok(
       campus.group.getObjectByName("quang-trung-basketball-hoop") &&
-        campus.group.getObjectByName("quang-trung-mini-goal"),
-      "sports court hoop and mini football goal built",
+        campus.group.getObjectByName("quang-trung-mini-goal") &&
+        campus.group.getObjectByName("quang-trung-mini-goal-north") &&
+        campus.group.getObjectByName("quang-trung-left-pitch") &&
+        campus.group.getObjectByName("quang-trung-soccer-ball"),
+      "sports court hoop and 2 left-side mini football goals + soccer ball built",
     );
+    assert.ok(
+      campus.group.getObjectByName("quang-trung-central-lane") &&
+        campus.group.getObjectByName("quang-trung-guard-house") &&
+        campus.group.getObjectByName("quang-trung-notice-board") &&
+        campus.group.getObjectByName("quang-trung-school-drum") &&
+        campus.group.getObjectByName("quang-trung-green-library") &&
+        campus.group.getObjectByName("quang-trung-bike-shed"),
+      "central gate lane and detailed primary school props built",
+    );
+
+    const treeCurbs = [];
+    let comNamVendors = 0;
+    campus.group.traverse((o) => {
+      if (o.name === "quang-trung-tree-curb") treeCurbs.push(o);
+      if (o.name === "quang-trung-com-nam-vendor") comNamVendors++;
+    });
+    assert.ok(treeCurbs.length >= 14, "every campus shade tree has a rounded tree curb");
+    assert.ok(
+      campus.group.getObjectByName("quang-trung-xoi-cart"),
+      "husband-and-wife xôi pushcart outside gate built",
+    );
+    assert.equal(comNamVendors, 3, "3 cơm nắm / street-hawker vendors outside gate built");
+
     assert.equal(campus.flags.length, 1);
 
     const flagAttr = campus.flags[0].geometry.attributes.position;
@@ -204,6 +230,16 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
     const yardPt = campus.toWorld(0, 12);
     assert.equal(campus.groundAt(yardPt.x, yardPt.z), 0.3);
     assert.equal(campus.canRide(yardPt.x, yardPt.z), true);
+
+    const leftTreeCurb = campus.toWorld(-5.4, 19.5);
+    assert.equal(campus.canRide(leftTreeCurb.x, leftTreeCurb.z), false);
+
+    const xoiCartSpot = campus.toWorld(10.6, -2.05);
+    assert.equal(campus.canRide(xoiCartSpot.x, xoiCartSpot.z), false);
+    assert.equal(campus.blocksTree(xoiCartSpot.x, xoiCartSpot.z), true);
+
+    const gateSidewalkClear = campus.toWorld(0, -2.0);
+    assert.equal(campus.canRide(gateSidewalkClear.x, gateSidewalkClear.z), null);
 
     const insideWestWing = campus.toWorld(-28.5, 35);
     assert.equal(campus.canRide(insideWestWing.x, insideWestWing.z), false);
