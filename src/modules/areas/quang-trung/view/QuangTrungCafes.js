@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
+import { inside } from "../../../../core/shared/geography/geometry.js";
+import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
 
 function createCafeCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -98,7 +100,197 @@ function createCobbleTexture(base = "#cbc3b6", stone = "#b3ab9d") {
   );
 }
 
-function createPatioTableSet(umbrellaColor = "#b93d4c", withUmbrella = true) {
+function createRoseFenceTexture() {
+  return createCafeCanvasTexture(256, 256, (ctx, w, h) => {
+    ctx.fillStyle = "#485942";
+    ctx.fillRect(0, 0, w, h);
+    // Cream stone wall plinth along bottom 34%
+    ctx.fillStyle = "#f2ebe2";
+    ctx.fillRect(0, 166, w, 90);
+    ctx.fillStyle = "#b85c6b";
+    ctx.fillRect(0, 158, w, 10);
+    // Decorative wrought-iron fence pickets
+    ctx.fillStyle = "#2b3238";
+    ctx.fillRect(0, 26, w, 8);
+    ctx.fillRect(0, 138, w, 8);
+    for (let x = 10; x < w; x += 24) {
+      ctx.fillStyle = "#343b42";
+      ctx.fillRect(x, 10, 7, 150);
+    }
+  });
+}
+
+const MALE_CAFE_PALETTES = [
+  { shirt: "#2f6499", pants: "#28303b", hair: "#201c1a" },
+  { shirt: "#e6dfd2", pants: "#384654", hair: "#2b2420" },
+  { shirt: "#3e6e58", pants: "#26282b", hair: "#1e1a18" },
+  { shirt: "#8d583a", pants: "#2b313a", hair: "#26211e" },
+];
+
+const FEMALE_CAFE_PALETTES = [
+  { shirt: "#d86b7d", pants: "#2b303a", hair: "#201a18" },
+  { shirt: "#f2e5b8", pants: "#3c506b", hair: "#2a201c" },
+  { shirt: "#6b93b8", pants: "#f0ece4", hair: "#1c1816" },
+  { shirt: "#b87fa3", pants: "#2d323a", hair: "#281e1a" },
+];
+
+export function createSeatedCafePatron({
+  gender = "man",
+  paletteIndex = 0,
+  phase = 0,
+} = {}) {
+  const palette =
+    gender === "woman"
+      ? FEMALE_CAFE_PALETTES[paletteIndex % FEMALE_CAFE_PALETTES.length]
+      : MALE_CAFE_PALETTES[paletteIndex % MALE_CAFE_PALETTES.length];
+
+  const g = new THREE.Group();
+  g.name = "cafe-seated-patron";
+  g.userData.gender = gender;
+
+  const skinMat = mat("#e4ba96", 0.72);
+  const shirtMat = mat(palette.shirt, 0.78);
+  const pantsMat = mat(palette.pants, 0.84);
+  const hairMat = mat(palette.hair, 0.82);
+
+  // Seated hip height matching patio chair seat (y = 0.46)
+  const seatY = 0.47;
+
+  // Thighs horizontal on seat + lower shins vertical to ground
+  for (const sx of [-0.085, 0.085]) {
+    const thigh = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.052, 0.22, 4, 8),
+      pantsMat,
+    );
+    thigh.rotation.x = Math.PI * 0.5;
+    thigh.position.set(sx, seatY + 0.03, 0.12);
+    thigh.castShadow = true;
+
+    const shin = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.044, 0.28, 4, 8),
+      pantsMat,
+    );
+    shin.position.set(sx, 0.24, 0.26);
+    shin.castShadow = true;
+
+    const shoe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.09, 0.05, 0.17),
+      mat(gender === "woman" ? "#4e3438" : "#25282c", 0.75),
+    );
+    shoe.position.set(sx, 0.025, 0.31);
+    g.add(thigh, shin, shoe);
+  }
+
+  // Torso (slim-waisted blouse for woman, slightly broader shoulder for man)
+  const torsoRadius = gender === "woman" ? 0.135 : 0.155;
+  const torso = new THREE.Mesh(
+    new THREE.CapsuleGeometry(torsoRadius, 0.32, 5, 10),
+    shirtMat,
+  );
+  torso.position.set(0, seatY + 0.24, 0.01);
+  torso.castShadow = true;
+  g.add(torso);
+
+  // Head + Hair
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, seatY + 0.56, 0.02);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.125, 14, 12), skinMat);
+  head.castShadow = true;
+  headPivot.add(head);
+
+  const hairCap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.132, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.56),
+    hairMat,
+  );
+  hairCap.position.set(0, 0.018, -0.008);
+  headPivot.add(hairCap);
+
+  if (gender === "woman") {
+    // Graceful shoulder-length back hair & hair clip
+    const backHair = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.095, 0.16, 4, 8),
+      hairMat,
+    );
+    backHair.position.set(0, -0.06, -0.09);
+    const ribbon = new THREE.Mesh(
+      new THREE.BoxGeometry(0.07, 0.035, 0.03),
+      mat("#d94c68", 0.6),
+    );
+    ribbon.position.set(0, 0.03, -0.13);
+    headPivot.add(backHair, ribbon);
+  } else {
+    // Short side trim
+    const frontQuiff = new THREE.Mesh(
+      new THREE.BoxGeometry(0.16, 0.04, 0.06),
+      hairMat,
+    );
+    frontQuiff.position.set(0, 0.105, 0.05);
+    headPivot.add(frontQuiff);
+  }
+  g.add(headPivot);
+
+  // Left arm resting comfortably forward toward table edge
+  const shoulderX = gender === "woman" ? 0.17 : 0.195;
+  const leftArm = new THREE.Group();
+  leftArm.position.set(-shoulderX, seatY + 0.38, 0.02);
+  const lSleeve = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.042, 0.26, 4, 8),
+    shirtMat,
+  );
+  lSleeve.position.y = -0.13;
+  const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), skinMat);
+  lHand.position.y = -0.29;
+  leftArm.add(lSleeve, lHand);
+  leftArm.rotation.x = -0.62;
+  g.add(leftArm);
+
+  // Right arm holding ceramic coffee cup & saucer at chest/mouth level
+  const rightArm = new THREE.Group();
+  rightArm.position.set(shoulderX, seatY + 0.38, 0.02);
+  const rUpper = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.042, 0.24, 4, 8),
+    shirtMat,
+  );
+  rUpper.position.y = -0.12;
+  const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), skinMat);
+  rHand.position.set(-0.02, -0.26, 0.04);
+
+  const coffeeCup = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.038, 0.028, 0.07, 10),
+    mat("#faf7f0", 0.3),
+  );
+  coffeeCup.position.set(-0.04, -0.24, 0.11);
+  coffeeCup.rotation.x = Math.PI * 0.42;
+  const coffeeSurface = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.032, 0.032, 0.01, 10),
+    mat("#3b2314", 0.25),
+  );
+  coffeeSurface.position.set(-0.04, -0.215, 0.12);
+  coffeeSurface.rotation.x = Math.PI * 0.42;
+
+  rightArm.add(rUpper, rHand, coffeeCup, coffeeSurface);
+  rightArm.rotation.x = -0.92;
+  rightArm.rotation.z = 0.18;
+  g.add(rightArm);
+
+  const animate = (time) => {
+    const sip = Math.max(0, Math.sin(time * 0.75 + phase));
+    rightArm.rotation.x = -0.88 - sip * 0.56;
+    headPivot.rotation.x = -0.05 + sip * 0.12;
+    headPivot.rotation.y = Math.sin(time * 0.65 + phase * 1.7) * 0.14;
+  };
+
+  return { group: g, animate };
+}
+
+function createPatioTableSet(
+  umbrellaColor = "#b93d4c",
+  withUmbrella = true,
+  patrons = ["man", "woman"],
+  animators = null,
+  seed = 0,
+) {
   const g = new THREE.Group();
   const metal = mat("#363b40", 0.45, 0.6);
   const wood = mat("#9a6a42", 0.72);
@@ -122,7 +314,7 @@ function createPatioTableSet(umbrellaColor = "#b93d4c", withUmbrella = true) {
   top.castShadow = top.receiveShadow = true;
   g.add(base, stem, top);
 
-  // Small coffee cups on table
+  // Small coffee cups & saucers on table
   for (const [cx, cz] of [
     [-0.14, 0.08],
     [0.14, -0.06],
@@ -135,22 +327,36 @@ function createPatioTableSet(umbrellaColor = "#b93d4c", withUmbrella = true) {
     g.add(cup);
   }
 
-  // 2 cafe chairs facing table
-  for (const sx of [-0.66, 0.66]) {
+  // 2 cafe chairs facing table, with seated men/women enjoying coffee
+  const chairSides = [-0.66, 0.66];
+  chairSides.forEach((sx, idx) => {
     const chair = new THREE.Group();
     chair.position.set(sx, 0, 0);
     chair.rotation.y = sx < 0 ? Math.PI * 0.5 : -Math.PI * 0.5;
     chair.add(
-      box([0.36, 0.04, 0.36], "#8c5c38", [0, 0.44, 0]),
-      box([0.36, 0.36, 0.04], "#8c5c38", [0, 0.64, -0.16]),
+      box([0.38, 0.04, 0.38], "#8c5c38", [0, 0.44, 0]),
+      box([0.38, 0.38, 0.04], "#8c5c38", [0, 0.65, -0.17]),
     );
-    for (const lx of [-0.14, 0.14]) {
-      for (const lz of [-0.14, 0.14]) {
+    for (const lx of [-0.15, 0.15]) {
+      for (const lz of [-0.15, 0.15]) {
         chair.add(box([0.04, 0.44, 0.04], "#363b40", [lx, 0.22, lz]));
       }
     }
+
+    const gender = patrons?.[idx];
+    if (gender) {
+      const patron = createSeatedCafePatron({
+        gender,
+        paletteIndex: seed + idx,
+        phase: (seed + idx * 1.4) * 1.3,
+      });
+      patron.group.position.set(0, 0.02, 0.02);
+      chair.add(patron.group);
+      animators?.push(patron.animate);
+    }
+
     g.add(chair);
-  }
+  });
 
   if (withUmbrella) {
     const pole = new THREE.Mesh(
@@ -197,20 +403,61 @@ function createRoseBush(x, y, z, scale = 1, blossomHex = "#e25072") {
   return g;
 }
 
+function addFenceSpan(parent, fenceMat, pierMat, capMat, x1, z1, x2, z2) {
+  const dx = x2 - x1;
+  const dz = z2 - z1;
+  const len = Math.hypot(dx, dz);
+  if (len < 0.2) return;
+  const yaw = Math.atan2(-dz, dx);
+  const mx = (x1 + x2) / 2;
+  const mz = (z1 + z2) / 2;
+
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(len, 1.58, 0.18), fenceMat);
+  panel.position.set(mx, 0.86, mz);
+  panel.rotation.y = yaw;
+  panel.castShadow = panel.receiveShadow = true;
+  parent.add(panel);
+
+  const posts = Math.max(1, Math.round(len / 5.2));
+  for (let i = 0; i <= posts; i++) {
+    const t = i / posts;
+    const px = x1 + dx * t;
+    const pz = z1 + dz * t;
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.36, 1.78, 0.36), pierMat);
+    post.position.set(px, 0.96, pz);
+    post.rotation.y = yaw;
+    post.castShadow = true;
+    const cap = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.12, 0.46), capMat);
+    cap.position.set(px, 1.88, pz);
+    cap.rotation.y = yaw;
+    parent.add(post, cap);
+  }
+}
+
 export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) {
-  // Located directly beside Trường Tiểu học Quang Trung's right fence: side [38.5..55.5], fwd [1.5..22.5]
+  // Expanded Rose Garden Café immediately east of Quang Trung campus:
+  // side ∈ [39.0 .. 61.5] (w = 22.5), fwd ∈ [1.5 .. 63.5] (d = 62.0)
+  // Connects to Quang Trung's teacher parking cổng phụ at side = 37.2, fwd = 58.5
   const group = new THREE.Group();
   group.name = "quang-trung-rose-garden-cafe";
 
-  const centerSide = 47.0;
-  const centerFwd = 12.0;
+  const animators = [];
+  const minSide = 39.0;
+  const maxSide = 61.5;
+  const minFwd = 1.5;
+  const maxFwd = 63.5;
+  const centerSide = (minSide + maxSide) / 2; // 50.25
+  const centerFwd = (minFwd + maxFwd) / 2; // 32.5
+  const w = maxSide - minSide; // 22.5
+  const d = maxFwd - minFwd; // 62.0
+  const hw = w / 2; // 11.25
+  const hd = d / 2; // 31.0
+
   const origin = toWorld(centerSide, centerFwd);
   group.position.set(origin.x, 0.23, origin.z);
   group.rotation.y = roadYaw;
 
-  // Notice: in this local group (rotation.y = roadYaw), +x = +side, -z = +fwd (away from Nguyễn Huệ), +z = -fwd (toward Nguyễn Huệ)
-  const w = 16.6;
-  const d = 20.6;
+  // Notice: in local frame (rotation.y = roadYaw): worldSide = centerSide + x, worldFwd = centerFwd - z
   const cobbleTex = createCobbleTexture("#dfd6c8", "#c9beb0");
   const terrace = new THREE.Mesh(
     new THREE.BoxGeometry(w, 0.08, d),
@@ -224,10 +471,57 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
   terrace.receiveShadow = true;
   group.add(terrace);
 
-  // Main 2-story Rose Garden Villa Café house at rear half of lot (local z = -4.5 -> fwd = 16.5)
-  const houseW = 11.4;
-  const houseD = 8.4;
+  // Ornamental rear grass lawns flanking central walkway
+  const grassMat = mat("#4d8b3e", 0.9);
+  for (const gx of [-6.4, 6.4]) {
+    const bed = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.04, 24.0), grassMat);
+    bed.position.set(gx, 0.09, -14.8);
+    bed.receiveShadow = true;
+    group.add(bed);
+  }
+
+  // Full 4-sided Rose Garden perimeter fence with 2 open gates:
+  // 1) Front Rose Arch Gate on Nguyễn Huệ: x ∈ [-2.4 .. 2.4], z = +hd (fwd = 1.5)
+  // 2) West Side Gate opposite Quang Trung cổng phụ (fwd = 58.5 -> z = 32.5 - 58.5 = -26.0): z ∈ [-28.2 .. -23.8], x = -hw
+  const fenceGroup = new THREE.Group();
+  fenceGroup.name = "rose-garden-fence";
+  const fenceTex = createRoseFenceTexture();
+  const fenceMat = new THREE.MeshStandardMaterial({
+    color: fenceTex ? "#ffffff" : "#343b42",
+    map: fenceTex,
+    roughness: 0.72,
+  });
+  const pierMat = mat("#f4ede3", 0.78);
+  const capMat = mat("#b85c6b", 0.65);
+
+  const localWallSpans = [
+    // Front edge (z = +hd) leaving 4.8m front arch gate
+    [-hw, hd, -2.4, hd],
+    [2.4, hd, hw, hd],
+    // East edge (x = +hw) full length
+    [hw, hd, hw, -hd],
+    // Rear edge (z = -hd) full length
+    [hw, -hd, -hw, -hd],
+    // West edge (x = -hw) leaving 4.4m side gate at z ∈ [-28.2 .. -23.8] (fwd 56.3..60.7)
+    [-hw, -hd, -hw, -28.2],
+    [-hw, -23.8, -hw, hd],
+  ];
+
+  const fenceSegments = [];
+  for (const [x1, z1, x2, z2] of localWallSpans) {
+    addFenceSpan(fenceGroup, fenceMat, pierMat, capMat, x1, z1, x2, z2);
+    fenceSegments.push({
+      a: toWorld(centerSide + x1, centerFwd - z1),
+      b: toWorld(centerSide + x2, centerFwd - z2),
+    });
+  }
+  group.add(fenceGroup);
+
+  // Main 2-story Rose Garden Villa Café house centered near z = +4.8 (fwd = 27.7)
+  const houseW = 12.2;
+  const houseD = 8.8;
   const houseH = 6.6;
+  const houseZ = 4.8;
   const wallTex = createCafeWallTexture("#f6ece0", "#7b4b4c", true);
   const houseMesh = new THREE.Mesh(
     new THREE.BoxGeometry(houseW, houseH, houseD),
@@ -237,33 +531,33 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
       roughness: 0.72,
     }),
   );
-  houseMesh.position.set(0, houseH / 2 + 0.08, -4.4);
+  houseMesh.position.set(0, houseH / 2 + 0.08, houseZ);
   houseMesh.castShadow = houseMesh.receiveShadow = true;
   group.add(houseMesh);
   cameraObstacles.push(houseMesh);
 
   // Terracotta-rose pitched roof
   const roof = new THREE.Mesh(
-    new THREE.ConeGeometry(houseW * 0.76, 2.3, 4),
+    new THREE.ConeGeometry(houseW * 0.76, 2.4, 4),
     mat("#9e4a4e", 0.68),
   );
   roof.rotation.y = Math.PI / 4;
   roof.scale.set(1, 1, houseD / houseW);
-  roof.position.set(0, houseH + 1.2, -4.4);
+  roof.position.set(0, houseH + 1.24, houseZ);
   roof.castShadow = true;
   group.add(roof);
 
-  // Wooden front pergola veranda overlooking garden courtyard
-  for (let px = -5.0; px <= 5.0; px += 2.5) {
-    group.add(box([0.18, 3.1, 0.18], "#6b442b", [px, 1.62, 1.4]));
+  // Front & rear pergola verandas overlooking courtyard gardens
+  for (const pDir of [1, -1]) {
+    const vz = houseZ + pDir * (houseD / 2 + 1.15);
+    for (let px = -5.4; px <= 5.4; px += 2.7) {
+      group.add(box([0.18, 3.1, 0.18], "#6b442b", [px, 1.62, vz]));
+    }
+    group.add(box([12.0, 0.16, 2.2], "#f4eadc", [0, 3.16, vz - pDir * 0.25]));
   }
-  for (let pz = -0.2; pz <= 1.6; pz += 0.45) {
-    group.add(box([11.2, 0.09, 0.12], "#7a4e32", [0, 3.22, pz]));
-  }
-  group.add(box([11.4, 0.16, 2.2], "#f4eadc", [0, 3.14, 0.6]));
 
   // Storefront illuminated "ROSE GARDEN · COFFEE & TEA" signboard
-  const signTex = createCafeSignTexture("ROSE GARDEN", "COFFEE · TEA · GARDEN", {
+  const signTex = createCafeSignTexture("ROSE GARDEN", "COFFEE · TEA · SÂN VƯỜN", {
     bg: "#5c2735",
     border: "#f4c2cb",
     titleColor: "#fff4f6",
@@ -271,89 +565,132 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
     accent: "rose",
   });
   const mainSign = new THREE.Mesh(
-    new THREE.PlaneGeometry(6.8, 1.45),
+    new THREE.PlaneGeometry(7.2, 1.5),
     new THREE.MeshStandardMaterial({
       color: signTex ? "#ffffff" : "#5c2735",
       map: signTex,
       roughness: 0.42,
     }),
   );
-  mainSign.position.set(0, 4.15, -0.12);
+  mainSign.position.set(0, 4.2, houseZ + houseD / 2 + 0.16);
   group.add(mainSign);
 
-  // Low white perimeter garden fence along Nguyễn Huệ frontage with central Rose Arch Entrance
-  for (const [fx, fw] of [
-    [-5.3, 5.8],
-    [5.3, 5.8],
-  ]) {
-    group.add(
-      box([fw, 0.85, 0.18], "#f4efe8", [fx, 0.5, 10.1]),
-      box([fw + 0.1, 0.1, 0.24], "#b85c6b", [fx, 0.96, 10.1]),
-    );
-  }
-  // Rose floral entrance arch
-  for (const ax of [-2.0, 2.0]) {
-    group.add(box([0.24, 2.9, 0.24], "#f4efe8", [ax, 1.5, 10.1]));
-    group.add(createRoseBush(ax, 0.08, 9.65, 0.95, "#e0486d"));
+  // Front Rose floral entrance arch at z = +hd
+  for (const ax of [-2.4, 2.4]) {
+    group.add(box([0.3, 3.0, 0.3], "#f4efe8", [ax, 1.55, hd]));
+    group.add(createRoseBush(ax, 0.08, hd - 0.55, 0.95, "#e0486d"));
   }
   const archTop = new THREE.Mesh(
-    new THREE.TorusGeometry(2.0, 0.14, 8, 18, Math.PI),
+    new THREE.TorusGeometry(2.4, 0.15, 8, 18, Math.PI),
     mat("#3e7c39", 0.8),
   );
-  archTop.position.set(0, 2.85, 10.1);
+  archTop.position.set(0, 2.95, hd);
   group.add(archTop);
 
   const gateSign = new THREE.Mesh(
-    new THREE.PlaneGeometry(3.2, 0.68),
+    new THREE.PlaneGeometry(3.6, 0.75),
     new THREE.MeshStandardMaterial({
       color: signTex ? "#ffffff" : "#5c2735",
       map: signTex,
       roughness: 0.45,
     }),
   );
-  gateSign.position.set(0, 3.45, 10.15);
+  gateSign.position.set(0, 3.65, hd + 0.06);
   group.add(gateSign);
 
-  // Outdoor garden patio table sets + lush blooming rose bushes + center ornamental planter
-  const tableOffsets = [
-    [-4.6, 4.2, "#b93d4c"],
-    [4.6, 4.2, "#2f7556"],
-    [-4.6, 7.6, "#2f7556"],
-    [4.6, 7.6, "#b93d4c"],
-  ];
-  for (const [tx, tz, uColor] of tableOffsets) {
-    const t = createPatioTableSet(uColor, true);
-    t.position.set(tx, 0.08, tz);
-    group.add(t);
+  // West Side Gate ("LỐI VÀO CỔNG PHỤ") facing Quang Trung teacher parking side gate
+  const sideGateGroup = new THREE.Group();
+  sideGateGroup.name = "rose-garden-west-gate";
+  sideGateGroup.position.set(-hw, 0.08, -26.0);
+  sideGateGroup.rotation.y = -Math.PI / 2;
+  for (const sx of [-2.2, 2.2]) {
+    sideGateGroup.add(box([0.36, 2.75, 0.36], "#f4ede3", [sx, 1.38, 0]));
+    sideGateGroup.add(box([0.46, 0.16, 0.46], "#b85c6b", [sx, 2.8, 0]));
   }
+  sideGateGroup.add(box([4.8, 0.22, 0.32], "#b85c6b", [0, 2.92, 0]));
+  group.add(sideGateGroup);
 
-  // Central stone rose fountain planter in garden courtyard
+  // Front garden stone fountain planter (z = +21.5 -> fwd = 11.0)
   const fountain = new THREE.Group();
-  fountain.position.set(0, 0.08, 5.8);
+  fountain.position.set(0, 0.08, 21.5);
   const basin = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.1, 1.2, 0.42, 16),
+    new THREE.CylinderGeometry(1.25, 1.35, 0.44, 18),
     mat("#eae3d8", 0.78),
   );
-  basin.position.y = 0.21;
-  const centerBush = createRoseBush(0, 0.36, 0, 1.25, "#ec5c7d");
-  fountain.add(basin, centerBush);
+  basin.position.y = 0.22;
+  fountain.add(basin, createRoseBush(0, 0.38, 0, 1.32, "#ec5c7d"));
   group.add(fountain);
 
-  for (const [rx, rz, col] of [
-    [-6.9, 2.2, "#e25072"],
-    [-6.9, 6.0, "#f28ca6"],
-    [-6.9, 8.8, "#d93b5c"],
-    [6.9, 2.2, "#f28ca6"],
-    [6.9, 6.0, "#e25072"],
-    [6.9, 8.8, "#d93b5c"],
-  ]) {
-    group.add(createRoseBush(rx, 0.08, rz, 1.0, col));
+  // Rear garden open pergola pavilion (gazebo) at z = -19.5 (fwd = 52.0)
+  const gazebo = new THREE.Group();
+  gazebo.name = "rose-garden-rear-gazebo";
+  gazebo.position.set(0, 0.08, -19.5);
+  for (const gx of [-2.4, 2.4]) {
+    for (const gz of [-2.4, 2.4]) {
+      gazebo.add(box([0.22, 2.95, 0.22], "#6b442b", [gx, 1.48, gz]));
+    }
+  }
+  const gRoof = new THREE.Mesh(
+    new THREE.ConeGeometry(4.2, 1.35, 4),
+    mat("#9e4a4e", 0.68),
+  );
+  gRoof.rotation.y = Math.PI / 4;
+  gRoof.position.y = 3.55;
+  gRoof.castShadow = true;
+  gazebo.add(gRoof);
+  group.add(gazebo);
+
+  // Rear reflecting pool at z = -9.5 (fwd = 42.0)
+  const pond = new THREE.Group();
+  pond.position.set(0, 0.08, -9.5);
+  const pondRim = new THREE.Mesh(
+    new THREE.CylinderGeometry(2.1, 2.2, 0.32, 22),
+    mat("#e5ded2", 0.8),
+  );
+  pondRim.position.y = 0.16;
+  const pondWater = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.85, 1.85, 0.26, 22),
+    mat("#2f8fa1", 0.18, 0.1),
+  );
+  pondWater.position.y = 0.21;
+  pond.add(pondRim, pondWater);
+  group.add(pond);
+
+  // Outdoor patio tables with seated coffee patrons throughout front courtyard AND spacious rear sanctuary
+  const tableSpecs = [
+    // Front rose courtyard (6 tables)
+    [-6.0, 14.5, "#b93d4c", ["man", "woman"]],
+    [6.0, 14.5, "#2f7556", ["woman", "man"]],
+    [-6.0, 20.5, "#2f7556", ["man", "woman"]],
+    [6.0, 20.5, "#b93d4c", ["woman", "man"]],
+    [-6.0, 26.2, "#b93d4c", ["woman", "woman"]],
+    [6.0, 26.2, "#2f7556", ["man", "man"]],
+    // Rear garden sanctuary (6 tables)
+    [-6.4, -7.2, "#2f7556", ["man", "woman"]],
+    [6.4, -7.2, "#b93d4c", ["woman", "man"]],
+    [-6.4, -14.8, "#b93d4c", ["woman", "man"]],
+    [6.4, -14.8, "#2f7556", ["man", "woman"]],
+    [-6.4, -22.2, "#2f7556", ["man", "woman"]],
+    [6.4, -22.2, "#b93d4c", ["woman", "man"]],
+  ];
+  tableSpecs.forEach(([tx, tz, uColor, patrons], idx) => {
+    const t = createPatioTableSet(uColor, true, patrons, animators, idx);
+    t.position.set(tx, 0.08, tz);
+    group.add(t);
+  });
+
+  // Rose bushes bordering pathways
+  for (let z = -27.5; z <= 27.5; z += 6.8) {
+    if (Math.abs(z + 26.0) > 2.5) {
+      group.add(createRoseBush(-9.8, 0.08, z, 0.95, "#e25072"));
+    }
+    group.add(createRoseBush(9.8, 0.08, z, 0.95, "#f07292"));
   }
 
-  // Return polygon footprints & obstacle circles for world collision / grass-tree exclusion
+  // Footprints & obstacles in world/quangTrung coords
   const halfHW = houseW / 2;
   const halfHD = houseD / 2;
-  const houseFwd = centerFwd + 4.4;
+  const houseFwd = centerFwd - houseZ;
   const buildingPoly = [
     toWorld(centerSide - halfHW, houseFwd - halfHD),
     toWorld(centerSide + halfHW, houseFwd - halfHD),
@@ -363,8 +700,10 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
   ];
 
   const obstacles = [
-    { side: centerSide, fwd: centerFwd - 5.8, radius: 1.4 }, // fountain
-    ...tableOffsets.map(([tx, tz]) => ({
+    { side: centerSide, fwd: centerFwd - 21.5, radius: 1.55 }, // front fountain
+    { side: centerSide, fwd: centerFwd + 9.5, radius: 2.3 }, // rear pond
+    { side: centerSide, fwd: centerFwd + 19.5, radius: 2.8 }, // rear gazebo
+    ...tableSpecs.map(([tx, tz]) => ({
       side: centerSide + tx,
       fwd: centerFwd - tz,
       radius: 1.15,
@@ -372,19 +711,48 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
   ];
 
   const lotBounds = {
-    minSide: centerSide - w / 2 - 0.5,
-    maxSide: centerSide + w / 2 + 0.5,
-    minFwd: centerFwd - d / 2 - 0.5,
-    maxFwd: centerFwd + d / 2 + 0.5,
+    minSide: minSide - 0.5,
+    maxSide: maxSide + 0.5,
+    minFwd: minFwd - 0.5,
+    maxFwd: maxFwd + 0.5,
   };
 
-  return { group, buildingPoly, obstacles, lotBounds };
+  const lotPoly = [
+    toWorld(minSide, minFwd),
+    toWorld(maxSide, minFwd),
+    toWorld(maxSide, maxFwd),
+    toWorld(minSide, maxFwd),
+    toWorld(minSide, minFwd),
+  ];
+
+  const inLot = (wx, wz) => inside({ x: wx, z: wz }, lotPoly);
+
+  const canRide = (wx, wz) => {
+    if (hitsCampusWall({ x: wx, z: wz }, fenceSegments, 0.55)) return false;
+    if (!inLot(wx, wz)) return null;
+    if (inside({ x: wx, z: wz }, buildingPoly)) return false;
+    return true;
+  };
+
+  return {
+    group,
+    buildingPoly,
+    obstacles,
+    fenceSegments,
+    lotBounds,
+    inLot,
+    canRide,
+    update: (time) => {
+      for (const fn of animators) fn(time);
+    },
+  };
 }
 
 export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = [] }) {
   // Strip of 5 cafés on the south side of Nguyễn Huệ (opposite Bệnh viện RHM Huế -> Dòng Chúa Cứu Thế)
   const stripGroup = new THREE.Group();
   stripGroup.name = "quang-trung-nguyen-hue-cafes";
+  const animators = [];
 
   const cafeSpecs = [
     {
@@ -396,7 +764,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
       w: 7.4,
       d: 4.6,
       h: 4.4,
-      floors: 1,
       wallHex: "#e8cfa4",
       trimHex: "#5f3924",
       roofHex: "#8d3c28",
@@ -415,7 +782,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
       w: 9.2,
       d: 6.8,
       h: 7.2,
-      floors: 2,
       wallHex: "#efe2c8",
       trimHex: "#355342",
       roofHex: "#693e2e",
@@ -434,7 +800,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
       w: 7.4,
       d: 5.6,
       h: 4.6,
-      floors: 1,
       wallHex: "#d8b48a",
       trimHex: "#4b3322",
       roofHex: "#544133",
@@ -453,7 +818,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
       w: 8.4,
       d: 4.2,
       h: 4.8,
-      floors: 1,
       wallHex: "#f2e7cf",
       trimHex: "#285740",
       roofHex: "#7c3c2e",
@@ -472,7 +836,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
       w: 8.4,
       d: 4.2,
       h: 5.0,
-      floors: 1,
       wallHex: "#ebe8e1",
       trimHex: "#2e3d4c",
       roofHex: "#3a4c5e",
@@ -487,6 +850,7 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
   const buildingPolys = [];
   const obstacles = [];
   const lotBoundsList = [];
+  let tableSeed = 10;
 
   for (const spec of cafeSpecs) {
     const cafe = new THREE.Group();
@@ -496,7 +860,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     // Rotate Math.PI around Y relative to roadYaw so +z faces +fwd (across Nguyễn Huệ toward Bệnh viện RHM Huế)
     cafe.rotation.y = roadYaw + Math.PI;
 
-    // Front cobblestone sidewalk terrace extending cleanly toward street edge without entering walker lane
     const terraceD = spec.d + 1.8;
     const cobbleTex = createCobbleTexture("#d4cbbe", "#beb5a6");
     const pad = new THREE.Mesh(
@@ -511,7 +874,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     pad.receiveShadow = true;
     cafe.add(pad);
 
-    // Cafe building shell
     const wallTex = createCafeWallTexture(spec.wallHex, spec.trimHex, true);
     const body = new THREE.Mesh(
       new THREE.BoxGeometry(spec.w, spec.h, spec.d),
@@ -526,7 +888,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     cafe.add(body);
     cameraObstacles.push(body);
 
-    // Pitched hip/gable cap roof
     const roof = new THREE.Mesh(
       new THREE.ConeGeometry(spec.w * 0.74, 1.65, 4),
       mat(spec.roofHex, 0.7),
@@ -537,7 +898,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     roof.castShadow = true;
     cafe.add(roof);
 
-    // Sloped canvas storefront awning facing Nguyễn Huệ
     const awning = new THREE.Mesh(
       new THREE.BoxGeometry(spec.w - 0.3, 0.14, 1.4),
       mat(spec.awningHex, 0.75),
@@ -547,7 +907,6 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     awning.castShadow = true;
     cafe.add(awning);
 
-    // Crisp printed café signboard
     const signTex = createCafeSignTexture(spec.title, spec.subtitle, {
       bg: spec.signBg,
       border: spec.signBorder,
@@ -563,9 +922,16 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     signMesh.position.set(0, 3.62, spec.d / 2 - 0.25);
     cafe.add(signMesh);
 
-    // Outdoor sidewalk patio seating tables + potted rose planters
-    for (const tx of spec.patioOffsets) {
-      const table = createPatioTableSet(spec.umbrellaHex, true);
+    // Outdoor sidewalk patio seating tables with seated men & women drinking coffee
+    spec.patioOffsets.forEach((tx, idx) => {
+      const patrons = idx % 2 === 0 ? ["man", "woman"] : ["woman", "man"];
+      const table = createPatioTableSet(
+        spec.umbrellaHex,
+        true,
+        patrons,
+        animators,
+        tableSeed++,
+      );
       table.position.set(tx, 0.07, spec.d / 2 + 0.9);
       cafe.add(table);
       obstacles.push({
@@ -573,14 +939,14 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
         fwd: spec.fwd + (spec.d / 2 + 0.9),
         radius: 0.95,
       });
-    }
+    });
+
     for (const px of [-spec.w / 2 + 0.45, spec.w / 2 - 0.45]) {
       cafe.add(createRoseBush(px, 0.07, spec.d / 2 + 1.25, 0.72, "#e65a7b"));
     }
 
     stripGroup.add(cafe);
 
-    // Building footprint in world space (building centered at local z = -0.3 -> world fwd = spec.fwd - 0.3)
     const hw = spec.w / 2;
     const hd = spec.d / 2;
     const bFwd = spec.fwd - 0.3;
@@ -600,5 +966,13 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     });
   }
 
-  return { group: stripGroup, buildingPolys, obstacles, lotBoundsList };
+  return {
+    group: stripGroup,
+    buildingPolys,
+    obstacles,
+    lotBoundsList,
+    update: (time) => {
+      for (const fn of animators) fn(time);
+    },
+  };
 }

@@ -49,8 +49,8 @@ function createQuocHocWallTexture() {
   return tex;
 }
 
-// Split by arc length, including a gate exactly at a corner of the closed ring.
-export function campusWallSegments(points, gate, gap = 10) {
+// Split by arc length, including gates at corners or side edges of the closed ring.
+export function campusWallSegments(points, gate, gap = 10, extraGates = []) {
   const ring = points.slice();
   if (Math.hypot(ring[0].x - ring.at(-1).x, ring[0].z - ring.at(-1).z) > 0.01)
     ring.push(ring[0]);
@@ -60,26 +60,48 @@ export function campusWallSegments(points, gate, gap = 10) {
       distances.at(-1) +
         Math.hypot(ring[i].x - ring[i - 1].x, ring[i].z - ring[i - 1].z),
     );
-  const total = distances.at(-1),
-    hit = nearestPoint(gate, ring),
-    center =
-      distances[hit.index - 1] +
-      hit.t * (distances[hit.index] - distances[hit.index - 1]),
-    segments = [];
+  const total = distances.at(-1);
+  const openings = [
+    { point: gate, gap },
+    ...(extraGates || []).map((g) => ({ point: g, gap: g.gap ?? gap })),
+  ]
+    .filter((o) => o.point && Number.isFinite(o.point.x) && Number.isFinite(o.point.z))
+    .map((o) => {
+      const hit = nearestPoint(o.point, ring);
+      return {
+        center:
+          distances[hit.index - 1] +
+          hit.t * (distances[hit.index] - distances[hit.index - 1]),
+        halfGap: (o.gap ?? gap) / 2,
+      };
+    });
+
+  const segments = [];
   for (let i = 1; i < ring.length; i++) {
     const start = distances[i - 1],
       end = distances[i],
       length = end - start;
     if (length < 0.01) continue;
     const cuts = [start, end];
-    for (const wrap of [-total, 0, total])
-      for (const boundary of [center - gap / 2 + wrap, center + gap / 2 + wrap])
-        if (boundary > start && boundary < end) cuts.push(boundary);
+    for (const o of openings) {
+      for (const wrap of [-total, 0, total]) {
+        for (const boundary of [o.center - o.halfGap + wrap, o.center + o.halfGap + wrap]) {
+          if (boundary > start && boundary < end) cuts.push(boundary);
+        }
+      }
+    }
     cuts.sort((a, b) => a - b);
     for (let j = 1; j < cuts.length; j++) {
-      const mid = (cuts[j - 1] + cuts[j]) / 2,
-        d = Math.abs(mid - center);
-      if (Math.min(d, total - d) < gap / 2) continue;
+      if (cuts[j] - cuts[j - 1] < 0.01) continue;
+      const mid = (cuts[j - 1] + cuts[j]) / 2;
+      if (
+        openings.some((o) => {
+          const d = Math.abs(mid - o.center);
+          return Math.min(d, total - d) < o.halfGap;
+        })
+      ) {
+        continue;
+      }
       const at = (value) => {
         const t = (value - start) / length;
         return {
@@ -821,7 +843,7 @@ function createQuangTrungWallObject(segments, data) {
   return object;
 }
 
-export function createCampusWalls(site, gate) {
+export function createCampusWalls(site, gate, extraGates = []) {
   const data = config[site.id];
   if (!data) return null;
   const gap =
@@ -840,7 +862,7 @@ export function createCampusWalls(site, gate) {
     dongDaCampuses[site.id]?.ring || quangTrungCampuses[site.id]?.ring;
   const rings = precomputedRing ? [precomputedRing] : getRingsOf(site.feature);
   const segments = rings.flatMap((ring) =>
-    campusWallSegments(ring, gate, gap),
+    campusWallSegments(ring, gate, gap, extraGates),
   );
   if (site.id === "quoc-hoc-school") {
     return {

@@ -7,6 +7,7 @@ import {
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
+import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -334,6 +335,8 @@ export class DongChuaCuuTheChurch {
     this.group.name = "dong-chua-cuu-the-church";
     this.animatedObjects = [];
     this.buildingPolygons = [];
+    this.fenceSegments = [];
+    this.secondaryGates = [];
     this.obstacles = [];
 
     this.buildGroundsAndFence();
@@ -381,7 +384,24 @@ export class DongChuaCuuTheChurch {
       gWrapper.add(lawn);
     }
 
-    // Iconic stone-pier & silver iron picket perimeter fence along Nguyễn Huệ frontage (dNH >= 12.5m)
+    // Front garden shrine statue framed cleanly behind open Tu viện gate (per image_d57e1084.png)
+    const frontStatueGroup = new THREE.Group();
+    frontStatueGroup.position.set(36.0, 0.28, 37.5);
+    frontStatueGroup.add(
+      box([1.1, 1.2, 1.1], "#cfc9be", [0, 0.6, 0]),
+      box([0.55, 1.55, 0.45], "#f5f4ef", [0, 1.95, 0]),
+    );
+    const fHead = new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 12, 10),
+      mat("#f5f4ef", 0.5),
+    );
+    fHead.position.y = 2.9;
+    frontStatueGroup.add(fHead);
+    gWrapper.add(frontStatueGroup);
+    this.group.add(gWrapper);
+
+    // Full-perimeter stone-pier & silver wrought-iron fence around ALL sides of this.ring
+    // plus primary Tu viện gate + cổng phụ secondary gates opening onto all surrounding streets
     const stoneTex = createStonePierTexture();
     const fenceTex = createSilverFenceTexture();
     const stoneMat = new THREE.MeshStandardMaterial({
@@ -397,75 +417,197 @@ export class DongChuaCuuTheChurch {
     });
     const capMat = mat("#9c624e", 0.72);
 
-    // Build discrete pier-and-fence spans leaving TWO wide open gates:
-    // 1) Central Tu viện colonial gate at side ∈ [31, 41]
-    // 2) Eastern plaza opening to Basilica & Tượng Chúa Giêsu dang tay at side >= 145
-    const spans = [
-      [-43, 31],
-      [41, 145],
+    const fenceGroup = new THREE.Group();
+    fenceGroup.name = "dong-chua-cuu-the-perimeter-fence";
+
+    const lerpPt = (a, b, t) => ({
+      x: a.x + (b.x - a.x) * t,
+      z: a.z + (b.z - a.z) * t,
+    });
+    const projT = (p, a, b) => {
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const lenSq = dx * dx + dz * dz || 1;
+      return ((p.x - a.x) * dx + (p.z - a.z) * dz) / lenSq;
+    };
+
+    const r = this.ring;
+    // Key perimeter gate definitions mapped onto exact polygon edges
+    const tuVienTarget = this.toWorld(36.0, -24.0);
+    const eastPlazaTarget = this.toWorld(168.0, -22.5);
+    const gateDefs = [
+      // 1) Main Tu viện front gate along north edge (v10 -> v11/v0)
+      {
+        name: "cong-chinh-tu-vien",
+        edgeIndex: 11,
+        t: projT(tuVienTarget, r[10], r[11]),
+        gap: 10.0,
+        isMain: true,
+      },
+      // 2) Cổng phụ quảng trường Basilica / Tượng Chúa (Nguyễn Huệ đông, đối diện Công viên Dự án)
+      {
+        name: "cong-phu-nguyen-hue-dong",
+        edgeIndex: 11,
+        t: projT(eastPlazaTarget, r[10], r[11]),
+        gap: 8.6,
+        isMain: false,
+      },
+      // 3) Cổng phụ Ngã 3 Nguyễn Huệ × Nguyễn Khuyến (edge 10: v9 -> v10)
+      {
+        name: "cong-phu-nga-ba-nguyen-khuyen",
+        edgeIndex: 10,
+        t: 0.5,
+        gap: 5.4,
+        isMain: false,
+      },
+      // 4) Cổng phụ đường Nguyễn Khuyến phía Đông (edge 9: v8 -> v9)
+      {
+        name: "cong-phu-nguyen-khuyen-1",
+        edgeIndex: 9,
+        t: 0.72,
+        gap: 7.4,
+        isMain: false,
+      },
+      // 5) Cổng phụ đường Nguyễn Khuyến phía Nam (edge 9: v8 -> v9)
+      {
+        name: "cong-phu-nguyen-khuyen-2",
+        edgeIndex: 9,
+        t: 0.32,
+        gap: 7.4,
+        isMain: false,
+      },
+      // 6) Cổng phụ hẻm phía Nam (edge 8: v7 -> v8)
+      {
+        name: "cong-phu-hem-nam",
+        edgeIndex: 8,
+        t: 0.5,
+        gap: 5.6,
+        isMain: false,
+      },
+      // 7) Cổng phụ tuyến đường phía Tây (edge 1: v0 -> v1)
+      {
+        name: "cong-phu-duong-tay",
+        edgeIndex: 1,
+        t: 0.48,
+        gap: 6.2,
+        isMain: false,
+      },
     ];
-    for (const [sStart, sEnd] of spans) {
-      const len = sEnd - sStart;
-      const mid = (sStart + sEnd) / 2;
-      const fencePanel = new THREE.Mesh(
-        new THREE.BoxGeometry(len, 2.05, 0.22),
-        fenceMat,
-      );
-      fencePanel.position.set(mid, 1.2, 25.0);
-      fencePanel.castShadow = true;
-      gWrapper.add(fencePanel);
 
-      const posts = Math.max(2, Math.round(len / 8));
-      for (let i = 0; i <= posts; i++) {
-        const sx = sStart + (i / posts) * len;
-        const isGatePier = Math.abs(sx - 31) < 0.2 || Math.abs(sx - 41) < 0.2;
-        const pw = isGatePier ? 0.72 : 0.48;
-        const ph = isGatePier ? 2.55 : 2.18;
-        const pier = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, pw), stoneMat);
-        pier.position.set(sx, ph / 2 + 0.16, 25.0);
-        pier.castShadow = true;
-        const cap = new THREE.Mesh(
-          new THREE.ConeGeometry(pw * 0.78, 0.28, 4),
-          capMat,
+    for (let i = 1; i < r.length; i++) {
+      const a = r[i - 1];
+      const b = r[i];
+      const dx = b.x - a.x;
+      const dz = b.z - a.z;
+      const len = Math.hypot(dx, dz);
+      if (len < 0.2) continue;
+
+      const edgeGates = gateDefs
+        .filter((g) => g.edgeIndex === i)
+        .map((g) => {
+          const centerDist = Math.max(g.gap / 2 + 0.5, Math.min(len - g.gap / 2 - 0.5, g.t * len));
+          return {
+            ...g,
+            s0: centerDist - g.gap / 2,
+            s1: centerDist + g.gap / 2,
+            center: lerpPt(a, b, centerDist / len),
+          };
+        })
+        .sort((g1, g2) => g1.s0 - g2.s0);
+
+      // Record open gate placements & render gate piers + swung-open iron gate leaves
+      const yaw = Math.atan2(-dz, dx);
+      const nx = -dz / len;
+      const nz = dx / len;
+      for (const eg of edgeGates) {
+        this.secondaryGates.push({
+          name: eg.name,
+          x: eg.center.x,
+          z: eg.center.z,
+          gap: eg.gap,
+          isMain: eg.isMain,
+        });
+        for (const [distAlong, dirSign] of [
+          [eg.s0, 1],
+          [eg.s1, -1],
+        ]) {
+          const gp = lerpPt(a, b, distAlong / len);
+          const pw = eg.isMain ? 0.72 : 0.62;
+          const ph = eg.isMain ? 2.55 : 2.38;
+          const pier = new THREE.Mesh(new THREE.BoxGeometry(pw, ph, pw), stoneMat);
+          pier.position.set(gp.x, ph / 2 + 0.16, gp.z);
+          pier.rotation.y = yaw;
+          pier.castShadow = true;
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(pw * 0.78, 0.28, 4), capMat);
+          cap.position.set(gp.x, ph + 0.3, gp.z);
+          cap.rotation.y = yaw + Math.PI / 4;
+          fenceGroup.add(pier, cap);
+          this.obstacles.push({ x: gp.x, z: gp.z, radius: 0.65 });
+
+          // Swung-open iron double gate leaf resting inside compound perpendicular to gate line
+          // Ensure normal points inward toward compound interior
+          const testPt = { x: eg.center.x + nx * 1.5, z: eg.center.z + nz * 1.5 };
+          const inwardSign = inside(testPt, this.ring) ? 1 : -1;
+          const leafLen = Math.min(3.8, eg.gap * 0.42);
+          const leaf = new THREE.Mesh(
+            new THREE.BoxGeometry(0.1, 2.05, leafLen),
+            fenceMat,
+          );
+          const ux = dx / len;
+          const uz = dz / len;
+          leaf.position.set(
+            gp.x + ux * dirSign * 0.38 + nx * inwardSign * (leafLen * 0.52),
+            1.22,
+            gp.z + uz * dirSign * 0.38 + nz * inwardSign * (leafLen * 0.52),
+          );
+          leaf.rotation.y = yaw;
+          fenceGroup.add(leaf);
+        }
+      }
+
+      // Build continuous pier-and-iron fence spans between gate cuts
+      const cuts = [0];
+      for (const eg of edgeGates) {
+        cuts.push(eg.s0, eg.s1);
+      }
+      cuts.push(len);
+
+      for (let k = 0; k < cuts.length; k += 2) {
+        const startDist = cuts[k];
+        const endDist = cuts[k + 1];
+        const spanLen = endDist - startDist;
+        if (spanLen < 0.35) continue;
+        const pA = lerpPt(a, b, startDist / len);
+        const pB = lerpPt(a, b, endDist / len);
+        this.fenceSegments.push({ a: pA, b: pB });
+
+        const mx = (pA.x + pB.x) / 2;
+        const mz = (pA.z + pB.z) / 2;
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(spanLen, 2.05, 0.22),
+          fenceMat,
         );
-        cap.rotation.y = Math.PI / 4;
-        cap.position.set(sx, ph + 0.3, 25.0);
-        gWrapper.add(pier, cap);
-      }
+        panel.position.set(mx, 1.2, mz);
+        panel.rotation.y = yaw;
+        panel.castShadow = true;
+        fenceGroup.add(panel);
 
-      // Register collision along fence line segments
-      for (let s = sStart; s <= sEnd; s += 2.0) {
-        this.obstacles.push({ ...this.toWorld(s, -25.0), radius: 1.3 });
+        const posts = Math.max(1, Math.round(spanLen / 7.5));
+        for (let p = 0; p <= posts; p++) {
+          const pp = lerpPt(pA, pB, p / posts);
+          const pier = new THREE.Mesh(new THREE.BoxGeometry(0.46, 2.18, 0.46), stoneMat);
+          pier.position.set(pp.x, 1.25, pp.z);
+          pier.rotation.y = yaw;
+          pier.castShadow = true;
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.24, 4), capMat);
+          cap.position.set(pp.x, 2.46, pp.z);
+          cap.rotation.y = yaw + Math.PI / 4;
+          fenceGroup.add(pier, cap);
+        }
       }
     }
 
-    // Swung-open silver double gate leaves & small white Tu viện garden statue framed by center gate
-    for (const sx of [31.3, 40.7]) {
-      const dir = sx < 36 ? 1 : -1;
-      const openLeaf = new THREE.Mesh(
-        new THREE.BoxGeometry(0.1, 2.1, 4.2),
-        fenceMat,
-      );
-      openLeaf.position.set(sx + dir * 0.3, 1.24, 27.3);
-      gWrapper.add(openLeaf);
-    }
-
-    // Front garden shrine statue framed cleanly behind open Tu viện gate (per image_d57e1084.png)
-    const frontStatueGroup = new THREE.Group();
-    frontStatueGroup.position.set(36.0, 0.28, 37.5);
-    frontStatueGroup.add(
-      box([1.1, 1.2, 1.1], "#cfc9be", [0, 0.6, 0]),
-      box([0.55, 1.55, 0.45], "#f5f4ef", [0, 1.95, 0]),
-    );
-    const fHead = new THREE.Mesh(
-      new THREE.SphereGeometry(0.2, 12, 10),
-      mat("#f5f4ef", 0.5),
-    );
-    fHead.position.y = 2.9;
-    frontStatueGroup.add(fHead);
-    gWrapper.add(frontStatueGroup);
-
-    this.group.add(gWrapper);
+    this.group.add(fenceGroup);
   }
 
   buildColonialTuVien() {
@@ -662,6 +804,16 @@ export class DongChuaCuuTheChurch {
   }
 
   canRide(wx, wz) {
+    if (hitsCampusWall({ x: wx, z: wz }, this.fenceSegments, 0.55)) {
+      return false;
+    }
+    if (
+      this.secondaryGates.some(
+        (g) => Math.hypot(wx - g.x, wz - g.z) <= (g.gap ? g.gap * 0.45 : 2.4),
+      )
+    ) {
+      return true;
+    }
     if (!this.inCompound(wx, wz)) return null;
     if (this.buildingPolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
       return false;

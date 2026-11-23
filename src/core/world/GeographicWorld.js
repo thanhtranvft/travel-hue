@@ -70,6 +70,8 @@ import { VincomPlazaHue } from "../../modules/areas/nguyen-chi-dieu/view/VincomP
 import { QuangTrungCampus } from "../../modules/areas/quang-trung/view/QuangTrungCampus.js";
 import { BenhVienRhmHue } from "../../modules/areas/quang-trung/view/BenhVienRhmHue.js";
 import { DongChuaCuuTheChurch } from "../../modules/areas/quang-trung/view/DongChuaCuuTheChurch.js";
+import { QuangTrungEastPrecinct } from "../../modules/areas/quang-trung/view/QuangTrungEastPrecinct.js";
+import quangTrungCampuses from "../../modules/areas/quang-trung/data/campuses.json" with { type: "json" };
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -101,6 +103,27 @@ const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
   1174028276,
   1174028274,
 ]);
+
+const QUANG_TRUNG_SUPPRESSED_ROAD_IDS = new Set([
+  1416699224,
+  1572355191,
+  895576841,
+]);
+
+function isQuangTrungEastPrecinctBuilding(center) {
+  const gate = quangTrungCampuses["quang-trung"]?.gate;
+  const h = quangTrungCampuses.gateHeading;
+  if (!gate || !Number.isFinite(h)) return false;
+  const fx = -Math.sin(h);
+  const fz = -Math.cos(h);
+  const rx = -fz;
+  const rz = fx;
+  const dx = center.x - gate.x;
+  const dz = center.z - gate.z;
+  const side = dx * rx + dz * rz;
+  const fwd = dx * fx + dz * fz;
+  return side >= 37.5 && side <= 223.5 && fwd >= -2.5 && fwd <= 68.0;
+}
 
 export function ribbon(points, width, height = 0.23) {
   const vertices = [],
@@ -313,14 +336,16 @@ export class GeographicWorld {
       scene.add(borderMesh);
       parkBorderGeos.forEach((g) => g.dispose());
     }
-    this.renderRoads = activeRoads.filter((r) =>
-      r.points.some(
-        (p) =>
-          p.x >= this.bounds.minX &&
-          p.x <= this.bounds.maxX &&
-          p.z >= this.bounds.minZ &&
-          p.z <= this.bounds.maxZ,
-      ),
+    this.renderRoads = activeRoads.filter(
+      (r) =>
+        !(this.region?.id === "quang-trung" && QUANG_TRUNG_SUPPRESSED_ROAD_IDS.has(r.id)) &&
+        r.points.some(
+          (p) =>
+            p.x >= this.bounds.minX &&
+            p.x <= this.bounds.maxX &&
+            p.z >= this.bounds.minZ &&
+            p.z <= this.bounds.maxZ,
+        ),
     );
     this.boardwalkMainPoints = [683633953, 1167513733, 1167513732]
       .flatMap((id, idx) => {
@@ -434,6 +459,8 @@ export class GeographicWorld {
         )
       )
         continue;
+      if (this.region?.id === "quang-trung" && isQuangTrungEastPrecinctBuilding(center))
+        continue;
       if (CUSTOM_LANDMARK_BUILDING_IDS.has(feature.id)) {
         this.buildingPolygons.push({
           points,
@@ -545,7 +572,20 @@ export class GeographicWorld {
           gate.object.rotation.y = gate.placement.heading;
           scene.add(gate.object);
           this.schoolGates.push({ id: site.id, ...gate.placement });
-          const walls = createCampusWalls(site, gate.placement);
+          const extraGates = [];
+          if (site.id === "quang-trung") {
+            const h = gate.placement.heading;
+            const fx = -Math.sin(h);
+            const fz = -Math.cos(h);
+            const rx = -fz;
+            const rz = fx;
+            extraGates.push({
+              x: gate.placement.x + 37.2 * rx + 58.5 * fx,
+              z: gate.placement.z + 37.2 * rz + 58.5 * fz,
+              gap: 5.4,
+            });
+          }
+          const walls = createCampusWalls(site, gate.placement, extraGates);
           if (walls) {
             scene.add(walls.object);
             this.cameraObstacles.push(...walls.object.children);
@@ -766,6 +806,9 @@ export class GeographicWorld {
         }
       }
     }
+    if (this.region?.id === "quang-trung") {
+      this.quangTrungEastPrecinct = new QuangTrungEastPrecinct(this);
+    }
     for (const crossing of activeCorridorCrossings) {
       const road = activeRoads.find((r) => r.id === crossing.mainId);
       if (!road) continue;
@@ -936,6 +979,7 @@ export class GeographicWorld {
       this.caoThangCampus?.groundAt(x, z, referenceY) ??
       this.vincomPlaza?.groundAt(x, z, referenceY) ??
       this.quangTrungCampus?.groundAt(x, z, referenceY) ??
+      this.quangTrungEastPrecinct?.groundAt(x, z, referenceY) ??
       this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
       this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
@@ -1002,6 +1046,11 @@ export class GeographicWorld {
     if (this.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 11))
       return false;
     if (
+      this.benhVienRhmHue?.entrance &&
+      Math.hypot(p.x - this.benhVienRhmHue.entrance.x, p.z - this.benhVienRhmHue.entrance.z) < 14.5
+    )
+      return false;
+    if (
       this.quocHocPark?.blocksTree(p.x, p.z) ||
       this.quocHocCampus?.blocksTree(p.x, p.z) ||
       this.haiBaTrungCampus?.blocksTree(p.x, p.z) ||
@@ -1009,6 +1058,7 @@ export class GeographicWorld {
       this.caoThangCampus?.blocksTree(p.x, p.z) ||
       this.vincomPlaza?.blocksTree(p.x, p.z) ||
       this.quangTrungCampus?.blocksTree(p.x, p.z) ||
+      this.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
       this.benhVienRhmHue?.blocksTree(p.x, p.z) ||
       this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z)
     )
@@ -1090,6 +1140,8 @@ export class GeographicWorld {
     if (hospRide === false) return false;
     const churchRide = this.dongChuaCuuTheChurch?.canRide(x, z);
     if (churchRide === false) return false;
+    const eastRide = this.quangTrungEastPrecinct?.canRide(x, z);
+    if (eastRide === false) return false;
     const parkRide = this.quocHocPark?.canRide(x, z);
     if (parkRide !== null && parkRide !== undefined) return parkRide;
     const campusRide =
@@ -1100,6 +1152,7 @@ export class GeographicWorld {
       this.quangTrungCampus?.canRide(x, z);
     if (campusRide === false) return false;
     if (this.hitsTree(x, z, referenceY)) return false;
+    if (eastRide === true) return true;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
         (b) =>
@@ -1146,6 +1199,7 @@ export class GeographicWorld {
     this.nguyenChiDieuCampus?.update(time, position);
     this.caoThangCampus?.update(time, position);
     this.quangTrungCampus?.update(time, position);
+    this.quangTrungEastPrecinct?.update(time, position);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);

@@ -101,6 +101,7 @@ export function addStreetDetails(world, features) {
         world.caoThangCampus?.blocksTree(p.x, p.z) ||
         world.vincomPlaza?.blocksTree(p.x, p.z) ||
         world.quangTrungCampus?.blocksTree(p.x, p.z) ||
+        world.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
         world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
         world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
         world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 10);
@@ -175,6 +176,8 @@ export function addStreetDetails(world, features) {
       center.z < world.bounds.minZ ||
       center.z > world.bounds.maxZ
     )
+      continue;
+    if (world.quangTrungEastPrecinct?.blocksOmittedBuilding?.(center.x, center.z))
       continue;
     if (!world.buildingPolygons.some((b) => inside(center, b.points))) continue;
     const hit = renderRoads
@@ -257,6 +260,7 @@ export function addStreetDetails(world, features) {
                 world.caoThangCampus?.blocksTree(p.x, p.z) ||
                 world.vincomPlaza?.blocksTree(p.x, p.z) ||
                 world.quangTrungCampus?.blocksTree(p.x, p.z) ||
+                world.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
                 world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
                 world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
                 onOtherCarriageway(p, road, renderRoads, 2)

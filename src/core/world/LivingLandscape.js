@@ -159,6 +159,7 @@ export class LivingGrass {
         world.nguyenChiDieuCampus?.blocksGrass(p.x, p.z) ||
         world.caoThangCampus?.blocksGrass(p.x, p.z) ||
         world.quangTrungCampus?.blocksGrass(p.x, p.z) ||
+        world.quangTrungEastPrecinct?.blocksGrass(p.x, p.z) ||
         world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
         world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z)
       )

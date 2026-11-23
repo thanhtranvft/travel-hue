@@ -307,9 +307,57 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
     const parkingShelter = campus.toWorld(34.4, 24);
     assert.equal(campus.canRide(parkingShelter.x, parkingShelter.z), false);
 
-    const insideRoseGarden = campus.toWorld(47.0, 16.4);
-    assert.equal(campus.canRide(insideRoseGarden.x, insideRoseGarden.z), false);
-    assert.equal(campus.blocksTree(insideRoseGarden.x, insideRoseGarden.z), true);
+    // Requirement B: Seated men & women coffee patrons across roadside cafés and Rose Garden
+    let seatedMen = 0;
+    let seatedWomen = 0;
+    campus.group.traverse((o) => {
+      if (o.name === "cafe-seated-patron") {
+        if (o.userData.gender === "man") seatedMen++;
+        if (o.userData.gender === "woman") seatedWomen++;
+      }
+    });
+    assert.ok(
+      seatedMen > 0 && seatedWomen > 0,
+      `cafés feature seated men (${seatedMen}) and women (${seatedWomen}) drinking coffee`,
+    );
+    campus.update(4.1);
+
+    // Requirement C & D: Parking rear cổng phụ + expanded & fenced Rose Garden Café
+    assert.ok(
+      campus.group.getObjectByName("quang-trung-side-gate"),
+      "cổng phụ beside teacher parking lot built",
+    );
+    assert.ok(
+      campus.group.getObjectByName("rose-garden-fence") &&
+        campus.group.getObjectByName("rose-garden-west-gate") &&
+        campus.group.getObjectByName("rose-garden-rear-gazebo"),
+      "expanded Rose Garden fence, west connecting gate, and rear gazebo built",
+    );
+    const sideGatePt = campus.toWorld(37.2, 58.5);
+    const wallsWithSideGate = createCampusWalls(site, gate.placement, [
+      { x: sideGatePt.x, z: sideGatePt.z, gap: 5.4 },
+    ]);
+    assert.equal(
+      hitsCampusWall(sideGatePt, wallsWithSideGate.segments),
+      false,
+      "school east perimeter wall opens cleanly at parking cổng phụ",
+    );
+    assert.equal(campus.canRide(sideGatePt.x, sideGatePt.z), true);
+    const roseWestGate = campus.toWorld(39.0, 58.5);
+    assert.equal(campus.canRide(roseWestGate.x, roseWestGate.z), true);
+
+    const roseFrontArch = campus.toWorld(50.25, 1.5);
+    assert.equal(campus.canRide(roseFrontArch.x, roseFrontArch.z), true);
+    const roseFrontCourtyard = campus.toWorld(47.0, 16.4);
+    assert.equal(campus.canRide(roseFrontCourtyard.x, roseFrontCourtyard.z), true);
+    assert.equal(campus.blocksTree(roseFrontCourtyard.x, roseFrontCourtyard.z), true);
+
+    const insideRoseVilla = campus.toWorld(50.25, 27.7);
+    assert.equal(campus.canRide(insideRoseVilla.x, insideRoseVilla.z), false);
+    const roseEastFence = campus.toWorld(61.5, 32.0);
+    assert.equal(campus.canRide(roseEastFence.x, roseEastFence.z), false);
+    const roseRearFence = campus.toWorld(50.25, 63.5);
+    assert.equal(campus.canRide(roseRearFence.x, roseRearFence.z), false);
 
     const insideCafeStrip = campus.toWorld(-61.8, -24.7);
     assert.equal(campus.canRide(insideCafeStrip.x, insideCafeStrip.z), false);
@@ -320,7 +368,7 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
   });
 });
 
-test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòng Chúa Cứu Thế + Tượng Chúa Giêsu dang tay build cleanly", async () => {
+test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòng Chúa Cứu Thế + hàng rào & cổng phụ build cleanly", async () => {
   await loadGeography("quang-trung");
   withMockDocument(() => {
     const hospSite = sites.find((s) => s.id === "benh-vien-rhm-hue");
@@ -331,24 +379,64 @@ test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòn
     const world = { scene: new THREE.Scene(), cameraObstacles: [] };
     const hosp = new BenhVienRhmHue(world, hospSite);
     assert.ok(
-      hosp.group.getObjectByName("benh-vien-rhm-hue-sign"),
-      "Bệnh viện RHM Huế portico & sign built",
+      hosp.group.getObjectByName("benh-vien-rhm-hue-sign") &&
+        hosp.group.getObjectByName("benh-vien-rhm-hue-fence") &&
+        hosp.group.getObjectByName("benh-vien-rhm-hue-main-gate"),
+      "Bệnh viện RHM Huế portico, exterior courtyard fence, and grand main gate built",
+    );
+    assert.ok(hosp.fenceSegments.length > 0, "hospital perimeter fence segments registered");
+    assert.equal(
+      hosp.canRide(hosp.entrance.x, hosp.entrance.z),
+      true,
+      "hospital grand main gate stays passable",
     );
     const hospYard = hosp.toWorld(0, 8);
     assert.equal(hosp.groundAt(hospYard.x, hospYard.z), 0.28);
     assert.equal(hosp.canRide(hospYard.x, hospYard.z), true);
     const hospBuildingPt = hosp.toWorld(-2, 19);
     assert.equal(hosp.canRide(hospBuildingPt.x, hospBuildingPt.z), false);
+    const hospFrontApproach = hosp.toWorld(0, -4);
+    assert.equal(
+      hosp.blocksTree(hospFrontApproach.x, hospFrontApproach.z),
+      true,
+      "trees blocked from growing in front of Bệnh viện RHM main gate",
+    );
+    assert.equal(
+      hitsCampusWall(hosp.entrance, hosp.fenceSegments, 0.55),
+      false,
+      "hospital main gate cuts clean opening in fence",
+    );
 
     const church = new DongChuaCuuTheChurch(world, churchSite);
     assert.ok(
       church.group.getObjectByName("dong-chua-cuu-the-tuvien-facade") &&
         church.group.getObjectByName("dong-chua-cuu-the-basilica") &&
-        church.group.getObjectByName("jesus-christ-statue"),
-      "Colonial Tu viện facade, Basilica, and Jesus Christ statue built",
+        church.group.getObjectByName("jesus-christ-statue") &&
+        church.group.getObjectByName("dong-chua-cuu-the-perimeter-fence"),
+      "Colonial Tu viện facade, Basilica, Christ statue, and full perimeter iron fence built",
     );
+    assert.ok(
+      church.secondaryGates.length >= 6,
+      `church compound provides main gate + multiple cổng phụ (${church.secondaryGates.length})`,
+    );
+    for (const g of church.secondaryGates) {
+      assert.equal(
+        church.canRide(g.x, g.z),
+        true,
+        `church gate ${g.name} opens cleanly through perimeter fence`,
+      );
+    }
+    assert.ok(church.fenceSegments.length >= 10, "all unfenced ring edges enclosed with fence spans");
+    for (const seg of church.fenceSegments) {
+      const mid = { x: (seg.a.x + seg.b.x) / 2, z: (seg.a.z + seg.b.z) / 2 };
+      assert.equal(
+        hitsCampusWall(mid, church.fenceSegments, 0.55),
+        true,
+        "continuous iron fence span blocks riding across wall",
+      );
+    }
 
-    const gateOpening = church.toWorld(36, -25);
+    const gateOpening = church.toWorld(36, -24);
     assert.equal(
       church.canRide(gateOpening.x, gateOpening.z),
       true,
@@ -360,6 +448,75 @@ test("Bệnh viện Răng Hàm Mặt Huế (83 Nguyễn Huệ) & Nhà thờ Dòn
       false,
       "Christ statue garden island blocks riding through pedestal",
     );
+  });
+});
+
+test("Bệnh viện Đa Khoa, Hẻm nhỏ, Công viên Dự Án & tree-clearance integrate cleanly in GeographicWorld (quang-trung)", async () => {
+  const region = await loadGeography("quang-trung");
+  withMockDocument(() => {
+    const world = new GeographicWorld(new THREE.Scene());
+    world.region = region;
+    world.build();
+
+    const east = world.quangTrungEastPrecinct;
+    assert.ok(east, "quangTrungEastPrecinct instantiated on GeographicWorld");
+    assert.ok(
+      east.group.getObjectByName("benh-vien-da-khoa") &&
+        east.group.getObjectByName("quang-trung-small-alley") &&
+        east.group.getObjectByName("quang-trung-project-park") &&
+        east.group.getObjectByName("cong-vien-nha-ve-sinh") &&
+        east.group.getObjectByName("cong-vien-picnic-group") &&
+        east.group.getObjectByName("cong-vien-du-an-sign"),
+      "Bệnh viện Đa Khoa, Hẻm nhỏ, and Công viên Dự Án landmarks built",
+    );
+
+    let ambulanceCount = 0;
+    let sedanCount = 0;
+    east.group.traverse((o) => {
+      if (o.name === "hospital-ambulance") ambulanceCount++;
+      if (o.name === "cong-vien-parked-sedan") sedanCount++;
+    });
+    assert.equal(ambulanceCount, 2, "2 ambulances parked in Bệnh viện Đa Khoa forecourt");
+    assert.equal(sedanCount, 3, "3 white sedans parked at Công viên Dự Án bay");
+
+    assert.ok(world.landmarks.has("benh-vien-da-khoa"), "Bệnh viện Đa Khoa landmark registered");
+    assert.ok(world.landmarks.has("cong-vien-du-an"), "Công viên Dự Án landmark registered");
+
+    const daKhoaGate = east.toWorld(85.5, 1.0);
+    assert.equal(east.canRide(daKhoaGate.x, daKhoaGate.z), true, "Bệnh viện Đa Khoa main gate passable");
+    const daKhoaBuilding = east.toWorld(85.5, 26.0);
+    assert.equal(east.canRide(daKhoaBuilding.x, daKhoaBuilding.z), false, "Bệnh viện Đa Khoa main block solid");
+
+    const hemPt = east.toWorld(111.5, 30.0);
+    assert.equal(east.groundAt(hemPt.x, hemPt.z), 0.24, "Hẻm nhỏ paved elevation");
+    assert.equal(east.canRide(hemPt.x, hemPt.z), true, "Hẻm nhỏ passable");
+
+    const parkWalkway = east.toWorld(168.0, 12.0);
+    assert.equal(east.groundAt(parkWalkway.x, parkWalkway.z), 0.28, "Công viên Dự Án plaza elevation");
+    assert.equal(east.canRide(parkWalkway.x, parkWalkway.z), true, "Công viên Dự Án walkway passable");
+    assert.equal(east.blocksGrass(parkWalkway.x, parkWalkway.z), true);
+    assert.equal(east.blocksTree(parkWalkway.x, parkWalkway.z), true);
+
+    const parkPavilion = east.toWorld(192.5, 53.25);
+    assert.equal(east.canRide(parkPavilion.x, parkPavilion.z), false, "Công viên service pavilion solid");
+
+    // Verify no ambient world trees obstruct Bệnh viện RHM gate or east precinct lots
+    const hospEntrance = world.benhVienRhmHue.entrance;
+    for (const tp of world.treePositions) {
+      assert.ok(
+        Math.hypot(tp.x - hospEntrance.x, tp.z - hospEntrance.z) >= 14.5,
+        "no ambient tree spawned inside Bệnh viện RHM gate approach",
+      );
+      const local = east.toLocal(tp.x, tp.z);
+      const inProtectedEastZone =
+        local.side >= 37.5 && local.side <= 222.0 && local.fwd >= -10.0 && local.fwd <= 66.5;
+      assert.equal(
+        inProtectedEastZone,
+        false,
+        "no ambient roadside tree intrudes on Rose Garden / Bệnh viện Đa Khoa / Hẻm nhỏ / Công viên Dự Án",
+      );
+    }
+    east.update(3.2, parkWalkway);
   });
 });
 

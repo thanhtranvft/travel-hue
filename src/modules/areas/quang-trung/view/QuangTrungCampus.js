@@ -715,11 +715,11 @@ function createSchoolParkingLot(gate, facingGateYaw) {
   lot.position.set(gate.x, 0, gate.z);
   lot.rotation.y = facingGateYaw;
 
-  // Dedicated paved parking zone beside East classroom wing: side [+29.7..+36.7], fwd [8.8..57.8]
+  // Dedicated paved parking zone beside East classroom wing: side [+29.7..+36.7], fwd [8.8..62.0]
   const lotCenterX = 33.2;
-  const lotCenterZ = -33.3;
+  const lotCenterZ = -35.4;
   const lotW = 6.9;
-  const lotD = 49.0;
+  const lotD = 53.2;
 
   const asphalt = new THREE.Mesh(
     new THREE.BoxGeometry(lotW, 0.032, lotD),
@@ -729,19 +729,20 @@ function createSchoolParkingLot(gate, facingGateYaw) {
   asphalt.receiveShadow = true;
   lot.add(asphalt);
 
-  // Curbed border separating parking zone from inner walkway & fence
+  // Curbed border separating parking zone from inner walkway & fence (leaving opening at cổng phụ fwd 55.8..61.2)
   lot.add(
     box([0.16, 0.08, lotD], "#e5e8ec", [29.8, 0.32, lotCenterZ]),
-    box([0.16, 0.08, lotD], "#e5e8ec", [36.6, 0.32, lotCenterZ]),
+    box([0.16, 0.08, 47.0], "#e5e8ec", [36.6, 0.32, -32.3]),
+    box([0.16, 0.08, 0.8], "#e5e8ec", [36.6, 0.32, -61.6]),
   );
 
   // Yellow entry guide lane lines along left side of parking lot (x = 30.8)
-  for (let z = -10.5; z >= -55.0; z -= 3.2) {
+  for (let z = -10.5; z >= -59.0; z -= 3.2) {
     lot.add(createCourtLineStrip(0.14, 1.8, 31.35, 0.318, z));
   }
 
   // Painted parking bays on right side (x = 32.0..36.2)
-  for (let z = -12.5; z >= -55.5; z -= 2.2) {
+  for (let z = -12.5; z >= -55.0; z -= 2.2) {
     lot.add(createCourtLineStrip(3.9, 0.09, 34.25, 0.318, z));
   }
 
@@ -1109,6 +1110,7 @@ export class QuangTrungCampus {
     this.flags = [];
     this.animatedObjects = [];
     this.vendorAnimations = [];
+    this.cafeUpdaters = [];
     this.campusBuildingPolygons = [];
     this.cafePolygons = [];
     this.cafeLotBounds = [];
@@ -1119,6 +1121,7 @@ export class QuangTrungCampus {
     this.buildCourtyard();
     this.buildBuildings();
     this.buildParkingLot();
+    this.buildParkingSideGate();
     this.buildGreenery();
     this.buildPrimarySchoolProps();
     this.buildStreetVendors();
@@ -1661,11 +1664,73 @@ export class QuangTrungCampus {
 
     const lot = createSchoolParkingLot(this.gate, this.facingGateYaw);
     this.group.add(lot);
-    // Shelters & booth block riding while leaving left aisle (side 30.0..31.8) passable
+    // Shelters & booth block riding while leaving left aisle (side 30.0..31.8) & rear cổng phụ passable
     for (const fwd of [16, 20, 24, 27, 38, 42, 47, 52]) {
       this.obstacles.push({ side: 34.4, fwd, radius: 2.0 });
     }
     this.obstacles.push({ side: 35.1, fwd: 9.8, radius: 1.5 });
+  }
+
+  buildParkingSideGate() {
+    // Secondary gate (cổng phụ) at far end of Quang Trung teacher parking lot (side = 37.2, fwd = 58.5)
+    // opening straight toward Rose Garden Café's West Side Gate (side = 39.0, fwd = 58.5)
+    const gateSide = 37.2;
+    const gateFwd = 58.5;
+    const gPos = this.toWorld(gateSide, gateFwd);
+
+    const sideGate = new THREE.Group();
+    sideGate.name = "quang-trung-side-gate";
+    sideGate.position.set(gPos.x, 0, gPos.z);
+    sideGate.rotation.y = this.facingGateYaw;
+
+    // Paved passage apron connecting parking lot edge -> East school wall -> Rose Garden West Gate
+    const apron = new THREE.Mesh(
+      new THREE.BoxGeometry(3.2, 0.06, 5.4),
+      mat("#585f66", 0.88),
+    );
+    apron.position.set(0.85, 0.27, 0);
+    apron.receiveShadow = true;
+    sideGate.add(apron);
+
+    // Twin gate piers (local z = ±2.7 -> fwd = 55.8 & 61.2)
+    for (const sz of [-2.7, 2.7]) {
+      sideGate.add(
+        box([0.68, 3.25, 0.68], "#f4f7fa", [0, 1.8, sz]),
+        box([0.78, 0.22, 0.78], "#1c73c4", [0, 3.5, sz]),
+        box([0.74, 0.2, 0.74], "#1c73c4", [0, 0.38, sz]),
+      );
+      this.obstacles.push({ side: gateSide, fwd: gateFwd - sz, radius: 0.55 });
+
+      // Swung-open cobalt steel gate leaf folded inward toward parking edge
+      const leaf = new THREE.Mesh(
+        new THREE.BoxGeometry(2.1, 1.85, 0.08),
+        mat("#1a6fc2", 0.5, 0.35),
+      );
+      leaf.position.set(-1.1, 1.22, sz < 0 ? sz + 0.14 : sz - 0.14);
+      sideGate.add(leaf);
+    }
+
+    // Overhead transom beam & double-sided cổng phụ sign
+    sideGate.add(box([0.45, 0.72, 6.2], "#0e67be", [0, 3.85, 0]));
+    const bannerTex = createBannerTexture(
+      "CỔNG PHỤ · BÃI XE GIÁO VIÊN",
+      "THÔNG SANG ROSE GARDEN CAFÉ",
+      "#0e67be",
+    );
+    const signMat = new THREE.MeshStandardMaterial({
+      color: bannerTex ? "#ffffff" : "#0e67be",
+      map: bannerTex,
+      roughness: 0.44,
+    });
+    const eastFace = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 0.66), signMat);
+    eastFace.position.set(0.24, 3.85, 0);
+    eastFace.rotation.y = Math.PI / 2;
+    const westFace = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 0.66), signMat);
+    westFace.position.set(-0.24, 3.85, 0);
+    westFace.rotation.y = -Math.PI / 2;
+    sideGate.add(eastFace, westFace);
+
+    this.group.add(sideGate);
   }
 
   buildGreenery() {
@@ -1826,10 +1891,12 @@ export class QuangTrungCampus {
       roadYaw: this.facingGateYaw,
       cameraObstacles: this.world.cameraObstacles,
     });
+    this.roseGarden = roseGarden;
     this.group.add(roseGarden.group);
     this.cafePolygons.push(roseGarden.buildingPoly);
     this.cafeLotBounds.push(roseGarden.lotBounds);
     this.outsideObstacles.push(...roseGarden.obstacles);
+    if (roseGarden.update) this.cafeUpdaters.push(roseGarden.update);
 
     const cafeStrip = buildNguyenHueCafeStrip({
       toWorld: (s, f) => this.toWorld(s, f),
@@ -1840,6 +1907,7 @@ export class QuangTrungCampus {
     this.cafePolygons.push(...cafeStrip.buildingPolys);
     this.cafeLotBounds.push(...cafeStrip.lotBoundsList);
     this.outsideObstacles.push(...cafeStrip.obstacles);
+    if (cafeStrip.update) this.cafeUpdaters.push(cafeStrip.update);
   }
 
   buildStudents() {
@@ -1909,11 +1977,23 @@ export class QuangTrungCampus {
     if (this.cafePolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
       return false;
     }
-    if (!this.inCampus(wx, wz)) return null;
+    const roseRide = this.roseGarden?.canRide(wx, wz);
+    if (roseRide === false) return false;
+    const { side, fwd } = this.toLocal(wx, wz);
+    if (side >= 36.4 && side <= 39.4 && fwd >= 55.8 && fwd <= 61.2) {
+      if (
+        this.obstacles.some(
+          (o) => Math.hypot(side - o.side, fwd - o.fwd) < o.radius,
+        )
+      ) {
+        return false;
+      }
+      return true;
+    }
+    if (!this.inCampus(wx, wz)) return roseRide === true ? true : null;
     if (this.campusBuildingPolygons.some((poly) => inside({ x: wx, z: wz }, poly))) {
       return false;
     }
-    const { side, fwd } = this.toLocal(wx, wz);
     if (
       this.obstacles.some(
         (o) => Math.hypot(side - o.side, fwd - o.fwd) < o.radius,
@@ -1968,6 +2048,13 @@ export class QuangTrungCampus {
       if (inRange) {
         for (const fn of this.vendorAnimations) fn(time);
       }
+    }
+
+    if (
+      !playerPos ||
+      Math.hypot(playerPos.x - this.gate.x, playerPos.z - this.gate.z) < 145
+    ) {
+      for (const fn of this.cafeUpdaters) fn(time);
     }
 
     if (this.teachersGroup && this.teachersCenter) {
