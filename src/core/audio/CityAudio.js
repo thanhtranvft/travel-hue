@@ -316,7 +316,11 @@ export class CityAudio {
     return this.collisionVoice.play(type);
   }
   speakPatrolWarning() {
-    if (!this.enabled || this.ctx?.state !== "running" || document.hidden)
+    if (
+      !this.enabled ||
+      this.ctx?.state !== "running" ||
+      (typeof document !== "undefined" && document.hidden)
+    )
       return false;
     const now = this.ctx.currentTime;
     if (
@@ -327,6 +331,22 @@ export class CityAudio {
       return false;
     this.lastPatrolVoiceAt = now;
     return this.collisionVoice.play("police");
+  }
+  speakVendorCall(type) {
+    if (
+      !this.enabled ||
+      this.ctx?.state !== "running" ||
+      (typeof document !== "undefined" && document.hidden)
+    )
+      return false;
+    const now = this.ctx.currentTime;
+    if (
+      this.collisionVoice.active ||
+      now - (this.lastCollisionVoiceAt ?? -Infinity) < 2.5
+    )
+      return false;
+    this.lastVendorVoiceAt = now;
+    return this.collisionVoice.play(type);
   }
   collision() {
     if (!this.enabled || this.ctx?.state !== "running") return;

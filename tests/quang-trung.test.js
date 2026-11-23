@@ -175,9 +175,10 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
     assert.ok(
       campus.group.getObjectByName("quang-trung-east-wing") &&
         campus.group.getObjectByName("quang-trung-north-portico") &&
+        campus.group.getObjectByName("quang-trung-teacher-parking-row") &&
         campus.group.getObjectByName("quang-trung-parking-lot") &&
         campus.group.getObjectByName("quang-trung-parking-booth"),
-      "East 3-story wing, North central portico, and school parking lot + booth built",
+      "East 3-story wing, North central portico, front-right teacher parking shed row, and school parking lot + booth built",
     );
     assert.ok(
       campus.group.getObjectByName("quang-trung-flagpole"),
@@ -228,6 +229,16 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
       "husband-and-wife xôi pushcart outside gate built",
     );
     assert.equal(comNamVendors, 3, "3 cơm nắm / street-hawker vendors outside gate built");
+    assert.equal(
+      campus.vendorPoints.filter((v) => v.vendorType === "xoi-vendor").length,
+      1,
+      "xoi vendor audio trigger registered",
+    );
+    assert.equal(
+      campus.vendorPoints.filter((v) => v.vendorType === "hawker-vendor").length,
+      3,
+      "3 hawker vendor audio triggers registered",
+    );
 
     assert.equal(campus.flags.length, 1);
 
@@ -262,6 +273,11 @@ test("Trường Tiểu học Quang Trung gate, fence, ice-blue wings, festival b
 
     const insideEastWing = campus.toWorld(25.3, 36);
     assert.equal(campus.canRide(insideEastWing.x, insideEastWing.z), false);
+
+    const teacherParkingRowSpot = campus.toWorld(22.0, 2.6);
+    assert.equal(campus.canRide(teacherParkingRowSpot.x, teacherParkingRowSpot.z), false);
+    const teacherParkingFrontApron = campus.toWorld(22.0, 7.2);
+    assert.equal(campus.canRide(teacherParkingFrontApron.x, teacherParkingFrontApron.z), true);
 
     const parkingAisle = campus.toWorld(30.8, 22);
     assert.equal(campus.canRide(parkingAisle.x, parkingAisle.z), true);

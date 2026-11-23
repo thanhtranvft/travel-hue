@@ -744,7 +744,7 @@ function createSchoolParkingLot(gate, facingGateYaw) {
     lot.add(createCourtLineStrip(3.9, 0.09, 34.25, 0.318, z));
   }
 
-  // Shelter 1: BÃI GIỮ XE GIÁO VIÊN (Motorbikes, fwd 12.5..28.5 -> z = -20.5)
+  // Shelter 1: NHÀ XE CÁN BỘ · KHÁCH (overflow along East wall, fwd 12.5..28.5 -> z = -20.5)
   const teacherShelter = new THREE.Group();
   teacherShelter.position.set(34.1, 0.3, -20.5);
   for (const sx of [-1.85, 1.85]) {
@@ -761,7 +761,7 @@ function createSchoolParkingLot(gate, facingGateYaw) {
   tRoof.castShadow = true;
   teacherShelter.add(tRoof);
 
-  const teacherSignTex = createBannerTexture("BÃI GIỮ XE GIÁO VIÊN", "KHU VỰC XE MÁY", "#0b5da8");
+  const teacherSignTex = createBannerTexture("NHÀ XE CÁN BỘ · KHÁCH", "KHU VỰC XE MÁY", "#0b5da8");
   const teacherSign = new THREE.Mesh(
     new THREE.PlaneGeometry(3.4, 0.58),
     new THREE.MeshStandardMaterial({
@@ -839,6 +839,125 @@ function createSchoolParkingLot(gate, facingGateYaw) {
   lot.add(booth);
 
   return lot;
+}
+
+function createTeacherParkingRow(gate, facingGateYaw) {
+  // Row of teachers' parking sheds immediately inside the right side of the gate along the front-right perimeter wall:
+  // side = +13.0 .. +35.4, fwd = +0.7 .. +4.7 (local z = -0.7 .. -4.7)
+  const row = new THREE.Group();
+  row.name = "quang-trung-teacher-parking-row";
+  row.position.set(gate.x, 0, gate.z);
+  row.rotation.y = facingGateYaw;
+
+  const centerSide = 24.2;
+  const shedLen = 22.0;
+  const shedDepth = 3.8;
+  const centerZ = -2.6;
+
+  // Paved asphalt parking apron & curbed courtyard edge
+  const pad = new THREE.Mesh(
+    new THREE.BoxGeometry(shedLen + 1.0, 0.036, shedDepth + 1.1),
+    mat("#4c535b", 0.92),
+  );
+  pad.position.set(centerSide, 0.302, centerZ - 0.15);
+  pad.receiveShadow = true;
+  row.add(pad);
+
+  // White concrete curb border along courtyard edge (fwd = 5.05 -> z = -5.05) & wheel stop bar along wall
+  row.add(
+    box([shedLen + 1.0, 0.08, 0.16], "#eef2f6", [centerSide, 0.32, -5.05]),
+    box([shedLen - 0.4, 0.12, 0.14], "#cfd6dd", [centerSide, 0.36, -1.1]),
+  );
+
+  // White parking bay lines
+  for (let x = centerSide - 9.6; x <= centerSide + 9.6; x += 2.4) {
+    row.add(createCourtLineStrip(0.09, shedDepth - 0.3, x, 0.322, centerZ - 0.1));
+  }
+
+  // Steel pillars (7 bays along the wall)
+  const shelter = new THREE.Group();
+  shelter.position.set(centerSide, 0.3, centerZ);
+  for (let px = -10.5; px <= 10.5; px += 3.5) {
+    shelter.add(
+      box([0.13, 2.38, 0.13], "#dce3ea", [px, 1.19, 1.65]),
+      box([0.13, 2.7, 0.13], "#dce3ea", [px, 1.35, -1.65]),
+    );
+    // Sloped roof truss rafter
+    const rafter = box([0.1, 0.1, 3.7], "#cfd7df", [px, 2.55, 0]);
+    rafter.rotation.x = -0.1;
+    shelter.add(rafter);
+  }
+
+  // Horizontal steel purlins & back guardrail along perimeter wall
+  shelter.add(
+    box([shedLen, 0.09, 0.09], "#cfd7df", [0, 2.38, 1.65]),
+    box([shedLen, 0.09, 0.09], "#cfd7df", [0, 2.7, -1.65]),
+    box([shedLen - 0.2, 0.08, 0.08], "#98a4b0", [0, 0.72, 1.68]),
+  );
+
+  // Cobalt-blue corrugated metal roof sloping toward the perimeter wall
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(shedLen + 0.6, 0.11, shedDepth + 0.5),
+    mat("#1c73c4", 0.48, 0.22),
+  );
+  roof.position.set(0, 2.63, 0);
+  roof.rotation.x = -0.1;
+  roof.castShadow = roof.receiveShadow = true;
+  shelter.add(roof);
+
+  // White roof fascia trim & signboard facing inward toward the schoolyard
+  shelter.add(box([shedLen + 0.64, 0.16, 0.08], "#f3f6fa", [0, 2.82, -2.14]));
+
+  const signTex = createBannerTexture(
+    "NHÀ GIỮ XE GIÁO VIÊN",
+    "KHU VỰC ĐỂ XE CÁN BỘ · GIÁO VIÊN",
+    "#0b5da8",
+  );
+  const sign = new THREE.Mesh(
+    new THREE.PlaneGeometry(5.8, 0.66),
+    new THREE.MeshStandardMaterial({
+      color: signTex ? "#ffffff" : "#0b5da8",
+      map: signTex,
+      roughness: 0.45,
+    }),
+  );
+  sign.position.set(0, 2.44, -2.18);
+  sign.rotation.y = Math.PI;
+  shelter.add(sign);
+
+  // Neat row of parked teachers' motorbikes & bicycles facing into the yard
+  const teacherMotoColors = [
+    "#1f252c",
+    "#c83232",
+    "#2d64b8",
+    "#e8e6e0",
+    "#455a64",
+    "#8b2f3f",
+    "#2e6b5e",
+    "#c9792b",
+  ];
+  for (let i = 0; i < 8; i++) {
+    const mx = -9.0 + i * 2.15;
+    const moto = createParkedMotorbike(
+      teacherMotoColors[i % teacherMotoColors.length],
+      Math.PI + 0.12,
+    );
+    moto.position.set(mx, 0.02, 0.05);
+    shelter.add(moto);
+  }
+  const teacherBikeColors = ["#2684d4", "#31a354", "#e04b5a"];
+  for (let i = 0; i < 3; i++) {
+    const bx = 7.4 + i * 1.45;
+    const bike = createParkedBicycle(
+      teacherBikeColors[i % teacherBikeColors.length],
+      Math.PI * 0.5,
+    );
+    bike.position.set(bx, 0.02, 0.05);
+    shelter.add(bike);
+  }
+
+  row.add(shelter);
+  return row;
 }
 
 function createGreenLibraryZone(x, y, z, yaw = 0) {
@@ -994,6 +1113,7 @@ export class QuangTrungCampus {
     this.cafeLotBounds = [];
     this.obstacles = [];
     this.outsideObstacles = [];
+    this.vendorPoints = [];
 
     this.buildCourtyard();
     this.buildBuildings();
@@ -1161,17 +1281,12 @@ export class QuangTrungCampus {
     this.animatedObjects.push(fp.flagMesh);
     this.obstacles.push({ side: -8.4, fwd: 49.0, radius: 1.15 });
 
-    // Courtyard manicured front border garden beds flanking the twin gate-pillar tree rows (leaving East parking entry open)
+    // Courtyard manicured front border garden bed on the left side of the gate (right side hosts teacher parking shed row along wall)
     const lawnMat = createManicuredLawnMaterial(4, 4, { striped: false, rich: true });
-    for (const [lx, lz, w, d] of [
-      [-18.0, -3.2, 16.0, 3.2],
-      [17.2, -3.2, 13.5, 3.2],
-    ]) {
-      const bed = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), lawnMat);
-      bed.position.set(lx, 0.3, lz);
-      bed.receiveShadow = true;
-      yard.add(bed);
-    }
+    const leftBed = new THREE.Mesh(new THREE.BoxGeometry(16.0, 0.14, 3.2), lawnMat);
+    leftBed.position.set(-18.0, 0.3, -3.2);
+    leftBed.receiveShadow = true;
+    yard.add(leftBed);
 
     // LEFT BRICK COURTYARD: 2 football goals facing each other on brick pavement (side = -14.8, fwd = 14.2 .. 43.8)
     const pitchGroup = new THREE.Group();
@@ -1536,6 +1651,12 @@ export class QuangTrungCampus {
   }
 
   buildParkingLot() {
+    const teacherRow = createTeacherParkingRow(this.gate, this.facingGateYaw);
+    this.group.add(teacherRow);
+    for (const side of [14.5, 17.5, 20.5, 23.5, 26.5, 29.5, 32.5, 34.5]) {
+      this.obstacles.push({ side, fwd: 2.6, radius: 1.9 });
+    }
+
     const lot = createSchoolParkingLot(this.gate, this.facingGateYaw);
     this.group.add(lot);
     // Shelters & booth block riding while leaving left aisle (side 30.0..31.8) passable
@@ -1560,10 +1681,10 @@ export class QuangTrungCampus {
       [5.4, 30.0, 1.05, 8],
       [5.4, 40.5, 1.08, 9],
       [5.4, 51.0, 1.04, 10],
-      // Right courtyard & corner perimeter shade trees (clear of East wing & parking lot)
+      // Right courtyard & corner perimeter shade trees (clear of East wing, front teacher parking row & parking aisle)
       [17.2, 10.5, 1.06, 11],
       [17.2, 51.0, 1.06, 12],
-      [33.2, 4.2, 1.04, 13],
+      [25.0, 10.6, 1.04, 13],
       [-29.5, 6.8, 1.04, 14],
       [-29.5, 68.0, 1.06, 15],
       [30.0, 66.0, 1.05, 16],
@@ -1653,6 +1774,16 @@ export class QuangTrungCampus {
     sidewalk.add(xoi.group);
     this.vendorAnimations.push(...xoi.animated);
     this.outsideObstacles.push({ side: 10.6, fwd: -2.05, radius: 1.3 });
+    this.vendorPoints.push({
+      id: "quang-trung-xoi-couple",
+      vendorType: "xoi-vendor",
+      title: "Quán xôi sáng",
+      dialogue: "Làm tí xôi cho nóng con!",
+      ...this.toWorld(10.6, -2.05),
+      y: 0.17,
+      callDistance: 9.5,
+      rearmDistance: 15,
+    });
 
     // 2) Rice-ball (cơm nắm) & street hawker women along the sidewalk outside the school gate
     const hawkerSpecs = [
@@ -1660,7 +1791,7 @@ export class QuangTrungCampus {
       { side: -14.2, fwd: -2.1, style: "met", shirt: "#6c5d87", yaw: 0.1 },
       { side: 16.4, fwd: -1.95, style: "ganh", shirt: "#7f8f69", yaw: -0.2 },
     ];
-    for (const h of hawkerSpecs) {
+    hawkerSpecs.forEach((h, index) => {
       const hawker = createComNamHawker({
         style: h.style,
         shirtColor: h.shirt,
@@ -1670,7 +1801,17 @@ export class QuangTrungCampus {
       sidewalk.add(hawker.group);
       this.vendorAnimations.push(...hawker.animated);
       this.outsideObstacles.push({ side: h.side, fwd: h.fwd, radius: 0.95 });
-    }
+      this.vendorPoints.push({
+        id: `quang-trung-hawker-${index + 1}`,
+        vendorType: "hawker-vendor",
+        title: "Bà bán hàng rong",
+        dialogue: "Ăn sáng con ơi!",
+        ...this.toWorld(h.side, h.fwd),
+        y: 0.17,
+        callDistance: 9.5,
+        rearmDistance: 15,
+      });
+    });
 
     this.sidewalkVendors = sidewalk;
     this.group.add(sidewalk);

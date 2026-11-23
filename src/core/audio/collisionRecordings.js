@@ -4,5 +4,11 @@ export const collisionRecordingURLs={
   "scooter":new URL("../../assets/audio/collisions/Bị đui hay răng mà không thấy (2026-11-18 21-12-11).wav",import.meta.url).href,
   "police":new URL("../../assets/audio/collisions/Chạy xe cẩn thận đi! (2026-11-19 15-24-17).wav",import.meta.url).href,
   "player":new URL("../../assets/audio/collisions/Ui cha mạ ơi ! (2026-11-19 15-19-26).wav",import.meta.url).href,
-  "car":new URL("../../assets/audio/collisions/Chạy xe như ri là thôi xong rồi (2026-11-19 15-36-01).wav",import.meta.url).href
+  "car":new URL("../../assets/audio/collisions/Chạy xe như ri là thôi xong rồi (2026-11-19 15-36-01).wav",import.meta.url).href,
+  "student":[
+    new URL("../../assets/audio/collisions/Cẩn thận bạn ơi (2026-11-23 08-10-28).wav",import.meta.url).href,
+    new URL("../../assets/audio/collisions/Cẩn thận bạn ơi (2026-11-23 08-10-36).wav",import.meta.url).href
+  ],
+  "xoi-vendor":new URL("../../assets/audio/collisions/Làm tí xôi cho nóng con (2026-11-23 08-09-19).wav",import.meta.url).href,
+  "hawker-vendor":new URL("../../assets/audio/collisions/Ăn sáng con ơi (2026-11-23 08-09-59).wav",import.meta.url).href
 };

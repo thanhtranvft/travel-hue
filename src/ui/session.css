@@ -171,7 +171,8 @@
   background: #743d35;
   border-color: #d89b7880;
 }
-#patrol-toast {
+#patrol-toast,
+#vendor-toast {
   position: absolute;
   top: 27%;
   left: 50%;
@@ -186,6 +187,12 @@
   font-size: 14px;
   pointer-events: none;
   box-shadow: 0 5px 22px #0004;
+}
+#vendor-toast {
+  top: 21%;
+  border-color: #f3c669;
+  background: #4e3622ed;
+  color: #fff3d6;
 }
 .session-user {
   margin: 0 0 10px;
