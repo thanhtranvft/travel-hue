@@ -13,6 +13,8 @@ import patrolConfig from "../data/world/police-patrols.json" with { type: "json"
 import collisionDialogue from "../data/audio/collision-dialogue.json" with { type: "json" };
 import { renderQuality } from "../core/rendering/renderQuality.js";
 import { VendorCalls } from "../core/world/VendorCalls.js";
+import { CharmController } from "../core/world/CharmController.js";
+import { SpeedAuraEffect } from "../core/world/CharmSceneFX.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
@@ -130,6 +132,9 @@ export class GamePresenter {
     this.vendorNotice.hidden = true;
     this.vendorNotice.setAttribute("role", "status");
     document.querySelector("#app").append(this.vendorNotice);
+    this.charms = new CharmController(this);
+    this.speedAura = new SpeedAuraEffect();
+    this.speedAura.attachTo(this.bike);
     this.travelTo(this.world.region.id);
     addEventListener("resize", () => this.resize());
     this.ready = Promise.allSettled([this.bike.loadDetailedModel()]).then(
@@ -162,6 +167,10 @@ export class GamePresenter {
       if (key === "t") this.toggleAutopilot();
       if (key === "e") this.toggleTransportMode();
       if (key === "r") this.reset();
+      if (key === "1") this.useCharm("10");
+      if (key === "2") this.useCharm("20");
+      if (key === "3") this.useCharm("30");
+      if (key === "4") this.useCharm("100");
     });
   }
   createRenderer(canvas) {
@@ -288,9 +297,16 @@ export class GamePresenter {
         b.setAttribute("aria-pressed", String(b.dataset.district === id)),
       );
     if (Array.isArray(this.world.trail)) this.world.trail = [];
+    this.charms?.onRegionChanged?.();
     this.syncMode();
     this.updateHud();
     this.drawMap();
+  }
+  useCharm(tier) {
+    if (this.sessionActive === false || this.isLoadingRegion) return false;
+    const used = this.charms?.useCharm?.(tier);
+    if (used) this.updateHud();
+    return Boolean(used);
   }
   changeRegion(id) {
     return this.areaPresenter.changeRegion(id);
@@ -413,7 +429,8 @@ export class GamePresenter {
       steer = 0;
       brake = true;
     }
-    this.bike.update(dt, throttle, steer, brake, { sprint });
+    const speedMultiplier = this.charms?.speedMultiplier || 1;
+    this.bike.update(dt, throttle, steer, brake, { sprint, speedMultiplier });
     if (
       !Number.isFinite(this.bike.position.x) ||
       !Number.isFinite(this.bike.position.z) ||
@@ -519,6 +536,13 @@ export class GamePresenter {
     if (this.elapsed > this.boundaryHintUntil) this.boundaryHint.hidden = true;
     this.world.update(this.elapsed, this.bike.position);
     this.online?.update(dt);
+    this.charms?.update(dt, this.elapsed);
+    const activeBoost = this.charms?.activeBoost;
+    this.speedAura?.update(this.elapsed, {
+      active: Boolean(activeBoost && this.charms.speedMultiplier > 1),
+      tierId: activeBoost?.tier || "10",
+      speed: this.bike.motion.speed,
+    });
     if (this.quality.mobile) {
       updateMobileStaticScene(this.world, this.bike.position);
       this.world.mobileCrowd?.update(this.bike.position);
@@ -640,6 +664,13 @@ export class GamePresenter {
     )
       this.look.copy(this.cameraTarget);
     else this.look.lerp(this.cameraTarget, 1 - Math.exp(-12 * dt));
+    const boostMult = this.charms?.speedMultiplier || 1;
+    const speedNorm = Math.min(1, Math.abs(this.bike.motion.speed) / 7);
+    const targetFov = 57 + (boostMult > 1 ? (boostMult - 1) * 14 * speedNorm : 0);
+    if (Math.abs(this.camera.fov - targetFov) > 0.03) {
+      this.camera.fov = damp(this.camera.fov, targetFov, 7, dt);
+      this.camera.updateProjectionMatrix();
+    }
     this.camera.lookAt(this.look);
   }
   updateHud() {

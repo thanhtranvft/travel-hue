@@ -26,7 +26,10 @@ import { defaultArea } from "./app/catalog.js";
 
 document.querySelector("#app").innerHTML = `
   <canvas id="game"></canvas>
+  <div id="speed-vignette" aria-hidden="true"></div>
   <aside id="collision-toast" role="alert" hidden><strong>⚠ Va chạm giao thông!</strong><p id="collision-message"></p><span>Space để phanh · Quan sát và đi bên phải</span></aside>
+  <aside id="boost-banner" role="status" hidden><span class="boost-label">⚡ +10% TỐC ĐỘ</span><i class="boost-track"><b class="boost-fill"></b></i></aside>
+  <aside id="charm-toast" role="status" hidden>✨ Vật phẩm bùa tăng tốc vừa làm mới ngẫu nhiên trên bản đồ!</aside>
   <div id="scene-loading" role="status">Đang chuẩn bị hành trình bên sông Hương…</div><div id="asset-notice" role="status" hidden>Một số cảnh vật chưa tải được. Đang dùng mô hình dự phòng.</div>
   <div class="hud">
     <div class="topbar">
@@ -38,7 +41,13 @@ document.querySelector("#app").innerHTML = `
     <div class="bottom">
       <section class="map-panel" id="map-panel" hidden><div class="map-panel-head"><button id="expand-map" title="Mở rộng / Thu nhỏ bản đồ">BẢN ĐỒ KHU VỰC ↗</button><button id="close-map" type="button" title="Ẩn bản đồ [M]" aria-label="Ẩn bản đồ">✕</button></div><div class="map-area-title" id="map-area-title">Khoa Quốc tế → Tràng Tiền</div><canvas id="minimap" width="480" height="340" aria-label="Bản đồ khu vực và tọa độ di chuyển"></canvas><div class="map-coords" id="map-coords">16.45898°N · 107.58096°E</div><div class="map-local-coords" id="map-local-coords">X: 313 m · Z: -283 m</div><a id="open-osm" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Đối chiếu OSM ↗</a></section>
       <div class="touch-controls"><div class="thumbstick" id="move-stick" role="group" aria-label="Cần lái bên trái: kéo nhẹ để đi bộ, kéo hết mức để chạy, hoặc rẽ"><span class="stick-arrows" aria-hidden="true">＋</span><span id="stick-thumb" aria-hidden="true"></span><span class="touch-caption">ĐI / RẼ</span></div><button id="touch-transport" type="button" aria-label="Chuyển sang đạp xe đạp">🚲</button></div>
-      <div class="ride-panel"><div class="status"><strong id="destination">Quốc Học · Lê Lợi</strong><div id="distance">Đang đứng · Vẫy tay</div><div class="progress"><i id="progress"></i></div></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span></div><div class="guide"><b>WASD</b> đi/lái · <b>Shift</b> chạy · <b>E</b> xe đạp · <b>Space</b> dừng</div></div>
+      <div class="charm-bar" id="charm-bar" role="group" aria-label="Bùa tăng tốc đã nhặt">
+        <button type="button" class="charm-slot" data-tier="10" disabled aria-disabled="true" title="Dùng Bùa +10% tốc độ [1]"><svg class="charm-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="charm-track" cx="22" cy="22" r="20"/><circle class="charm-arc" cx="22" cy="22" r="20"/></svg><span class="charm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 13h11l-4-4m4 4-4 4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="charm-pct">+10%</span><span class="charm-count">0</span><kbd class="charm-key">1</kbd></button>
+        <button type="button" class="charm-slot" data-tier="20" disabled aria-disabled="true" title="Dùng Bùa +20% tốc độ [2]"><svg class="charm-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="charm-track" cx="22" cy="22" r="20"/><circle class="charm-arc" cx="22" cy="22" r="20"/></svg><span class="charm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 16l5-4-5-4m7 8l5-4-5-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="charm-pct">+20%</span><span class="charm-count">0</span><kbd class="charm-key">2</kbd></button>
+        <button type="button" class="charm-slot" data-tier="30" disabled aria-disabled="true" title="Dùng Bùa +30% tốc độ [3]"><svg class="charm-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="charm-track" cx="22" cy="22" r="20"/><circle class="charm-arc" cx="22" cy="22" r="20"/></svg><span class="charm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3L5 14h6l-1 7 9-11h-6z" fill="currentColor"/></svg></span><span class="charm-pct">+30%</span><span class="charm-count">0</span><kbd class="charm-key">3</kbd></button>
+        <button type="button" class="charm-slot" data-tier="100" disabled aria-disabled="true" title="Dùng Bùa +100% siêu tốc [4]"><svg class="charm-ring" viewBox="0 0 44 44" aria-hidden="true"><circle class="charm-track" cx="22" cy="22" r="20"/><circle class="charm-arc" cx="22" cy="22" r="20"/></svg><span class="charm-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 2L4 14h6l-2 8 12-13h-6z" fill="currentColor"/></svg></span><span class="charm-pct">+100%</span><span class="charm-count">0</span><kbd class="charm-key">4</kbd></button>
+      </div>
+      <div class="ride-panel"><div class="status"><strong id="destination">Quốc Học · Lê Lợi</strong><div id="distance">Đang đứng · Vẫy tay</div><div class="progress"><i id="progress"></i></div></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span></div><div class="guide"><b>WASD</b> đi/lái · <b>Shift</b> chạy · <b>E</b> xe đạp · <b>1-4</b> bùa tốc độ</div></div>
     </div>
   </div>
   <section id="avatar-picker" hidden role="dialog" aria-label="Đổi nhân vật Chibi"><div class="avatar-picker-head"><strong>Chọn mẫu nhân vật Chibi 3D</strong><button type="button" id="close-avatar-picker">Đóng</button></div><div id="hud-avatar-grid">${renderAvatarGrid(getSavedAvatar())}</div></section>
@@ -129,6 +138,7 @@ if (game) {
       const { OnlineSession } = await import("./core/network/OnlineSession.js");
       game.online = new OnlineSession(game, next.name, panel, districts);
     }
+    game.charms?.onRegionChanged?.();
     game.input.reset();
     game.sessionActive = true;
   };
@@ -178,6 +188,10 @@ if (game) {
   document
     .querySelector("#expand-map")
     .addEventListener("click", () => mapPanelEl.classList.toggle("expanded"));
+  document.querySelectorAll("#charm-bar [data-tier]").forEach((btn) => {
+    btn.addEventListener("pointerdown", (e) => e.stopPropagation());
+    btn.addEventListener("click", () => game.useCharm(btn.dataset.tier));
+  });
   initializeMobileUI();
   initializeAudioUI(game.audio);
 } else {

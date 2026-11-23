@@ -15,6 +15,7 @@ export const PLAYER_COLORS = [
 export const AVATAR_IDS = ["boy", "girl", "dog", "cat", "cow", "buffalo"];
 export const DEFAULT_AVATAR_ID = "boy";
 export const STANCE_IDS = ["idle", "walk", "run", "bike"];
+export { cleanCharmTier, MAX_BOOST_MULTIPLIER } from "../world/speedCharms.js";
 
 export const AVATAR_CATALOG = [
   {

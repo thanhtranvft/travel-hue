@@ -50,6 +50,15 @@ export class OnlineSession {
       this.avatars.sync(detail.players, this.client.id);
       panel.snapshot(detail, this.client.id, areas);
     });
+    this.client.addEventListener("charms", ({ detail }) => {
+      game.charms?.applyServerCharms?.(detail);
+    });
+    this.client.addEventListener("inventory", ({ detail }) => {
+      game.charms?.applyServerInventory?.(detail);
+    });
+    this.client.addEventListener("boost_ack", ({ detail }) => {
+      game.charms?.applyServerBoostAck?.(detail);
+    });
     this.client.addEventListener("error", ({ detail }) =>
       panel.status(
         detail.message + " Chọn Đổi chế độ để thử lại hoặc Khám phá.",
@@ -134,6 +143,12 @@ export class OnlineSession {
       avatar: game.bike.avatarId,
       stance: game.bike.stance,
     });
+  }
+  sendPickup(charmId) {
+    this.client.send({ type: "pickup", charmId });
+  }
+  sendUseCharm(tier) {
+    this.client.send({ type: "use_charm", tier });
   }
   pauseRegion() {
     this.awaitingRegion = true;

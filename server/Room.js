@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import {
   cleanAvatarId,
+  cleanCharmTier,
   cleanPlayerName,
   cleanStance,
   MAX_PLAYERS,
@@ -8,6 +9,12 @@ import {
   PROTOCOL_VERSION,
   sweptContact,
 } from "../src/core/network/protocol.js";
+import {
+  CHARM_TIERS,
+  emptyCharmInventory,
+  generateRegionCharms,
+  randomCharmRefreshMs,
+} from "../src/core/world/speedCharms.js";
 import { nearestPoint, inside } from "../src/core/shared/geography/geometry.js";
 import { spacedSpawn } from './spawn.js';
 
@@ -16,6 +23,7 @@ export class Room {
   constructor(areas, { now = () => Date.now(), reconnectMs = 15000 } = {}) {
     this.areas = areas;
     this.players = new Map();
+    this.regionCharms = new Map();
     this.now = now;
     this.reconnectMs = reconnectMs;
   }
@@ -65,22 +73,40 @@ export class Room {
         stance: "idle",
         color: PLAYER_COLORS.find((c) => !used.has(c)),
         region: message.region,
+        inventory: emptyCharmInventory(),
+        boostTier: null,
+        boostMultiplier: 1,
+        boostUntil: 0,
+        boostGraceUntil: 0,
       };
       this.players.set(p.id, p);
       this.spawn(p, message.region);
     } else {
       p.name = name;
       p.avatar = avatar;
+      p.inventory ||= emptyCharmInventory();
       // Client scene may have changed while disconnected. Re-enter at a safe spawn.
       this.spawn(p, message.region);
     }
     p.send = send;
+    const charmEntry = this.ensureRegionCharms(message.region);
     this.send(p, {
       type: "welcome",
       id: p.id,
       token: p.token,
       player: this.publicPlayer(p),
       limit: MAX_PLAYERS,
+    });
+    this.send(p, {
+      type: "charms",
+      region: message.region,
+      charms: charmEntry.charms,
+      nextRefreshAt: charmEntry.nextRefreshAt,
+      refreshed: false,
+    });
+    this.send(p, {
+      type: "inventory",
+      inventory: { ...p.inventory },
     });
     this.snapshot();
     return { player: p };
@@ -143,7 +169,130 @@ export class Room {
         message: "Khu vực này chưa mở.",
       });
     this.spawn(p, id);
+    const charmEntry = this.ensureRegionCharms(id);
     this.send(p, { type: "relocate", player: this.publicPlayer(p) });
+    this.send(p, {
+      type: "charms",
+      region: id,
+      charms: charmEntry.charms,
+      nextRefreshAt: charmEntry.nextRefreshAt,
+      refreshed: false,
+    });
+    this.snapshot();
+  }
+  ensureRegionCharms(regionId, forceRefresh = false) {
+    const area = this.areas.get(regionId);
+    if (!area) return { charms: [], nextRefreshAt: this.now() + 30000 };
+    const existing = this.regionCharms.get(regionId);
+    const now = this.now();
+    if (existing && !forceRefresh) return existing;
+    const seq = (existing?.seq || 0) + 1;
+    const charms = generateRegionCharms(area.region, {
+      idPrefix: `${regionId}-${seq}`,
+      canPlace: (x, z) => this.contains(area.region, x, z),
+      groundAt: () => 0.25,
+    });
+    const entry = {
+      seq,
+      charms,
+      nextRefreshAt: now + randomCharmRefreshMs(),
+    };
+    this.regionCharms.set(regionId, entry);
+    return entry;
+  }
+  publishRegionCharms(regionId, entry, refreshed = false) {
+    const payload = {
+      type: "charms",
+      region: regionId,
+      charms: entry.charms,
+      nextRefreshAt: entry.nextRefreshAt,
+      refreshed,
+    };
+    for (const player of this.players.values()) {
+      if (player.send && player.region === regionId) {
+        this.send(player, payload);
+      }
+    }
+  }
+  tickCharms() {
+    const now = this.now();
+    for (const [regionId, entry] of this.regionCharms.entries()) {
+      if (now < entry.nextRefreshAt) continue;
+      const hasPlayers = [...this.players.values()].some(
+        (p) => p.send && p.region === regionId,
+      );
+      if (!hasPlayers) continue;
+      const refreshedEntry = this.ensureRegionCharms(regionId, true);
+      this.publishRegionCharms(regionId, refreshedEntry, true);
+    }
+  }
+  pickup(p, charmId) {
+    if (typeof charmId !== "string" || !charmId || charmId.length > 64) return;
+    const entry = this.ensureRegionCharms(p.region);
+    const idx = entry.charms.findIndex((c) => c.id === charmId);
+    if (idx === -1) {
+      return this.send(p, {
+        type: "charms",
+        region: p.region,
+        charms: entry.charms,
+        nextRefreshAt: entry.nextRefreshAt,
+        refreshed: false,
+      });
+    }
+    const charm = entry.charms[idx];
+    if (Math.hypot(p.x - charm.x, p.z - charm.z) > 5.5) {
+      return this.send(p, {
+        type: "charms",
+        region: p.region,
+        charms: entry.charms,
+        nextRefreshAt: entry.nextRefreshAt,
+        refreshed: false,
+      });
+    }
+    entry.charms.splice(idx, 1);
+    p.inventory ||= emptyCharmInventory();
+    p.inventory[charm.tier] = Math.min(99, (p.inventory[charm.tier] || 0) + 1);
+    this.send(p, {
+      type: "inventory",
+      inventory: { ...p.inventory },
+      picked: charm,
+    });
+    this.publishRegionCharms(p.region, entry, false);
+  }
+  useCharm(p, tierInput) {
+    const tierId = cleanCharmTier(tierInput);
+    p.inventory ||= emptyCharmInventory();
+    if (!tierId || (p.inventory[tierId] || 0) <= 0) {
+      return this.send(p, {
+        type: "boost_ack",
+        rejected: true,
+        inventory: { ...p.inventory },
+      });
+    }
+    const tier = CHARM_TIERS[tierId];
+    const now = this.now();
+    p.inventory[tierId] -= 1;
+    if (p.boostTier === tier.id && p.boostUntil > now) {
+      const remaining = Math.min(tier.durationMs * 2, p.boostUntil - now + tier.durationMs);
+      p.boostUntil = now + remaining;
+    } else {
+      if ((p.boostMultiplier || 1) > tier.multiplier && now < (p.boostGraceUntil || 0)) {
+        p.prevBoostMultiplier = p.boostMultiplier;
+        p.prevBoostGraceUntil = now + 1200;
+      }
+      p.boostTier = tier.id;
+      p.boostMultiplier = tier.multiplier;
+      p.boostUntil = now + tier.durationMs;
+    }
+    p.boostGraceUntil = p.boostUntil + 1200;
+    this.send(p, {
+      type: "boost_ack",
+      rejected: false,
+      inventory: { ...p.inventory },
+      boostTier: p.boostTier,
+      boostMultiplier: p.boostMultiplier,
+      remainingMs: Math.max(0, p.boostUntil - now),
+    });
     this.snapshot();
   }
   state(p, m) {
@@ -156,14 +305,23 @@ export class Room {
     )
       return;
     const now = this.now();
+    const boostMult =
+      now < (p.boostGraceUntil || 0) && Number.isFinite(p.boostMultiplier)
+        ? Math.max(1, p.boostMultiplier)
+        : 1;
+    const prevMult =
+      now < (p.prevBoostGraceUntil || 0) && Number.isFinite(p.prevBoostMultiplier)
+        ? Math.max(1, p.prevBoostMultiplier)
+        : 1;
+    const activeMult = Math.max(boostMult, prevMult);
     const elapsed = Math.max(0, now - p.stamp) / 1000;
-    p.credit = Math.min(2, p.credit + elapsed * 9.5);
+    p.credit = Math.min(2 * activeMult, p.credit + elapsed * 9.5 * activeMult);
     p.stamp = now;
     p.seq = m.seq;
     const distance = Math.hypot(m.x - p.x, m.z - p.z);
     if (
       now < p.stunnedUntil ||
-      Math.abs(m.speed) > 9.1 ||
+      Math.abs(m.speed) > 9.1 * activeMult ||
       m.y < -5 ||
       m.y > 40 ||
       Math.abs(m.lean) > 0.5 ||
@@ -239,6 +397,8 @@ export class Room {
     this.snapshot();
   }
   publicPlayer(p) {
+    const now = this.now();
+    const boosted = now < (p.boostUntil || 0) && (p.boostMultiplier || 1) > 1;
     const {
       id,
       name,
@@ -270,11 +430,14 @@ export class Room {
       lean,
       ready,
       paused,
+      boostTier: boosted ? p.boostTier : null,
+      boostMultiplier: boosted ? p.boostMultiplier : 1,
       connected: !!p.send,
     };
   }
   snapshot() {
     this.expire();
+    this.tickCharms();
     this.publish({
       type: "snapshot",
       time: this.now(),

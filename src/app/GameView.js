@@ -29,6 +29,10 @@ export class GameView {
       mapCoords: document.querySelector("#map-coords"),
       mapLocalCoords: document.querySelector("#map-local-coords"),
       osmLink: document.querySelector("#open-osm"),
+      charmBar: document.querySelector("#charm-bar"),
+      boostBanner: document.querySelector("#boost-banner"),
+      charmToast: document.querySelector("#charm-toast"),
+      speedVignette: document.querySelector("#speed-vignette"),
     };
     this.activeLandmarkKey = null;
     this.lastShownLandmarkKey = null;
@@ -131,6 +135,61 @@ export class GameView {
       this.landmarkDismissAt = 0;
       game.hud.card.classList.remove("visible");
     }
+    this.updateCharmHud(game);
+  }
+  updateCharmHud(game) {
+    const summary = game.charms?.getSummary?.();
+    if (!summary) return;
+    const { inventory, activeBoost, refreshNoticeActive } = summary;
+    const bar = game.hud.charmBar;
+    if (bar) {
+      bar.querySelectorAll("[data-tier]").forEach((btn) => {
+        const tier = btn.dataset.tier;
+        const count = inventory[tier] || 0;
+        const isActive = activeBoost?.tier === tier && activeBoost.remainingMs > 0;
+        btn.classList.toggle("has-item", count > 0);
+        btn.classList.toggle("active", isActive);
+        btn.disabled = count <= 0;
+        btn.setAttribute("aria-disabled", String(count <= 0));
+        const countEl = btn.querySelector(".charm-count");
+        if (countEl) countEl.textContent = count > 0 ? String(count) : "0";
+        const arc = btn.querySelector(".charm-arc");
+        if (arc) {
+          const circumference = 125.66;
+          arc.style.strokeDashoffset = isActive
+            ? String(circumference * (1 - activeBoost.progress))
+            : String(circumference);
+        }
+      });
+    }
+    const banner = game.hud.boostBanner;
+    if (banner) {
+      if (activeBoost && activeBoost.remainingMs > 0) {
+        banner.hidden = false;
+        banner.dataset.tier = activeBoost.tier;
+        const label = banner.querySelector(".boost-label");
+        const fill = banner.querySelector(".boost-fill");
+        if (label) {
+          label.textContent = `⚡ +${activeBoost.percent}% TỐC ĐỘ · ${(activeBoost.remainingMs / 1000).toFixed(1)}s`;
+        }
+        if (fill) {
+          fill.style.width = `${Math.round(activeBoost.progress * 100)}%`;
+        }
+      } else {
+        banner.hidden = true;
+      }
+    }
+    if (game.hud.charmToast) {
+      game.hud.charmToast.hidden = !refreshNoticeActive;
+    }
+    if (game.hud.speedVignette) {
+      const speed = Math.abs(game.bike?.motion?.speed || 0);
+      const boosted = Boolean(activeBoost && activeBoost.remainingMs > 0 && speed > 1.2);
+      game.hud.speedVignette.dataset.tier = activeBoost?.tier || "10";
+      game.hud.speedVignette.style.opacity = boosted
+        ? String(Math.min(0.85, 0.25 + (speed / 18) * 0.6))
+        : "0";
+    }
   }
   drawMap(game) {
     if (
@@ -160,7 +219,10 @@ export class GameView {
         districts,
         game.district.id,
         game.traffic.actors,
-        { remotePlayers },
+        {
+          remotePlayers,
+          charms: game.charms?.charms || [],
+        },
       );
       return;
     }

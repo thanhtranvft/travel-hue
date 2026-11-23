@@ -1213,6 +1213,7 @@ export class GeographicWorld {
       bike,
       trail: this.trail,
       remotePlayers: options.remotePlayers || [],
+      charms: options.charms || [],
       staticCache: this.staticMapCache,
     });
   }

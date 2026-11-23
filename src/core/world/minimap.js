@@ -267,6 +267,22 @@ export function renderAreaMap(ctx, state) {
     ctx.stroke();
   }
 
+  // Active speed charms on the map
+  const charmColors = {
+    10: "#2ee59d",
+    20: "#38d9ff",
+    30: "#b86bff",
+    100: "#ffb838",
+  };
+  for (const charm of state.charms || []) {
+    const cx = proj.clampX(proj.toX(charm.x));
+    const cy = proj.clampY(proj.toY(charm.z));
+    ctx.fillStyle = charmColors[charm.tier] || "#2ee59d";
+    ctx.beginPath();
+    ctx.arc(cx, cy, charm.tier === "100" ? 2.8 : 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // Remote online players in the same area
   for (const remote of state.remotePlayers || []) {
     const rx = proj.clampX(proj.toX(remote.x));

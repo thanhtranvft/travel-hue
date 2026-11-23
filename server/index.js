@@ -134,6 +134,8 @@ export async function attachOnlineServer(
         player = result.player;
         clearTimeout(deadline);
       } else if (m.type === "state") room.state(player, m);
+      else if (m.type === "pickup") room.pickup(player, m.charmId);
+      else if (m.type === "use_charm") room.useCharm(player, m.tier);
       else if (m.type === "region") room.region(player, m.region);
       else if (m.type === "pause") {
         room.pause(player, m.reason);

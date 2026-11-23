@@ -356,6 +356,82 @@ export class CityAudio {
     pluck(this.ctx, this.master, 43, t, 0.2, 0.35);
     pluck(this.ctx, this.master, 91, t + 0.025, 0.09, 0.45);
   }
+  playCharmPickup(percent = 10) {
+    if (!this.enabled || this.ctx?.state !== "running") return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const notes =
+      percent >= 100
+        ? [79, 83, 86, 91]
+        : percent >= 30
+          ? [76, 83, 88]
+          : percent >= 20
+            ? [74, 81]
+            : [72, 76];
+    notes.forEach((midi, idx) => {
+      pluck(ctx, this.master, midi, t + idx * 0.055, 0.16, 0.42);
+    });
+  }
+  playSpeedBoost(percent = 10) {
+    if (!this.enabled || this.ctx?.state !== "running") return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const intensity = percent >= 100 ? 1 : percent >= 30 ? 0.72 : percent >= 20 ? 0.55 : 0.42;
+    const duration = percent >= 100 ? 0.7 : 0.48;
+
+    // 1. Filtered wind-rush whoosh
+    if (this.noiseBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.Q.value = 1.1;
+      filter.frequency.setValueAtTime(320, t);
+      filter.frequency.exponentialRampToValueAtTime(1600 + intensity * 1200, t + duration * 0.65);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.16 * intensity + 0.06, t + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+      src.connect(filter).connect(gain).connect(this.master);
+      src.start(t);
+      src.stop(t + duration + 0.02);
+      src.onended = () => {
+        src.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+      };
+    }
+
+    // 2. Ascending turbo synth sweep
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    osc.type = percent >= 100 ? "sawtooth" : "triangle";
+    const startHz = 210 + intensity * 60;
+    const endHz = 520 + intensity * 460;
+    osc.frequency.setValueAtTime(startHz, t);
+    osc.frequency.exponentialRampToValueAtTime(endHz, t + duration * 0.85);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(1400, t);
+    lp.frequency.exponentialRampToValueAtTime(3200, t + duration * 0.8);
+    oscGain.gain.setValueAtTime(0.001, t);
+    oscGain.gain.linearRampToValueAtTime(0.13 + intensity * 0.07, t + 0.05);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+    osc.connect(lp).connect(oscGain).connect(this.master);
+    osc.start(t);
+    osc.stop(t + duration + 0.02);
+    osc.onended = () => {
+      osc.disconnect();
+      lp.disconnect();
+      oscGain.disconnect();
+    };
+
+    // 3. Bright power-up chord accent
+    pluck(ctx, this.master, percent >= 100 ? 84 : 79, t + 0.03, 0.14, 0.5);
+    if (percent >= 30) {
+      flute(ctx, this.master, percent >= 100 ? 91 : 86, t + 0.07, 0.11, 0.55);
+    }
+  }
   dispose() {
     clearInterval(this.timer);
     this.recordedMusic?.dispose();

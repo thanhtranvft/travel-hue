@@ -37,21 +37,30 @@ export class BicycleMotion {
     }
     return this.mode;
   }
-  step(dt, throttle, steer, brake = false, sprint = false) {
+  step(dt, throttle, steer, brake = false, sprint = false, speedMultiplier = 1) {
+    const mult = Number.isFinite(speedMultiplier) && speedMultiplier > 0 ? speedMultiplier : 1;
     if (this.mode === "foot") {
-      return this.stepFoot(dt, throttle, steer, brake, sprint);
+      return this.stepFoot(dt, throttle, steer, brake, sprint, mult);
     }
     const targetSteering = (steer * 0.55) / (1 + Math.abs(this.speed) * 0.07);
     // Do not retain left lock for several frames after a new right command.
     if (steer * this.steering < 0) this.steering = 0;
     this.steering = damp(this.steering, targetSteering, steer ? 24 : 18, dt);
-    let acceleration = throttle * 4.5 - this.speed * 0.32;
+    const maxForward = 9 * mult;
+    let acceleration = throttle * 4.5 * Math.max(1, mult * 0.9) - this.speed * 0.32;
     if (throttle * this.speed < 0)
       acceleration = throttle * 7 - this.speed * 0.32;
     if (brake)
       acceleration =
         -Math.sign(this.speed) * Math.min(Math.abs(this.speed) / dt, 8);
-    this.speed = Math.max(-2.3, Math.min(9, this.speed + acceleration * dt));
+    if (this.speed > maxForward && !brake) {
+      this.speed = Math.max(maxForward, this.speed - 9 * dt);
+    } else {
+      this.speed = Math.max(
+        -2.3,
+        Math.min(maxForward, this.speed + acceleration * dt),
+      );
+    }
     if (Math.abs(this.speed) < 0.025 && !throttle) this.speed = 0;
     const yawRate = (this.speed * Math.tan(this.steering)) / 1.18;
     this.heading = wrapAngle(this.heading + yawRate * dt);
@@ -72,10 +81,19 @@ export class BicycleMotion {
       dz: Math.cos(this.heading) * distance,
     };
   }
-  stepFoot(dt, throttle, steer, brake = false, sprint = false) {
+  stepFoot(
+    dt,
+    throttle,
+    steer,
+    brake = false,
+    sprint = false,
+    speedMultiplier = 1,
+  ) {
+    const mult = Number.isFinite(speedMultiplier) && speedMultiplier > 0 ? speedMultiplier : 1;
     const absThrottle = Math.abs(throttle);
     if (throttle > 0.35 && !brake) {
-      this.runCharge = Math.min(1, this.runCharge + dt * (sprint ? 2.4 : 0.72));
+      const chargeRate = sprint || mult > 1 ? 2.4 : 0.72;
+      this.runCharge = Math.min(1, this.runCharge + dt * chargeRate);
     } else {
       this.runCharge = Math.max(0, this.runCharge - dt * 1.9);
     }
@@ -83,7 +101,7 @@ export class BicycleMotion {
     const runRatio = sprint
       ? 1
       : Math.max(0, Math.min(1, (this.runCharge - 0.38) / 0.52));
-    const maxForward = 2.4 + runRatio * 3.2;
+    const maxForward = (2.4 + runRatio * 3.2) * mult;
     let targetSpeed = 0;
     if (!brake && absThrottle > 0.04) {
       targetSpeed =
@@ -91,7 +109,11 @@ export class BicycleMotion {
           ? Math.min(maxForward, throttle * maxForward)
           : Math.max(-1.8, throttle * 1.8);
     }
-    const accelRate = brake ? 16 : absThrottle > 0.04 ? 6.5 : 10.5;
+    const accelRate = brake
+      ? 16
+      : absThrottle > 0.04
+        ? 6.5 * Math.max(1, mult * 0.85)
+        : 10.5;
     this.speed = damp(this.speed, targetSpeed, accelRate, dt);
     if (Math.abs(this.speed) < 0.03 && absThrottle <= 0.04) this.speed = 0;
 

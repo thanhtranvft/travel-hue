@@ -4,6 +4,7 @@ import { setRiderIdentity } from "../vehicle/RiderIdentity.js";
 import { disposeOldScene } from "../shared/resources/sceneResources.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { cleanAvatarId, cleanStance } from "./protocol.js";
+import { SpeedAuraEffect } from "../world/CharmSceneFX.js";
 
 export class RemotePlayers {
   constructor({ mobile = false } = {}) {
@@ -25,7 +26,9 @@ export class RemotePlayers {
         const bike = new TouringBike({ avatar: avatarId, mode: "foot" });
         setRiderIdentity(bike, player.name, player.color, true);
         if (!this.mobile) bike.loadDetailedModel().catch(() => {});
-        entry = { bike, target: player, fresh: true, last: performance.now() };
+        const aura = new SpeedAuraEffect();
+        aura.attachTo(bike);
+        entry = { bike, aura, target: player, fresh: true, last: performance.now() };
         this.entries.set(player.id, entry);
         this.root.add(bike);
       } else if (entry.bike.avatarId !== avatarId) {
@@ -37,13 +40,14 @@ export class RemotePlayers {
     }
     for (const [id, entry] of this.entries)
       if (!live.has(id)) {
+        entry.aura?.dispose?.();
         entry.bike.disposed = true;
         entry.bike.removeFromParent();
         disposeOldScene(entry.bike, new THREE.Group());
         this.entries.delete(id);
       }
   }
-  update(dt, region, position) {
+  update(dt, region, position, elapsed = performance.now() * 0.001) {
     if (!Number.isFinite(dt) || dt <= 0) return;
     const hasPos =
       position &&
@@ -96,10 +100,19 @@ export class RemotePlayers {
       bike.motion.heading = heading;
       bike.rotation.y = heading;
       bike.rotation.z = lean;
+      const boosted = (target.boostMultiplier || 1) > 1;
+      entry.aura?.update(elapsed, {
+        active: boosted,
+        tierId: target.boostTier || "10",
+        speed,
+      });
     }
   }
   clear() {
-    for (const { bike } of this.entries.values()) bike.disposed = true;
+    for (const { bike, aura } of this.entries.values()) {
+      aura?.dispose?.();
+      bike.disposed = true;
+    }
     disposeOldScene(this.root, new THREE.Group());
     this.entries.clear();
   }

@@ -29,6 +29,7 @@ export class AreaPresenter {
         game.world = candidate.world;
         game.traffic = candidate.traffic;
         game.online?.attachScene(game.scene);
+        game.charms?.attachScene?.(game.scene);
         game.scene.add(game.bike, game.impact);
         game.audio.venues = game.world.venues;
         game.isLoadingRegion = false;

@@ -97,7 +97,10 @@ export class TouringBike extends THREE.Group {
   }
   update(dt, throttle, steer, brake = false, options = {}) {
     const sprint = Boolean(options?.sprint);
-    const step = this.motion.step(dt, throttle, steer, brake, sprint);
+    const speedMultiplier = Number.isFinite(options?.speedMultiplier)
+      ? options.speedMultiplier
+      : 1;
+    const step = this.motion.step(dt, throttle, steer, brake, sprint, speedMultiplier);
     this.position.x += step.dx;
     this.position.z += step.dz;
     this.rotation.y = this.motion.heading;
