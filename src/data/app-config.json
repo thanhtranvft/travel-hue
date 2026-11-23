@@ -923,20 +923,6 @@
           null
         ],
         "enabled": true
-      },
-      {
-        "id": "hue-thuong-vocal",
-        "title": "Huế thương (có lời)",
-        "kind": "file",
-        "file": "huethuong.mp3",
-        "enabled": true
-      },
-      {
-        "id": "thuong-ve-mien-trung-vocal",
-        "title": "Thương về miền Trung (có lời)",
-        "kind": "file",
-        "file": "Thuong Ve Mien Trung.mp3",
-        "enabled": true
       }
     ]
   }

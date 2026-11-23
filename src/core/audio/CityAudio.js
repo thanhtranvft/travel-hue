@@ -47,7 +47,7 @@ export class CityAudio {
     this.collisionVoice = new CollisionVoice(ctx, this.master, (text) =>
       this.onStatus(text),
     );
-    void this.collisionVoice.preload();
+    this.scheduleCollisionPreload();
     const bus = () => {
       const gain = ctx.createGain();
       gain.connect(this.master);
@@ -95,6 +95,22 @@ export class CityAudio {
     this.timer = setInterval(() => this.schedule(), 100);
     this.nextNote = ctx.currentTime + 0.08;
   }
+  scheduleCollisionPreload() {
+    if (typeof requestIdleCallback === "function") {
+      this.preloadIdleId = requestIdleCallback(
+        () => {
+          this.preloadIdleId = null;
+          if (this.ctx) void this.collisionVoice?.preload();
+        },
+        { timeout: 3000 },
+      );
+    } else {
+      this.preloadTimerId = setTimeout(() => {
+        this.preloadTimerId = null;
+        if (this.ctx) void this.collisionVoice?.preload();
+      }, 2500);
+    }
+  }
   async setEnabled(enabled) {
     if (enabled) {
       this.initialize();
@@ -108,30 +124,16 @@ export class CityAudio {
       this.collisionVoice?.stop();
       if (this.ctx) await this.ctx.suspend();
     }
-    if (this.recordedMusic)
-      void this.recordedMusic.sync(
-        this.track,
-        this.enabled && this.musicEnabled,
-      );
     return this.enabled;
   }
   setMusicEnabled(enabled) {
     this.musicEnabled = !!enabled;
     if (this.ctx) {
       const now = this.ctx.currentTime;
-      this.background.gain.setTargetAtTime(
-        enabled && this.track?.kind !== "file" ? 0.65 : 0,
-        now,
-        0.05,
-      );
+      this.background.gain.setTargetAtTime(enabled ? 0.65 : 0, now, 0.05);
       if (!enabled) this.venue.gain.setTargetAtTime(0, now, 0.05);
       this.nextNote = now + 0.08;
     }
-    if (this.recordedMusic)
-      void this.recordedMusic.sync(
-        this.track,
-        this.enabled && this.musicEnabled,
-      );
     return this.musicEnabled;
   }
   setVolume(value) {
@@ -150,14 +152,11 @@ export class CityAudio {
       old.gain.cancelScheduledValues(now);
       old.gain.setTargetAtTime(0, now, 0.035);
       this.background = this.ctx.createGain();
-      this.background.gain.value =
-        !this.musicEnabled || track.kind === "file" ? 0 : 0.65;
+      this.background.gain.value = this.musicEnabled ? 0.65 : 0;
       this.background.connect(this.master);
       setTimeout(() => old.disconnect(), 3500);
       this.nextNote = now + 0.08;
     }
-    if (this.recordedMusic)
-      void this.recordedMusic.sync(track, this.enabled && this.musicEnabled);
     return true;
   }
   schedule() {
@@ -173,10 +172,6 @@ export class CityAudio {
       now = ctx.currentTime;
     if (this.nextNote < now - 0.25) this.nextNote = now + 0.05;
     for (let count = 0; this.nextNote < now + 0.25 && count < 4; count++) {
-      if (this.track.kind === "file") {
-        this.nextNote = now + 0.3;
-        return;
-      }
       const index = this.step % this.track.melody.length,
         note = this.track.melody[index],
         time = this.nextNote;
@@ -217,16 +212,12 @@ export class CityAudio {
       t = ctx.currentTime,
       speed = Math.abs(bike.motion.speed);
     this.background.gain.setTargetAtTime(
-      !this.musicEnabled || !this.track || this.track.kind === "file"
-        ? 0
-        : 0.65 - this.venueLevel * 0.4,
+      !this.musicEnabled || !this.track ? 0 : 0.65 - this.venueLevel * 0.4,
       t,
       0.7,
     );
     this.venue.gain.setTargetAtTime(
-      !this.musicEnabled || this.track?.kind === "file"
-        ? 0
-        : this.venueLevel * 0.9,
+      !this.musicEnabled ? 0 : this.venueLevel * 0.9,
       t,
       0.45,
     );
@@ -434,7 +425,14 @@ export class CityAudio {
   }
   dispose() {
     clearInterval(this.timer);
-    this.recordedMusic?.dispose();
+    if (this.preloadIdleId != null && typeof cancelIdleCallback === "function") {
+      cancelIdleCallback(this.preloadIdleId);
+      this.preloadIdleId = null;
+    }
+    if (this.preloadTimerId != null) {
+      clearTimeout(this.preloadTimerId);
+      this.preloadTimerId = null;
+    }
     this.collisionVoice?.stop();
     return this.ctx?.close();
   }

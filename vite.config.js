@@ -1,6 +1,41 @@
 import { defineConfig } from "vite";
+import { dirname, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { attachOnlineServer } from "./server/index.js";
+
+const areaModelPath = fileURLToPath(
+  new URL("./src/modules/areas/AreaModel.js", import.meta.url),
+).replaceAll("\\", "/");
+const fallbackMapPath = fileURLToPath(
+  new URL("./src/core/shared/geography/map.js", import.meta.url),
+).replaceAll("\\", "/");
+
+function aliasFallbackMapPlugin() {
+  return {
+    name: "hue-alias-fallback-map",
+    enforce: "pre",
+    resolveId(source, importer) {
+      const cleanSource = source.split("?")[0].replaceAll("\\", "/");
+      if (
+        cleanSource === fallbackMapPath ||
+        cleanSource.endsWith("/geography/map.js")
+      ) {
+        return areaModelPath;
+      }
+      if (importer && cleanSource.startsWith(".")) {
+        const cleanImporter = importer.split("?")[0];
+        const candidate = resolvePath(
+          dirname(cleanImporter),
+          cleanSource,
+        ).replaceAll("\\", "/");
+        if (candidate === fallbackMapPath) {
+          return areaModelPath;
+        }
+      }
+      return null;
+    },
+  };
+}
 
 function onlineWebSocketPlugin() {
   return {
@@ -19,24 +54,14 @@ function onlineWebSocketPlugin() {
 }
 
 export default defineConfig({
-  plugins: [onlineWebSocketPlugin()],
+  plugins: [aliasFallbackMapPlugin(), onlineWebSocketPlugin()],
   resolve: {
     alias: [
       {
         find: /^.*\/geography\/map\.js$/,
-        replacement: fileURLToPath(
-          new URL("./src/modules/areas/AreaModel.js", import.meta.url),
-        ).replaceAll("\\", "/"),
+        replacement: areaModelPath,
       },
     ],
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks: (id) =>
-          id.includes("osm-snapshot.json") ? "hue-osm-data" : undefined,
-      },
-    },
   },
   server: {
     host: "0.0.0.0",

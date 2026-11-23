@@ -203,3 +203,14 @@ if (game) {
     .forEach((button) => (button.disabled = true));
 }
 
+if (
+  import.meta?.env?.PROD &&
+  typeof navigator !== "undefined" &&
+  "serviceWorker" in navigator
+) {
+  addEventListener("load", () => {
+    void navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+
+

@@ -2,7 +2,13 @@ import { createServer } from "node:http";
 import { createReadStream } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import { resolve, extname, sep } from "node:path";
+import { pipeline } from "node:stream";
 import { fileURLToPath } from "node:url";
+import {
+  createBrotliCompress,
+  createGzip,
+  constants as zlibConstants,
+} from "node:zlib";
 import { WebSocketServer, WebSocket } from "ws";
 import { Room } from "./Room.js";
 
@@ -19,7 +25,31 @@ const types = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".woff2": "font/woff2",
+  ".webmanifest": "application/manifest+json",
 };
+const compressibleExts = new Set([
+  ".html",
+  ".js",
+  ".css",
+  ".json",
+  ".svg",
+  ".glb",
+  ".wav",
+  ".webmanifest",
+]);
+function pickEncoding(req, ext, size) {
+  if (req.method !== "GET" || size < 1024 || !compressibleExts.has(ext))
+    return null;
+  const accept = String(req.headers["accept-encoding"] || "");
+  if (/\bbr\b/i.test(accept)) return "br";
+  if (/\bgzip\b/i.test(accept)) return "gzip";
+  return null;
+}
+function cacheControlFor(path, ext) {
+  if (ext === ".html" || path === "/sw.js") return "no-cache";
+  if (path.startsWith("/assets/")) return "public, max-age=31536000, immutable";
+  return "public, max-age=3600";
+}
 export async function attachOnlineServer(
   server,
   { now, reconnectMs, rejectUnknownUpgrade = false } = {},
@@ -215,18 +245,38 @@ export async function createGameServer({
         res.end();
         return;
       }
-      res.writeHead(200, {
-        "Content-Type": types[extname(file)] || "application/octet-stream",
-        "Content-Length": info.size,
-        "Cache-Control":
-          extname(file) === ".html" ? "no-cache" : "public, max-age=3600",
+      const ext = extname(file);
+      const encoding = pickEncoding(req, ext, info.size);
+      const headers = {
+        "Content-Type": types[ext] || "application/octet-stream",
+        "Cache-Control": cacheControlFor(path, ext),
         "X-Content-Type-Options": "nosniff",
-      });
-      if (req.method === "HEAD") res.end();
-      else
-        createReadStream(file)
-          .on("error", () => res.destroy())
-          .pipe(res);
+      };
+      if (compressibleExts.has(ext)) {
+        headers.Vary = "Accept-Encoding";
+      }
+      if (encoding) {
+        headers["Content-Encoding"] = encoding;
+      } else {
+        headers["Content-Length"] = info.size;
+      }
+      res.writeHead(200, headers);
+      if (req.method === "HEAD") {
+        res.end();
+        return;
+      }
+      const source = createReadStream(file);
+      if (encoding === "br") {
+        const compressor = createBrotliCompress({
+          params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 },
+        });
+        pipeline(source, compressor, res, () => {});
+      } else if (encoding === "gzip") {
+        const compressor = createGzip({ level: 6 });
+        pipeline(source, compressor, res, () => {});
+      } else {
+        pipeline(source, res, () => {});
+      }
     } catch {
       res.writeHead(404);
       res.end("Build frontend first: npm run build");

@@ -1,5 +1,3 @@
-import { RecordedMusic } from "../core/audio/RecordedMusic.js";
-
 export function isMobileViewport() {
   return matchMedia("(pointer:coarse), (max-width:760px), (max-height:500px)").matches;
 }
@@ -150,10 +148,6 @@ export function initializeAudioUI(audio) {
   collapse.textContent = "Thu gọn ▴";
   collapse.setAttribute("aria-label", "Thu gọn bảng nhạc");
   settings.prepend(collapse);
-  audio.recordedMusic = new RecordedMusic(
-    audio,
-    (text) => (status.textContent = text),
-  );
   const trackLabel = document.createElement("label");
   trackLabel.className = "track-selector";
   trackLabel.textContent = "Nhạc nền";
@@ -235,9 +229,5 @@ export function initializeAudioUI(audio) {
     audio.setVolume(Number(volume.value) / 100),
   );
   audio.onStatus = (text) => (status.textContent = text);
-  void audio.recordedMusic.sync(
-    audio.track,
-    audio.enabled && audio.musicEnabled,
-  );
   sync();
 }
