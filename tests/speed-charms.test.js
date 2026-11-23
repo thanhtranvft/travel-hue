@@ -12,6 +12,8 @@ import {
   randomCharmRefreshMs,
 } from "../src/core/world/speedCharms.js";
 
+import quocHocModel from "../src/modules/areas/quoc-hoc/model/osm.json" with { type: "json" };
+
 const longRegion = {
   path: [
     [0, 0],
@@ -23,10 +25,10 @@ const longRegion = {
   radius: 16,
   extensions: [
     [
-      [-20, -20],
-      [20, -20],
-      [20, 20],
-      [-20, 20],
+      { x: -20, z: -20 },
+      { x: 20, z: -20 },
+      { x: 20, z: 20 },
+      { x: -20, z: 20 },
     ],
   ],
 };
@@ -49,6 +51,11 @@ test("generateRegionCharms spawns fewer charms for higher boosts and honors canP
   assert.ok(counts["10"] > counts["20"]);
   assert.ok(counts["20"] > counts["30"]);
   assert.ok(counts["30"] > counts["100"]);
+
+  const realCharms = generateRegionCharms(quocHocModel.region, {
+    idPrefix: "quoc-hoc-test",
+  });
+  assert.equal(realCharms.length, 28);
 
   for (let i = 0; i < 20; i++) {
     const ms = randomCharmRefreshMs();
@@ -105,7 +112,9 @@ test("Room validates charm pickup, inventory stacks, speed boost anti-cheat, and
   const target = initCharmsMsg.charms.find((c) => c.tier === "100");
   assert.ok(target);
 
-  // Too far away -> rejected, charm still in region
+  // Move far away (> 5.5m) -> rejected, charm still in region
+  a.x = target.x + 20;
+  a.z = target.z + 20;
   room.pickup(a, target.id);
   assert.equal(a.inventory["100"], 0);
   assert.equal(room.regionCharms.get("a").charms.some((c) => c.id === target.id), true);
@@ -179,11 +188,11 @@ test("Room validates charm pickup, inventory stacks, speed boost anti-cheat, and
 });
 
 test("CityAudio exposes safe playCharmPickup and playSpeedBoost helpers", () => {
-  const audio = new CityAudio();
-  assert.equal(typeof audio.playCharmPickup, "function");
-  assert.equal(typeof audio.playSpeedBoost, "function");
+  assert.equal(typeof CityAudio.prototype.playCharmPickup, "function");
+  assert.equal(typeof CityAudio.prototype.playSpeedBoost, "function");
+  const mockAudio = { enabled: true, ctx: null };
   assert.doesNotThrow(() => {
-    audio.playCharmPickup(30);
-    audio.playSpeedBoost(100);
+    CityAudio.prototype.playCharmPickup.call(mockAudio, 30);
+    CityAudio.prototype.playSpeedBoost.call(mockAudio, 100);
   });
 });

@@ -87,6 +87,20 @@ export function sanitizeCharmInventory(raw) {
   return out;
 }
 
+function readXZ(pt) {
+  if (Array.isArray(pt) && pt.length >= 2) {
+    const x = Number(pt[0]);
+    const z = Number(pt[1]);
+    return Number.isFinite(x) && Number.isFinite(z) ? [x, z] : null;
+  }
+  if (pt && typeof pt === "object") {
+    const x = Number(pt.x);
+    const z = Number(pt.z);
+    return Number.isFinite(x) && Number.isFinite(z) ? [x, z] : null;
+  }
+  return null;
+}
+
 function collectCandidateAnchors(region, extraRoads = []) {
   const anchors = [];
   const pushSegment = (ax, az, bx, bz, halfWidth = 4.5) => {
@@ -109,9 +123,9 @@ function collectCandidateAnchors(region, extraRoads = []) {
 
   if (Array.isArray(region?.path)) {
     for (let i = 1; i < region.path.length; i++) {
-      const [ax, az] = region.path[i - 1];
-      const [bx, bz] = region.path[i];
-      pushSegment(ax, az, bx, bz, 5.2);
+      const a = readXZ(region.path[i - 1]);
+      const b = readXZ(region.path[i]);
+      if (a && b) pushSegment(a[0], a[1], b[0], b[1], 5.2);
     }
   }
 
@@ -119,22 +133,26 @@ function collectCandidateAnchors(region, extraRoads = []) {
     const pts = road?.points;
     if (!Array.isArray(pts) || pts.length < 2) continue;
     for (let i = 1; i < pts.length; i++) {
-      pushSegment(pts[i - 1].x, pts[i - 1].z, pts[i].x, pts[i].z, 4);
+      const a = readXZ(pts[i - 1]);
+      const b = readXZ(pts[i]);
+      if (a && b) pushSegment(a[0], a[1], b[0], b[1], 4);
     }
   }
 
   for (const ext of region?.extensions || []) {
     if (!Array.isArray(ext) || ext.length < 3) continue;
+    const pts = ext.map(readXZ).filter(Boolean);
+    if (pts.length < 3) continue;
     let cx = 0;
     let cz = 0;
-    for (const [px, pz] of ext) {
+    for (const [px, pz] of pts) {
       cx += px;
       cz += pz;
     }
-    cx /= ext.length;
-    cz /= ext.length;
+    cx /= pts.length;
+    cz /= pts.length;
     anchors.push({ x: cx, z: cz, nx: 1, nz: 0, halfWidth: 8 });
-    for (const [px, pz] of ext) {
+    for (const [px, pz] of pts) {
       pushSegment(cx, cz, px, pz, 4);
     }
   }
