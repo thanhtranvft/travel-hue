@@ -21,6 +21,7 @@ import {
   initializeLandscapeMode,
   isMobileViewport,
 } from "./ui/MobileUI.js";
+import { bindMultiTouchAction } from "./core/input/TouchControls.js";
 import { loadGeography } from "./modules/areas/AreaModel.js";
 import { defaultArea } from "./app/catalog.js";
 
@@ -152,9 +153,10 @@ if (game) {
   document
     .querySelector("#transport-toggle")
     .addEventListener("click", () => game.toggleTransportMode());
-  document
-    .querySelector("#touch-transport")
-    .addEventListener("click", () => game.toggleTransportMode());
+  bindMultiTouchAction(
+    document.querySelector("#touch-transport"),
+    () => game.toggleTransportMode(),
+  );
   document
     .querySelector("#autopilot")
     .addEventListener("click", () => game.toggleAutopilot());
@@ -189,8 +191,7 @@ if (game) {
     .querySelector("#expand-map")
     .addEventListener("click", () => mapPanelEl.classList.toggle("expanded"));
   document.querySelectorAll("#charm-bar [data-tier]").forEach((btn) => {
-    btn.addEventListener("pointerdown", (e) => e.stopPropagation());
-    btn.addEventListener("click", () => game.useCharm(btn.dataset.tier));
+    bindMultiTouchAction(btn, () => game.useCharm(btn.dataset.tier));
   });
   initializeMobileUI();
   initializeAudioUI(game.audio);

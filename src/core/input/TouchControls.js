@@ -1,5 +1,40 @@
 import { stickInput } from "./touchMath.js";
 
+export function bindMultiTouchAction(button, handler, now = () => Date.now()) {
+  if (!button || typeof handler !== "function") return;
+  let activePointerId = null;
+  let lastDownAt = -Infinity;
+  let lastUpAt = -Infinity;
+
+  button.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (button.disabled || button.getAttribute?.("aria-disabled") === "true")
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    activePointerId = e.pointerId ?? 0;
+    lastDownAt = now();
+    handler(e);
+  });
+
+  const clearPointer = (e) => {
+    if (activePointerId !== null && (e.pointerId ?? 0) === activePointerId) {
+      activePointerId = null;
+      lastUpAt = now();
+    }
+  };
+  button.addEventListener("pointerup", clearPointer);
+  button.addEventListener("pointercancel", clearPointer);
+
+  button.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const t = now();
+    if (activePointerId !== null || t - lastDownAt < 400 || t - lastUpAt < 120)
+      return;
+    handler(e);
+  });
+}
+
 export class TouchControls {
   constructor(drag) {
     this.drag = drag;

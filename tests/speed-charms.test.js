@@ -196,3 +196,61 @@ test("CityAudio exposes safe playCharmPickup and playSpeedBoost helpers", () => 
     CityAudio.prototype.playSpeedBoost.call(mockAudio, 100);
   });
 });
+
+test("bindMultiTouchAction fires immediately on pointerdown, skips duplicate click, and allows keyboard click", async () => {
+  const { bindMultiTouchAction } = await import("../src/core/input/TouchControls.js");
+  const listeners = new Map();
+  let t = 1000;
+  let count = 0;
+  const btn = {
+    disabled: false,
+    getAttribute: () => "false",
+    addEventListener(type, fn) {
+      listeners.set(type, fn);
+    },
+  };
+  bindMultiTouchAction(btn, () => count++, () => t);
+
+  const mkEvent = (pointerId = 2) => ({
+    pointerId,
+    pointerType: "touch",
+    button: 0,
+    preventDefault() {},
+    stopPropagation() {},
+  });
+
+  // Immediate trigger on pointerdown (multi-touch while stick uses pointerId 1)
+  listeners.get("pointerdown")(mkEvent(2));
+  assert.equal(count, 1);
+
+  // Follow-up click after pointerup must not double-trigger
+  t += 40;
+  listeners.get("pointerup")(mkEvent(2));
+  listeners.get("click")(mkEvent(2));
+  assert.equal(count, 1);
+
+  // Long press (>400ms) followed immediately by pointerup + click still must not double-trigger
+  t += 600;
+  listeners.get("pointerdown")(mkEvent(3));
+  assert.equal(count, 2);
+  t += 700;
+  listeners.get("pointerup")(mkEvent(3));
+  listeners.get("click")(mkEvent(3));
+  assert.equal(count, 2);
+
+  // Rapid double-tap on pointerdown fires twice without duplicate click
+  t += 300;
+  listeners.get("pointerdown")(mkEvent(4));
+  listeners.get("pointerup")(mkEvent(4));
+  listeners.get("click")(mkEvent(4));
+  t += 150;
+  listeners.get("pointerdown")(mkEvent(5));
+  listeners.get("pointerup")(mkEvent(5));
+  listeners.get("click")(mkEvent(5));
+  assert.equal(count, 4);
+
+  // Keyboard/programmatic click with no preceding pointerdown works normally
+  t += 1000;
+  listeners.get("click")({ stopPropagation() {} });
+  assert.equal(count, 5);
+});
