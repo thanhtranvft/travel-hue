@@ -1,7 +1,10 @@
 import { OnlineClient } from "./OnlineClient.js";
 import { RemotePlayers } from "./RemotePlayers.js";
 import { setRiderIdentity } from "../vehicle/RiderIdentity.js";
-import { DEFAULT_GAME_MODE_ID } from "../../modules/game-modes/registry.js";
+import {
+  cleanGameModeId,
+  DEFAULT_GAME_MODE_ID,
+} from "../../modules/game-modes/registry.js";
 
 export class OnlineSession {
   constructor(
@@ -51,10 +54,17 @@ export class OnlineSession {
         game.bike.setTransportMode("bike");
         game.syncMode?.();
       }
-      game.gameMode?.activate?.(
+      const nextRegion = detail.player?.region || game.world.region.id;
+      const nextMode = cleanGameModeId(
         detail.player?.gameMode || gameMode,
-        detail.player?.region || game.world.region.id,
+        nextRegion,
       );
+      if (
+        game.gameMode &&
+        (game.gameMode.modeId !== nextMode || !game.gameMode.runtime)
+      ) {
+        game.gameMode.activate?.(nextMode, nextRegion);
+      }
       this.applyPose(detail.player, true);
       this.client.region = detail.player.region;
     });

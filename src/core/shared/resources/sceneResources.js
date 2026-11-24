@@ -11,6 +11,12 @@ function protectMaterial(material) {
   for (const value of Object.values(material))
     if (value?.isTexture) shared.add(value);
 }
+export function markSharedResource(resource) {
+  if (!resource) return resource;
+  shared.add(resource);
+  if (resource.isMaterial) protectMaterial(resource);
+  return resource;
+}
 export function loadSharedModel(url) {
   if (!models.has(url))
     models.set(

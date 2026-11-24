@@ -218,7 +218,9 @@ export class Room {
           lean: 0,
           ready: false,
           paused: false,
+          seq: -1,
           stamp: this.now(),
+          activeAt: this.now(),
           credit: 1.2,
           stunnedUntil: 0,
           immuneUntil: this.now() + 2000,
@@ -230,8 +232,6 @@ export class Room {
     }
     p.send = send;
     const now = this.now();
-    const modeState = this.ensureModeState(targetRoomKey, gameMode);
-    modeState?.onJoin?.(p, this);
     const charmEntry = this.ensureRegionCharms(message.region, false, gameMode);
     this.send(p, {
       type: "welcome",
@@ -241,6 +241,8 @@ export class Room {
       player: this.publicPlayer(p),
       limit: this.maxPlayersPerRegion,
     });
+    const modeState = this.ensureModeState(targetRoomKey, gameMode);
+    modeState?.onJoin?.(p, this);
     this.send(p, {
       type: "charms",
       region: message.region,

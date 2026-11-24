@@ -696,10 +696,34 @@ export class GamePresenter {
     if (maxDistance > 1e-4) {
       this.ray.set(this.cameraTarget, this.rayDirection.divideScalar(maxDistance));
       this.ray.far = maxDistance;
-      const hit = this.ray.intersectObjects(
-        [...this.world.cameraObstacles, ...this.traffic.cameraObstacles(p)],
-        false,
-      )[0];
+      const nearObstacles = (this._nearCameraObstacles ??= []);
+      nearObstacles.length = 0;
+      const cx = this.cameraTarget.x,
+        cy = this.cameraTarget.y,
+        cz = this.cameraTarget.z;
+      for (const obj of this.world.cameraObstacles) {
+        if (!obj || !obj.visible) continue;
+        const geo = obj.geometry;
+        if (geo) {
+          if (!geo.boundingSphere) geo.computeBoundingSphere();
+          const s = geo.boundingSphere;
+          if (s) {
+            const reach = s.radius + maxDistance + 4;
+            const wx = s.center.x + (obj.matrixWorld ? obj.matrixWorld.elements[12] : obj.position.x);
+            const wy = s.center.y + (obj.matrixWorld ? obj.matrixWorld.elements[13] : obj.position.y);
+            const wz = s.center.z + (obj.matrixWorld ? obj.matrixWorld.elements[14] : obj.position.z);
+            const dx = wx - cx,
+              dy = wy - cy,
+              dz = wz - cz;
+            if (dx * dx + dy * dy + dz * dz > reach * reach) continue;
+          }
+        }
+        nearObstacles.push(obj);
+      }
+      for (const obj of this.traffic.cameraObstacles(p)) {
+        nearObstacles.push(obj);
+      }
+      const hit = this.ray.intersectObjects(nearObstacles, false)[0];
       if (hit)
         this.desired
           .copy(this.cameraTarget)

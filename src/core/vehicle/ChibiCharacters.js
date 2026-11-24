@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import { AVATAR_CATALOG, cleanAvatarId } from "../network/protocol.js";
+import { markSharedResource } from "../shared/resources/sceneResources.js";
 
 const _avatarMap = new Map(AVATAR_CATALOG.map((item) => [item.id, item]));
+const _sharedMatCache = new Map();
+const _starTexCache = new Map();
+const _faceTexCache = new Map();
+const _tubeGeoCache = new Map();
 
 function getAvatarMeta(avatarId) {
   return _avatarMap.get(cleanAvatarId(avatarId)) || AVATAR_CATALOG[0];
@@ -14,6 +19,18 @@ function makeMat(color, roughness = 0.68, metalness = 0.04, extra = {}) {
     metalness,
     ...extra,
   });
+}
+
+function getSharedMat(color, roughness = 0.68, metalness = 0.04, extraKey = "", buildExtra = null) {
+  const key = `${color}|${roughness}|${metalness}|${extraKey}`;
+  let mat = _sharedMatCache.get(key);
+  if (!mat) {
+    mat = markSharedResource(
+      makeMat(color, roughness, metalness, buildExtra ? buildExtra() : {}),
+    );
+    _sharedMatCache.set(key, mat);
+  }
+  return mat;
 }
 
 function makeCanvas(width, height) {
@@ -78,10 +95,12 @@ function finalizeTexture(canvas, srgb = true) {
   const tex = new THREE.CanvasTexture(canvas);
   if (srgb) tex.colorSpace = THREE.SRGBColorSpace;
   tex.needsUpdate = true;
-  return tex;
+  return markSharedResource(tex);
 }
 
 function createStarBadgeTexture(bgColor = "#1f5cb4", starColor = "#ffd24a") {
+  const key = `${bgColor}|${starColor}`;
+  if (_starTexCache.has(key)) return _starTexCache.get(key);
   const created = makeCanvas(256, 256);
   if (!created) return null;
   const { canvas, ctx } = created;
@@ -92,11 +111,14 @@ function createStarBadgeTexture(bgColor = "#1f5cb4", starColor = "#ffd24a") {
   ctx.fillStyle = starColor;
   if (drawStar(ctx, 128, 114, 5, 56, 23)) ctx.fill?.();
   else ctx.fillRect?.(100, 88, 56, 56);
-  return finalizeTexture(canvas);
+  const tex = finalizeTexture(canvas);
+  _starTexCache.set(key, tex);
+  return tex;
 }
 
 function createChibiFaceTexture(avatarId) {
   const id = cleanAvatarId(avatarId);
+  if (_faceTexCache.has(id)) return _faceTexCache.get(id);
   const created = makeCanvas(512, 256);
   if (!created) return null;
   const { canvas, ctx } = created;
@@ -226,7 +248,9 @@ function createChibiFaceTexture(avatarId) {
     }
   }
 
-  return finalizeTexture(canvas);
+  const tex = finalizeTexture(canvas);
+  _faceTexCache.set(id, tex);
+  return tex;
 }
 
 function addPart(parent, geometry, material, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, sx = 1, sy = 1, sz = 1) {
@@ -246,10 +270,13 @@ function addTube(parent, a, b, radius, material) {
   const dir = p1.clone().sub(p0);
   const len = dir.length();
   if (len < 1e-4) return null;
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius, radius, len, 12),
-    material,
-  );
+  const key = `${radius}|${len.toFixed(4)}`;
+  let geo = _tubeGeoCache.get(key);
+  if (!geo) {
+    geo = markSharedResource(new THREE.CylinderGeometry(radius, radius, len, 12));
+    _tubeGeoCache.set(key, geo);
+  }
+  const mesh = new THREE.Mesh(geo, material);
   mesh.position.copy(p0).addScaledVector(dir, 0.5);
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
   mesh.castShadow = true;
@@ -263,13 +290,13 @@ export function buildChibiBicycle(frameColor = "#2477d4") {
   group.name = "chibi-bicycle";
 
   const frameMat = makeMat(frameColor, 0.28, 0.48);
-  const chromeMat = makeMat("#d8e0e6", 0.22, 0.85);
-  const tireMat = makeMat("#262b30", 0.85, 0.05);
-  const gripMat = makeMat("#2f353b", 0.82, 0.05);
-  const seatMat = makeMat("#e8a838", 0.52, 0.08);
+  const chromeMat = getSharedMat("#d8e0e6", 0.22, 0.85);
+  const tireMat = getSharedMat("#262b30", 0.85, 0.05);
+  const gripMat = getSharedMat("#2f353b", 0.82, 0.05);
+  const seatMat = getSharedMat("#e8a838", 0.52, 0.08);
   const starTex = createStarBadgeTexture(frameColor, "#ffda52");
   const starGuardMat = starTex
-    ? makeMat("#ffffff", 0.42, 0.2, { map: starTex })
+    ? getSharedMat("#ffffff", 0.42, 0.2, `star:${frameColor}|#ffda52`, () => ({ map: starTex }))
     : frameMat;
 
   const wheels = [];
@@ -431,11 +458,11 @@ export function buildChibiBicycle(frameColor = "#2477d4") {
 function buildBackpack(parent, color = "#2260b8") {
   const pack = new THREE.Group();
   pack.name = "chibi-backpack";
-  const packMat = makeMat(color, 0.72, 0.04);
-  const goldMat = makeMat("#f2bf38", 0.52, 0.1);
+  const packMat = getSharedMat(color, 0.72, 0.04);
+  const goldMat = getSharedMat("#f2bf38", 0.52, 0.1);
   const starTex = createStarBadgeTexture(color, "#ffd654");
   const frontMat = starTex
-    ? makeMat("#ffffff", 0.65, 0.05, { map: starTex })
+    ? getSharedMat("#ffffff", 0.65, 0.05, `star:${color}|#ffd654`, () => ({ map: starTex }))
     : packMat;
 
   // Main rounded bag
@@ -457,15 +484,15 @@ function buildHumanRig(avatarId) {
   const root = new THREE.Group();
   root.name = `chibi-${avatarId}`;
 
-  const skinMat = makeMat(isGirl ? "#ffe0c8" : "#ffd9be", 0.62, 0.02);
-  const shirtMat = makeMat("#f8fafc", 0.72, 0.02);
-  const navyMat = makeMat(isGirl ? "#2b3854" : "#22324c", 0.76, 0.03);
-  const scarfMat = makeMat("#dc2f2f", 0.58, 0.04);
-  const sockMat = makeMat("#ffffff", 0.72, 0.02);
-  const shoeMat = makeMat(isGirl ? "#323845" : "#2b2f38", 0.58, 0.06);
-  const soleMat = makeMat("#eceef2", 0.78, 0.02);
-  const hairMat = makeMat(isGirl ? "#3b2318" : "#3a2820", 0.62, 0.05);
-  const bowMat = makeMat("#eb678e", 0.52, 0.06);
+  const skinMat = getSharedMat(isGirl ? "#ffe0c8" : "#ffd9be", 0.62, 0.02);
+  const shirtMat = getSharedMat("#f8fafc", 0.72, 0.02);
+  const navyMat = getSharedMat(isGirl ? "#2b3854" : "#22324c", 0.76, 0.03);
+  const scarfMat = getSharedMat("#dc2f2f", 0.58, 0.04);
+  const sockMat = getSharedMat("#ffffff", 0.72, 0.02);
+  const shoeMat = getSharedMat(isGirl ? "#323845" : "#2b2f38", 0.58, 0.06);
+  const soleMat = getSharedMat("#eceef2", 0.78, 0.02);
+  const hairMat = getSharedMat(isGirl ? "#3b2318" : "#3a2820", 0.62, 0.05);
+  const bowMat = getSharedMat("#eb678e", 0.52, 0.06);
 
   // Ground anchor -> Body pivot (for bounce & sitting transition)
   const bodyPivot = new THREE.Group();
@@ -588,7 +615,7 @@ function buildHumanRig(avatarId) {
   // Big Chibi Head with high-detail face CanvasTexture
   const faceTex = createChibiFaceTexture(avatarId);
   const headMat = faceTex
-    ? makeMat("#ffffff", 0.62, 0.02, { map: faceTex })
+    ? getSharedMat("#ffffff", 0.62, 0.02, `face:${avatarId}`, () => ({ map: faceTex }))
     : skinMat;
   const headSphere = addPart(
     headPivot,
@@ -816,15 +843,15 @@ function buildAnimalRig(avatarId) {
     },
   }[avatarId];
 
-  const furMat = makeMat(palette.fur, 0.78, 0.02);
-  const bellyMat = makeMat(palette.belly, 0.80, 0.02);
-  const earMat = makeMat(palette.ear, 0.78, 0.02);
-  const innerEarMat = makeMat("#f6a6b2", 0.72, 0.02);
-  const collarMat = makeMat(palette.collar, 0.48, 0.08);
-  const goldMat = makeMat("#ffd34e", 0.25, 0.72);
-  const hornMat = makeMat(avatarId === "buffalo" ? "#262a31" : "#f4e6c8", 0.45, 0.12);
-  const noseMat = makeMat(palette.nose, 0.35, 0.08);
-  const pawMat = makeMat(palette.paw, avatarId === "cow" || avatarId === "buffalo" ? 0.55 : 0.78, 0.05);
+  const furMat = getSharedMat(palette.fur, 0.78, 0.02);
+  const bellyMat = getSharedMat(palette.belly, 0.80, 0.02);
+  const earMat = getSharedMat(palette.ear, 0.78, 0.02);
+  const innerEarMat = getSharedMat("#f6a6b2", 0.72, 0.02);
+  const collarMat = getSharedMat(palette.collar, 0.48, 0.08);
+  const goldMat = getSharedMat("#ffd34e", 0.25, 0.72);
+  const hornMat = getSharedMat(avatarId === "buffalo" ? "#262a31" : "#f4e6c8", 0.45, 0.12);
+  const noseMat = getSharedMat(palette.nose, 0.35, 0.08);
+  const pawMat = getSharedMat(palette.paw, avatarId === "cow" || avatarId === "buffalo" ? 0.55 : 0.78, 0.05);
 
   const bodyPivot = new THREE.Group();
   bodyPivot.position.set(0, 0.38, 0);
@@ -906,7 +933,7 @@ function buildAnimalRig(avatarId) {
 
   const faceTex = createChibiFaceTexture(avatarId);
   const headMat = faceTex
-    ? makeMat("#ffffff", 0.74, 0.02, { map: faceTex })
+    ? getSharedMat("#ffffff", 0.74, 0.02, `face:${avatarId}`, () => ({ map: faceTex }))
     : furMat;
   addPart(
     headPivot,

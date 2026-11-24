@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { box } from "../shared/architecture/shared.js";
 import { roadWidth, isFootway } from "./roadProfile.js";
 import { nearestPoint, inside } from "../shared/geography/geometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -8,33 +7,48 @@ import { buildingDetails } from "../shared/data/buildingCatalog.js";
 import { trafficBoard, postedBoard } from "./TrafficBoard.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
 
-function sign(text, width = 7) {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 160;
-  const c = canvas.getContext("2d");
-  c.fillStyle = "#174b56";
-  c.fillRect(0, 0, 1024, 160);
-  c.strokeStyle = "#f0ead6";
-  c.lineWidth = 6;
-  c.strokeRect(5, 5, 1014, 150);
-  let size = 60;
-  do {
-    c.font = `bold ${size--}px sans-serif`;
-  } while (c.measureText(text).width > 970 && size > 16);
-  c.fillStyle = "#fff5d9";
-  c.textAlign = "center";
-  c.fillText(text, 512, 103);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
-  return new THREE.Mesh(
-    new THREE.PlaneGeometry(width, width / 6.4),
-    new THREE.MeshStandardMaterial({ map: texture, side: THREE.DoubleSide }),
-  );
+function createSignFactory() {
+  const matCache = new Map();
+  const geoCache = new Map();
+  return (text, width = 7) => {
+    let mat = matCache.get(text);
+    if (!mat) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 80;
+      const c = canvas.getContext("2d");
+      c.fillStyle = "#174b56";
+      c.fillRect(0, 0, 512, 80);
+      c.strokeStyle = "#f0ead6";
+      c.lineWidth = 3;
+      c.strokeRect(2.5, 2.5, 507, 75);
+      let size = 30;
+      do {
+        c.font = `bold ${size--}px sans-serif`;
+      } while (c.measureText(text).width > 485 && size > 9);
+      c.fillStyle = "#fff5d9";
+      c.textAlign = "center";
+      c.fillText(text, 256, 51.5);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = 4;
+      mat = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+      });
+      matCache.set(text, mat);
+    }
+    let geo = geoCache.get(width);
+    if (!geo) {
+      geo = new THREE.PlaneGeometry(width, width / 6.4);
+      geoCache.set(width, geo);
+    }
+    return new THREE.Mesh(geo, mat);
+  };
 }
 export function addStreetDetails(world, features) {
   const { scene, renderRoads } = world;
+  const sign = createSignFactory();
   world.buildingLabels = [];
   world.streetLampPositions = [];
   let markers = 0;
@@ -47,6 +61,19 @@ export function addStreetDetails(world, features) {
   };
   const material = new THREE.MeshStandardMaterial({ color: "#eadfac" }),
     white = new THREE.MeshStandardMaterial({ color: "#eee9da" });
+  const lampPoleMat = new THREE.MeshStandardMaterial({
+      color: "#455755",
+      roughness: 0.75,
+      metalness: 0.05,
+    }),
+    lampHeadMat = new THREE.MeshStandardMaterial({
+      color: "#f2e1ad",
+      roughness: 0.75,
+      metalness: 0.05,
+    }),
+    lampPostGeo = new THREE.BoxGeometry(0.18, 7, 0.18),
+    lampArmGeo = new THREE.BoxGeometry(1.4, 0.14, 0.2),
+    lampHeadGeo = new THREE.BoxGeometry(0.8, 0.12, 0.4);
   for (const road of renderRoads.filter(
     (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân" && r.id !== 174759688,
   )) {
@@ -152,11 +179,16 @@ export function addStreetDetails(world, features) {
               continue;
             const lamp = new THREE.Group();
             lamp.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
-            lamp.add(
-              box([0.18, 7, 0.18], "#455755", [0, 3.5, 0]),
-              box([1.4, 0.14, 0.2], "#455755", [0.6, 7, 0]),
-              box([0.8, 0.12, 0.4], "#f2e1ad", [1, 6.9, 0]),
-            );
+            const post = new THREE.Mesh(lampPostGeo, lampPoleMat);
+            post.position.set(0, 3.5, 0);
+            post.castShadow = post.receiveShadow = true;
+            const arm = new THREE.Mesh(lampArmGeo, lampPoleMat);
+            arm.position.set(0.6, 7, 0);
+            arm.castShadow = arm.receiveShadow = true;
+            const head = new THREE.Mesh(lampHeadGeo, lampHeadMat);
+            head.position.set(1, 6.9, 0);
+            head.castShadow = head.receiveShadow = true;
+            lamp.add(post, arm, head);
             scene.add(lamp);
             world.streetLampPositions.push(p);
           }
@@ -301,17 +333,27 @@ export function addStreetDetails(world, features) {
           (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
         ),
   );
+  const streetTrunkGeo = new THREE.BoxGeometry(0.24, 3, 0.24);
+  const streetTrunkMat = new THREE.MeshStandardMaterial({
+    color: "#796346",
+    roughness: 0.75,
+    metalness: 0.05,
+  });
+  const streetCrownGeos = [0, 1, 2].map(
+    (j) => new THREE.ConeGeometry(1.5 - j * 0.28, 2.5, 10),
+  );
+  const streetCrownMats = ["#486d47", "#527e49", "#68964c"].map(
+    (color) => new THREE.MeshStandardMaterial({ color }),
+  );
   for (let i = 0; i < world.treePositions.length; i += 7) {
     const p = world.treePositions[i],
       tree = new THREE.Group();
-    tree.add(box([0.24, 3, 0.24], "#796346", [0, 1.5, 0]));
+    const trunk = new THREE.Mesh(streetTrunkGeo, streetTrunkMat);
+    trunk.position.set(0, 1.5, 0);
+    trunk.castShadow = trunk.receiveShadow = true;
+    tree.add(trunk);
     for (let j = 0; j < 3; j++) {
-      const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(1.5 - j * 0.28, 2.5, 10),
-        new THREE.MeshStandardMaterial({
-          color: ["#486d47", "#527e49", "#68964c"][j],
-        }),
-      );
+      const crown = new THREE.Mesh(streetCrownGeos[j], streetCrownMats[j]);
       crown.position.y = 3 + j * 0.9;
       tree.add(crown);
     }

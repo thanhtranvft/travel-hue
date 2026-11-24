@@ -80,105 +80,224 @@ export class LivingGrass {
     world.scene.add(this.mesh);
     this.dummy = new THREE.Object3D();
   }
-  update(position) {
-    if (Math.hypot(position.x - this.center.x, position.z - this.center.z) < 20)
-      return;
-    this.center = { x: position.x, z: position.z };
+  _startJob(position) {
     const world = this.world;
-    let count = 0,
-      seed = 71;
+    const span = world.quality?.grassSpan || 160;
+    const half = span * 0.5;
+    const minX = position.x - half;
+    const maxX = position.x + half;
+    const minZ = position.z - half;
+    const maxZ = position.z + half;
+    const maxCount = world.quality?.grassSamples || 18000;
+
+    const filterBoxes = (list) =>
+      list?.filter(
+        (b) =>
+          b.maxX >= minX &&
+          b.minX <= maxX &&
+          b.maxZ >= minZ &&
+          b.minZ <= maxZ,
+      ) || [];
+
+    const ringBounds = (ring) => {
+      let rMinX = Infinity,
+        rMaxX = -Infinity,
+        rMinZ = Infinity,
+        rMaxZ = -Infinity;
+      for (const p of ring) {
+        if (p.x < rMinX) rMinX = p.x;
+        if (p.x > rMaxX) rMaxX = p.x;
+        if (p.z < rMinZ) rMinZ = p.z;
+        if (p.z > rMaxZ) rMaxZ = p.z;
+      }
+      return { minX: rMinX, maxX: rMaxX, minZ: rMinZ, maxZ: rMaxZ, points: ring };
+    };
+
+    if (!this._riverBounds && world.riverRings?.length) {
+      this._riverBounds = world.riverRings.map(ringBounds);
+    }
+
+    const blockers = [
+      world.quocHocPark,
+      world.quocHocCampus,
+      world.haiBaTrungCampus,
+      world.nguyenChiDieuCampus,
+      world.caoThangCampus,
+      world.quangTrungCampus,
+      world.quangTrungEastPrecinct,
+      world.benhVienRhmHue,
+      world.dongChuaCuuTheChurch,
+      world.youthPlayground,
+      world.ubndPalace,
+      world.hoChiMinhMuseum,
+      world.benTrangCafe,
+      world.hueCit,
+      world.hueHospital,
+      world.truongTienSurroundings,
+      world.dongDaCorridor,
+    ].filter((b) => b && typeof b.blocksGrass === "function");
+
+    this._job = {
+      cx: position.x,
+      cz: position.z,
+      span,
+      maxCount,
+      i: 0,
+      count: 0,
+      seed: 71,
+      buildings: filterBoxes(world.buildingPolygons),
+      parks: filterBoxes(world.parkPolygons),
+      rivers: filterBoxes(this._riverBounds),
+      clearances:
+        world.entranceClearances?.filter(
+          (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 20,
+        ) || [],
+      gates:
+        world.schoolGates?.filter(
+          (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 22,
+        ) || [],
+      parking: world.parkingAreas || [],
+      playgrounds:
+        world.playgroundAreas?.filter(
+          (a) =>
+            Math.hypot(a.x - position.x, a.z - position.z) <=
+            half + (a.radius || 0) + 1,
+        ) || [],
+      blockers,
+    };
+  }
+  update(position) {
+    if (
+      Math.hypot(position.x - this.center.x, position.z - this.center.z) >= 20
+    ) {
+      this.center = { x: position.x, z: position.z };
+      this._startJob(position);
+    }
+    const job = this._job;
+    if (!job || job.i >= job.maxCount) return;
+
+    const world = this.world;
+    const isInitial = this.mesh.count === 0;
+    const batchLimit = isInitial ? Math.min(job.maxCount, 4500) : 1800;
+    const endI = Math.min(job.maxCount, job.i + batchLimit);
+    const {
+      cx,
+      cz,
+      span,
+      buildings,
+      parks,
+      rivers,
+      clearances,
+      gates,
+      parking,
+      playgrounds,
+      blockers,
+    } = job;
+
+    let seed = job.seed;
+    let count = job.count;
     const random = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
       return seed / 4294967296;
     };
-    for (let i = 0; i < (world.quality?.grassSamples || 18000); i++) {
-      const span = world.quality?.grassSpan || 160,
-        p = {
-          x: position.x + (random() - 0.5) * span,
-          z: position.z + (random() - 0.5) * span,
-        },
-        road = world.nearestRoad(p.x, p.z);
+
+    for (let i = job.i; i < endI; i++) {
+      const px = cx + (random() - 0.5) * span;
+      const pz = cz + (random() - 0.5) * span;
+      const road = world.nearestRoad(px, pz);
       if (road.road && road.distance < roadWidth(road.road) / 2 + 2.5) continue;
-      if (world.station?.blocks(p.x, p.z)) continue;
-      if (
-        world.riverRings.some((r) => inside(p, r)) ||
-        world.buildingPolygons.some(
-          (b) =>
-            p.x > b.minX &&
-            p.x < b.maxX &&
-            p.z > b.minZ &&
-            p.z < b.maxZ &&
-            inside(p, b.points),
-        )
-      )
-        continue;
-      if (
-        world.parkPolygons?.some(
-          (b) =>
-            p.x > b.minX &&
-            p.x < b.maxX &&
-            p.z > b.minZ &&
-            p.z < b.maxZ &&
-            inside(p, b.points),
-        )
-      )
-        continue;
-      if (
-        world.entranceClearances?.some((g) => {
-          const dx = p.x - g.x,
-            dz = p.z - g.z,
-            lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
-            forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
-          return (
-            Math.abs(lateral) < g.width / 2 && forward > -15 && forward < 5
-          );
-        })
-      )
-        continue;
-      if (world.parkingAreas?.some((r) => inside(p, r))) continue;
-      if (
-        world.playgroundAreas?.some(
-          (a) => Math.hypot(p.x - a.x, p.z - a.z) < a.radius + 0.2,
-        )
-      )
-        continue;
-      if (
-        world.schoolGates?.some((g) => {
-          const dx = p.x - g.x,
-            dz = p.z - g.z,
-            lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
-            forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
-          return Math.abs(lateral) < 5 && forward > -18 && forward < 4;
-        })
-      )
-        continue;
-      if (
-        world.quocHocPark?.blocksGrass(p.x, p.z) ||
-        world.quocHocCampus?.blocksGrass(p.x, p.z) ||
-        world.haiBaTrungCampus?.blocksGrass(p.x, p.z) ||
-        world.nguyenChiDieuCampus?.blocksGrass(p.x, p.z) ||
-        world.caoThangCampus?.blocksGrass(p.x, p.z) ||
-        world.quangTrungCampus?.blocksGrass(p.x, p.z) ||
-        world.quangTrungEastPrecinct?.blocksGrass(p.x, p.z) ||
-        world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
-        world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z) ||
-        world.youthPlayground?.blocksGrass(p.x, p.z) ||
-        world.ubndPalace?.blocksGrass(p.x, p.z) ||
-        world.hoChiMinhMuseum?.blocksGrass(p.x, p.z) ||
-        world.benTrangCafe?.blocksGrass(p.x, p.z) ||
-        world.hueCit?.blocksGrass(p.x, p.z) ||
-        world.hueHospital?.blocksGrass(p.x, p.z) ||
-        world.truongTienSurroundings?.blocksGrass(p.x, p.z) ||
-        world.dongDaCorridor?.blocksGrass(p.x, p.z)
-      )
-        continue;
-      this.dummy.position.set(p.x, 0.055, p.z);
+      if (world.station?.blocks(px, pz)) continue;
+
+      const p = { x: px, z: pz };
+      let skip = false;
+      for (let j = 0; j < rivers.length; j++) {
+        const r = rivers[j];
+        if (px > r.minX && px < r.maxX && pz > r.minZ && pz < r.maxZ && inside(p, r.points)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      for (let j = 0; j < buildings.length; j++) {
+        const b = buildings[j];
+        if (px > b.minX && px < b.maxX && pz > b.minZ && pz < b.maxZ && inside(p, b.points)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      for (let j = 0; j < parks.length; j++) {
+        const b = parks[j];
+        if (px > b.minX && px < b.maxX && pz > b.minZ && pz < b.maxZ && inside(p, b.points)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      for (let j = 0; j < clearances.length; j++) {
+        const g = clearances[j];
+        const dx = px - g.x,
+          dz = pz - g.z,
+          lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
+          forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
+        if (Math.abs(lateral) < g.width / 2 && forward > -15 && forward < 5) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      if (parking.length && parking.some((r) => inside(p, r))) continue;
+
+      for (let j = 0; j < playgrounds.length; j++) {
+        const a = playgrounds[j];
+        if (Math.hypot(px - a.x, pz - a.z) < a.radius + 0.2) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      for (let j = 0; j < gates.length; j++) {
+        const g = gates[j];
+        const dx = px - g.x,
+          dz = pz - g.z,
+          lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
+          forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
+        if (Math.abs(lateral) < 5 && forward > -18 && forward < 4) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      for (let j = 0; j < blockers.length; j++) {
+        if (blockers[j].blocksGrass(px, pz)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
+
+      this.dummy.position.set(px, 0.055, pz);
       this.dummy.rotation.y = random() * Math.PI;
       this.dummy.scale.setScalar(0.6 + random() * 0.65);
       this.dummy.updateMatrix();
       this.mesh.setMatrixAt(count++, this.dummy.matrix);
     }
-    this.mesh.count = count;
+
+    job.i = endI;
+    job.seed = seed;
+    job.count = count;
+    if (isInitial || job.i >= job.maxCount) {
+      this.mesh.count = count;
+    }
     this.mesh.instanceMatrix.needsUpdate = true;
+    if (job.i >= job.maxCount) {
+      this._job = null;
+    }
   }
 }
