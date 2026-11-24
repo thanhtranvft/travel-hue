@@ -53,6 +53,7 @@ export class TagChaseHUD {
       </div>
       <div class="tc-sub-row" id="tc-hotspot-row" hidden></div>
       <div class="tc-coop-row" id="tc-coop-row" hidden></div>
+      <button type="button" id="tc-culture-toggle" aria-expanded="false">📖 Đọc về địa danh</button>
     `;
 
     this.board = document.createElement("aside");
@@ -128,6 +129,11 @@ export class TagChaseHUD {
     this.scoreEl = this.topbar.querySelector("#tc-score");
     this.hotspotEl = this.topbar.querySelector("#tc-hotspot-row");
     this.coopEl = this.topbar.querySelector("#tc-coop-row");
+    this.cultureToggle = this.topbar.querySelector("#tc-culture-toggle");
+    this.cultureToggle.addEventListener("click", () => {
+      const open = document.body.classList.toggle("tag-culture-open");
+      this.cultureToggle.setAttribute("aria-expanded", String(open));
+    });
     this.boardListEl = this.board.querySelector("#tc-board-list");
     this.boardToggleEl = this.board.querySelector("#tc-board-toggle");
     this.buffPillsEl = this.partyBar.querySelector("#tc-buff-pills");
@@ -137,7 +143,10 @@ export class TagChaseHUD {
     this.boardToggleEl.addEventListener("click", () => {
       this.boardCollapsed = !this.boardCollapsed;
       this.boardListEl.hidden = this.boardCollapsed;
-      this.boardToggleEl.setAttribute("aria-expanded", String(!this.boardCollapsed));
+      this.boardToggleEl.setAttribute(
+        "aria-expanded",
+        String(!this.boardCollapsed),
+      );
       this.board.classList.toggle("is-collapsed", this.boardCollapsed);
     });
 
@@ -188,7 +197,12 @@ export class TagChaseHUD {
     }
   }
 
-  updateState(tagState, selfStatus, selfId, { shieldMs = 0, slowMs = 0, coffeeMs = 0 } = {}) {
+  updateState(
+    tagState,
+    selfStatus,
+    selfId,
+    { shieldMs = 0, slowMs = 0, coffeeMs = 0 } = {},
+  ) {
     if (!this.mounted) return;
     const now = Date.now();
     if (!this.toast.hidden && now >= this.toastUntil) {
@@ -201,9 +215,15 @@ export class TagChaseHUD {
       const rect = brandEl.getBoundingClientRect();
       if (rect.height > 0) {
         let boardTop = rect.bottom + 8;
-        if (topCenterEl && typeof topCenterEl.getBoundingClientRect === "function") {
+        if (
+          topCenterEl &&
+          typeof topCenterEl.getBoundingClientRect === "function"
+        ) {
           const tcRect = topCenterEl.getBoundingClientRect();
-          const stackedBelowBrand = tcRect.height > 0 && tcRect.top >= rect.bottom - 4 && tcRect.left < 185;
+          const stackedBelowBrand =
+            tcRect.height > 0 &&
+            tcRect.top >= rect.bottom - 4 &&
+            tcRect.left < 185;
           if (stackedBelowBrand) {
             boardTop = Math.max(boardTop, tcRect.bottom + 8);
           }
@@ -213,9 +233,24 @@ export class TagChaseHUD {
     }
 
     const phase = tagState?.phase || "waiting";
+    const stage = phase === "playing" ? tagState?.stage || "chase" : phase;
+    document.body.dataset.tagStage = stage;
+    this.partyBar.hidden = stage !== "chase";
+    this.cultureToggle.hidden = stage === "chase";
+    if (this.previousStage !== stage) {
+      document.body.classList.remove("tag-culture-open");
+      this.cultureToggle.setAttribute("aria-expanded", "false");
+      this.previousStage = stage;
+    }
     const isHunter = selfStatus?.role === "hunter";
     this.rolePillEl.textContent = isHunter ? "🔥 Người Săn" : "🏃 Người Chạy";
-    this.rolePillEl.classList.toggle("is-hunter", isHunter);
+    if (stage !== "chase")
+      this.rolePillEl.textContent =
+        stage === "cooperation" ? "🤝 Đồng hành" : "🗺️ Khám phá Huế";
+    this.rolePillEl.classList.toggle(
+      "is-hunter",
+      isHunter && stage === "chase",
+    );
 
     this.scoreEl.textContent = `${selfStatus?.score || 0}đ`;
 
@@ -229,7 +264,7 @@ export class TagChaseHUD {
       const sec = Math.max(1, Math.ceil((tagState?.remainingMs || 0) / 1000));
       this.timerEl.textContent = `Ván mới ${sec}s`;
     } else {
-      this.timerEl.textContent = formatClock(tagState?.remainingMs);
+      this.timerEl.textContent = `${stage === "chase" ? "Tranh tài" : stage === "cooperation" ? "Hợp tác" : "Khám phá"} ${formatClock(tagState?.stageRemainingMs)}`;
     }
 
     // Hotspot
@@ -243,7 +278,7 @@ export class TagChaseHUD {
       this.hotspotEl.hidden = false;
       this.hotspotEl.classList.toggle("is-inside", inZone);
       this.hotspotEl.textContent = inZone
-        ? `📍 Trong Điểm Nóng: ${hs.title} (x2 điểm!)`
+        ? `📍 ${hs.title}${stage === "chase" && !isHunter ? " · x2 điểm khi đang chạy trốn" : " · Điểm hẹn"}`
         : `📍 ${hs.title}${dist !== null ? ` · ${dist}m` : ""}`;
     } else {
       this.hotspotEl.hidden = true;
@@ -262,9 +297,18 @@ export class TagChaseHUD {
 
     // Buff pills
     const buffs = [];
-    if (shieldMs > 0) buffs.push(`<span class="tc-buff is-shield">👒 Khiên ${Math.ceil(shieldMs / 1000)}s</span>`);
-    if (coffeeMs > 0) buffs.push(`<span class="tc-buff is-coffee">☕ +25% ${Math.ceil(coffeeMs / 1000)}s</span>`);
-    if (slowMs > 0) buffs.push(`<span class="tc-buff is-slow">💨 Chậm ${Math.ceil(slowMs / 1000)}s</span>`);
+    if (shieldMs > 0)
+      buffs.push(
+        `<span class="tc-buff is-shield">👒 Khiên ${Math.ceil(shieldMs / 1000)}s</span>`,
+      );
+    if (coffeeMs > 0)
+      buffs.push(
+        `<span class="tc-buff is-coffee">☕ +25% ${Math.ceil(coffeeMs / 1000)}s</span>`,
+      );
+    if (slowMs > 0)
+      buffs.push(
+        `<span class="tc-buff is-slow">💨 Chậm ${Math.ceil(slowMs / 1000)}s</span>`,
+      );
     this.buffPillsEl.innerHTML = buffs.join("");
 
     // Scoreboard top 3
@@ -275,7 +319,7 @@ export class TagChaseHUD {
             (row, idx) => `
               <li class="${row.id === selfId ? "is-self" : ""}">
                 <span class="tc-b-rank">${idx + 1}.</span>
-                <span class="tc-b-role">${row.role === "hunter" ? "🔥" : "🏃"}</span>
+                <span class="tc-b-role">${stage === "chase" ? (row.role === "hunter" ? "🔥" : "🏃") : stage === "cooperation" ? "🤝" : "🗺️"}</span>
                 <span class="tc-b-name">${esc(row.name)}</span>
                 <strong class="tc-b-score">${row.score}đ</strong>
               </li>
@@ -285,7 +329,11 @@ export class TagChaseHUD {
       : `<li class="tc-b-empty">Chưa có điểm</li>`;
 
     // End-of-round awards modal
-    if (phase === "intermission" && Array.isArray(tagState?.awards) && tagState.awards.length) {
+    if (
+      phase === "intermission" &&
+      Array.isArray(tagState?.awards) &&
+      tagState.awards.length
+    ) {
       const top3 = (tagState.leaderboard || []).slice(0, 3);
       this.roundModal.hidden = false;
       this.roundModal.innerHTML = `
@@ -308,7 +356,10 @@ export class TagChaseHUD {
         ${
           top3.length
             ? `<div class="tc-modal-top">${top3
-                .map((r, i) => `<span>#${i + 1} ${esc(r.name)} (${r.score}đ)</span>`)
+                .map(
+                  (r, i) =>
+                    `<span>#${i + 1} ${esc(r.name)} (${r.score}đ)</span>`,
+                )
                 .join("")}</div>`
             : ""
         }
@@ -388,13 +439,16 @@ export class TagChaseHUD {
       node.hidden = false;
       node.classList.toggle("is-hunter", item.role === "hunter");
       node.style.transform = `translate(${item.sx}px, ${item.sy}px) translate(-50%, -50%)`;
-      node.querySelector(".tc-radar-arrow").style.transform = `rotate(${item.deg}deg)`;
+      node.querySelector(".tc-radar-arrow").style.transform =
+        `rotate(${item.deg}deg)`;
       node.querySelector("span").textContent = `${item.dist}m`;
     }
   }
 
   dispose() {
     if (!this.mounted) return;
+    delete document.body.dataset.tagStage;
+    document.body.classList.remove("tag-culture-open");
     this.radarLayer.remove();
     this.topbar.remove();
     this.board.remove();

@@ -1,35 +1,6 @@
-export const TAG_CHASE_CONFIG = {
-  minPlayersToStart: 2,
-  countdownMs: 4000,
-  roundDurationMs: 150000,
-  intermissionMs: 10000,
-  hotspotIntervalMs: 45000,
-  hotspotRadius: 28,
-  hunterSpeedMultiplier: 1.08,
-  hunterTagPoints: 100,
-  shieldBlockPoints: 60,
-  survivalTickMs: 5000,
-  survivalPoints: 10,
-  closeCallEnterDist: 5.5,
-  closeCallEscapeDist: 10.5,
-  closeCallWindowMs: 3500,
-  closeCallBasePoints: 40,
-  partyBoxCount: 8,
-  partyBoxRefreshMs: 28000,
-  partyMaxPerItem: 2,
-  shieldDurationMs: 6000,
-  windRadius: 9.5,
-  windSlowDurationMs: 2000,
-  windSlowMultiplier: 0.7,
-  coffeeBoostDurationMs: 2000,
-  coffeeBoostMultiplier: 1.25,
-  coopTriggerRemainingMs: 85000,
-  coopDurationMs: 45000,
-  coopTargetCount: 15,
-  coopRewardPoints: 150,
-  emoteCooldownMs: 2000,
-  surgeRemainingMs: 35000,
-};
+import journey from "./journey-config.json" with { type: "json" };
+
+export const TAG_CHASE_CONFIG = journey.rules;
 
 export const PARTY_ITEMS = {
   "non-la-shield": {
@@ -77,67 +48,9 @@ export const EMOTE_LIST = [
 
 export const EMOTE_BY_ID = new Map(EMOTE_LIST.map((e) => [e.id, e]));
 
-export const LANDMARK_HOTSPOTS = {
-  "quoc-hoc": [
-    {
-      id: "qh-youth",
-      title: "Công viên Thanh Thiếu Niên",
-      x: 514.1,
-      z: -463.3,
-    },
-    {
-      id: "qh-bia",
-      title: "Bia Quốc Học · Lê Lợi",
-      x: 677.1,
-      z: -608.6,
-    },
-    {
-      id: "qh-ubnd",
-      title: "UBND Thành phố Huế",
-      x: 888.2,
-      z: -799.6,
-    },
-    {
-      id: "qh-truong-tien",
-      title: "Ngã ba Lê Lợi · Tràng Tiền",
-      x: 1222.4,
-      z: -1107.6,
-    },
-  ],
-  "quang-trung": [
-    {
-      id: "qt-school",
-      title: "Trường Tiểu học Quang Trung",
-      x: 1747.7,
-      z: -234.4,
-    },
-    {
-      id: "qt-rhm",
-      title: "Quảng trường RHM · Nguyễn Huệ",
-      x: 1816.9,
-      z: -222.0,
-    },
-    {
-      id: "qt-church",
-      title: "Nhà thờ Dòng Chúa Cứu Thế",
-      x: 1979.9,
-      z: -193.9,
-    },
-  ],
-};
+export const LANDMARK_HOTSPOTS = journey.landmarks;
 
-export const COOP_TASKS = {
-  "quoc-hoc": {
-    id: "lanterns",
-    title: "Thắp 15 Đèn Lồng bên Sông Hương",
-    itemKind: "lantern",
-  },
-  "quang-trung": {
-    id: "lotuses",
-    title: "Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế",
-    itemKind: "lotus",
-  },
-};
+export const COOP_TASKS = journey.coopTasks;
 
 export function cleanPartyItemId(value) {
   return typeof value === "string" && value in PARTY_ITEMS ? value : null;

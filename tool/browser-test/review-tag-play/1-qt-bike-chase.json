@@ -1,0 +1,1382 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "HUẾ · CITY TOUR\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nTọa độ OSM · kiến trúc ước lượng\nXe dap\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🔥 Người Săn\n00:58\n0đ\n📍 Trong Điểm Nóng: Trường Tiểu học Quang Trung (x2 điểm!)\n🪷 Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế: 0/15 · 18s\nDI SẢN BÊN ĐƯỜNG\nTrường Tiểu học Quang Trung\n\n83 Nguyễn Huệ · P. Thuận Hóa · Trường Tiểu học Quang Trung với các dãy phòng học xanh trắng, sân cờ, sân khấu lễ hội và sân thể thao rợp bóng cây.\n\nBà bán hàng rong: “Ăn sáng con ơi!”\n♫\n⚙\n🔊\n↔\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 2/10 người\nĐã kết nối\n+10%\n0\n1\n+20%\n0\n2\n+30%\n0\n3\n+100%\n0\n4\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nĐang đạp xe\n30\nKM/H\nWASD đi/lái · Shift chạy · 1-4 bùa tốc độ · M bản đồ\n© OpenStreetMap contributors · ODbL\n🏅 Bảng điểm\n▾\n1.\n🏃\nCam ung\n320đ\n2.\n🔥\nXe dap\n0đ\n👒\nNón Lá\n0\nQ\n💨\nGió Hương\n0\nE\n☕\nCà Phê\n0\nF\n💬",
+    "screen": {
+      "w": 1280,
+      "h": 800
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+      "player": {
+        "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+        "name": "Xe dap",
+        "color": "#b35252",
+        "avatar": "boy",
+        "stance": "idle",
+        "region": "quang-trung",
+        "gameMode": "tag-chase",
+        "x": 1670.302905145117,
+        "y": 0,
+        "z": -245.01394314035153,
+        "heading": 1.429545050177607,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true,
+        "modeData": {
+          "role": "runner",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "shielded": false,
+          "slowed": false,
+          "coffeeBoost": false
+        }
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "playing",
+      "roundNumber": 1,
+      "remainingMs": 57184,
+      "hotspot": {
+        "id": "qt-school",
+        "title": "Trường Tiểu học Quang Trung",
+        "x": 1747.7,
+        "z": -234.4,
+        "radius": 28
+      },
+      "coop": {
+        "active": true,
+        "title": "Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế",
+        "itemKind": "lotus",
+        "collected": 0,
+        "target": 15,
+        "remainingMs": 17200,
+        "items": [
+          {
+            "id": "coop-1-0",
+            "x": 2028.39,
+            "y": 0.32,
+            "z": -65.5,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-1",
+            "x": 2015.62,
+            "y": 0.32,
+            "z": -303.41,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-2",
+            "x": 1979.25,
+            "y": 0.32,
+            "z": -227.24,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-3",
+            "x": 1773.86,
+            "y": 0.32,
+            "z": -77.93,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-4",
+            "x": 2076.89,
+            "y": 0.32,
+            "z": -219.8,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-5",
+            "x": 1721.71,
+            "y": 0.31999999999999995,
+            "z": -283.25,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-6",
+            "x": 1651.57,
+            "y": 0.32,
+            "z": -361.13,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-7",
+            "x": 1953.99,
+            "y": 0.12,
+            "z": -334.59,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-8",
+            "x": 2031.9,
+            "y": 0.32,
+            "z": -311.5,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-9",
+            "x": 1994.19,
+            "y": 0.12,
+            "z": -312.01,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-10",
+            "x": 1689.71,
+            "y": 0.32,
+            "z": -203.1,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-11",
+            "x": 1694.42,
+            "y": 0.32,
+            "z": -389.78,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-12",
+            "x": 1716.13,
+            "y": 0.32,
+            "z": -241.77,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-13",
+            "x": 1994.87,
+            "y": 0.32,
+            "z": -124.77,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-14",
+            "x": 1836.31,
+            "y": 0.32,
+            "z": -342.78,
+            "kind": "lotus"
+          }
+        ]
+      },
+      "partyBoxes": [
+        {
+          "id": "pbox-5-0",
+          "x": 1730.7,
+          "y": 0.32000000000000006,
+          "z": -332.86
+        },
+        {
+          "id": "pbox-5-1",
+          "x": 2000.15,
+          "y": 0.31999999999999995,
+          "z": -121.1
+        },
+        {
+          "id": "pbox-5-2",
+          "x": 2010.65,
+          "y": 0.31999999999999995,
+          "z": -300.66
+        },
+        {
+          "id": "pbox-5-3",
+          "x": 1983.71,
+          "y": 0.32,
+          "z": -136.86
+        },
+        {
+          "id": "pbox-5-4",
+          "x": 2073.92,
+          "y": 0.32,
+          "z": -224.66
+        },
+        {
+          "id": "pbox-5-5",
+          "x": 2065.59,
+          "y": 0.32,
+          "z": -102.9
+        },
+        {
+          "id": "pbox-5-6",
+          "x": 1989.61,
+          "y": 0.32,
+          "z": -126.63
+        },
+        {
+          "id": "pbox-5-7",
+          "x": 2027.2,
+          "y": 0.32,
+          "z": -323.71
+        }
+      ],
+      "leaderboard": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 320,
+          "tags": 0,
+          "closeCalls": 3,
+          "charmsUsed": 1,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "role": "hunter",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 2
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795527144263,
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 2,
+      "players": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "avatar": "cat",
+          "stance": "idle",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1805.4517356871904,
+          "y": 0.32000000000000006,
+          "z": -228.62418323608046,
+          "heading": 1.429545050177607,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 320,
+            "tags": 0,
+            "closeCalls": 3,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "avatar": "boy",
+          "stance": "bike",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1749.2446970869128,
+          "y": 0.32,
+          "z": -233.78855875682532,
+          "heading": 1.429545050177607,
+          "speed": 8.619484959889823,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "hunter",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-2-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1909.64,
+          "y": 0.32,
+          "z": -204.09
+        },
+        {
+          "id": "quang-trung::tag-chase-2-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1683.25,
+          "y": 0.32,
+          "z": -248.54
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1919.48,
+          "y": 0.32,
+          "z": -145.66
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1575.17,
+          "y": 0.32,
+          "z": -232.88
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1984.27,
+          "y": 0.32000000000000006,
+          "z": -152
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 2000.73,
+          "y": 0.12,
+          "z": -313.44
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1979.38,
+          "y": 0.32,
+          "z": -191.09
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1663.72,
+          "y": 0.32,
+          "z": -229.63
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1982.76,
+          "y": 0.12,
+          "z": -301.51
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1687.24,
+          "y": 0.32,
+          "z": -290.74
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1960.09,
+          "y": 0.32000000000000006,
+          "z": -195.12
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1841.91,
+          "y": 0.32,
+          "z": -362.03
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1787.97,
+          "y": 0.32,
+          "z": -227.02
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1977.01,
+          "y": 0.12,
+          "z": -317.83
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1679.16,
+          "y": 0.32,
+          "z": -172.55
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2008.47,
+          "y": 0.32,
+          "z": -299.69
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2035.83,
+          "y": 0.32,
+          "z": -109.27
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1606.08,
+          "y": 0.32,
+          "z": -237.93
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1848.94,
+          "y": 0.32000000000000006,
+          "z": -218.74
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1695.68,
+          "y": 0.32,
+          "z": -205.3
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1896.17,
+          "y": 0.32,
+          "z": -205.11
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2026.52,
+          "y": 0.32,
+          "z": -200.66
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1676.78,
+          "y": 0.32,
+          "z": -154.49
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.19,
+          "y": 0.12,
+          "z": -333.57
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1695.32,
+          "y": 0.32,
+          "z": -385.82
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1636.06,
+          "y": 0.32,
+          "z": -144.98
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1746.12,
+          "y": 0.32,
+          "z": -231.65
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.46,
+          "y": 0.32,
+          "z": -192.08
+        }
+      ],
+      "nextRefreshAt": 1795527105018,
+      "refreshed": true
+    },
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-2-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1909.64,
+          "y": 0.32,
+          "z": -204.09
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1919.48,
+          "y": 0.32,
+          "z": -145.66
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1575.17,
+          "y": 0.32,
+          "z": -232.88
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1984.27,
+          "y": 0.32000000000000006,
+          "z": -152
+        },
+        {
+          "id": "quang-trung::tag-chase-2-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 2000.73,
+          "y": 0.12,
+          "z": -313.44
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1979.38,
+          "y": 0.32,
+          "z": -191.09
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1663.72,
+          "y": 0.32,
+          "z": -229.63
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1982.76,
+          "y": 0.12,
+          "z": -301.51
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1687.24,
+          "y": 0.32,
+          "z": -290.74
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1960.09,
+          "y": 0.32000000000000006,
+          "z": -195.12
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1841.91,
+          "y": 0.32,
+          "z": -362.03
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1787.97,
+          "y": 0.32,
+          "z": -227.02
+        },
+        {
+          "id": "quang-trung::tag-chase-2-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1977.01,
+          "y": 0.12,
+          "z": -317.83
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1679.16,
+          "y": 0.32,
+          "z": -172.55
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2008.47,
+          "y": 0.32,
+          "z": -299.69
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2035.83,
+          "y": 0.32,
+          "z": -109.27
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1606.08,
+          "y": 0.32,
+          "z": -237.93
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1848.94,
+          "y": 0.32000000000000006,
+          "z": -218.74
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1695.68,
+          "y": 0.32,
+          "z": -205.3
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1896.17,
+          "y": 0.32,
+          "z": -205.11
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2026.52,
+          "y": 0.32,
+          "z": -200.66
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1676.78,
+          "y": 0.32,
+          "z": -154.49
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.19,
+          "y": 0.12,
+          "z": -333.57
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1695.32,
+          "y": 0.32,
+          "z": -385.82
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1636.06,
+          "y": 0.32,
+          "z": -144.98
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1746.12,
+          "y": 0.32,
+          "z": -231.65
+        },
+        {
+          "id": "quang-trung::tag-chase-2-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.46,
+          "y": 0.32,
+          "z": -192.08
+        }
+      ],
+      "nextRefreshAt": 1795527105018,
+      "refreshed": false
+    },
+    {
+      "type": "mode_event",
+      "event": "tag_banner",
+      "text": "📍 Điểm nóng mới: Nhà thờ Dòng Chúa Cứu Thế (x2 điểm sinh tồn!)"
+    },
+    {
+      "type": "mode_event",
+      "event": "emote",
+      "playerId": "17435910-95b0-475b-872f-f35159faf403",
+      "playerName": "Cam ung",
+      "emoteId": "wait",
+      "text": "Đợi tui với!"
+    },
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-3-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1941.64,
+          "y": 0.32,
+          "z": -62.1
+        },
+        {
+          "id": "quang-trung::tag-chase-3-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1993.14,
+          "y": 0.32,
+          "z": -188.33
+        },
+        {
+          "id": "quang-trung::tag-chase-3-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1962.2,
+          "y": 0.12,
+          "z": -331.87
+        },
+        {
+          "id": "quang-trung::tag-chase-3-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1654.71,
+          "y": 0.32,
+          "z": -146.67
+        },
+        {
+          "id": "quang-trung::tag-chase-3-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1826.27,
+          "y": 0.31999999999999995,
+          "z": -304.52
+        },
+        {
+          "id": "quang-trung::tag-chase-3-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1804.63,
+          "y": 0.32,
+          "z": -374.83
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1583.14,
+          "y": 0.32,
+          "z": -289.67
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1972.1,
+          "y": 0.12,
+          "z": -326.73
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1955.65,
+          "y": 0.32,
+          "z": -99.83
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1979.19,
+          "y": 0.32,
+          "z": -192.09
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1996.85,
+          "y": 0.12,
+          "z": -309.92
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1788.68,
+          "y": 0.32,
+          "z": -229.74
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1719.12,
+          "y": 0.32000000000000006,
+          "z": -241.73
+        },
+        {
+          "id": "quang-trung::tag-chase-3-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1699.64,
+          "y": 0.32,
+          "z": -206.64
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1592.47,
+          "y": 0.32,
+          "z": -233.46
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2014.45,
+          "y": 0.32,
+          "z": -118.87
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2062.55,
+          "y": 0.32,
+          "z": -117.38
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2011.15,
+          "y": 0.32,
+          "z": -300.46
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1576.02,
+          "y": 0.32,
+          "z": -234.68
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1740.62,
+          "y": 0.32,
+          "z": -199.64
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2037.04,
+          "y": 0.32,
+          "z": -184.07
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1683.31,
+          "y": 0.32,
+          "z": -246.61
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1543.1,
+          "y": 0.32,
+          "z": -229.45
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1864.47,
+          "y": 0.32000000000000006,
+          "z": -121.32
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2028.51,
+          "y": 0.32,
+          "z": -316.35
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1618.91,
+          "y": 0.32,
+          "z": -160.42
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1930.91,
+          "y": 0.32,
+          "z": -201.22
+        },
+        {
+          "id": "quang-trung::tag-chase-3-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1667.19,
+          "y": 0.32,
+          "z": -246.72
+        }
+      ],
+      "nextRefreshAt": 1795527133103,
+      "refreshed": true
+    },
+    {
+      "type": "mode_event",
+      "event": "coop_start",
+      "title": "Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế",
+      "target": 15,
+      "durationMs": 45000
+    },
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-4-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1995.53,
+          "y": 0.12,
+          "z": -317.34
+        },
+        {
+          "id": "quang-trung::tag-chase-4-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1620.07,
+          "y": 0.32,
+          "z": -173.97
+        },
+        {
+          "id": "quang-trung::tag-chase-4-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1548.27,
+          "y": 0.32,
+          "z": -230.74
+        },
+        {
+          "id": "quang-trung::tag-chase-4-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1895.02,
+          "y": 0.32,
+          "z": -120.02
+        },
+        {
+          "id": "quang-trung::tag-chase-4-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1606.59,
+          "y": 0.32,
+          "z": -293.82
+        },
+        {
+          "id": "quang-trung::tag-chase-4-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1965.06,
+          "y": 0.32,
+          "z": -196.42
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1984.84,
+          "y": 0.32,
+          "z": -176.26
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1579.51,
+          "y": 0.32,
+          "z": -232.16
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1942.75,
+          "y": 0.32,
+          "z": -198.92
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1904.08,
+          "y": 0.32,
+          "z": -286.96
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1699.96,
+          "y": 0.32,
+          "z": -238.86
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1708.63,
+          "y": 0.32,
+          "z": -212.76
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 2069.26,
+          "y": 0.32,
+          "z": -235.14
+        },
+        {
+          "id": "quang-trung::tag-chase-4-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1697.76,
+          "y": 0.32,
+          "z": -205.33
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1951.82,
+          "y": 0.12,
+          "z": -330.32
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1695.79,
+          "y": 0.32,
+          "z": -360.32
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1839.36,
+          "y": 0.32,
+          "z": -363.86
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1773.68,
+          "y": 0.32,
+          "z": -78.08
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1720.04,
+          "y": 0.32,
+          "z": -262.93
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1647.11,
+          "y": 0.32,
+          "z": -394.91
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2031.07,
+          "y": 0.32,
+          "z": -318.41
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1828.52,
+          "y": 0.32,
+          "z": -306.91
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2059.33,
+          "y": 0.32,
+          "z": -125.55
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1887.53,
+          "y": 0.32,
+          "z": -131.2
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.71,
+          "y": 0.32,
+          "z": -122.87
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1833.01,
+          "y": 0.32,
+          "z": -329.97
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1648.14,
+          "y": 0.32,
+          "z": -380.7
+        },
+        {
+          "id": "quang-trung::tag-chase-4-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1809.99,
+          "y": 0.32,
+          "z": -368.29
+        }
+      ],
+      "nextRefreshAt": 1795527160240,
+      "refreshed": true
+    },
+    {
+      "type": "mode_event",
+      "event": "tag_banner",
+      "text": "📍 Điểm nóng mới: Trường Tiểu học Quang Trung (x2 điểm sinh tồn!)"
+    }
+  ]
+}

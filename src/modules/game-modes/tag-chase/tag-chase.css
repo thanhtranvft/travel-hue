@@ -248,7 +248,11 @@
   padding: 0;
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  background: radial-gradient(circle at 35% 30%, rgba(34, 64, 56, 0.95), rgba(10, 24, 21, 0.95));
+  background: radial-gradient(
+    circle at 35% 30%,
+    rgba(34, 64, 56, 0.95),
+    rgba(10, 24, 21, 0.95)
+  );
   color: #b7cabf;
   display: flex;
   flex-direction: column;
@@ -258,7 +262,10 @@
   opacity: 0.52;
   touch-action: none;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-  transition: transform 0.12s ease, border-color 0.16s ease, opacity 0.16s ease;
+  transition:
+    transform 0.12s ease,
+    border-color 0.16s ease,
+    opacity 0.16s ease;
 }
 
 .tc-party-slot.has-item {
@@ -269,7 +276,9 @@
 
 .tc-party-slot.is-ready {
   opacity: 1;
-  box-shadow: 0 0 16px rgba(255, 211, 106, 0.36), 0 6px 18px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 0 16px rgba(255, 211, 106, 0.36),
+    0 6px 18px rgba(0, 0, 0, 0.45);
 }
 
 .tc-party-slot.is-ready:active {
@@ -426,7 +435,9 @@
 
 #tag-round-modal h3 {
   margin: 0 0 12px;
-  font: 700 18px/1.2 "Playfair Display", serif;
+  font:
+    700 18px/1.2 "Playfair Display",
+    serif;
   color: #ffe299;
   text-align: center;
 }
@@ -551,5 +562,41 @@
   #tag-emote-bar {
     left: max(16px, env(safe-area-inset-left));
     bottom: max(152px, calc(env(safe-area-inset-bottom) + 140px));
+  }
+}
+/* Contextual HUD: keep the city visible, culture stays available on demand. */
+body[data-tag-stage] #landmark-card {
+  display: none;
+}
+body[data-tag-stage].tag-culture-open #landmark-card.visible {
+  display: block;
+}
+body[data-tag-stage="chase"] #landmark-card,
+body[data-tag-stage="chase"] #vendor-toast,
+body[data-tag-stage="chase"] #church-bell-toast {
+  display: none !important;
+}
+#tag-party-bar[hidden] {
+  display: none !important;
+}
+#tc-culture-toggle {
+  border: 0;
+  border-radius: 12px;
+  padding: 5px 10px;
+  background: #244a49;
+  color: #fff5d7;
+  font: inherit;
+  cursor: pointer;
+}
+@media (max-width: 900px) {
+  body[data-tag-stage] #boost-banner {
+    display: none !important;
+  }
+  body[data-tag-stage] #tag-chase-board .tc-board-list {
+    max-height: 76px;
+    overflow: auto;
+  }
+  body[data-tag-stage] #tag-chase-topbar {
+    max-width: min(92vw, 430px);
   }
 }

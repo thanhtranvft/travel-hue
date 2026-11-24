@@ -1,5 +1,25 @@
 # Plan
 
+## Khám phá Huế kết hợp tranh tài — đề xuất 2026-11-24
+
+**Đã duyệt triển khai bằng `/implement idea 3` ngày 2026-11-24; đã triển khai nhóm gameplay này.** Giữ Huế và khám phá thành phố là trọng tâm. Hai bản đồ hiện có không đổi bố cục.
+
+Kết quả: nhịp khám phá 60s → tranh tài 45s → hợp tác 45s (thêm 1,5s cho mỗi người vượt quá 2); điểm hẹn chọn theo nhóm trên đường OSM; điểm ghé một lần/địa danh/ván và thành tích riêng. Hợp tác 2 món/người, tối thiểu 4, tối đa 15, giảm nếu đường hợp lệ không đủ điểm. HUD và vật phẩm theo giai đoạn; văn hóa mở theo nhu cầu. JSON tại `src/modules/game-modes/tag-chase/journey-config.json`.
+
+Đã qua 23 kiểm thử liên quan (nhịp vòng, chống điểm lặp/đứng yên, 2/10 người, OSM hai khu, va chạm, online và reconnect). Production build thành công. Hai trình duyệt xác nhận HUD khám phá/hợp tác và điều khiển cảm ứng. Chưa kiểm chứng độ cân bằng với 10 người thật hoặc hiệu năng điện thoại thật; thời lượng/thang điểm là thiết lập thử nghiệm để lấy phản hồi.
+
+Phạm vi triển khai đề xuất cho module `tag-chase` tại hai khu đang hỗ trợ:
+
+1. Nhịp vòng chơi có giai đoạn khám phá/đến điểm hẹn, rượt bắt ngắn và hoạt động hợp tác. Thời lượng, khoảng cách mục tiêu, sĩ số và thang điểm cấu hình tại dữ liệu riêng của chế độ. Giữ toàn bản đồ có thể đi lại; điểm hẹn lấy từ địa danh/cổng/lối tiếp cận hợp lệ gần nhóm, không dịch chuyển người chơi hay đổi tọa độ công trình.
+2. Theo dõi lượt ghé các địa danh riêng biệt và đóng góp nhiệm vụ chung; thưởng mỗi địa danh một lần trong vòng để tránh đứng yên hoặc đi qua lại kiếm điểm. Hiển thị thành tích khám phá, bạn đồng hành và rượt bắt riêng, cùng đóng góp vào tổng kết. Số món/nhiệm vụ và thời gian dựa trên sĩ số; không yêu cầu cứng 15 món với mọi phòng.
+3. HUD theo giai đoạn: gợi ý điểm đến và thông tin văn hóa mở theo nhu cầu lúc khám phá; làm rõ vai trò và điều khiển khi bắt đầu rượt bắt. Thẻ di tích và lời rao không che hướng đi; giữ âm thanh Huế theo công tắc người dùng. Cấu trúc core/khu vực hiện tại được giữ; thay đổi tập trung trong game-modes/tag-chase và điểm nối liên quan.
+
+File/module dự kiến: `tag-chase/constants.js`, `serverRoomState.js`, `index.js`, `TagChaseHUD.js`, `TagChaseWorldFX.js`, `tag-chase.css`; bổ sung JSON cấu hình điểm hẹn/luật chơi tại module và tests liên quan. Không cần thêm thư viện. Các danh hiệu và nhiệm vụ phải diễn đạt trung tính khi chưa có nguồn văn hóa xác thực.
+
+Kiểm chứng dự kiến: hai client cùng giai đoạn/vai trò/điểm; khách ghé địa danh không phải va vào tòa nhà; không thưởng lặp khi đứng yên; nhiệm vụ khả thi với 2 người và tăng theo sĩ số; không phá phòng free-roam, chuyển khu hoặc dữ liệu công trình; đọc được HUD mobile khi vừa đi vừa dùng vật phẩm. Chơi thử lại cùng người dùng trước khi chốt thời lượng và hệ số điểm.
+
+Ngoài phạm vi: dựng lại bản đồ/công trình, thu map thành đấu trường, thêm hệ tài khoản hoặc phát hành public. Những con số trong playtest trước là giả thuyết thử nghiệm, chưa phải thông số được duyệt.
+
 ## Ga Huế, cảnh sát và âm thanh — xác nhận trực tiếp 2026-11-19
 
 Người dùng yêu cầu nâng tên áo, xuất phát tại cổng ga có tàu phía sau và Cầu Ga nối sang Lê Lợi; bổ sung tuần tra xe máy hai cảnh sát và hai file WAV được chỉ định; nhạc bật mặc định, âm thanh va chạm độc lập nhạc, thêm master bật/tắt toàn bộ. Đã triển khai trong module ga riêng, traffic/audio và UI hiện có. Không đổi tên/mã hay tọa độ địa điểm phía sau ga; giữ danh sách khu bị tắt. Kết quả và giới hạn mô phỏng trong HANDOFF.md.

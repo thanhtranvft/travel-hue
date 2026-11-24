@@ -336,7 +336,7 @@ export class TagChaseWorldFX {
   updatePlayerAura(key, parentObj, status, elapsed) {
     if (!parentObj) return;
     const aura = this.ensurePlayerAura(key, parentObj);
-    const isHunter = status?.role === "hunter";
+    const isHunter = this.stage === "chase" && status?.role === "hunter";
     aura.roleRing.visible = isHunter || Boolean(status?.coffeeBoost);
     if (isHunter) {
       aura.roleMat.color.set("#ff4b2b");
@@ -461,7 +461,9 @@ export class TagChaseWorldFX {
       entry.ribbon.position.y = 0.9 + bob;
       entry.core.rotation.y = elapsed * 1.9 + entry.phase;
       entry.ribbon.rotation.y = elapsed * 1.9 + entry.phase;
-      entry.ring.scale.setScalar(1 + Math.sin(elapsed * 3.5 + entry.phase) * 0.12);
+      entry.ring.scale.setScalar(
+        1 + Math.sin(elapsed * 3.5 + entry.phase) * 0.12,
+      );
     }
 
     for (const entry of this.coopMeshes.values()) {
@@ -564,7 +566,8 @@ export class TagChaseWorldFX {
   dispose() {
     for (const entry of this.boxes.values()) entry.group.removeFromParent();
     this.boxes.clear();
-    for (const entry of this.coopMeshes.values()) entry.group.removeFromParent();
+    for (const entry of this.coopMeshes.values())
+      entry.group.removeFromParent();
     this.coopMeshes.clear();
     for (const entry of this.playerAuras.values()) this.disposeAuraEntry(entry);
     this.playerAuras.clear();

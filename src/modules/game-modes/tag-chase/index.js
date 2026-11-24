@@ -14,7 +14,7 @@ export const tagChaseMode = {
   title: "Rượt bắt tốc độ",
   shortTitle: "Rượt bắt",
   description:
-    "Chia phe Người Săn – Người Chạy 150s, né sát gang tấc, dùng Khiên Nón Lá, Gió Sông Hương & Cà Phê Muối.",
+    "Khám phá địa danh Huế, tranh tài rượt bắt ngắn rồi cùng hoàn thành nhiệm vụ. Ghi nhận lượt ghé thăm và đóng góp đồng hành.",
   regions: ["quoc-hoc", "quang-trung"],
   enabled: true,
   upcoming: false,
@@ -51,15 +51,27 @@ export const tagChaseMode = {
     }
 
     function usePartyItem(rawId) {
+      if (
+        latestTagState?.phase !== "playing" ||
+        latestTagState?.stage !== "chase"
+      )
+        return false;
       const itemId = cleanPartyItemId(rawId);
       if (!itemId || (inventory[itemId] || 0) <= 0) return false;
       if (itemId !== "salt-coffee" && (game?.stun || 0) > 0) {
-        hud.showToast("☕ Đang choáng — dùng Cà Phê Muối [F] để giải choáng!", 1900, "alert");
+        hud.showToast(
+          "☕ Đang choáng — dùng Cà Phê Muối [F] để giải choáng!",
+          1900,
+          "alert",
+        );
         return false;
       }
       const now = Date.now();
       lastCastAt = now;
-      inventory = { ...inventory, [itemId]: Math.max(0, (inventory[itemId] || 0) - 1) };
+      inventory = {
+        ...inventory,
+        [itemId]: Math.max(0, (inventory[itemId] || 0) - 1),
+      };
 
       if (itemId === "non-la-shield") {
         shieldUntil = now + TAG_CHASE_CONFIG.shieldDurationMs;
@@ -74,7 +86,11 @@ export const tagChaseMode = {
             game.bike.position.z,
           );
         }
-        hud.showToast("💨 Gió Sông Hương làm chậm đối thủ quanh bạn!", 2100, "info");
+        hud.showToast(
+          "💨 Gió Sông Hương làm chậm đối thủ quanh bạn!",
+          2100,
+          "info",
+        );
       } else if (itemId === "salt-coffee") {
         if (game) {
           game.stun = 0;
@@ -85,7 +101,11 @@ export const tagChaseMode = {
         slowedUntil = 0;
         coffeeBoostUntil = now + TAG_CHASE_CONFIG.coffeeBoostDurationMs;
         game?.audio?.playCoffeeBoost?.();
-        hud.showToast("☕ Cà Phê Muối! Giải choáng & vọt +25% tốc độ!", 2200, "success");
+        hud.showToast(
+          "☕ Cà Phê Muối! Giải choáng & vọt +25% tốc độ!",
+          2200,
+          "success",
+        );
       }
 
       game?.online?.sendModeAction?.("use_party_item", { itemId });
@@ -125,7 +145,11 @@ export const tagChaseMode = {
       get speedMultiplier() {
         const now = Date.now();
         let mult =
-          localRole === "hunter" ? TAG_CHASE_CONFIG.hunterSpeedMultiplier : 1;
+          latestTagState?.phase === "playing" &&
+          latestTagState?.stage === "chase" &&
+          localRole === "hunter"
+            ? TAG_CHASE_CONFIG.hunterSpeedMultiplier
+            : 1;
         if (now < slowedUntil) mult *= TAG_CHASE_CONFIG.windSlowMultiplier;
         if (now < coffeeBoostUntil)
           mult *= TAG_CHASE_CONFIG.coffeeBoostMultiplier;
@@ -154,10 +178,23 @@ export const tagChaseMode = {
         if (!msg || typeof msg !== "object") return;
         const now = Date.now();
 
+        if (msg.event === "landmark_visit") {
+          hud.showToast(`🗺️ Đã ghé ${msg.title} · +${msg.points}đ`);
+          return;
+        }
+
         if (msg.event === "tag_state") {
           const prevPhase = latestTagState?.phase;
           latestTagState = msg;
-          if (msg.phase !== prevPhase && (msg.phase === "countdown" || msg.phase === "waiting")) {
+          fx.stage = msg.phase === "playing" ? msg.stage : null;
+          if (msg.stage !== "chase") {
+            slowedUntil = 0;
+            coffeeBoostUntil = 0;
+          }
+          if (
+            msg.phase !== prevPhase &&
+            (msg.phase === "countdown" || msg.phase === "waiting")
+          ) {
             shieldUntil = 0;
             slowedUntil = 0;
             coffeeBoostUntil = 0;
@@ -191,7 +228,8 @@ export const tagChaseMode = {
         }
 
         if (msg.event === "party_used" && msg.itemId === "non-la-shield") {
-          shieldUntil = now + (msg.durationMs || TAG_CHASE_CONFIG.shieldDurationMs);
+          shieldUntil =
+            now + (msg.durationMs || TAG_CHASE_CONFIG.shieldDurationMs);
           return;
         }
 
@@ -206,7 +244,8 @@ export const tagChaseMode = {
         }
 
         if (msg.event === "wind_slowed") {
-          slowedUntil = now + (msg.durationMs || TAG_CHASE_CONFIG.windSlowDurationMs);
+          slowedUntil =
+            now + (msg.durationMs || TAG_CHASE_CONFIG.windSlowDurationMs);
           hud.showToast(
             `💨 Dính Gió Sông Hương từ ${msg.byName || "đối thủ"}!`,
             2100,
@@ -238,7 +277,8 @@ export const tagChaseMode = {
             );
           } else if (msg.youWereTagged) {
             localRole = "hunter";
-            if (game) game.stun = Math.max(game.stun || 0, (msg.stunMs || 450) / 1000);
+            if (game)
+              game.stun = Math.max(game.stun || 0, (msg.stunMs || 450) / 1000);
             game?.audio?.playTagHit?.(true);
             hud.showToast(
               `⚡ ${msg.hunterName} bắt trúng bạn! Bạn là Người Săn mới!`,
@@ -259,7 +299,8 @@ export const tagChaseMode = {
               "success",
             );
           } else if (msg.role === "attacker") {
-            if (game) game.stun = Math.max(game.stun || 0, (msg.stunMs || 800) / 1000);
+            if (game)
+              game.stun = Math.max(game.stun || 0, (msg.stunMs || 800) / 1000);
             hud.showToast(
               `👒 ${msg.defenderName} đang đeo Khiên Nón Lá! Bạn bị choáng!`,
               2600,
@@ -297,7 +338,7 @@ export const tagChaseMode = {
             const pos = game?.bike?.position || { x: 0, z: 0 };
             fx.spawnFireworkVolley(pos.x, pos.z);
             hud.showToast(
-              `🎆 Hoàn thành: ${msg.title}! Toàn phòng +${msg.reward}đ!`,
+              `🎆 Hoàn thành: ${msg.title}! Người có đóng góp +${msg.reward}đ!`,
               4200,
               "success",
             );
@@ -329,7 +370,11 @@ export const tagChaseMode = {
         if (game) game.collisionCooldown = 2.0;
         game?.online?.sendModeAction?.("traffic_shield_block", {});
         game?.audio?.playShieldBlock?.();
-        hud.showToast("👒 Khiên Nón Lá đỡ cho bạn khỏi va chạm! (+30đ)", 2600, "success");
+        hud.showToast(
+          "👒 Khiên Nón Lá đỡ cho bạn khỏi va chạm! (+30đ)",
+          2600,
+          "success",
+        );
         return true;
       },
 
@@ -357,7 +402,9 @@ export const tagChaseMode = {
                 claimedPickups.set(item.id, now);
                 fx.hidePickup(item.id);
                 game?.audio?.playCharmPickup?.("10");
-                game.online?.sendModeAction?.("coop_pickup", { itemId: item.id });
+                game.online?.sendModeAction?.("coop_pickup", {
+                  itemId: item.id,
+                });
               }
             }
           }

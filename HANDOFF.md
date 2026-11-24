@@ -1,5 +1,15 @@
 # Handoff
 
+## Khám phá Huế kết hợp tranh tài — 2026-11-24
+
+Phạm vi đã duyệt bằng `/implement idea 3`. `tag-chase` giữ map 01/05, thêm nhịp khám phá 60s → rượt bắt 45s → hợp tác 45–57s theo sĩ số. Đổi vai và lợi thế Người Săn chỉ có lúc tranh tài. Ghé địa danh +120đ một lần/ván sau khi thực sự di chuyển; sinh tồn yêu cầu chuyển động và Người Săn đang hoạt động gần đó. Cuối ván ghi nhận người khám phá, đồng hành và tranh tài riêng.
+
+`src/modules/game-modes/tag-chase/journey-config.json` chứa luật, điểm hẹn và tên nhiệm vụ. `journeyRoadPoints.js` lấy vị trí trên đường có sẵn; không tạo đường hay dịch chuyển công trình. Hợp tác cần 2 món/người (4–15), chỉ sinh trong bán kính 70m quanh điểm hẹn; nếu thiếu điểm đường hợp lệ thì mục tiêu giảm theo số món thực có. Thưởng hoàn thành dành cho người có đóng góp. Đây là hoạt động game, không mô tả nghi lễ/văn hóa lịch sử.
+
+HUD ghi giai đoạn, khoảng cách; khay Q/E/F chỉ hiện lúc tranh tài. Nút đọc địa danh dùng giới thiệu hiện có và chỉ mở khi gần công trình; thẻ/lời rao không che hướng đi lúc rượt bắt. Free-roam giữ hành vi cũ.
+
+Chạy `npm run dev`, chọn map 01 hoặc 05 → Rượt bắt tốc độ; mở hai trình duyệt/thiết bị để bắt đầu. Khi dùng `npm start` phải khởi động lại Node sau cập nhật source server; frontend production cần `npm run build`. 23/23 kiểm thử liên quan và production build qua; browser kiểm tra hai người, HUD mobile và joystick. Chưa thử 10 người thật/điện thoại thật hay chốt cân bằng. Chưa deploy Google AI Studio.
+
 ## Ga Huế, tuần tra và hai mức âm thanh — 2026-11-19
 
 Đã nâng tên lên lưng áo phía trên đuôi. Tuyến Ga Huế → Tràng Tiền xuất phát trên đường sân trước cổng OSM, qua Cầu Ga rồi giữ nguyên đoạn Lê Lợi cũ. Module `quoc-hoc/view/HueStation.js` và `data/station.json` chứa mái/biển ga, hai đoàn tàu chờ, đường ray, sông An Cựu và lan can Cầu Ga. Cao độ, ray phụ và toa tàu là mô phỏng, không phải lịch tàu thực. Bộ sinh gói khu hiện đọc tuyến từ app-config để không mất điểm đầu mới khi tái sinh.

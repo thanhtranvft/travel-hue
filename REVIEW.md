@@ -1,5 +1,17 @@
 # Review
 
+## Hướng trải nghiệm Huế — thống nhất 2026-11-24
+
+Người dùng xác định “vừa khám phá vừa tranh tài”, tôn vinh vẻ đẹp và bản sắc Huế là chính; game bổ sung kịch tính và tránh nhàm chán. Đã đồng ý hướng “Dạo phố Huế có cuộc chơi”. Quyết định này thay thế đề xuất thu hẹp bản đồ thành đấu trường sau playtest.
+
+Giữ không gian thành phố rộng; dùng điểm hẹn theo địa danh gần nhóm để dẫn hành trình, các đợt rượt bắt ngắn xen thời gian dạo chơi và hoạt động hợp tác. Thành tích bao gồm khám phá và đóng góp tập thể, không chỉ bắt đối thủ. Thông tin văn hóa gọn, có thể mở đọc khi muốn; không tự gán chuyện lịch sử hoặc ý nghĩa văn hóa chưa có nguồn cho vật phẩm.
+
+“Ok đồng ý” xác nhận định hướng, chưa phải yêu cầu sửa source theo quy tắc project. Phạm vi kỹ thuật đề xuất được ghi trong PLAN.md; chưa chốt thời lượng từng giai đoạn hoặc hệ số điểm.
+
+## Chơi thử Rượt bắt tốc độ — 2026-11-24
+
+Đã chơi qua giao diện bằng hai phiên Chromium ở hai khu hỗ trợ, theo dõi vòng 150 giây/tổng kết, thực hiện đổi vai và kích hoạt bùa +100% bằng cảm ứng. Nhận xét chính: mục tiêu xa làm loãng trận ít người; HUD văn hóa/lời rao cạnh tranh với HUD chiến đấu trên mobile; cần thử cân bằng phương tiện và điểm sống sót. Chi tiết, ảnh và giới hạn phương pháp trong [PLAYTEST-2026-11-24.md](PLAYTEST-2026-11-24.md). Các đề xuất là phạm vi review, chưa được duyệt sửa gameplay.
+
 ## Online nhỏ, giữ cấu trúc — 2026-11-19
 
 Khả thi với một phòng chung 10 người. Google AI Studio hỗ trợ backend Node/full-stack; không chỉ thêm giao diện mà cần server WebSocket thực. Người dùng đã chọn nhập tên rồi Khám phá/Online và yêu cầu ít thay đổi cấu trúc; xác nhận triển khai sau review. Quyết định dùng WebSocket qua `ws` và adapter riêng thay vì chuyển engine hoặc áp framework multiplayer toàn bộ.

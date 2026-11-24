@@ -1,0 +1,318 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nCam ung\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🏃 Người Chạy\n00:58\n320đ\n📍 Trường Tiểu học Quang Trung · 58m\n🪷 Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế: 0/15 · 18s\n♫\n⚙\n🔊\n⛶\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 2/10 người\nĐã kết nối\n＋\nĐI / RẼ\n+10%\n0\n+20%\n0\n+30%\n0\n+100%\n0\n0\nKM/H\n© OpenStreetMap contributors · ODbL\n➤\n55m\n🏅 Bảng điểm\n▾\n1.\n🏃\nCam ung\n320đ\n2.\n🔥\nXe dap\n0đ\n👒\nNón Lá\n0\n💨\nGió Hương\n0\n☕\nCà Phê\n0\n💬",
+    "screen": {
+      "w": 844,
+      "h": 390
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "17435910-95b0-475b-872f-f35159faf403",
+      "player": {
+        "id": "17435910-95b0-475b-872f-f35159faf403",
+        "name": "Cam ung",
+        "color": "#247bba",
+        "avatar": "cat",
+        "stance": "idle",
+        "region": "quang-trung",
+        "gameMode": "tag-chase",
+        "x": 1670.697094854883,
+        "y": 0,
+        "z": -247.78605685964848,
+        "heading": 1.429545050177607,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "playing",
+      "roundNumber": 1,
+      "remainingMs": 57184,
+      "hotspot": {
+        "id": "qt-school",
+        "title": "Trường Tiểu học Quang Trung",
+        "x": 1747.7,
+        "z": -234.4,
+        "radius": 28
+      },
+      "coop": {
+        "active": true,
+        "title": "Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế",
+        "itemKind": "lotus",
+        "collected": 0,
+        "target": 15,
+        "remainingMs": 17200,
+        "items": [
+          {
+            "id": "coop-1-0",
+            "x": 2028.39,
+            "y": 0.32,
+            "z": -65.5,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-1",
+            "x": 2015.62,
+            "y": 0.32,
+            "z": -303.41,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-2",
+            "x": 1979.25,
+            "y": 0.32,
+            "z": -227.24,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-3",
+            "x": 1773.86,
+            "y": 0.32,
+            "z": -77.93,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-4",
+            "x": 2076.89,
+            "y": 0.32,
+            "z": -219.8,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-5",
+            "x": 1721.71,
+            "y": 0.31999999999999995,
+            "z": -283.25,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-6",
+            "x": 1651.57,
+            "y": 0.32,
+            "z": -361.13,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-7",
+            "x": 1953.99,
+            "y": 0.12,
+            "z": -334.59,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-8",
+            "x": 2031.9,
+            "y": 0.32,
+            "z": -311.5,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-9",
+            "x": 1994.19,
+            "y": 0.12,
+            "z": -312.01,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-10",
+            "x": 1689.71,
+            "y": 0.32,
+            "z": -203.1,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-11",
+            "x": 1694.42,
+            "y": 0.32,
+            "z": -389.78,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-12",
+            "x": 1716.13,
+            "y": 0.32,
+            "z": -241.77,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-13",
+            "x": 1994.87,
+            "y": 0.32,
+            "z": -124.77,
+            "kind": "lotus"
+          },
+          {
+            "id": "coop-1-14",
+            "x": 1836.31,
+            "y": 0.32,
+            "z": -342.78,
+            "kind": "lotus"
+          }
+        ]
+      },
+      "partyBoxes": [
+        {
+          "id": "pbox-5-0",
+          "x": 1730.7,
+          "y": 0.32000000000000006,
+          "z": -332.86
+        },
+        {
+          "id": "pbox-5-1",
+          "x": 2000.15,
+          "y": 0.31999999999999995,
+          "z": -121.1
+        },
+        {
+          "id": "pbox-5-2",
+          "x": 2010.65,
+          "y": 0.31999999999999995,
+          "z": -300.66
+        },
+        {
+          "id": "pbox-5-3",
+          "x": 1983.71,
+          "y": 0.32,
+          "z": -136.86
+        },
+        {
+          "id": "pbox-5-4",
+          "x": 2073.92,
+          "y": 0.32,
+          "z": -224.66
+        },
+        {
+          "id": "pbox-5-5",
+          "x": 2065.59,
+          "y": 0.32,
+          "z": -102.9
+        },
+        {
+          "id": "pbox-5-6",
+          "x": 1989.61,
+          "y": 0.32,
+          "z": -126.63
+        },
+        {
+          "id": "pbox-5-7",
+          "x": 2027.2,
+          "y": 0.32,
+          "z": -323.71
+        }
+      ],
+      "leaderboard": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 320,
+          "tags": 0,
+          "closeCalls": 3,
+          "charmsUsed": 1,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "role": "hunter",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 2
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795527144447,
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 2,
+      "players": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "avatar": "cat",
+          "stance": "idle",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1805.4517356871904,
+          "y": 0.32000000000000006,
+          "z": -228.62418323608046,
+          "heading": 1.429545050177607,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 320,
+            "tags": 0,
+            "closeCalls": 3,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "avatar": "boy",
+          "stance": "bike",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1750.762103534121,
+          "y": 0.32,
+          "z": -233.57278622092298,
+          "heading": 1.429545050177607,
+          "speed": 8.127718893042069,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "hunter",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "type": "mode_event",
+      "event": "tag_banner",
+      "text": "📍 Điểm nóng mới: Trường Tiểu học Quang Trung (x2 điểm sinh tồn!)"
+    }
+  ]
+}

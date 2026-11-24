@@ -128,6 +128,16 @@ export class GameView {
       }
     }
     const nearKey = near ? near.id || near.title : null;
+    const cultureOnDemand = Boolean(document.body.dataset.tagStage);
+    const cultureOpen =
+      cultureOnDemand && document.body.classList.contains("tag-culture-open");
+    const cultureButton = document.querySelector("#tc-culture-toggle");
+    if (cultureButton) {
+      cultureButton.disabled = !near;
+      cultureButton.title = near
+        ? near.title
+        : "Đến gần địa danh để đọc giới thiệu";
+    }
     const now = Date.now();
     if (near && nearKey) {
       if (nearKey !== this.lastShownLandmarkKey) {
@@ -136,10 +146,15 @@ export class GameView {
         this.landmarkDismissAt = now + 4200;
         game.hud.card.querySelector("h2").textContent = near.title;
         game.hud.card.querySelector("p").textContent = near.description;
-        game.hud.card.classList.add("visible");
+        game.hud.card.classList.toggle(
+          "visible",
+          !cultureOnDemand || cultureOpen,
+        );
       } else if (now >= this.landmarkDismissAt) {
         game.hud.card.classList.remove("visible");
       }
+      if (cultureOnDemand)
+        game.hud.card.classList.toggle("visible", cultureOpen);
     } else {
       this.activeLandmarkKey = null;
       this.lastShownLandmarkKey = null;
@@ -157,7 +172,8 @@ export class GameView {
       bar.querySelectorAll("[data-tier]").forEach((btn) => {
         const tier = btn.dataset.tier;
         const count = inventory[tier] || 0;
-        const isActive = activeBoost?.tier === tier && activeBoost.remainingMs > 0;
+        const isActive =
+          activeBoost?.tier === tier && activeBoost.remainingMs > 0;
         btn.classList.toggle("has-item", count > 0);
         btn.classList.toggle("active", isActive);
         btn.disabled = count <= 0;
@@ -195,7 +211,9 @@ export class GameView {
     }
     if (game.hud.speedVignette) {
       const speed = Math.abs(game.bike?.motion?.speed || 0);
-      const boosted = Boolean(activeBoost && activeBoost.remainingMs > 0 && speed > 1.2);
+      const boosted = Boolean(
+        activeBoost && activeBoost.remainingMs > 0 && speed > 1.2,
+      );
       game.hud.speedVignette.dataset.tier = activeBoost?.tier || "10";
       game.hud.speedVignette.style.opacity = boosted
         ? String(Math.min(0.85, 0.25 + (speed / 18) * 0.6))

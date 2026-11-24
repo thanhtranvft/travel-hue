@@ -1,0 +1,800 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "HUẾ · CITY TOUR\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nTọa độ OSM · kiến trúc ước lượng\nXe dap\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🔥 Người Săn\nVán mới 1s\n0đ\n♫\n⚙\n🔊\n↔\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 2/10 người\nĐã kết nối\n+10%\n0\n1\n+20%\n0\n2\n+30%\n0\n3\n+100%\n0\n4\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nĐang đạp xe\n2\nKM/H\nWASD đi/lái · Shift chạy · 1-4 bùa tốc độ · M bản đồ\n© OpenStreetMap contributors · ODbL\n🏅 Bảng điểm\n▾\n1.\n🏃\nCam ung\n460đ\n2.\n🔥\nXe dap\n0đ\n👒\nNón Lá\n0\nQ\n💨\nGió Hương\n0\nE\n☕\nCà Phê\n0\nF\n💬\n🏁 Tổng kết Ván 1\n🏆\nVua Tốc Độ Quang Trung\nCam ung · 460 điểm\n💨\nThánh Né Xe\nCam ung · 3 pha thoát hiểm\n⚡\nThợ Săn Bùa\nCam ung · 1 lần kích hoạt\n#1 Cam ung (460đ)\n#2 Xe dap (0đ)",
+    "screen": {
+      "w": 1280,
+      "h": 800
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+      "player": {
+        "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+        "name": "Xe dap",
+        "color": "#b35252",
+        "avatar": "boy",
+        "stance": "idle",
+        "region": "quang-trung",
+        "gameMode": "tag-chase",
+        "x": 1670.302905145117,
+        "y": 0,
+        "z": -245.01394314035153,
+        "heading": 1.429545050177607,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true,
+        "modeData": {
+          "role": "runner",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "shielded": false,
+          "slowed": false,
+          "coffeeBoost": false
+        }
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "countdown",
+      "roundNumber": 2,
+      "remainingMs": 4000,
+      "hotspot": null,
+      "coop": {
+        "active": false
+      },
+      "partyBoxes": [
+        {
+          "id": "pbox-8-0",
+          "x": 1588.48,
+          "y": 0.32,
+          "z": -235.08
+        },
+        {
+          "id": "pbox-8-1",
+          "x": 2045.49,
+          "y": 0.32,
+          "z": -154.65
+        },
+        {
+          "id": "pbox-8-2",
+          "x": 1991.9,
+          "y": 0.32,
+          "z": -121.51
+        },
+        {
+          "id": "pbox-8-3",
+          "x": 1945.17,
+          "y": 0.32,
+          "z": -198.25
+        },
+        {
+          "id": "pbox-8-4",
+          "x": 1708.75,
+          "y": 0.32000000000000006,
+          "z": -219.94
+        },
+        {
+          "id": "pbox-8-5",
+          "x": 1615,
+          "y": 0.32,
+          "z": -142.1
+        },
+        {
+          "id": "pbox-8-6",
+          "x": 1514.94,
+          "y": 0.32,
+          "z": -224.62
+        },
+        {
+          "id": "pbox-8-7",
+          "x": 1768.67,
+          "y": 0.32,
+          "z": -349.61
+        }
+      ],
+      "leaderboard": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "role": "hunter",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "role": "runner",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 2
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795527211359,
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 2,
+      "players": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "avatar": "cat",
+          "stance": "idle",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1805.4517356871904,
+          "y": 0.32000000000000006,
+          "z": -228.62418323608046,
+          "heading": 1.429545050177607,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "hunter",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "avatar": "boy",
+          "stance": "bike",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1776.0036862521808,
+          "y": 0.32,
+          "z": -229.9930276180005,
+          "heading": 1.4772466469341987,
+          "speed": 0.44910100757059307,
+          "lean": -0.0005743876688853435,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-5-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1654.1,
+          "y": 0.32,
+          "z": -105.08
+        },
+        {
+          "id": "quang-trung::tag-chase-5-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1975.87,
+          "y": 0.11999999999999998,
+          "z": -318.04
+        },
+        {
+          "id": "quang-trung::tag-chase-5-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1654.05,
+          "y": 0.32,
+          "z": -348.71
+        },
+        {
+          "id": "quang-trung::tag-chase-5-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1744.83,
+          "y": 0.32,
+          "z": -214.23
+        },
+        {
+          "id": "quang-trung::tag-chase-5-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1944.06,
+          "y": 0.32,
+          "z": -59.82
+        },
+        {
+          "id": "quang-trung::tag-chase-5-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1664.49,
+          "y": 0.32000000000000006,
+          "z": -215.35
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1704.48,
+          "y": 0.32,
+          "z": -397.95
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1654.82,
+          "y": 0.32,
+          "z": -336.97
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1963.72,
+          "y": 0.32,
+          "z": -193.62
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1835.89,
+          "y": 0.31999999999999995,
+          "z": -333.85
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1959.14,
+          "y": 0.12000000000000001,
+          "z": -331.41
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1905.51,
+          "y": 0.32,
+          "z": -228.71
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 2077.02,
+          "y": 0.32,
+          "z": -222.64
+        },
+        {
+          "id": "quang-trung::tag-chase-5-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1692.39,
+          "y": 0.32,
+          "z": -323.46
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1995.41,
+          "y": 0.12,
+          "z": -335.25
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2018.37,
+          "y": 0.32,
+          "z": -107.6
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1887.68,
+          "y": 0.32,
+          "z": -132.96
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1990.25,
+          "y": 0.32,
+          "z": -184.54
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2046.84,
+          "y": 0.32,
+          "z": -209.78
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1744.28,
+          "y": 0.32,
+          "z": -238.19
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1664.93,
+          "y": 0.32,
+          "z": -178.99
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2023.48,
+          "y": 0.32,
+          "z": -74.84
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1821.91,
+          "y": 0.32000000000000006,
+          "z": -222.3
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1719.93,
+          "y": 0.32,
+          "z": -239.24
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1977.94,
+          "y": 0.31999999999999995,
+          "z": -196.09
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2017.79,
+          "y": 0.32,
+          "z": -330.29
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1575.79,
+          "y": 0.32,
+          "z": -235.1
+        },
+        {
+          "id": "quang-trung::tag-chase-5-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1991.88,
+          "y": 0.12,
+          "z": -316.34
+        }
+      ],
+      "nextRefreshAt": 1795527188772,
+      "refreshed": true
+    },
+    {
+      "type": "mode_event",
+      "event": "coop_end",
+      "success": false,
+      "title": "Gom 15 Hoa Sen trước Dòng Chúa Cứu Thế"
+    },
+    {
+      "type": "mode_event",
+      "event": "tag_banner",
+      "text": "📍 Điểm nóng mới: Quảng trường RHM · Nguyễn Huệ (x2 điểm sinh tồn!)"
+    },
+    {
+      "type": "charms",
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quang-trung::tag-chase-6-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1859.03,
+          "y": 0.32,
+          "z": -210.68
+        },
+        {
+          "id": "quang-trung::tag-chase-6-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1651.8,
+          "y": 0.32,
+          "z": -369.95
+        },
+        {
+          "id": "quang-trung::tag-chase-6-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1955.22,
+          "y": 0.12,
+          "z": -327.81
+        },
+        {
+          "id": "quang-trung::tag-chase-6-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1694.05,
+          "y": 0.32,
+          "z": -341.94
+        },
+        {
+          "id": "quang-trung::tag-chase-6-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1735.81,
+          "y": 0.32,
+          "z": -373.84
+        },
+        {
+          "id": "quang-trung::tag-chase-6-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1576.82,
+          "y": 0.32,
+          "z": -232.28
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 2067.16,
+          "y": 0.32,
+          "z": -112.55
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1713.38,
+          "y": 0.32,
+          "z": -243.63
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1577.14,
+          "y": 0.32,
+          "z": -284.64
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 2020.89,
+          "y": 0.32,
+          "z": -93.63
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1834.86,
+          "y": 0.31999999999999995,
+          "z": -331.76
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1948.26,
+          "y": 0.32,
+          "z": -160.14
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1636.11,
+          "y": 0.32,
+          "z": -240.44
+        },
+        {
+          "id": "quang-trung::tag-chase-6-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 2013.11,
+          "y": 0.32,
+          "z": -127.97
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1787.37,
+          "y": 0.32000000000000006,
+          "z": -84.35
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1969.18,
+          "y": 0.32,
+          "z": -173.54
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1994.01,
+          "y": 0.12,
+          "z": -311.95
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1766.44,
+          "y": 0.32000000000000006,
+          "z": -76.48
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1977.06,
+          "y": 0.32,
+          "z": -215.1
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1688.02,
+          "y": 0.32,
+          "z": -288.43
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2018.72,
+          "y": 0.32,
+          "z": -279.2
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1711.27,
+          "y": 0.32,
+          "z": -395.9
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1978.84,
+          "y": 0.32,
+          "z": -190.9
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 2049.83,
+          "y": 0.32,
+          "z": -156.77
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1912.09,
+          "y": 0.32,
+          "z": -253.72
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1777.09,
+          "y": 0.32,
+          "z": -343.66
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1655.07,
+          "y": 0.32,
+          "z": -128.42
+        },
+        {
+          "id": "quang-trung::tag-chase-6-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1946.44,
+          "y": 0.32,
+          "z": -195.81
+        }
+      ],
+      "nextRefreshAt": 1795527214009,
+      "refreshed": true
+    },
+    {
+      "type": "mode_event",
+      "event": "round_end",
+      "leaderboard": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 460,
+          "tags": 0,
+          "closeCalls": 3,
+          "charmsUsed": 1,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "role": "hunter",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": [
+        {
+          "id": "king",
+          "icon": "🏆",
+          "title": "Vua Tốc Độ Quang Trung",
+          "playerName": "Cam ung",
+          "detail": "460 điểm"
+        },
+        {
+          "id": "evader",
+          "icon": "💨",
+          "title": "Thánh Né Xe",
+          "playerName": "Cam ung",
+          "detail": "3 pha thoát hiểm"
+        },
+        {
+          "id": "charm",
+          "icon": "⚡",
+          "title": "Thợ Săn Bùa",
+          "playerName": "Cam ung",
+          "detail": "1 lần kích hoạt"
+        }
+      ],
+      "nextRoundInMs": 10000
+    },
+    {
+      "type": "mode_event",
+      "event": "party_inventory",
+      "inventory": {
+        "non-la-shield": 0,
+        "perfume-wind": 0,
+        "salt-coffee": 0
+      }
+    }
+  ]
+}

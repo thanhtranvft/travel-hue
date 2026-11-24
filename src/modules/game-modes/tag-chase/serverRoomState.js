@@ -8,6 +8,7 @@ import {
   PARTY_ITEMS,
   TAG_CHASE_CONFIG,
 } from "./constants.js";
+import { journeyRoadPoints } from "./journeyRoadPoints.js";
 
 function emptyPartyInventory() {
   return {
@@ -36,6 +37,10 @@ export function createTagChaseRoomState(room, roomKey) {
   const state = {
     phase: "waiting", // waiting | countdown | playing | intermission
     phaseEndsAt: 0,
+    stage: "exploration",
+    stageEndsAt: 0,
+    destinations: [],
+    coopTarget: 0,
     roundNumber: 0,
     hotspotIndex: 0,
     nextHotspotAt: 0,
@@ -56,15 +61,16 @@ export function createTagChaseRoomState(room, roomKey) {
   };
 
   function roomPlayers() {
-    return room
-      .roomPlayers(roomKey)
-      .filter((p) => p && p.send);
+    return room.roomPlayers(roomKey).filter((p) => p && p.send);
   }
 
   function ensurePlayerStats(p) {
     if (!p.tagStats) {
       p.tagStats = {
         role: "runner",
+        visited: new Set(),
+        coopContributions: 0,
+        visitOrigin: { x: p.x, z: p.z },
         score: 0,
         tags: 0,
         closeCalls: 0,
@@ -85,7 +91,11 @@ export function createTagChaseRoomState(room, roomKey) {
 
   function currentHotspot() {
     if (state.phase !== "playing" || !hotspots.length) return null;
-    return hotspots[state.hotspotIndex % hotspots.length];
+    return (
+      state.destinations[
+        state.hotspotIndex % Math.max(1, state.destinations.length)
+      ] || null
+    );
   }
 
   function buildLeaderboard(players) {
@@ -98,6 +108,8 @@ export function createTagChaseRoomState(room, roomKey) {
           color: p.color,
           role: s.role,
           score: s.score,
+          visits: s.visited.size,
+          coopContributions: s.coopContributions,
           tags: s.tags,
           closeCalls: s.closeCalls,
           charmsUsed: s.charmsUsed,
@@ -113,13 +125,29 @@ export function createTagChaseRoomState(room, roomKey) {
     if (!board.length) return [];
     const regionTitle = regionId === "quang-trung" ? "Quang Trung" : "Lê Lợi";
     const awards = [];
-    awards.push({
-      id: "king",
-      icon: "🏆",
-      title: `Vua Tốc Độ ${regionTitle}`,
-      playerName: board[0].name,
-      detail: `${board[0].score} điểm`,
-    });
+    for (const [field, id, icon, title] of [
+      ["visits", "explorer", "🗺️", "Người khám phá Huế"],
+      ["coopContributions", "companion", "🤝", "Người bạn đồng hành"],
+      ["tags", "chaser", "🚲", "Tay lái tranh tài"],
+    ]) {
+      const best = [...board].sort((a, b) => b[field] - a[field])[0];
+      if (best?.[field] > 0)
+        awards.push({
+          id,
+          icon,
+          title,
+          playerName: best.name,
+          detail: `${best[field]} ${field === "visits" ? "địa danh" : field === "tags" ? "lượt bắt" : "đóng góp"}`,
+        });
+    }
+    if (board[0].score > 0)
+      awards.push({
+        id: "king",
+        icon: "🏆",
+        title: `Hành trình ${regionTitle}`,
+        playerName: board[0].name,
+        detail: `${board[0].score} điểm`,
+      });
     const evader = [...board].sort((a, b) => b.closeCalls - a.closeCalls)[0];
     if (evader && evader.closeCalls > 0) {
       awards.push({
@@ -173,11 +201,29 @@ export function createTagChaseRoomState(room, roomKey) {
   }
 
   function spawnCoopItems(now) {
-    const pts = room.sampleRoadPoints(
-      regionId,
-      TAG_CHASE_CONFIG.coopTargetCount,
-      `coop-${++state.coopSeq}`,
+    const desired = Math.min(
+      TAG_CHASE_CONFIG.coopMaxItems,
+      Math.max(
+        TAG_CHASE_CONFIG.coopMinItems,
+        roomPlayers().length * TAG_CHASE_CONFIG.coopItemsPerPlayer,
+      ),
     );
+    const center = currentHotspot();
+    ++state.coopSeq;
+    const pts = journeyRoadPoints(room, regionId)
+      .filter(
+        (pt) =>
+          center &&
+          Math.hypot(pt.x - center.x, pt.z - center.z) <=
+            TAG_CHASE_CONFIG.coopRadius,
+      )
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - center.x, a.z - center.z) -
+          Math.hypot(b.x - center.x, b.z - center.z),
+      )
+      .slice(0, desired);
+    state.coopTarget = pts.length;
     state.coopItems = pts.map((pt, idx) => ({
       id: `coop-${state.coopSeq}-${idx}`,
       x: pt.x,
@@ -186,7 +232,7 @@ export function createTagChaseRoomState(room, roomKey) {
       kind: coopTask.itemKind,
     }));
     state.coopCollected = 0;
-    state.coopActive = true;
+    state.coopActive = pts.length > 0;
     state.coopDoneThisRound = true;
     state.coopEndsAt = now + TAG_CHASE_CONFIG.coopDurationMs;
   }
@@ -195,13 +241,20 @@ export function createTagChaseRoomState(room, roomKey) {
     const hunterCount = players.length >= 5 ? 2 : 1;
     const pickedIndices = new Set();
     const offset = state.roundNumber % Math.max(1, players.length);
-    for (let i = 0; i < hunterCount && pickedIndices.size < players.length; i++) {
+    for (
+      let i = 0;
+      i < hunterCount && pickedIndices.size < players.length;
+      i++
+    ) {
       pickedIndices.add((offset + i * 2) % players.length);
     }
     players.forEach((p, idx) => {
       const s = ensurePlayerStats(p);
       s.role = pickedIndices.has(idx) ? "hunter" : "runner";
       s.score = 0;
+      s.visited = new Set();
+      s.coopContributions = 0;
+      s.visitOrigin = { x: p.x, z: p.z };
       s.tags = 0;
       s.closeCalls = 0;
       s.closeCallCombo = 0;
@@ -210,6 +263,7 @@ export function createTagChaseRoomState(room, roomKey) {
       s.partyUsed = 0;
       s.shieldBlocks = 0;
       s.survivalCarryMs = 0;
+      s.lastSurvivalPose = null;
       s.closeCallWatch = new Map();
       p.shieldUntil = 0;
       p.slowedUntil = 0;
@@ -224,6 +278,8 @@ export function createTagChaseRoomState(room, roomKey) {
     return {
       event: "tag_state",
       phase: state.phase,
+      stage: state.stage,
+      stageRemainingMs: Math.max(0, state.stageEndsAt - now),
       roundNumber: state.roundNumber,
       remainingMs: state.phaseEndsAt ? Math.max(0, state.phaseEndsAt - now) : 0,
       hotspot: hotspot
@@ -232,15 +288,15 @@ export function createTagChaseRoomState(room, roomKey) {
       coop: state.coopActive
         ? {
             active: true,
-            title: coopTask.title,
+            title: coopTask.title.replace(/15 /g, ""),
             itemKind: coopTask.itemKind,
             collected: state.coopCollected,
-            target: TAG_CHASE_CONFIG.coopTargetCount,
+            target: state.coopTarget,
             remainingMs: Math.max(0, state.coopEndsAt - now),
             items: state.coopItems,
           }
         : { active: false },
-      partyBoxes: state.partyBoxes,
+      partyBoxes: state.stage === "chase" ? state.partyBoxes : [],
       leaderboard: buildLeaderboard(players).slice(0, 5),
       awards: state.phase === "intermission" ? state.lastAwards : null,
       playerCount: players.length,
@@ -259,7 +315,31 @@ export function createTagChaseRoomState(room, roomKey) {
     state.roundNumber++;
     state.phase = "countdown";
     state.phaseEndsAt = now + TAG_CHASE_CONFIG.countdownMs;
-    state.hotspotIndex = state.roundNumber % Math.max(1, hotspots.length);
+    state.stage = "exploration";
+    const points = journeyRoadPoints(room, regionId);
+    const active = players.filter(
+      (p) => p.ready && Number.isFinite(p.x) && Number.isFinite(p.z),
+    );
+    const group = active.length ? active : players;
+    const cx = group.reduce((n, p) => n + (p.x || 0), 0) / group.length;
+    const cz = group.reduce((n, p) => n + (p.z || 0), 0) / group.length;
+    // Use validated road approaches near each landmark, never its building centre.
+    state.destinations = hotspots
+      .map((h) => {
+        const nearest = [...points].sort(
+          (a, b) =>
+            Math.hypot(a.x - h.x, a.z - h.z) - Math.hypot(b.x - h.x, b.z - h.z),
+        )[0];
+        return nearest && Math.hypot(nearest.x - h.x, nearest.z - h.z) <= 90
+          ? { ...h, x: nearest.x, z: nearest.z }
+          : null;
+      })
+      .filter(Boolean)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - cx, a.z - cz) - Math.hypot(b.x - cx, b.z - cz),
+      );
+    state.hotspotIndex = 0;
     state.surgeTriggered = false;
     state.coopActive = false;
     state.coopDoneThisRound = false;
@@ -296,7 +376,12 @@ export function createTagChaseRoomState(room, roomKey) {
   return {
     speedMultiplierFor(p, now = room.now()) {
       const s = ensurePlayerStats(p);
-      let mult = s.role === "hunter" ? TAG_CHASE_CONFIG.hunterSpeedMultiplier : 1;
+      let mult =
+        state.phase === "playing" &&
+        state.stage === "chase" &&
+        s.role === "hunter"
+          ? TAG_CHASE_CONFIG.hunterSpeedMultiplier
+          : 1;
       if ((p.coffeeBoostUntil || 0) > now) {
         mult *= TAG_CHASE_CONFIG.coffeeBoostMultiplier;
       }
@@ -381,14 +466,26 @@ export function createTagChaseRoomState(room, roomKey) {
     onCollision(p, other, _room, now, oldPose) {
       const sp = ensurePlayerStats(p);
       const so = ensurePlayerStats(other);
-      const dx = (other.x - p.x) || Math.sin(p.heading || 0);
-      const dz = (other.z - p.z) || Math.cos(p.heading || 0);
+      const dx = other.x - p.x || Math.sin(p.heading || 0);
+      const dz = other.z - p.z || Math.cos(p.heading || 0);
       const len = Math.hypot(dx, dz) || 1;
       const nx = dx / len;
       const nz = dz / len;
 
-      const pushP = clampBouncePose(room, p.region, (oldPose?.x ?? p.x) - nx * 1.35, (oldPose?.z ?? p.z) - nz * 1.35, p.heading);
-      const pushO = clampBouncePose(room, other.region, other.x + nx * 1.35, other.z + nz * 1.35, other.heading);
+      const pushP = clampBouncePose(
+        room,
+        p.region,
+        (oldPose?.x ?? p.x) - nx * 1.35,
+        (oldPose?.z ?? p.z) - nz * 1.35,
+        p.heading,
+      );
+      const pushO = clampBouncePose(
+        room,
+        other.region,
+        other.x + nx * 1.35,
+        other.z + nz * 1.35,
+        other.heading,
+      );
       if (pushP) {
         p.x = pushP.x;
         p.z = pushP.z;
@@ -407,6 +504,7 @@ export function createTagChaseRoomState(room, roomKey) {
 
       const isHunterVsRunner =
         state.phase === "playing" &&
+        state.stage === "chase" &&
         ((sp.role === "hunter" && so.role === "runner") ||
           (sp.role === "runner" && so.role === "hunter"));
 
@@ -508,6 +606,12 @@ export function createTagChaseRoomState(room, roomKey) {
       const s = ensurePlayerStats(p);
       const action = message.action;
 
+      if (
+        (action === "party_pickup" || action === "use_party_item") &&
+        (state.phase !== "playing" || state.stage !== "chase")
+      )
+        return;
+
       if (action === "party_pickup") {
         const boxId = typeof message.boxId === "string" ? message.boxId : "";
         const idx = state.partyBoxes.findIndex((b) => b.id === boxId);
@@ -516,12 +620,16 @@ export function createTagChaseRoomState(room, roomKey) {
         if (Math.hypot((p.x || 0) - box.x, (p.z || 0) - box.z) > 6.2) return;
         state.partyBoxes.splice(idx, 1);
         const candidates = PARTY_ITEM_LIST.filter(
-          (item) => (p.partyInventory[item.id] || 0) < TAG_CHASE_CONFIG.partyMaxPerItem,
+          (item) =>
+            (p.partyInventory[item.id] || 0) < TAG_CHASE_CONFIG.partyMaxPerItem,
         );
         const pool = candidates.length ? candidates : PARTY_ITEM_LIST;
-        const lowOwned = pool.filter((item) => (p.partyInventory[item.id] || 0) === 0);
+        const lowOwned = pool.filter(
+          (item) => (p.partyInventory[item.id] || 0) === 0,
+        );
         const pickFrom = lowOwned.length ? lowOwned : pool;
-        const chosen = pickFrom[(state.partySeq + Math.floor(now) + idx) % pickFrom.length];
+        const chosen =
+          pickFrom[(state.partySeq + Math.floor(now) + idx) % pickFrom.length];
         p.partyInventory[chosen.id] = Math.min(
           TAG_CHASE_CONFIG.partyMaxPerItem,
           (p.partyInventory[chosen.id] || 0) + 1,
@@ -562,7 +670,10 @@ export function createTagChaseRoomState(room, roomKey) {
           for (const other of roomPlayers()) {
             if (other === p) continue;
             if ((other.shieldUntil || 0) > now) continue;
-            const d = Math.hypot((other.x || 0) - (p.x || 0), (other.z || 0) - (p.z || 0));
+            const d = Math.hypot(
+              (other.x || 0) - (p.x || 0),
+              (other.z || 0) - (p.z || 0),
+            );
             if (d <= TAG_CHASE_CONFIG.windRadius) {
               other.slowedUntil = now + TAG_CHASE_CONFIG.windSlowDurationMs;
               slowedIds.push(other.id);
@@ -604,7 +715,13 @@ export function createTagChaseRoomState(room, roomKey) {
       }
 
       if (action === "coop_pickup") {
-        if (!state.coopActive) return;
+        if (
+          !state.coopActive ||
+          !p.ready ||
+          state.stage !== "cooperation" ||
+          now >= state.coopEndsAt
+        )
+          return;
         const itemId = typeof message.itemId === "string" ? message.itemId : "";
         const idx = state.coopItems.findIndex((i) => i.id === itemId);
         if (idx === -1) return;
@@ -612,13 +729,15 @@ export function createTagChaseRoomState(room, roomKey) {
         if (Math.hypot((p.x || 0) - item.x, (p.z || 0) - item.z) > 6.2) return;
         state.coopItems.splice(idx, 1);
         state.coopCollected++;
-        s.score += 15;
-        if (state.coopCollected >= TAG_CHASE_CONFIG.coopTargetCount) {
+        s.coopContributions++;
+        s.score += TAG_CHASE_CONFIG.coopPickupPoints;
+        if (state.coopCollected >= state.coopTarget) {
           state.coopActive = false;
           state.coopItems = [];
           const players = roomPlayers();
           for (const pl of players) {
-            ensurePlayerStats(pl).score += TAG_CHASE_CONFIG.coopRewardPoints;
+            if (ensurePlayerStats(pl).coopContributions > 0)
+              pl.tagStats.score += TAG_CHASE_CONFIG.coopRewardPoints;
           }
           room.publishToRoom(roomKey, {
             type: "mode_event",
@@ -635,7 +754,8 @@ export function createTagChaseRoomState(room, roomKey) {
       if (action === "emote") {
         const emoteId = cleanEmoteId(message.emoteId);
         if (!emoteId) return;
-        if (now - (p.lastEmoteAt || 0) < TAG_CHASE_CONFIG.emoteCooldownMs) return;
+        if (now - (p.lastEmoteAt || 0) < TAG_CHASE_CONFIG.emoteCooldownMs)
+          return;
         p.lastEmoteAt = now;
         const emote = EMOTE_BY_ID.get(emoteId);
         room.publishToRoom(roomKey, {
@@ -695,7 +815,8 @@ export function createTagChaseRoomState(room, roomKey) {
         if (now >= state.phaseEndsAt) {
           state.phase = "playing";
           state.phaseEndsAt = now + TAG_CHASE_CONFIG.roundDurationMs;
-          state.nextHotspotAt = now + TAG_CHASE_CONFIG.hotspotIntervalMs;
+          state.stageEndsAt = now + TAG_CHASE_CONFIG.explorationDurationMs;
+          state.nextHotspotAt = Infinity;
           broadcastState(now);
         } else if (now - state.lastBroadcastAt >= 500) {
           broadcastState(now);
@@ -719,55 +840,93 @@ export function createTagChaseRoomState(room, roomKey) {
         return;
       }
 
-      if (hotspots.length && now >= state.nextHotspotAt) {
-        state.hotspotIndex = (state.hotspotIndex + 1) % hotspots.length;
-        state.nextHotspotAt = now + TAG_CHASE_CONFIG.hotspotIntervalMs;
-        const hs = currentHotspot();
+      if (now >= state.stageEndsAt && state.stage === "exploration") {
+        state.stage = "chase";
+        state.stageEndsAt = now + TAG_CHASE_CONFIG.chaseDurationMs;
+        for (const p of players) {
+          p.immuneUntil = now + 3000;
+          ensurePlayerStats(p).survivalCarryMs = 0;
+        }
         room.publishToRoom(roomKey, {
           type: "mode_event",
           event: "tag_banner",
-          text: `📍 Điểm nóng mới: ${hs.title} (x2 điểm sinh tồn!)`,
+          text: "🚲 Tranh tài ngắn: bắt và đổi vai!",
         });
         broadcastState(now);
-      }
-
-      if (
-        !state.surgeTriggered &&
-        remaining <= TAG_CHASE_CONFIG.surgeRemainingMs &&
-        players.length >= 5
-      ) {
-        const hunters = players.filter((p) => ensurePlayerStats(p).role === "hunter");
-        const runners = players.filter((p) => ensurePlayerStats(p).role === "runner");
-        if (hunters.length < 3 && runners.length >= 2) {
-          state.surgeTriggered = true;
-          const extra = runners[runners.length - 1];
-          extra.tagStats.role = "hunter";
-          extra.immuneUntil = now + 2000;
-          room.publishToRoom(roomKey, {
-            type: "mode_event",
-            event: "tag_banner",
-            text: `⚡ 35 giây cuối! ${extra.name} gia nhập phe Người Săn!`,
-          });
-          broadcastState(now);
+      } else if (now >= state.stageEndsAt && state.stage === "chase") {
+        state.stage = "cooperation";
+        const coopDuration =
+          TAG_CHASE_CONFIG.coopDurationMs +
+          Math.max(0, players.length - 2) *
+            (TAG_CHASE_CONFIG.coopExtraMsPerPlayer || 0);
+        state.phaseEndsAt = now + coopDuration;
+        state.stageEndsAt = state.phaseEndsAt;
+        // Select the closest validated landmark approach to the group now.
+        const ready = players.filter((p) => p.ready);
+        if (ready.length && state.destinations.length) {
+          const distance = (h) =>
+            ready.reduce(
+              (sum, p) => sum + Math.hypot(p.x - h.x, p.z - h.z),
+              0,
+            ) / ready.length;
+          state.hotspotIndex = state.destinations.reduce(
+            (best, h, i) =>
+              distance(h) < distance(state.destinations[best]) ? i : best,
+            0,
+          );
         }
-      }
-
-      if (
-        !state.coopDoneThisRound &&
-        !state.coopActive &&
-        remaining <= TAG_CHASE_CONFIG.coopTriggerRemainingMs &&
-        remaining >= 25000 &&
-        players.length >= 2
-      ) {
         spawnCoopItems(now);
+        state.coopEndsAt = state.stageEndsAt;
+        for (const p of players) {
+          p.slowedUntil = 0;
+          p.coffeeBoostUntil = 0;
+        }
         room.publishToRoom(roomKey, {
           type: "mode_event",
           event: "coop_start",
           title: coopTask.title,
-          target: TAG_CHASE_CONFIG.coopTargetCount,
-          durationMs: TAG_CHASE_CONFIG.coopDurationMs,
+          target: state.coopTarget,
+          durationMs: coopDuration,
         });
         broadcastState(now);
+      }
+
+      if (state.stage === "exploration") {
+        for (const p of players) {
+          const stats = ensurePlayerStats(p);
+          if (!p.ready) continue;
+          const origin = stats.visitOrigin;
+          if (
+            Math.hypot(p.x - origin.x, p.z - origin.z) <
+            TAG_CHASE_CONFIG.visitTravelMin
+          )
+            continue;
+          for (const h of state.destinations) {
+            if (
+              stats.visited.has(h.id) ||
+              Math.hypot(p.x - h.x, p.z - h.z) > TAG_CHASE_CONFIG.visitRadius
+            )
+              continue;
+            stats.visited.add(h.id);
+            stats.score += TAG_CHASE_CONFIG.visitPoints;
+            room.send(p, {
+              type: "mode_event",
+              event: "landmark_visit",
+              title: h.title,
+              points: TAG_CHASE_CONFIG.visitPoints,
+            });
+          }
+        }
+        const h = currentHotspot();
+        if (
+          h &&
+          players.filter((p) => p.ready).length &&
+          players
+            .filter((p) => p.ready)
+            .every((p) => ensurePlayerStats(p).visited.has(h.id)) &&
+          state.hotspotIndex < state.destinations.length - 1
+        )
+          state.hotspotIndex++;
       }
 
       if (state.coopActive && now >= state.coopEndsAt) {
@@ -787,9 +946,10 @@ export function createTagChaseRoomState(room, roomKey) {
         broadcastState(now);
       }
 
-      // Survival & Close-Call checks every ~200ms
-      if (now - state.lastCheckAt >= 200) {
-        const stepMs = now - state.lastCheckAt > 1000 ? dtMs : now - state.lastCheckAt;
+      // Survival requires movement and an active chase nearby.
+      if (state.stage === "chase" && now - state.lastCheckAt >= 200) {
+        const stepMs =
+          now - state.lastCheckAt > 1000 ? dtMs : now - state.lastCheckAt;
         state.lastCheckAt = now;
         const hotspot = currentHotspot();
         const activeHunters = players.filter(
@@ -808,6 +968,23 @@ export function createTagChaseRoomState(room, roomKey) {
             Math.hypot((p.x || 0) - hotspot.x, (p.z || 0) - hotspot.z) <=
               TAG_CHASE_CONFIG.hotspotRadius;
 
+          const previous = s.lastSurvivalPose;
+          s.lastSurvivalPose = { x: p.x, z: p.z };
+          const moving =
+            previous && Math.hypot(p.x - previous.x, p.z - previous.z) > 0.05;
+          const engaged =
+            moving &&
+            Math.abs(p.speed || 0) > 0.5 &&
+            activeHunters.some(
+              (h) =>
+                Math.hypot(p.x - h.x, p.z - h.z) <= 40 &&
+                Math.abs(h.speed || 0) > 0.5,
+            );
+          if (!engaged) {
+            s.survivalCarryMs = 0;
+            s.closeCallWatch.clear();
+            continue;
+          }
           s.survivalCarryMs += stepMs * (inHotspot ? 2 : 1);
           if (s.survivalCarryMs >= TAG_CHASE_CONFIG.survivalTickMs) {
             s.survivalCarryMs -= TAG_CHASE_CONFIG.survivalTickMs;
@@ -815,7 +992,10 @@ export function createTagChaseRoomState(room, roomKey) {
           }
 
           for (const h of activeHunters) {
-            const dist = Math.hypot((p.x || 0) - (h.x || 0), (p.z || 0) - (h.z || 0));
+            const dist = Math.hypot(
+              (p.x || 0) - (h.x || 0),
+              (p.z || 0) - (h.z || 0),
+            );
             const watch = s.closeCallWatch.get(h.id);
             if (!watch) {
               if (

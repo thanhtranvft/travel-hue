@@ -1,0 +1,167 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "Khoa Quốc tế → Tràng Tiền\nKhám phá Huế\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🗺️ Khám phá Huế\nKhám phá 00:54\n0đ\n📍 Công viên Thanh Thiếu Niên · 269m\n📖 Đọc về địa danh\n♫\n⚙\n🔊\n⛶\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 2/10 người\nĐã kết nối\n＋\nĐI / RẼ\n+10%\n0\n+20%\n0\n+30%\n0\n+100%\n0\n0\nKM/H\n© OpenStreetMap contributors · ODbL\n🏅 Bảng điểm\n▾\n1.\n🏃\nKhám phá Huế\n0đ\n2.\n🔥\nBạn đồng hành\n0đ\n💬",
+    "screen": {
+      "w": 844,
+      "h": 390
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "13e94e5d-d07b-49c7-9116-2e5c6fb58f09",
+      "player": {
+        "id": "13e94e5d-d07b-49c7-9116-2e5c6fb58f09",
+        "name": "Khám phá Huế",
+        "color": "#247bba",
+        "avatar": "dog",
+        "stance": "idle",
+        "region": "quoc-hoc",
+        "gameMode": "tag-chase",
+        "x": 313.59386599824217,
+        "y": 0,
+        "z": -283.9705933447322,
+        "heading": 2.311221923280749,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "playing",
+      "stage": "exploration",
+      "stageRemainingMs": 53898,
+      "roundNumber": 1,
+      "remainingMs": 143898,
+      "hotspot": {
+        "id": "qh-youth",
+        "title": "Công viên Thanh Thiếu Niên",
+        "x": 514.1006415220747,
+        "z": -463.32559044511993,
+        "radius": 28
+      },
+      "coop": {
+        "active": false
+      },
+      "partyBoxes": [],
+      "leaderboard": [
+        {
+          "id": "13e94e5d-d07b-49c7-9116-2e5c6fb58f09",
+          "name": "Khám phá Huế",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 0,
+          "visits": 0,
+          "coopContributions": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "37ba132d-dbe6-4828-83a5-d4ca4f84d21a",
+          "name": "Bạn đồng hành",
+          "color": "#b35252",
+          "role": "hunter",
+          "score": 0,
+          "visits": 0,
+          "coopContributions": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 2
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795529206842,
+      "region": "quoc-hoc",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 2,
+      "players": [
+        {
+          "id": "13e94e5d-d07b-49c7-9116-2e5c6fb58f09",
+          "name": "Khám phá Huế",
+          "color": "#247bba",
+          "avatar": "dog",
+          "stance": "bike",
+          "region": "quoc-hoc",
+          "gameMode": "tag-chase",
+          "x": 313.59386599824217,
+          "y": 0.32,
+          "z": -283.9705933447322,
+          "heading": 2.311221923280749,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        },
+        {
+          "id": "37ba132d-dbe6-4828-83a5-d4ca4f84d21a",
+          "name": "Bạn đồng hành",
+          "color": "#b35252",
+          "avatar": "cat",
+          "stance": "bike",
+          "region": "quoc-hoc",
+          "gameMode": "tag-chase",
+          "x": 315.0105304926086,
+          "y": 0.32,
+          "z": -282.42041215841834,
+          "heading": 2.311221923280749,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "hunter",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "type": "mode_event",
+      "event": "party_inventory",
+      "inventory": {
+        "non-la-shield": 0,
+        "perfume-wind": 0,
+        "salt-coffee": 0
+      }
+    }
+  ]
+}

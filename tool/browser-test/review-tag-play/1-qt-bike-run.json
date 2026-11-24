@@ -1,0 +1,209 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "HUẾ · CITY TOUR\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nTọa độ OSM · kiến trúc ước lượng\nXe dap\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🔥 Người Săn\n02:14\n0đ\n📍 Quảng trường RHM · Nguyễn Huệ · 135m\n♫\n⚙\n🔊\n↔\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 2/10 người\nĐã kết nối\n+10%\n0\n1\n+20%\n0\n2\n+30%\n0\n3\n+100%\n0\n4\n83 Nguyễn Huệ · Quang Trung → Dòng Chúa Cứu Thế\nĐang đạp xe\n22\nKM/H\nWASD đi/lái · Shift chạy · 1-4 bùa tốc độ · M bản đồ\n© OpenStreetMap contributors · ODbL\n🏅 Bảng điểm\n▾\n1.\n🏃\nCam ung\n70đ\n2.\n🔥\nXe dap\n0đ\n👒\nNón Lá\n0\nQ\n💨\nGió Hương\n0\nE\n☕\nCà Phê\n0\nF\n💬",
+    "screen": {
+      "w": 1280,
+      "h": 800
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+      "player": {
+        "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+        "name": "Xe dap",
+        "color": "#b35252",
+        "avatar": "boy",
+        "stance": "idle",
+        "region": "quang-trung",
+        "gameMode": "tag-chase",
+        "x": 1670.302905145117,
+        "y": 0,
+        "z": -245.01394314035153,
+        "heading": 1.429545050177607,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true,
+        "modeData": {
+          "role": "runner",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "shielded": false,
+          "slowed": false,
+          "coffeeBoost": false
+        }
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "playing",
+      "roundNumber": 1,
+      "remainingMs": 133813,
+      "hotspot": {
+        "id": "qt-rhm",
+        "title": "Quảng trường RHM · Nguyễn Huệ",
+        "x": 1816.9,
+        "z": -222,
+        "radius": 28
+      },
+      "coop": {
+        "active": false
+      },
+      "partyBoxes": [
+        {
+          "id": "pbox-2-0",
+          "x": 1804.66,
+          "y": 0.32,
+          "z": -374.03
+        },
+        {
+          "id": "pbox-2-1",
+          "x": 1623.37,
+          "y": 0.32,
+          "z": -156.72
+        },
+        {
+          "id": "pbox-2-2",
+          "x": 1660.25,
+          "y": 0.32,
+          "z": -179.83
+        },
+        {
+          "id": "pbox-2-3",
+          "x": 1990.83,
+          "y": 0.32,
+          "z": -188.7
+        },
+        {
+          "id": "pbox-2-4",
+          "x": 1966.99,
+          "y": 0.12,
+          "z": -331.17
+        },
+        {
+          "id": "pbox-2-5",
+          "x": 1792.19,
+          "y": 0.32,
+          "z": -225.3
+        },
+        {
+          "id": "pbox-2-6",
+          "x": 1911.65,
+          "y": 0.31999999999999995,
+          "z": -53.04
+        },
+        {
+          "id": "pbox-2-7",
+          "x": 1945.62,
+          "y": 0.31999999999999995,
+          "z": -197.91
+        }
+      ],
+      "leaderboard": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 70,
+          "tags": 0,
+          "closeCalls": 1,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "role": "hunter",
+          "score": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 2
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795527067743,
+      "region": "quang-trung",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 2,
+      "players": [
+        {
+          "id": "17435910-95b0-475b-872f-f35159faf403",
+          "name": "Cam ung",
+          "color": "#247bba",
+          "avatar": "cat",
+          "stance": "idle",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1682.936566620295,
+          "y": 0.32000000000000006,
+          "z": -246.04562543747625,
+          "heading": 1.429545050177607,
+          "speed": 0,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 70,
+            "tags": 0,
+            "closeCalls": 1,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        },
+        {
+          "id": "35c56c8f-7ea9-4d60-8ca1-82d104642fb1",
+          "name": "Xe dap",
+          "color": "#b35252",
+          "avatar": "boy",
+          "stance": "bike",
+          "region": "quang-trung",
+          "gameMode": "tag-chase",
+          "x": 1682.7561833618086,
+          "y": 0.32,
+          "z": -243.24310881573388,
+          "heading": 1.429545050177607,
+          "speed": 6.266573942340085,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "hunter",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": []
+}

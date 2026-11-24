@@ -12,6 +12,10 @@ const region = {
   path: [
     [0, 0],
     [0, 140],
+    [514.1, -463.3],
+    [677.1, -608.6],
+    [888.2, -799.6],
+    [1222.4, -1107.6],
   ],
   radius: 15,
   extensions: [],
@@ -71,7 +75,8 @@ test("tag-chase room stays waiting with 1 player, starts countdown and playing w
   const playing = modeEntry.state.publicSummary();
   assert.equal(playing.phase, "playing");
   assert.ok(playing.hotspot);
-  assert.equal(playing.partyBoxes.length, TAG_CHASE_CONFIG.partyBoxCount);
+  assert.equal(playing.stage, "exploration");
+  assert.equal(playing.partyBoxes.length, 0);
 
   const roles = [a.player, b.player].map((p) => p.tagStats.role);
   assert.equal(roles.filter((r) => r === "hunter").length, 1);
@@ -84,6 +89,8 @@ test("tag & swap awards points, bounces players, and swaps roles; Khiên Nón L�
   const a = joinTagPlayer(room, "An");
   const b = joinTagPlayer(room, "Bình");
   now += TAG_CHASE_CONFIG.countdownMs + 3000;
+  room.snapshot();
+  now += TAG_CHASE_CONFIG.explorationDurationMs;
   room.snapshot();
 
   const hunter = [a, b].find((x) => x.player.tagStats.role === "hunter");
@@ -120,11 +127,17 @@ test("tag & swap awards points, bounces players, and swaps roles; Khiên Nón L�
   now += 100;
   room.state(hunter.player, moveMsg(hunter.player, 1, 0, 0.7, 5));
   assert.equal(runner.player.tagStats.role, "runner");
-  assert.equal(runner.player.tagStats.score, TAG_CHASE_CONFIG.shieldBlockPoints);
+  assert.equal(
+    runner.player.tagStats.score,
+    TAG_CHASE_CONFIG.shieldBlockPoints,
+  );
   assert.ok(hunter.player.stunnedUntil > now);
   assert.ok(
     runner.messages.some(
-      (m) => m.type === "mode_event" && m.event === "shield_block" && m.role === "defender",
+      (m) =>
+        m.type === "mode_event" &&
+        m.event === "shield_block" &&
+        m.role === "defender",
     ),
   );
 
@@ -154,6 +167,8 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
   const b = joinTagPlayer(room, "Bình");
   now += TAG_CHASE_CONFIG.countdownMs + 3000;
   room.snapshot();
+  now += TAG_CHASE_CONFIG.explorationDurationMs;
+  room.snapshot();
 
   const state = room.modeStates.get("quoc-hoc::tag-chase").state;
   const hunter = [a, b].find((x) => x.player.tagStats.role === "hunter");
@@ -161,18 +176,31 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
 
   // 1. Party Box pickup
   const box = state.publicSummary().partyBoxes[0];
-  Object.assign(runner.player, { x: box.x, z: box.z, ready: true, activeAt: now });
+  Object.assign(runner.player, {
+    x: box.x,
+    z: box.z,
+    ready: true,
+    activeAt: now,
+  });
   room.modeAction(runner.player, {
     type: "mode_action",
     action: "party_pickup",
     boxId: box.id,
   });
-  const totalItems = Object.values(runner.player.partyInventory).reduce((s, v) => s + v, 0);
+  const totalItems = Object.values(runner.player.partyInventory).reduce(
+    (s, v) => s + v,
+    0,
+  );
   assert.equal(totalItems, 1);
 
   // 2. Perfume Wind slows nearby unshielded opponent
   runner.player.partyInventory["perfume-wind"] = 1;
-  Object.assign(hunter.player, { x: box.x, z: box.z + 4, ready: true, activeAt: now });
+  Object.assign(hunter.player, {
+    x: box.x,
+    z: box.z + 4,
+    ready: true,
+    activeAt: now,
+  });
   room.modeAction(runner.player, {
     type: "mode_action",
     action: "use_party_item",
@@ -190,14 +218,20 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
   });
   assert.equal(hunter.player.stunnedUntil, 0);
   assert.equal(hunter.player.slowedUntil, 0);
-  assert.ok(state.speedMultiplierFor(hunter.player, now) > TAG_CHASE_CONFIG.hunterSpeedMultiplier);
+  assert.ok(
+    state.speedMultiplierFor(hunter.player, now) >
+      TAG_CHASE_CONFIG.hunterSpeedMultiplier,
+  );
 
   // 4. Close-call combo: enter < 5.5m then escape > 10.5m
   now += 2500;
   hunter.player.coffeeBoostUntil = 0;
   hunter.player.stunnedUntil = 0;
-  Object.assign(hunter.player, { x: 0, z: 20, ready: true });
-  Object.assign(runner.player, { x: 0, z: 24, ready: true });
+  Object.assign(hunter.player, { x: 0, z: 20, speed: 4, ready: true });
+  Object.assign(runner.player, { x: 0, z: 23, speed: 4, ready: true });
+  room.snapshot();
+  now += 250;
+  runner.player.z = 24;
   room.snapshot(); // enters watch
   now += 500;
   Object.assign(runner.player, { x: 0, z: 36 });
@@ -210,11 +244,12 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
   );
 
   // 5. Co-op trigger at <= 85s remaining and completion
-  now += TAG_CHASE_CONFIG.roundDurationMs - TAG_CHASE_CONFIG.coopTriggerRemainingMs;
+  now += TAG_CHASE_CONFIG.chaseDurationMs;
   room.snapshot();
   const coopSummary = state.publicSummary();
   assert.equal(coopSummary.coop.active, true);
-  assert.equal(coopSummary.coop.items.length, TAG_CHASE_CONFIG.coopTargetCount);
+  assert.equal(coopSummary.stage, "cooperation");
+  assert.equal(coopSummary.coop.items.length, TAG_CHASE_CONFIG.coopMinItems);
 
   for (const item of [...coopSummary.coop.items]) {
     Object.assign(runner.player, { x: item.x, z: item.z });
@@ -227,7 +262,8 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
   assert.equal(state.publicSummary().coop.active, false);
   assert.ok(
     a.messages.some(
-      (m) => m.type === "mode_event" && m.event === "coop_end" && m.success === true,
+      (m) =>
+        m.type === "mode_event" && m.event === "coop_end" && m.success === true,
     ),
   );
 
@@ -249,7 +285,12 @@ test("Party items (Gió Sông Hương & Cà Phê Muối), Close-Call combo, and 
     emoteId: "coffee",
   });
   assert.ok(
-    a.messages.some((m) => m.type === "mode_event" && m.event === "emote" && m.emoteId === "coffee"),
+    a.messages.some(
+      (m) =>
+        m.type === "mode_event" &&
+        m.event === "emote" &&
+        m.emoteId === "coffee",
+    ),
   );
   assert.equal(
     freeRoamMessages.some((m) => m.type === "mode_event"),
@@ -267,13 +308,28 @@ test("tagChaseMode client session runs safely without DOM and computes speedMult
   session.onSnapshot(
     {
       players: [
-        { id: "me", connected: true, ready: true, modeData: { role: "hunter", score: 100 } },
+        {
+          id: "me",
+          connected: true,
+          ready: true,
+          modeData: { role: "hunter", score: 100 },
+        },
       ],
     },
     "me",
   );
+  assert.equal(session.speedMultiplier, 1);
+  session.onServerEvent({
+    event: "tag_state",
+    phase: "playing",
+    stage: "chase",
+  });
   assert.equal(session.speedMultiplier, TAG_CHASE_CONFIG.hunterSpeedMultiplier);
-  session.onServerEvent({ event: "wind_slowed", durationMs: 2000, byName: "Bình" });
+  session.onServerEvent({
+    event: "wind_slowed",
+    durationMs: 2000,
+    byName: "Bình",
+  });
   assert.ok(session.speedMultiplier < 1);
   session.onServerEvent({ event: "coffee_boost", durationMs: 2000 });
   assert.ok(session.speedMultiplier > TAG_CHASE_CONFIG.hunterSpeedMultiplier);
@@ -333,7 +389,8 @@ test("real WebSocket: 2 clients join tag-chase and exchange emote mode_action", 
     await once(ws3, "open");
     const emoteReceived = nextMsg(
       ws1,
-      (m) => m.type === "mode_event" && m.event === "emote" && m.emoteId === "wait",
+      (m) =>
+        m.type === "mode_event" && m.event === "emote" && m.emoteId === "wait",
     );
     const w3 = nextMsg(ws3, (m) => m.type === "welcome");
     ws3.send(
@@ -386,11 +443,17 @@ test("reloaded player with token remains visible and accumulates survival and ta
   const partyIdx = resumed.messages.findIndex(
     (m) => m.type === "mode_event" && m.event === "party_inventory",
   );
-  assert.ok(partyIdx > 0, "party_inventory mode_event must arrive after welcome");
+  assert.ok(
+    partyIdx > 0,
+    "party_inventory mode_event must arrive after welcome",
+  );
 
   now += 100;
   const targetZ = resumed.player.z + 0.8;
-  room.state(resumed.player, moveMsg(resumed.player, 1, resumed.player.x, targetZ, 4));
+  room.state(
+    resumed.player,
+    moveMsg(resumed.player, 1, resumed.player.x, targetZ, 4),
+  );
   assert.equal(resumed.player.ready, true);
   assert.equal(resumed.player.z, targetZ);
 
@@ -398,18 +461,35 @@ test("reloaded player with token remains visible and accumulates survival and ta
   now += TAG_CHASE_CONFIG.countdownMs + 200;
   room.snapshot();
 
+  now += TAG_CHASE_CONFIG.explorationDurationMs;
+  room.snapshot();
+  for (const p of [resumed.player, b.player])
+    Object.assign(p, {
+      x: 0,
+      z: p.tagStats.role === "hunter" ? 30 : 42,
+      speed: 4,
+    });
+
   // Survival ticks accumulate for runner when both players are ready
-  const runner = [resumed.player, b.player].find((p) => p.tagStats.role === "runner");
+  const runner = [resumed.player, b.player].find(
+    (p) => p.tagStats.role === "runner",
+  );
   const scoreBefore = runner.tagStats.score;
   const ticks = Math.ceil((TAG_CHASE_CONFIG.survivalTickMs + 500) / 500);
   for (let i = 0; i < ticks; i++) {
     now += 500;
+    runner.z += 0.5;
     room.snapshot();
   }
-  assert.ok(runner.tagStats.score > scoreBefore, "runner survival score increases after reconnect");
+  assert.ok(
+    runner.tagStats.score > scoreBefore,
+    "runner survival score increases after reconnect",
+  );
 
   // Tag swap awards points after reconnect
-  const hunter = [resumed.player, b.player].find((p) => p.tagStats.role === "hunter");
+  const hunter = [resumed.player, b.player].find(
+    (p) => p.tagStats.role === "hunter",
+  );
   const hunterBefore = hunter.tagStats.score;
   now += 3500;
   hunter.immuneUntil = 0;
@@ -418,6 +498,7 @@ test("reloaded player with token remains visible and accumulates survival and ta
   Object.assign(hunter, { x: 0, z: 30, activeAt: now });
   Object.assign(runner, { x: 0, z: 31.1, speed: 4, activeAt: now });
   room.state(hunter, moveMsg(hunter, 50, 0, 30.8, 5));
-  assert.ok(hunter.tagStats.score >= hunterBefore + TAG_CHASE_CONFIG.hunterTagPoints);
+  assert.ok(
+    hunter.tagStats.score >= hunterBefore + TAG_CHASE_CONFIG.hunterTagPoints,
+  );
 });
-
