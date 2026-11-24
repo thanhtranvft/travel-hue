@@ -17,6 +17,7 @@ import { CharmController } from "../core/world/CharmController.js";
 import { SpeedAuraEffect } from "../core/world/CharmSceneFX.js";
 import { ChurchBellController } from "../core/audio/ChurchBellController.js";
 import { sourcePan } from "../core/audio/spatial.js";
+import { GameModeController } from "../modules/game-modes/GameModeController.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
@@ -143,6 +144,7 @@ export class GamePresenter {
     this.churchBellNotice.textContent =
       "🔔 Tiếng chuông Nhà thờ Dòng Chúa Cứu Thế đang ngân vang…";
     document.querySelector("#app").append(this.churchBellNotice);
+    this.gameMode = new GameModeController(this);
     this.charms = new CharmController(this);
     this.speedAura = new SpeedAuraEffect();
     this.speedAura.attachTo(this.bike);
@@ -175,8 +177,6 @@ export class GamePresenter {
           }
         }
       }
-      if (key === "t") this.toggleAutopilot();
-      if (key === "e") this.toggleTransportMode();
       if (key === "r") this.reset();
       if (key === "1") this.useCharm("10");
       if (key === "2") this.useCharm("20");
@@ -322,6 +322,32 @@ export class GamePresenter {
     if (used) this.updateHud();
     return Boolean(used);
   }
+  setPose(x, z, heading = 0, y = null) {
+    if (!Number.isFinite(x) || !Number.isFinite(z)) return false;
+    const refY = Number.isFinite(y) ? y : this.bike.position.y;
+    const groundY = this.world.groundAt(x, z, refY);
+    if (!this.world.canRide(x, z, groundY)) return false;
+    const h = Number.isFinite(heading) ? heading : this.bike.motion.heading;
+    this.bike.reset(x, z, h);
+    this.bike.position.y = groundY;
+    this.cameraYaw = h;
+    this.input.drag.yaw = 0;
+    this.input.recenterRequested = true;
+    this.camera.position.set(
+      x - Math.sin(h) * 5.6,
+      groundY + 3,
+      z - Math.cos(h) * 5.6,
+    );
+    this.look.set(
+      x + Math.sin(h) * 2,
+      groundY + 1.3,
+      z + Math.cos(h) * 2,
+    );
+    this.camera.lookAt(this.look);
+    this.updateHud();
+    this.drawMap();
+    return true;
+  }
   changeRegion(id) {
     return this.areaPresenter.changeRegion(id);
   }
@@ -341,13 +367,6 @@ export class GamePresenter {
     this.syncMode();
     this.updateHud();
     return next;
-  }
-  toggleAutopilot() {
-    if (!this.auto) {
-      this.travelTo(this.district.id);
-      this.auto = true;
-    } else this.auto = false;
-    this.syncMode();
   }
   start() {
     this.renderer.setAnimationLoop(() => this.frame());
@@ -369,65 +388,7 @@ export class GamePresenter {
       brake = this.input.brake,
       sprint = this.input.sprint;
     const touchVec = this.input.touchVector;
-    if (this.auto && (throttle || steer || brake || touchVec?.active)) {
-      this.auto = false;
-      this.syncMode();
-    }
-    if (this.auto) {
-      let nearest = Infinity,
-        best = this.routeU;
-      for (let i = 0; i <= 20; i++) {
-        const u = Math.min(1, this.routeU + i * 0.003),
-          p = this.curve.getPointAt(u),
-          d = Math.hypot(
-            p.x - this.bike.position.x,
-            p.z - this.bike.position.z,
-          );
-        if (d < nearest) {
-          nearest = d;
-          best = u;
-        }
-      }
-      this.routeU = best;
-      const lookahead = 1.8 + Math.abs(this.bike.motion.speed) * 0.4,
-        target = this.curve.getPointAt(
-          Math.min(1, best + lookahead / this.routeLength),
-        );
-      const dx = target.x - this.bike.position.x,
-        dz = target.z - this.bike.position.z,
-        delta = wrapAngle(Math.atan2(dx, dz) - this.bike.motion.heading);
-      const turn = Math.atan(
-        (2 * 1.18 * Math.sin(delta)) / Math.max(0.6, Math.hypot(dx, dz)),
-      );
-      steer = THREE.MathUtils.clamp(
-        turn / (0.55 / (1 + Math.abs(this.bike.motion.speed) * 0.07)),
-        -1,
-        1,
-      );
-      const remaining = (1 - best) * this.routeLength,
-        targetSpeed = Math.min(
-          4.6 * (1 - Math.min(0.65, Math.abs(delta) * 0.5)),
-          Math.sqrt(Math.max(0, remaining) * 2),
-        );
-      throttle = THREE.MathUtils.clamp(
-        (targetSpeed - this.bike.motion.speed) * 0.85,
-        -1,
-        1,
-      );
-      sprint = this.bike.transportMode === "foot" && targetSpeed > 2.6;
-      if (this.traffic.enabled && this.traffic.hasVehicleAhead(this.bike)) {
-        throttle = 0;
-        brake = true;
-      }
-      if (remaining < 0.6) {
-        this.auto = false;
-        this.completed = true;
-        this.bike.motion.speed = 0;
-        throttle = 0;
-        steer = 0;
-        this.syncMode();
-      }
-    } else if (touchVec?.active) {
+    if (touchVec?.active) {
       const viewYaw =
         (Number.isFinite(this.cameraYaw)
           ? this.cameraYaw
@@ -470,7 +431,8 @@ export class GamePresenter {
       steer = 0;
       brake = true;
     }
-    const speedMultiplier = this.charms?.speedMultiplier || 1;
+    const speedMultiplier =
+      (this.charms?.speedMultiplier || 1) * (this.gameMode?.speedMultiplier || 1);
     this.bike.update(dt, throttle, steer, brake, { sprint, speedMultiplier });
     const nextX = this.bike.position.x,
       nextZ = this.bike.position.z;
@@ -519,8 +481,11 @@ export class GamePresenter {
     }
     if (this.collisionCooldown === 0) {
       const actor = this.traffic.contact({ x: oldX, z: oldZ }, this.bike);
-      if (actor && Math.abs(this.bike.motion.speed) + actor.speed > 0.5)
-        this.crash(actor, oldX, oldZ);
+      if (actor && Math.abs(this.bike.motion.speed) + actor.speed > 0.5) {
+        if (!this.gameMode?.handleTrafficContact?.(actor, oldX, oldZ)) {
+          this.crash(actor, oldX, oldZ);
+        }
+      }
     }
     if (this.stun > 0) this.bike.rotation.z += Math.sin(this.stun * 8) * 0.28;
   }
@@ -590,6 +555,7 @@ export class GamePresenter {
     this.world.update(this.elapsed, this.bike.position);
     this.online?.update(dt);
     this.charms?.update(dt, this.elapsed);
+    this.gameMode?.update(dt, this.elapsed);
     const activeBoost = this.charms?.activeBoost;
     this.speedAura?.update(this.elapsed, {
       active: Boolean(activeBoost && this.charms.speedMultiplier > 1),

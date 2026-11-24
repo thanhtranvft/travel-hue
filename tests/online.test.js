@@ -62,6 +62,14 @@ test("name is plain bounded Unicode text; room counts reserved slots and expires
   assert.ok(join(room).player);
   room.disconnect(players[1], true);
   assert.equal(room.players.size, 9);
+
+  // Region "b" allows up to 10 players independently even while region "a" has 9+ players
+  const regionBPlayers = Array.from({ length: 10 }, (_, idx) =>
+    join(room, `B-${idx}`, { region: "b" }).player,
+  );
+  assert.equal(regionBPlayers.filter(Boolean).length, 10);
+  assert.equal(join(room, "B-overflow", { region: "b" }).error, "FULL");
+  assert.equal(room.summary().regions.b, 10);
 });
 test("server rejects disabled areas, invalid poses and impossible movement", () => {
   let now = 0;

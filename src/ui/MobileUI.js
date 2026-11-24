@@ -102,8 +102,12 @@ export function initializeLandscapeMode() {
 
 export function initializeMobileUI() {
   const nav = document.querySelector("#district-list"),
-    toggle = document.querySelector("#toggle-districts"),
-    small = matchMedia("(max-width:760px), (max-height:500px)");
+    toggle = document.querySelector("#toggle-districts");
+  if (!nav || !toggle) {
+    initializeLandscapeMode();
+    return;
+  }
+  const small = matchMedia("(max-width:760px), (max-height:500px)");
   const setOpen = (open) => {
     nav.hidden = !open;
     toggle.setAttribute("aria-expanded", String(open));

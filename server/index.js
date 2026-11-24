@@ -101,6 +101,8 @@ export async function attachOnlineServer(
   const room = new Room(areas, {
     now,
     reconnectMs: reconnectMs ?? config.reconnectSeconds * 1000,
+    maxPlayersPerRegion: config.maxPlayersPerRegion,
+    maxTotalPlayers: config.maxTotalPlayers,
   });
   const wss = new WebSocketServer({
     noServer: true,
@@ -191,6 +193,7 @@ export async function attachOnlineServer(
       } else if (m.type === "state") room.state(player, m);
       else if (m.type === "pickup") room.pickup(player, m.charmId);
       else if (m.type === "use_charm") room.useCharm(player, m.tier);
+      else if (m.type === "mode_action") room.modeAction(player, m);
       else if (m.type === "region") room.region(player, m.region);
       else if (m.type === "pause") {
         room.pause(player, m.reason);
@@ -236,9 +239,22 @@ export async function createGameServer({
         new URL(req.url, "http://local").pathname,
       );
       if (path === "/health") {
-        res.writeHead(200, { "Content-Type": "application/json" });
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+        });
         res.end(
-          JSON.stringify({ ok: true, players: online?.room.players.size ?? 0 }),
+          JSON.stringify(
+            online?.room.summary() ?? {
+              ok: true,
+              players: 0,
+              connected: 0,
+              limit: 10,
+              maxTotalPlayers: 80,
+              regions: {},
+              rooms: {},
+            },
+          ),
         );
         return;
       }

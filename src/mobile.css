@@ -16,7 +16,7 @@
 #touch-transport{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:auto;-webkit-tap-highlight-color:transparent;position:absolute;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));width:54px;height:54px;border-radius:50%;border:1px solid #d7e7cf66;background:#1d4239d9;color:#fff4dc;font-size:21px;display:grid;place-items:center;box-shadow:0 4px 16px #0004}
 #touch-transport.active{background:#2d6880;border-color:#9bd7f2}
 @media(pointer:coarse),(max-width:760px),(max-height:500px){
- .charm-bar{right:max(14px,env(safe-area-inset-right));bottom:max(82px,calc(env(safe-area-inset-bottom) + 68px));display:grid;grid-template-columns:repeat(2,48px);gap:9px;z-index:9}
+ .charm-bar{right:max(14px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,48px);gap:9px;z-index:9}
  .charm-slot{width:48px;height:48px}
  .charm-icon{width:17px;height:17px}
  .charm-icon svg{width:16px;height:16px}
@@ -27,7 +27,7 @@
  #charm-toast{top:max(88px,calc(env(safe-area-inset-top) + 78px));font-size:10px;max-width:calc(100vw - 24px);white-space:normal;text-align:center}
 }
 @media(orientation:landscape) and (max-height:500px){
- .charm-bar{right:max(16px,env(safe-area-inset-right));bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px));grid-template-columns:repeat(4,44px);gap:7px}
+ .charm-bar{right:max(16px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));grid-template-columns:repeat(4,44px);gap:7px}
  .charm-slot{width:44px;height:44px}
  #boost-banner{top:max(8px,env(safe-area-inset-top))}
 }

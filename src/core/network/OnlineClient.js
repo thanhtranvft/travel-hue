@@ -1,12 +1,21 @@
 import config from "../../data/online-config.json" with { type: "json" };
 import { cleanAvatarId, DEFAULT_AVATAR_ID, PROTOCOL_VERSION } from "./protocol.js";
+import { cleanGameModeId, DEFAULT_GAME_MODE_ID } from "../../modules/game-modes/registry.js";
 
 export class OnlineClient extends EventTarget {
-  constructor(name, region, avatar = DEFAULT_AVATAR_ID) {
+  constructor(
+    name,
+    region,
+    avatar = DEFAULT_AVATAR_ID,
+    token = null,
+    gameMode = DEFAULT_GAME_MODE_ID,
+  ) {
     super();
     this.name = name;
     this.region = region;
     this.avatar = cleanAvatarId(avatar);
+    this.token = typeof token === "string" && token ? token : undefined;
+    this.gameMode = cleanGameModeId(gameMode, region);
     this.status = "idle";
     this.stopped = false;
     this.attempt = 0;
@@ -39,6 +48,7 @@ export class OnlineClient extends EventTarget {
         name: this.name,
         avatar: this.avatar,
         region: this.region,
+        gameMode: this.gameMode,
         token: this.token,
       });
     };
@@ -82,6 +92,12 @@ export class OnlineClient extends EventTarget {
         Math.min(4000, 500 * 2 ** Math.min(this.attempt++, 3)),
       );
     };
+  }
+  disconnectForReload() {
+    this.stopped = true;
+    clearTimeout(this.retry);
+    this.send({ type: "pause", reason: "background" });
+    this.socket?.close(3001, "Reloading");
   }
   leave() {
     this.stopped = true;

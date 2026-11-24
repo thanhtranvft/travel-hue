@@ -38,16 +38,27 @@ function aliasFallbackMapPlugin() {
 }
 
 function onlineWebSocketPlugin() {
+  const mountHealth = (server, online) => {
+    server.middlewares.use("/health", (req, res) => {
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify(online.room.summary()));
+    });
+  };
   return {
     name: "hue-online-ws",
     async configureServer(server) {
       if (!server.httpServer) return;
       const online = await attachOnlineServer(server.httpServer);
+      mountHealth(server, online);
       server.httpServer.once("close", () => online.close());
     },
     async configurePreviewServer(server) {
       if (!server.httpServer) return;
       const online = await attachOnlineServer(server.httpServer);
+      mountHealth(server, online);
       server.httpServer.once("close", () => online.close());
     },
   };

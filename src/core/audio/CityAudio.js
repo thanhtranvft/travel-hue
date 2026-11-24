@@ -485,6 +485,77 @@ export class CityAudio {
     }, 9000);
     return true;
   }
+  playShieldActivate() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    [72, 79, 84].forEach((m, i) => pluck(this.ctx, this.master, m, t + i * 0.045, 0.14, 0.5));
+  }
+  playShieldBlock() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    pluck(this.ctx, this.master, 88, t, 0.22, 0.35);
+    pluck(this.ctx, this.master, 81, t + 0.04, 0.18, 0.35);
+  }
+  playWindGust() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    if (this.noiseBuffer) {
+      const src = ctx.createBufferSource();
+      src.buffer = this.noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.Q.value = 1.8;
+      filter.frequency.setValueAtTime(1400, t);
+      filter.frequency.exponentialRampToValueAtTime(360, t + 0.55);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.58);
+      src.connect(filter).connect(gain).connect(this.master);
+      src.start(t);
+      src.stop(t + 0.6);
+      src.onended = () => {
+        src.disconnect();
+        filter.disconnect();
+        gain.disconnect();
+      };
+    }
+    flute(ctx, this.master, 74, t + 0.03, 0.09, 0.45);
+  }
+  playCoffeeBoost() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    [69, 76, 81, 88].forEach((m, i) => pluck(this.ctx, this.master, m, t + i * 0.04, 0.15, 0.45));
+  }
+  playTagHit(isVictim = false) {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    if (isVictim) {
+      [74, 69, 64].forEach((m, i) => pluck(this.ctx, this.master, m, t + i * 0.055, 0.18, 0.4));
+    } else {
+      [72, 76, 79, 84].forEach((m, i) => pluck(this.ctx, this.master, m, t + i * 0.045, 0.18, 0.5));
+    }
+  }
+  playCloseCall() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    pluck(this.ctx, this.master, 79, t, 0.14, 0.35);
+    pluck(this.ctx, this.master, 86, t + 0.07, 0.16, 0.42);
+  }
+  playEmotePop() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    pluck(this.ctx, this.master, 83, t, 0.08, 0.18);
+  }
+  playFireworkBurst() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    if (this.noiseBuffer) this.noiseBurst(t, 0.28, 0.14, 2400);
+    [76, 79, 83, 88, 91].forEach((m, i) =>
+      pluck(this.ctx, this.master, m, t + i * 0.05, 0.13, 0.55),
+    );
+  }
   dispose() {
     clearInterval(this.timer);
     if (this.preloadIdleId != null && typeof cancelIdleCallback === "function") {

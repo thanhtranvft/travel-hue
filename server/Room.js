@@ -34,17 +34,82 @@ import {
 } from "../src/modules/areas/south-bank/view/BoardwalkView.js";
 import { spacedSpawn } from './spawn.js';
 
+import {
+  cleanGameModeId,
+  DEFAULT_GAME_MODE_ID,
+  getGameMode,
+  roomKeyFor,
+} from "../src/modules/game-modes/registry.js";
+
+import onlineConfig from "../src/data/online-config.json" with { type: "json" };
+
 const BOARDWALK_WAY_IDS = new Set([683633953, 1167513733, 1167513732]);
 const LATERAL_BOARDWALK_IDS = new Set([1473289702, 1493443035, 1493443034, 1493443036]);
 
-// One room per process. Production must run one instance until a shared room store is added.
+// One server room manager per process. Each (region, gameMode) room allows up to 10 players independently.
 export class Room {
-  constructor(areas, { now = () => Date.now(), reconnectMs = 15000 } = {}) {
+  constructor(
+    areas,
+    {
+      now = () => Date.now(),
+      reconnectMs = 15000,
+      maxPlayersPerRegion = onlineConfig.maxPlayersPerRegion || MAX_PLAYERS,
+      maxTotalPlayers = onlineConfig.maxTotalPlayers || 80,
+    } = {},
+  ) {
     this.areas = areas;
     this.players = new Map();
     this.regionCharms = new Map();
+    this.modeStates = new Map();
     this.now = now;
     this.reconnectMs = reconnectMs;
+    this.maxPlayersPerRegion = maxPlayersPerRegion;
+    this.maxTotalPlayers = maxTotalPlayers;
+  }
+  roomKeyForPlayer(p) {
+    return roomKeyFor(p?.region, p?.gameMode || DEFAULT_GAME_MODE_ID);
+  }
+  roomPlayers(roomKey, exclude = null) {
+    return [...this.players.values()].filter(
+      (p) => p !== exclude && this.roomKeyForPlayer(p) === roomKey,
+    );
+  }
+  roomCount(roomKey, exclude = null) {
+    let count = 0;
+    for (const p of this.players.values()) {
+      if (p !== exclude && this.roomKeyForPlayer(p) === roomKey) count++;
+    }
+    return count;
+  }
+  regionPlayers(regionId, exclude = null) {
+    return [...this.players.values()].filter(
+      (p) => p !== exclude && p.region === regionId,
+    );
+  }
+  regionCount(regionId, exclude = null) {
+    let count = 0;
+    for (const p of this.players.values()) {
+      if (p !== exclude && p.region === regionId) count++;
+    }
+    return count;
+  }
+  pickRoomColor(roomKey, exclude = null) {
+    const used = new Set(
+      this.roomPlayers(roomKey, exclude).map((p) => p.color),
+    );
+    return PLAYER_COLORS.find((c) => !used.has(c)) || PLAYER_COLORS[0];
+  }
+  ensureModeState(roomKey, gameMode = DEFAULT_GAME_MODE_ID) {
+    let entry = this.modeStates.get(roomKey);
+    if (!entry) {
+      const def = getGameMode(gameMode);
+      entry = {
+        modeId: def.id,
+        state: def.createServerRoomState?.(this, roomKey) || {},
+      };
+      this.modeStates.set(roomKey, entry);
+    }
+    return entry.state;
   }
   send(player, message) {
     player.send?.(message);
@@ -52,9 +117,20 @@ export class Room {
   publish(message) {
     for (const p of this.players.values()) this.send(p, message);
   }
+  publishToRoom(roomKey, message) {
+    for (const p of this.players.values()) {
+      if (p.send && this.roomKeyForPlayer(p) === roomKey) {
+        this.send(p, message);
+      }
+    }
+  }
   expire() {
-    for (const [id, p] of this.players)
-      if (!p.send && p.expires <= this.now()) this.players.delete(id);
+    for (const [id, p] of this.players) {
+      if (!p.send && p.expires <= this.now()) {
+        this.modeStates.get(this.roomKeyForPlayer(p))?.state?.onLeave?.(p, this);
+        this.players.delete(id);
+      }
+    }
   }
   join(message, send) {
     this.expire();
@@ -69,6 +145,8 @@ export class Room {
     if (!this.areas.has(message.region))
       return { error: "AREA", message: "Khu vực này chưa mở." };
     const avatar = cleanAvatarId(message.avatar);
+    const gameMode = cleanGameModeId(message.gameMode, message.region);
+    const targetRoomKey = roomKeyFor(message.region, gameMode);
     let p =
       message.token &&
       [...this.players.values()].find((p) => p.token === message.token);
@@ -78,20 +156,29 @@ export class Room {
         message: "Phiên này đang kết nối ở nơi khác.",
       };
     if (!p) {
-      if (this.players.size >= MAX_PLAYERS)
+      if (this.players.size >= this.maxTotalPlayers) {
         return {
           error: "FULL",
-          message: "Phòng đã đủ 10 người. Hãy thử lại hoặc chọn Khám phá.",
+          message:
+            "Máy chủ hiện đang đủ tải. Vui lòng thử lại sau ít phút.",
         };
-      const used = new Set([...this.players.values()].map((p) => p.color));
+      }
+      if (this.roomCount(targetRoomKey) >= this.maxPlayersPerRegion)
+        return {
+          error: "FULL",
+          message:
+            "Phòng chơi này đã đủ 10 người. Hãy chọn khu vực hoặc chế độ khác.",
+        };
       p = {
         id: randomUUID(),
         token: randomUUID(),
         name,
         avatar,
         stance: "idle",
-        color: PLAYER_COLORS.find((c) => !used.has(c)),
+        color: this.pickRoomColor(targetRoomKey),
         region: message.region,
+        gameMode,
+        roomKey: targetRoomKey,
         inventory: emptyCharmInventory(),
         boostTier: null,
         boostMultiplier: 1,
@@ -99,26 +186,65 @@ export class Room {
         boostGraceUntil: 0,
       };
       this.players.set(p.id, p);
-      this.spawn(p, message.region);
+      this.spawn(p, message.region, targetRoomKey);
     } else {
+      const prevRoomKey = this.roomKeyForPlayer(p);
+      if (
+        targetRoomKey !== prevRoomKey &&
+        this.roomCount(targetRoomKey, p) >= this.maxPlayersPerRegion
+      ) {
+        return {
+          error: "FULL",
+          message:
+            "Phòng chơi này đã đủ 10 người. Hãy chọn khu vực hoặc chế độ khác.",
+        };
+      }
+      if (targetRoomKey !== prevRoomKey) {
+        this.modeStates.get(prevRoomKey)?.state?.onLeave?.(p, this);
+      }
       p.name = name;
       p.avatar = avatar;
+      p.gameMode = gameMode;
+      p.roomKey = targetRoomKey;
       p.inventory ||= emptyCharmInventory();
-      // Client scene may have changed while disconnected. Re-enter at a safe spawn.
-      this.spawn(p, message.region);
+      if (
+        targetRoomKey === prevRoomKey &&
+        Number.isFinite(p.x) &&
+        Number.isFinite(p.z) &&
+        this.contains(this.areas.get(p.region).region, p.x, p.z)
+      ) {
+        Object.assign(p, {
+          speed: 0,
+          lean: 0,
+          ready: false,
+          paused: false,
+          stamp: this.now(),
+          credit: 1.2,
+          stunnedUntil: 0,
+          immuneUntil: this.now() + 2000,
+        });
+      } else {
+        p.color = this.pickRoomColor(targetRoomKey, p);
+        this.spawn(p, message.region, targetRoomKey);
+      }
     }
     p.send = send;
-    const charmEntry = this.ensureRegionCharms(message.region);
+    const now = this.now();
+    const modeState = this.ensureModeState(targetRoomKey, gameMode);
+    modeState?.onJoin?.(p, this);
+    const charmEntry = this.ensureRegionCharms(message.region, false, gameMode);
     this.send(p, {
       type: "welcome",
       id: p.id,
       token: p.token,
+      reconnected: Boolean(message.token && p.token === message.token && Number.isFinite(p.x)),
       player: this.publicPlayer(p),
-      limit: MAX_PLAYERS,
+      limit: this.maxPlayersPerRegion,
     });
     this.send(p, {
       type: "charms",
       region: message.region,
+      gameMode,
       charms: charmEntry.charms,
       nextRefreshAt: charmEntry.nextRefreshAt,
       refreshed: false,
@@ -127,6 +253,20 @@ export class Room {
       type: "inventory",
       inventory: { ...p.inventory },
     });
+    if (p.boostUntil > now && p.boostTier && (p.boostMultiplier || 1) > 1) {
+      this.send(p, {
+        type: "boost_ack",
+        rejected: false,
+        inventory: { ...p.inventory },
+        boostTier: p.boostTier,
+        boostMultiplier: p.boostMultiplier,
+        remainingMs: Math.max(0, p.boostUntil - now),
+      });
+    }
+    const modeSummary = modeState?.publicSummary?.(this);
+    if (modeSummary) {
+      this.send(p, { type: "mode_event", ...modeSummary });
+    }
     this.snapshot();
     return { player: p };
   }
@@ -139,7 +279,7 @@ export class Room {
       (region.extensions || []).some((r) => inside({ x, z }, r))
     );
   }
-  spawn(p, id) {
+  spawn(p, id, targetRoomKey = this.roomKeyForPlayer(p)) {
     const area = this.areas.get(id),
       { spawn } = area;
     // Try spaced positions on the route; no user-provided spawn coordinates.
@@ -153,7 +293,7 @@ export class Room {
         ![...this.players.values()].some(
           (o) =>
             o !== p &&
-            o.region === id &&
+            this.roomKeyForPlayer(o) === targetRoomKey &&
             Math.hypot(o.x - candidate.x, o.z - candidate.z) < 2,
         )
       ) {
@@ -165,6 +305,7 @@ export class Room {
     }
     Object.assign(p, {
       region: id,
+      roomKey: targetRoomKey,
       x,
       z,
       y: 0,
@@ -187,25 +328,44 @@ export class Room {
         code: "AREA",
         message: "Khu vực này chưa mở.",
       });
-    this.spawn(p, id);
-    const charmEntry = this.ensureRegionCharms(id);
+    const nextGameMode = cleanGameModeId(
+      p.gameMode || DEFAULT_GAME_MODE_ID,
+      id,
+    );
+    const nextRoomKey = roomKeyFor(id, nextGameMode);
+    const prevRoomKey = this.roomKeyForPlayer(p);
+    if (
+      nextRoomKey !== prevRoomKey &&
+      this.roomCount(nextRoomKey, p) >= this.maxPlayersPerRegion
+    )
+      return this.send(p, {
+        type: "error",
+        code: "FULL",
+        message: "Khu vực này đã đủ 10 người. Hãy chọn khu vực khác.",
+      });
+    if (nextRoomKey !== prevRoomKey) {
+      this.modeStates.get(prevRoomKey)?.state?.onLeave?.(p, this);
+      p.color = this.pickRoomColor(nextRoomKey, p);
+    }
+    p.gameMode = nextGameMode;
+    p.roomKey = nextRoomKey;
+    this.spawn(p, id, nextRoomKey);
+    this.ensureModeState(nextRoomKey, nextGameMode)?.onJoin?.(p, this);
+    const charmEntry = this.ensureRegionCharms(id, false, nextGameMode);
     this.send(p, { type: "relocate", player: this.publicPlayer(p) });
     this.send(p, {
       type: "charms",
       region: id,
+      gameMode: nextGameMode,
       charms: charmEntry.charms,
       nextRefreshAt: charmEntry.nextRefreshAt,
       refreshed: false,
     });
     this.snapshot();
   }
-  ensureRegionCharms(regionId, forceRefresh = false) {
+  createRoadSampler(regionId) {
     const area = this.areas.get(regionId);
-    if (!area) return { charms: [], nextRefreshAt: this.now() + 30000 };
-    const existing = this.regionCharms.get(regionId);
-    const now = this.now();
-    if (existing && !forceRefresh) return existing;
-    const seq = (existing?.seq || 0) + 1;
+    if (!area) return null;
     const areaRoads = Array.isArray(area.roads) ? area.roads : [];
     const riverRings = Array.isArray(area.riverRings) ? area.riverRings : [];
     const truongTienRoad = areaRoads.find((r) => r.id === TRUONG_TIEN_ID);
@@ -234,90 +394,159 @@ export class Room {
       const y1 = roadSurfaceHeight(hit.road, i);
       return y0 * (1 - (hit.t || 0)) + y1 * (hit.t || 0);
     };
-    const charms = generateRegionCharms(area.region, {
-      idPrefix: `${regionId}-${seq}`,
-      extraRoads: areaRoads,
-      canPlace: (x, z) => {
-        if (!this.contains(area.region, x, z)) return false;
-        if (!areaRoads.length) return true;
-        if (truongTienRoad) {
-          const q = truongTienDeckQuery(truongTienRoad, x, z);
-          if (q.onBridge) {
-            if (!q.allowed) return false;
-            const absLat = Math.abs(q.lat);
-            return (
-              absLat <= TRUONG_TIEN_ROAD_HALF - 0.65 ||
-              (absLat >= TRUONG_TIEN_WALK_INNER + 0.25 &&
-                absLat <= TRUONG_TIEN_WALK_OUTER - 0.45)
-            );
-          }
+    const canPlace = (x, z) => {
+      if (!this.contains(area.region, x, z)) return false;
+      if (!areaRoads.length) return true;
+      if (truongTienRoad) {
+        const q = truongTienDeckQuery(truongTienRoad, x, z);
+        if (q.onBridge) {
+          if (!q.allowed) return false;
+          const absLat = Math.abs(q.lat);
+          return (
+            absLat <= TRUONG_TIEN_ROAD_HALF - 0.65 ||
+            (absLat >= TRUONG_TIEN_WALK_INNER + 0.25 &&
+              absLat <= TRUONG_TIEN_WALK_OUTER - 0.45)
+          );
         }
-        const hit = nearestAreaRoad(x, z);
-        if (!hit.road) return false;
-        const inRiver = riverRings.some((r) => inside({ x, z }, r));
-        if (inRiver) {
-          const isBridgeOrBoardwalk =
-            hit.road.tags?.name === "Cầu Phú Xuân" ||
-            hit.road.tags?.bridge === "yes" ||
-            BOARDWALK_WAY_IDS.has(hit.road.id) ||
-            LATERAL_BOARDWALK_IDS.has(hit.road.id);
-          if (!isBridgeOrBoardwalk) return false;
-          if (roadHeightAtHit(hit) < 0.32) return false;
-        }
-        const half = roadWidth(hit.road) / 2;
-        return hit.distance <= Math.max(0.45, half - 0.5);
-      },
-      groundAt: (x, z) => {
-        if (!areaRoads.length) return 0.25;
-        if (truongTienRoad) {
-          const q = truongTienDeckQuery(truongTienRoad, x, z);
-          if (q.onBridge) return q.deckY;
-        }
-        return roadHeightAtHit(nearestAreaRoad(x, z));
-      },
+      }
+      const hit = nearestAreaRoad(x, z);
+      if (!hit.road) return false;
+      const inRiver = riverRings.some((r) => inside({ x, z }, r));
+      if (inRiver) {
+        const isBridgeOrBoardwalk =
+          hit.road.tags?.name === "Cầu Phú Xuân" ||
+          hit.road.tags?.bridge === "yes" ||
+          BOARDWALK_WAY_IDS.has(hit.road.id) ||
+          LATERAL_BOARDWALK_IDS.has(hit.road.id);
+        if (!isBridgeOrBoardwalk) return false;
+        if (roadHeightAtHit(hit) < 0.32) return false;
+      }
+      const half = roadWidth(hit.road) / 2;
+      return hit.distance <= Math.max(0.45, half - 0.5);
+    };
+    const groundAt = (x, z) => {
+      if (!areaRoads.length) return 0.25;
+      if (truongTienRoad) {
+        const q = truongTienDeckQuery(truongTienRoad, x, z);
+        if (q.onBridge) return q.deckY;
+      }
+      return roadHeightAtHit(nearestAreaRoad(x, z));
+    };
+    return { area, areaRoads, canPlace, groundAt };
+  }
+  sampleRoadPoints(regionId, count = 8, idPrefix = "pt") {
+    const sampler = this.createRoadSampler(regionId);
+    if (!sampler) return [];
+    const pool = generateRegionCharms(sampler.area.region, {
+      idPrefix,
+      extraRoads: sampler.areaRoads,
+      canPlace: sampler.canPlace,
+      groundAt: sampler.groundAt,
+    });
+    if (!pool.length) return [];
+    const step = Math.max(1, Math.floor(pool.length / Math.max(1, count)));
+    const result = [];
+    for (let i = 0; i < pool.length && result.length < count; i += step) {
+      const c = pool[i];
+      result.push({ x: c.x, y: c.y, z: c.z });
+    }
+    let idx = 1;
+    while (result.length < count && idx < pool.length) {
+      const c = pool[idx];
+      if (!result.some((r) => Math.hypot(r.x - c.x, r.z - c.z) < 6)) {
+        result.push({ x: c.x, y: c.y, z: c.z });
+      }
+      idx++;
+    }
+    return result;
+  }
+  ensureRegionCharms(
+    regionId,
+    forceRefresh = false,
+    gameMode = DEFAULT_GAME_MODE_ID,
+  ) {
+    let baseRegionId = regionId;
+    let modeId = gameMode;
+    if (typeof regionId === "string" && regionId.includes("::")) {
+      const [reg, mode] = regionId.split("::");
+      baseRegionId = reg;
+      modeId = mode || gameMode;
+    }
+    const cleanMode = cleanGameModeId(modeId, baseRegionId);
+    const roomKey = roomKeyFor(baseRegionId, cleanMode);
+    const sampler = this.createRoadSampler(baseRegionId);
+    if (!sampler) {
+      return {
+        region: baseRegionId,
+        gameMode: cleanMode,
+        charms: [],
+        nextRefreshAt: this.now() + 30000,
+      };
+    }
+    const existing = this.regionCharms.get(roomKey);
+    const now = this.now();
+    if (existing && !forceRefresh) return existing;
+    const seq = (existing?.seq || 0) + 1;
+    const charms = generateRegionCharms(sampler.area.region, {
+      idPrefix: `${roomKey}-${seq}`,
+      extraRoads: sampler.areaRoads,
+      canPlace: sampler.canPlace,
+      groundAt: sampler.groundAt,
     });
     const entry = {
       seq,
+      region: baseRegionId,
+      gameMode: cleanMode,
       charms,
       nextRefreshAt: now + randomCharmRefreshMs(),
     };
-    this.regionCharms.set(regionId, entry);
+    this.regionCharms.set(roomKey, entry);
     return entry;
   }
-  publishRegionCharms(regionId, entry, refreshed = false) {
+  publishRegionCharms(roomKey, entry, refreshed = false) {
+    const region =
+      entry?.region || (roomKey.includes("::") ? roomKey.split("::")[0] : roomKey);
     const payload = {
       type: "charms",
-      region: regionId,
+      region,
+      gameMode: entry?.gameMode || DEFAULT_GAME_MODE_ID,
       charms: entry.charms,
       nextRefreshAt: entry.nextRefreshAt,
       refreshed,
     };
     for (const player of this.players.values()) {
-      if (player.send && player.region === regionId) {
+      if (player.send && this.roomKeyForPlayer(player) === roomKey) {
         this.send(player, payload);
       }
     }
   }
   tickCharms() {
     const now = this.now();
-    for (const [regionId, entry] of this.regionCharms.entries()) {
+    for (const [roomKey, entry] of this.regionCharms.entries()) {
       if (now < entry.nextRefreshAt) continue;
       const hasPlayers = [...this.players.values()].some(
-        (p) => p.send && p.region === regionId,
+        (p) => p.send && this.roomKeyForPlayer(p) === roomKey,
       );
       if (!hasPlayers) continue;
-      const refreshedEntry = this.ensureRegionCharms(regionId, true);
-      this.publishRegionCharms(regionId, refreshedEntry, true);
+      const refreshedEntry = this.ensureRegionCharms(
+        entry.region || roomKey,
+        true,
+        entry.gameMode || DEFAULT_GAME_MODE_ID,
+      );
+      this.publishRegionCharms(roomKey, refreshedEntry, true);
     }
   }
   pickup(p, charmId) {
     if (typeof charmId !== "string" || !charmId || charmId.length > 64) return;
-    const entry = this.ensureRegionCharms(p.region);
+    const roomKey = this.roomKeyForPlayer(p);
+    const gameMode = p.gameMode || DEFAULT_GAME_MODE_ID;
+    const entry = this.ensureRegionCharms(p.region, false, gameMode);
     const idx = entry.charms.findIndex((c) => c.id === charmId);
     if (idx === -1) {
       return this.send(p, {
         type: "charms",
         region: p.region,
+        gameMode,
         charms: entry.charms,
         nextRefreshAt: entry.nextRefreshAt,
         refreshed: false,
@@ -328,6 +557,7 @@ export class Room {
       return this.send(p, {
         type: "charms",
         region: p.region,
+        gameMode,
         charms: entry.charms,
         nextRefreshAt: entry.nextRefreshAt,
         refreshed: false,
@@ -341,7 +571,7 @@ export class Room {
       inventory: { ...p.inventory },
       picked: charm,
     });
-    this.publishRegionCharms(p.region, entry, false);
+    this.publishRegionCharms(roomKey, entry, false);
   }
   useCharm(p, tierInput) {
     const tierId = cleanCharmTier(tierInput);
@@ -377,7 +607,17 @@ export class Room {
       boostMultiplier: p.boostMultiplier,
       remainingMs: Math.max(0, p.boostUntil - now),
     });
+    this.modeStates
+      .get(this.roomKeyForPlayer(p))
+      ?.state?.onCharmUsed?.(p, tier, this, now);
     this.snapshot();
+  }
+  modeAction(p, message) {
+    if (!p || !message || typeof message !== "object") return;
+    const roomKey = this.roomKeyForPlayer(p);
+    this.modeStates
+      .get(roomKey)
+      ?.state?.onAction?.(p, message, this, this.now());
   }
   state(p, m) {
     if (m.region !== p.region || !Number.isSafeInteger(m.seq) || m.seq <= p.seq)
@@ -389,6 +629,8 @@ export class Room {
     )
       return;
     const now = this.now();
+    const pRoomKey = this.roomKeyForPlayer(p);
+    const modeState = this.modeStates.get(pRoomKey)?.state;
     const boostMult =
       now < (p.boostGraceUntil || 0) && Number.isFinite(p.boostMultiplier)
         ? Math.max(1, p.boostMultiplier)
@@ -397,7 +639,8 @@ export class Room {
       now < (p.prevBoostGraceUntil || 0) && Number.isFinite(p.prevBoostMultiplier)
         ? Math.max(1, p.prevBoostMultiplier)
         : 1;
-    const activeMult = Math.max(boostMult, prevMult);
+    const modeMult = Math.max(1, modeState?.speedMultiplierFor?.(p, now) ?? 1);
+    const activeMult = Math.max(boostMult, prevMult) * modeMult;
     const elapsed = Math.max(0, now - p.stamp) / 1000;
     p.credit = Math.min(2 * activeMult, p.credit + elapsed * 9.5 * activeMult);
     p.stamp = now;
@@ -435,7 +678,7 @@ export class Room {
         other === p ||
         !other.send ||
         !other.ready ||
-        other.region !== p.region ||
+        this.roomKeyForPlayer(other) !== pRoomKey ||
         now < other.immuneUntil ||
         (!other.paused && now - other.activeAt > 2000)
       )
@@ -445,20 +688,23 @@ export class Room {
         !sweptContact(old, p, other)
       )
         continue;
-      p.x = old.x;
-      p.z = old.z;
-      for (const rider of [p, other]) {
-        rider.speed = 0;
-        rider.lean = 0;
-        rider.stunnedUntil = now + 700;
-        rider.immuneUntil = now + 3000;
+      const handled = modeState?.onCollision?.(p, other, this, now, old);
+      if (!handled) {
+        p.x = old.x;
+        p.z = old.z;
+        for (const rider of [p, other]) {
+          rider.speed = 0;
+          rider.lean = 0;
+          rider.stunnedUntil = now + 700;
+          rider.immuneUntil = now + 3000;
+        }
+        const event = {
+          type: "collision",
+          eventId: randomUUID(),
+          players: [this.publicPlayer(p), this.publicPlayer(other)],
+        };
+        this.publishToRoom(pRoomKey, event);
       }
-      const event = {
-        type: "collision",
-        eventId: randomUUID(),
-        players: [this.publicPlayer(p), this.publicPlayer(other)],
-      };
-      this.publish(event);
       break;
     }
   }
@@ -472,8 +718,10 @@ export class Room {
     this.snapshot();
   }
   disconnect(p, intentional = false) {
-    if (intentional) this.players.delete(p.id);
-    else {
+    if (intentional) {
+      this.modeStates.get(this.roomKeyForPlayer(p))?.state?.onLeave?.(p, this);
+      this.players.delete(p.id);
+    } else {
       p.send = null;
       p.ready = false;
       p.expires = this.now() + this.reconnectMs;
@@ -483,6 +731,10 @@ export class Room {
   publicPlayer(p) {
     const now = this.now();
     const boosted = now < (p.boostUntil || 0) && (p.boostMultiplier || 1) > 1;
+    const modeData =
+      this.modeStates
+        .get(this.roomKeyForPlayer(p))
+        ?.state?.publicPlayerData?.(p, now) || null;
     const {
       id,
       name,
@@ -506,6 +758,7 @@ export class Room {
       avatar: cleanAvatarId(avatar),
       stance: cleanStance(stance, speed),
       region,
+      gameMode: p.gameMode || DEFAULT_GAME_MODE_ID,
       x,
       y,
       z,
@@ -517,17 +770,60 @@ export class Room {
       boostTier: boosted ? p.boostTier : null,
       boostMultiplier: boosted ? p.boostMultiplier : 1,
       connected: !!p.send,
+      ...(modeData ? { modeData } : {}),
+    };
+  }
+  summary() {
+    this.expire();
+    const regions = {};
+    const rooms = {};
+    let connected = 0;
+    for (const p of this.players.values()) {
+      if (p.send) connected++;
+      if (p.region) regions[p.region] = (regions[p.region] || 0) + 1;
+      const roomKey = this.roomKeyForPlayer(p);
+      if (roomKey) rooms[roomKey] = (rooms[roomKey] || 0) + 1;
+    }
+    return {
+      ok: true,
+      players: this.players.size,
+      connected,
+      limit: this.maxPlayersPerRegion,
+      maxTotalPlayers: this.maxTotalPlayers,
+      regions,
+      rooms,
     };
   }
   snapshot() {
     this.expire();
     this.tickCharms();
-    this.publish({
-      type: "snapshot",
-      time: this.now(),
-      limit: MAX_PLAYERS,
-      occupied: this.players.size,
-      players: [...this.players.values()].map((p) => this.publicPlayer(p)),
-    });
+    const time = this.now();
+    const byRoom = new Map();
+    for (const p of this.players.values()) {
+      const roomKey = this.roomKeyForPlayer(p);
+      let list = byRoom.get(roomKey);
+      if (!list) {
+        list = [];
+        byRoom.set(roomKey, list);
+      }
+      list.push(this.publicPlayer(p));
+    }
+    for (const [roomKey, list] of byRoom.entries()) {
+      this.modeStates.get(roomKey)?.state?.tick?.(this, list, time);
+    }
+    for (const p of this.players.values()) {
+      if (!p.send) continue;
+      const roomKey = this.roomKeyForPlayer(p);
+      const list = byRoom.get(roomKey) || [];
+      this.send(p, {
+        type: "snapshot",
+        time,
+        region: p.region,
+        gameMode: p.gameMode || DEFAULT_GAME_MODE_ID,
+        limit: this.maxPlayersPerRegion,
+        occupied: list.length,
+        players: list,
+      });
+    }
   }
 }

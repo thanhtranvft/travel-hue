@@ -3,5 +3,9 @@
   "path": "/online",
   "endpoint": "",
   "allowedOrigins": ["https://travel-hue.ai.studio"],
-  "reconnectSeconds": 15
+  "reconnectSeconds": 60,
+  "maxPlayersPerRegion": 10,
+  "maxTotalPlayers": 80,
+  "defaultMode": "online",
+  "exploreEnabled": false
 }

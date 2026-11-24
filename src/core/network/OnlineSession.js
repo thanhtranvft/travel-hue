@@ -1,18 +1,28 @@
 import { OnlineClient } from "./OnlineClient.js";
 import { RemotePlayers } from "./RemotePlayers.js";
 import { setRiderIdentity } from "../vehicle/RiderIdentity.js";
+import { DEFAULT_GAME_MODE_ID } from "../../modules/game-modes/registry.js";
 
 export class OnlineSession {
-  constructor(game, name, panel, areas) {
+  constructor(
+    game,
+    name,
+    panel,
+    areas,
+    { token = null, onToken = null, gameMode = DEFAULT_GAME_MODE_ID } = {},
+  ) {
     this.game = game;
     this.panel = panel;
     this.areas = areas;
+    this.onToken = onToken;
     this.avatars = new RemotePlayers({ mobile: !!game.quality?.mobile });
     this.attachScene(game.scene);
     this.client = new OnlineClient(
       name,
       game.world.region.id,
       game.bike.avatarId,
+      token,
+      gameMode,
     );
     this.seq = 0;
     this.nextSend = 0;
@@ -35,20 +45,30 @@ export class OnlineSession {
     this.client.addEventListener("welcome", ({ detail }) => {
       this.awaitingRegion = false;
       game.onlineResetRequested = false;
+      this.onToken?.(detail.token, detail.player, Boolean(detail.reconnected));
       setRiderIdentity(game.bike, name, detail.player.color);
-      this.applyPose(detail.player);
+      if (detail.reconnected && detail.player.stance === "bike") {
+        game.bike.setTransportMode("bike");
+        game.syncMode?.();
+      }
+      game.gameMode?.activate?.(
+        detail.player?.gameMode || gameMode,
+        detail.player?.region || game.world.region.id,
+      );
+      this.applyPose(detail.player, true);
       this.client.region = detail.player.region;
     });
     this.client.addEventListener("relocate", ({ detail }) => {
       this.awaitingRegion = false;
-      this.applyPose(detail.player);
+      this.applyPose(detail.player, true);
     });
     this.client.addEventListener("correct", ({ detail }) =>
-      this.applyPose(detail.player),
+      this.applyPose(detail.player, false),
     );
     this.client.addEventListener("snapshot", ({ detail }) => {
       this.avatars.sync(detail.players, this.client.id);
       panel.snapshot(detail, this.client.id, areas);
+      game.gameMode?.onSnapshot?.(detail, this.client.id);
     });
     this.client.addEventListener("charms", ({ detail }) => {
       game.charms?.applyServerCharms?.(detail);
@@ -59,9 +79,24 @@ export class OnlineSession {
     this.client.addEventListener("boost_ack", ({ detail }) => {
       game.charms?.applyServerBoostAck?.(detail);
     });
+    this.client.addEventListener("mode_event", ({ detail }) => {
+      if (detail?.relocate) {
+        this.applyPose(
+          {
+            region: game.world.region.id,
+            y: game.bike.position.y,
+            heading: game.bike.motion.heading,
+            ...detail.relocate,
+          },
+          false,
+        );
+      }
+      game.gameMode?.onServerEvent?.(detail);
+    });
     this.client.addEventListener("error", ({ detail }) =>
       panel.status(
-        detail.message + " Chọn Đổi chế độ để thử lại hoặc Khám phá.",
+        detail.message +
+          " Chọn Về Trang chủ / Đổi chế độ để thử lại hoặc đổi khu vực.",
       ),
     );
     this.client.addEventListener("collision", ({ detail }) => {
@@ -91,7 +126,7 @@ export class OnlineSession {
         game.bike.motion.speed = 0;
       }
     };
-    this.onHide = () => this.client.leave();
+    this.onHide = () => this.client.disconnectForReload();
     document.addEventListener("visibilitychange", this.onVisibility);
     addEventListener("pagehide", this.onHide);
   }
@@ -101,16 +136,22 @@ export class OnlineSession {
   attachScene(scene) {
     scene.add(this.avatars.root);
   }
-  applyPose(p) {
+  applyPose(p, snapCamera = false) {
     const { game } = this;
     if (!p || game.world.region.id !== p.region) return;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
     const refY = Number.isFinite(p.y) ? p.y : game.bike.position.y;
-    game.bike.position.set(p.x, game.world.groundAt(p.x, p.z, refY), p.z);
+    const y = game.world.groundAt(p.x, p.z, refY);
+    game.bike.position.set(p.x, y, p.z);
     if (Number.isFinite(p.speed)) game.bike.motion.speed = p.speed;
     if (Number.isFinite(p.heading)) {
       game.bike.motion.heading = p.heading;
       game.bike.rotation.y = p.heading;
+      if (snapCamera) {
+        game.cameraYaw = p.heading;
+        game.input.drag.yaw = 0;
+        game.input.recenterRequested = true;
+      }
     }
     if (Number.isFinite(p.lean)) game.bike.motion.lean = p.lean;
   }
@@ -149,6 +190,9 @@ export class OnlineSession {
   }
   sendUseCharm(tier) {
     this.client.send({ type: "use_charm", tier });
+  }
+  sendModeAction(action, payload = {}) {
+    this.client.send({ type: "mode_action", action, ...payload });
   }
   pauseRegion() {
     this.awaitingRegion = true;

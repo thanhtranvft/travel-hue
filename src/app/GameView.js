@@ -15,6 +15,7 @@ export class GameView {
   constructor() {
     this.map = document.querySelector("#minimap").getContext("2d");
     this.hud = {
+      brandTitle: document.querySelector("#brand-area-title"),
       district: document.querySelector("#destination"),
       speed: document.querySelector("#speed"),
       distance: document.querySelector("#distance"),
@@ -46,12 +47,14 @@ export class GameView {
   }
   syncMode(game) {
     const isBike = game.bike.transportMode === "bike";
-    const stanceText = game.auto
-      ? "Tự lái tham quan"
-      : STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
-    game.hud.mode.textContent = stanceText;
-    game.hud.auto.classList.toggle("active", game.auto);
-    game.hud.auto.setAttribute("aria-pressed", String(game.auto));
+    const stanceText = STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
+    if (game.hud.mode) {
+      game.hud.mode.textContent = stanceText;
+    }
+    if (game.hud.auto) {
+      game.hud.auto.classList.toggle("active", Boolean(game.auto));
+      game.hud.auto.setAttribute("aria-pressed", String(Boolean(game.auto)));
+    }
     if (game.hud.transport) {
       game.hud.transport.textContent = isBike ? "🚲 Đạp xe" : "🚶 Đi bộ";
       game.hud.transport.classList.toggle("active", isBike);
@@ -84,20 +87,28 @@ export class GameView {
     if (game.hud.mapLocalCoords) {
       game.hud.mapLocalCoords.textContent = coords.localText;
     }
-    game.hud.district.textContent = game.district.title;
-    game.hud.speed.textContent = Math.round(
-      Math.abs(game.bike.motion.speed) * 3.6,
-    );
-    if (!game.auto && game.hud.mode) {
+    if (game.hud.brandTitle && game.district?.title) {
+      game.hud.brandTitle.textContent = game.district.title;
+    }
+    if (game.hud.district) {
+      game.hud.district.textContent = game.district.title;
+    }
+    if (game.hud.speed) {
+      game.hud.speed.textContent = Math.round(
+        Math.abs(game.bike.motion.speed) * 3.6,
+      );
+    }
+    if (game.hud.mode) {
       game.hud.mode.textContent =
         STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
     }
-    game.hud.distance.textContent = game.completed
-      ? "Đã hoàn thành tuyến"
-      : game.auto
-        ? `${Math.round((1 - game.routeU) * game.routeLength)} m trên tuyến`
-        : STANCE_LABELS[game.bike.stance] || "Tự do khám phá";
-    game.hud.progress.style.width = `${game.completed ? 100 : game.routeU * 100}%`;
+    if (game.hud.distance) {
+      game.hud.distance.textContent =
+        STANCE_LABELS[game.bike.stance] || "Tự do khám phá";
+    }
+    if (game.hud.progress) {
+      game.hud.progress.style.width = `${game.completed ? 100 : (game.routeU || 0) * 100}%`;
+    }
     const soundLocation = document.querySelector("#sound-location");
     if (soundLocation)
       soundLocation.textContent =

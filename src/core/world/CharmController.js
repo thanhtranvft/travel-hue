@@ -115,6 +115,7 @@ export class CharmController {
   }
 
   collectNearby() {
+    if (this.game.gameMode?.charmsEnabled === false) return;
     const pos = this.game.bike?.position;
     if (!pos) return;
     const now = Date.now();
@@ -194,6 +195,42 @@ export class CharmController {
       this.collectNearby();
     }
     this.worldView.update(dt, elapsed, this.game.bike?.position);
+  }
+
+  restoreState({ inventory, activeBoost } = {}) {
+    if (inventory) {
+      this.inventory = sanitizeCharmInventory(inventory);
+    }
+    if (
+      activeBoost &&
+      typeof activeBoost === "object" &&
+      Number.isFinite(activeBoost.expiresAt) &&
+      activeBoost.expiresAt > Date.now()
+    ) {
+      const tier = CHARM_TIERS[cleanCharmTier(activeBoost.tier)];
+      if (tier) {
+        this.activeBoost = {
+          tier: tier.id,
+          percent: tier.percent,
+          multiplier: tier.multiplier,
+          durationMs: Number.isFinite(activeBoost.durationMs)
+            ? activeBoost.durationMs
+            : tier.durationMs,
+          expiresAt: activeBoost.expiresAt,
+        };
+      }
+    }
+  }
+
+  exportState() {
+    const active =
+      this.activeBoost && this.activeBoost.expiresAt > Date.now()
+        ? { ...this.activeBoost }
+        : null;
+    return {
+      inventory: { ...this.inventory },
+      activeBoost: active,
+    };
   }
 
   getSummary() {
