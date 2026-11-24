@@ -795,16 +795,39 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       });
     }
   }
+  const magentaCol = new THREE.Color("#ff6be0");
+  const cyanCol = new THREE.Color("#5be8ff");
+  const warmGoldCol = new THREE.Color("#ffd06b");
   jetSpecs.forEach((j, i) => {
     dummy.position.set(j.x, j.y, j.z);
     dummy.rotation.set(j.rx, 0, j.rz);
     dummy.scale.set(j.baseW, j.baseH, j.baseW);
     dummy.updateMatrix();
     jets.setMatrixAt(i, dummy.matrix);
+    if (i === 0 || (i >= 13 && i <= 36)) {
+      jets.setColorAt?.(i, i % 3 === 0 ? warmGoldCol : magentaCol);
+    } else {
+      jets.setColorAt?.(i, cyanCol);
+    }
   });
   jets.instanceMatrix.needsUpdate = true;
+  if (jets.instanceColor) jets.instanceColor.needsUpdate = true;
   jets.computeBoundingSphere();
   group.add(jets);
+
+  // Illuminated submerged LED fountain ring matching evening plaza glow
+  const ledRing = new THREE.Mesh(
+    new THREE.TorusGeometry(9.6, 0.14, 6, 48),
+    new THREE.MeshStandardMaterial({
+      color: "#ff9ce8",
+      emissive: "#ff48c4",
+      emissiveIntensity: 0.9,
+      roughness: 0.2,
+    }),
+  );
+  ledRing.rotation.x = Math.PI / 2;
+  ledRing.position.set(cx, 0.56, cz);
+  group.add(ledRing);
 
   // Shimmering white foam ring at center of pool
   const foamRing = new THREE.Mesh(
@@ -859,6 +882,28 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     [346, -12.5],
   ]) {
     group.add(createHeritageLamp(lx, 0.24, lz));
+  }
+
+  // Warm golden walkway border bollards framing the 4 quadrant beds
+  const bollardMat = new THREE.MeshStandardMaterial({
+    color: "#fff3cc",
+    emissive: "#ffbe45",
+    emissiveIntensity: 0.95,
+  });
+  const bollardCoords = [];
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 1]) {
+      for (const d of [7.5, 13.5, 19.5]) {
+        bollardCoords.push([cx + sx * 6.4, cz + sz * d]);
+        bollardCoords.push([cx + sx * d, cz + sz * 5.2]);
+      }
+    }
+  }
+  for (const [bx, bz] of bollardCoords) {
+    const post = box([0.14, 0.48, 0.14], "#2a3531", [bx, 0.46, bz]);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.11, 6, 6), bollardMat);
+    cap.position.set(bx, 0.74, bz);
+    group.add(post, cap);
   }
 
   // 8. MOORED SWAN / DRAGON PEDAL BOATS ON THE PERFUME RIVER EDGE

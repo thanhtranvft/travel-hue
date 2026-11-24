@@ -162,6 +162,12 @@ export class LivingGrass {
         world.quangTrungEastPrecinct?.blocksGrass(p.x, p.z) ||
         world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
         world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z) ||
+        world.youthPlayground?.blocksGrass(p.x, p.z) ||
+        world.ubndPalace?.blocksGrass(p.x, p.z) ||
+        world.hoChiMinhMuseum?.blocksGrass(p.x, p.z) ||
+        world.benTrangCafe?.blocksGrass(p.x, p.z) ||
+        world.hueCit?.blocksGrass(p.x, p.z) ||
+        world.hueHospital?.blocksGrass(p.x, p.z) ||
         world.truongTienSurroundings?.blocksGrass(p.x, p.z) ||
         world.dongDaCorridor?.blocksGrass(p.x, p.z)
       )

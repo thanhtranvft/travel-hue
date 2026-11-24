@@ -1,11 +1,20 @@
 {
   "campusOSM": 695775607,
   "buildingOSM": 118541971,
-  "entranceWidth": 8,
-  "fenceHeight": 1.7,
-  "fenceColor": "#3f747b",
-  "equipmentCount": 10,
-  "equipmentRadius": 4.5,
-  "types": ["swings", "slide", "seesaw", "carousel", "sandbox"],
-  "placementStatus": "simulated-inside-OSM-campus"
+  "entranceWidth": 10,
+  "fenceHeight": 1.8,
+  "fenceColor": "#2d6f79",
+  "equipmentCount": 16,
+  "equipmentRadius": 4.2,
+  "types": [
+    "rollercoaster",
+    "slide",
+    "rocking-fish",
+    "kiddie-cars",
+    "swings",
+    "seesaw",
+    "carousel",
+    "sandbox"
+  ],
+  "placementStatus": "expanded-campus-with-hero-amusement-zones"
 }

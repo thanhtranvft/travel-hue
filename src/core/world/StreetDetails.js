@@ -104,6 +104,14 @@ export function addStreetDetails(world, features) {
         world.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
         world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
         world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
+        world.youthPlayground?.blocksTree(p.x, p.z) ||
+        world.ubndPalace?.blocksTree(p.x, p.z) ||
+        world.hoChiMinhMuseum?.blocksTree(p.x, p.z) ||
+        world.benTrangCafe?.blocksTree(p.x, p.z) ||
+        world.hueCit?.blocksTree(p.x, p.z) ||
+        world.hueHospital?.blocksTree(p.x, p.z) ||
+        world.truongTienSurroundings?.blocksTree(p.x, p.z) ||
+        world.dongDaCorridor?.blocksTree(p.x, p.z) ||
         world.allGateClearances?.some(
           (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
         ) ||
@@ -159,7 +167,8 @@ export function addStreetDetails(world, features) {
   const customLandmarkBuildings = new Set([
     732304130, 732304131, 1416873568,
     732304133, 732304134, 732304135, 732304136, 732304137, 732304138,
-    749331141, 732320417, 732309927, 1172894102, 1174028275, 1174028276, 1174028274,
+    749331141, 732320417, 732309927, 1172894102, 1174028275, 1174028276, 1174028274, 240266284,
+    354775345, 240252008, 1210477658, 942532232, 942532233, 942532235,
   ]);
   for (const f of features.filter(
     (f) => f.type === "way" && f.tags?.building && f.geometry?.length > 3,
@@ -266,6 +275,8 @@ export function addStreetDetails(world, features) {
                 world.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
                 world.benhVienRhmHue?.blocksTree(p.x, p.z) ||
                 world.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
+                world.truongTienSurroundings?.blocksTree(p.x, p.z) ||
+                world.dongDaCorridor?.blocksTree(p.x, p.z) ||
                 onOtherCarriageway(p, road, renderRoads, 2)
           )
             continue;

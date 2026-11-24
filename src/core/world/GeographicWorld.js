@@ -58,6 +58,11 @@ import {
   hitsCampusWall,
 } from "../shared/architecture/CampusWalls.js";
 import { YouthPlayground } from "../../modules/areas/quoc-hoc/view/YouthPlayground.js";
+import { UbndHuePalace } from "../../modules/areas/quoc-hoc/view/UbndHuePalace.js";
+import { HoChiMinhMuseum } from "../../modules/areas/quoc-hoc/view/HoChiMinhMuseum.js";
+import { BenTrangCafe } from "../../modules/areas/quoc-hoc/view/BenTrangCafe.js";
+import { HueCITBuilding } from "../../modules/areas/quoc-hoc/view/HueCITBuilding.js";
+import { HueCentralHospital } from "../../modules/areas/quoc-hoc/view/HueCentralHospital.js";
 import { HueStation } from "../../modules/areas/quoc-hoc/view/HueStation.js";
 import { PropertyEnclosures } from "./PropertyEnclosures.js";
 import { campusWallIndex, nearbyWalls } from "./CampusWallIndex.js";
@@ -116,7 +121,21 @@ const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
   1174028274,
   239566031,
   239972926,
+  354775345,
+  240252008,
+  1210477658,
+  942532232,
+  942532233,
+  942532235,
 ]);
+
+const QUOC_HOC_SUPPRESSED_ROAD_IDS = new Set([
+  656794242,
+  1473477097,
+  1473477098,
+]);
+
+const YOUTH_CENTER_LEGACY_SHED_IDS = new Set([695775618, 695775619]);
 
 const QUANG_TRUNG_SUPPRESSED_ROAD_IDS = new Set([
   1416699224,
@@ -353,6 +372,7 @@ export class GeographicWorld {
     this.renderRoads = activeRoads.filter(
       (r) =>
         !(this.region?.id === "quang-trung" && QUANG_TRUNG_SUPPRESSED_ROAD_IDS.has(r.id)) &&
+        !QUOC_HOC_SUPPRESSED_ROAD_IDS.has(r.id) &&
         r.points.some(
           (p) =>
             p.x >= this.bounds.minX &&
@@ -471,6 +491,8 @@ export class GeographicWorld {
         continue;
       if (this.region?.id === "quang-trung" && isQuangTrungEastPrecinctBuilding(center))
         continue;
+      if (YOUTH_CENTER_LEGACY_SHED_IDS.has(feature.id))
+        continue;
       if (
         this.region?.id === "nguyen-chi-dieu" &&
         DONG_DA_CUSTOM_BUILDING_IDS.has(feature.id)
@@ -503,6 +525,10 @@ export class GeographicWorld {
             "nguyen-chi-dieu",
             "cao-thang",
             "vincom-hue",
+            "youth-center",
+            "ubnd",
+            "ho-chi-minh-museum",
+            "hue-cit",
           ].includes(institution.id)
         ) {
           const body = new THREE.Mesh(
@@ -650,7 +676,7 @@ export class GeographicWorld {
       }
       if (
         !["bridge", "boardwalk", "school", "youth", "commercial"].includes(site.kind) &&
-        site.id !== "benh-vien-rhm-hue"
+        !["benh-vien-rhm-hue", "ubnd", "ho-chi-minh-museum", "hue-cit", "hospital"].includes(site.id)
       ) {
         const frontage = buildingFrontage(site.sign, this.renderRoads);
         if (frontage) {
@@ -696,11 +722,18 @@ export class GeographicWorld {
       if (
         site.kind === "school" ||
         site.kind === "station" ||
-        site.id === "truong-tien" ||
-        site.id === "quoc-hoc" ||
-        site.id === "vincom-hue" ||
-        site.id === "benh-vien-rhm-hue" ||
-        site.id === "nha-tho-dong-chua-cuu-the"
+        [
+          "truong-tien",
+          "quoc-hoc",
+          "vincom-hue",
+          "benh-vien-rhm-hue",
+          "nha-tho-dong-chua-cuu-the",
+          "youth-center",
+          "ubnd",
+          "ho-chi-minh-museum",
+          "hue-cit",
+          "hospital",
+        ].includes(site.id)
       ) {
         sign.removeFromParent();
         this.areaLabels = this.areaLabels.filter((label) => label !== sign);
@@ -726,7 +759,17 @@ export class GeographicWorld {
                       ? `${site.address} · Bệnh viện Răng Hàm Mặt Huế ngay trên trục đường Nguyễn Huệ.`
                       : site.id === "nha-tho-dong-chua-cuu-the"
                         ? `${site.address} · Quần thể Tu viện Dòng Chúa Cứu Thế, Vương cung Thánh đường Đức Mẹ Hằng Cứu Giúp và Tượng Chúa Giêsu dang tay tại Ngã 3 Nguyễn Huệ × Nguyễn Khuyến.`
-                        : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
+                        : site.id === "youth-center"
+                          ? `${site.address} · Trung tâm Hoạt động Thanh Thiếu Nhi tỉnh Thừa Thiên Huế với khuôn viên công viên giải trí rộng rãi gồm tàu lượn siêu tốc, đường lái xe ôtô mini, cá lắc bập bênh, cầu trượt liên hoàn, xích đu và đu quay.`
+                          : site.id === "ubnd"
+                            ? `${site.address} · Trụ sở Ủy ban Nhân dân Thành phố Huế uy nghi đối diện Công viên Đài Phun Nước bên trục đường Lê Lợi.`
+                            : site.id === "ho-chi-minh-museum"
+                              ? `${site.address} · Bảo tàng Hồ Chí Minh Thừa Thiên Huế với khối nhà mái ngói đỏ hai tầng đặc trưng, tiền sảnh đài sen và hàng cau vua uy nghi bên đường Lê Lợi.`
+                              : site.id === "hue-cit"
+                                ? `${site.address} · Trung tâm Công nghệ Thông tin Thành phố Huế (HueCIT) với kiến trúc mái cánh chim, sảnh vòm chữ V đặc trưng và sân lát đá.`
+                                : site.id === "hospital"
+                                  ? `${site.address} · Bệnh viện Trung ương Huế với Trung tâm Tim mạch mặt kính cong và khuôn viên cổng sau thông thoáng nối trục đường Lê Lợi tới Cầu Phú Xuân.`
+                                  : `${site.address}. ${isArea ? "Nhãn khuôn viên; chưa xác định cổng từ dữ liệu OSM." : site.anchor.kind === "mapped-entrance" ? "Cổng được OSM ghi nhận." : "Điểm địa danh OSM."} Nguồn: ${site.anchor.sourceType}/${site.anchor.sourceId}. Kiến trúc vẫn là dựng ước lượng.`,
       });
       if (module && site.id !== "truong-tien") {
         const object = module.create();
@@ -829,6 +872,29 @@ export class GeographicWorld {
     if (this.region?.id === "nguyen-chi-dieu") {
       this.dongDaCorridor = new DongDaCorridor(this);
     }
+    const ubndSite = activeSites.find((s) => s.id === "ubnd");
+    this.ubndPalace = ubndSite ? new UbndHuePalace(this, ubndSite) : null;
+    this.youthPlayground = getById(695775607) ? new YouthPlayground(this) : null;
+    const museumSite = activeSites.find((s) => s.id === "ho-chi-minh-museum");
+    this.hoChiMinhMuseum = museumSite ? new HoChiMinhMuseum(this, museumSite) : null;
+    this.benTrangCafe =
+      this.biaPark || this.region?.id === "quoc-hoc"
+        ? new BenTrangCafe(this)
+        : null;
+    if (this.benTrangCafe) {
+      this.landmarks.set("ben-trang-cafe", {
+        id: "ben-trang-cafe",
+        title: "Bến Trăng Café & Bar",
+        position: this.benTrangCafe.entrance,
+        radius: 34,
+        description:
+          "5 Lê Lợi · Quán cà phê & nghệ thuật bờ tường đá rêu phong, cầu thang xoắn trắng và vườn sân thượng bên bờ sông Hương.",
+      });
+    }
+    const citSite = activeSites.find((s) => s.id === "hue-cit");
+    this.hueCit = citSite ? new HueCITBuilding(this, citSite) : null;
+    const hospSite = activeSites.find((s) => s.id === "hospital");
+    this.hueHospital = hospSite ? new HueCentralHospital(this, hospSite) : null;
     this.allGateClearances = [
       ...(this.schoolGates || []).map((g) => ({ x: g.x, z: g.z, radius: 14.5 })),
     ];
@@ -862,6 +928,44 @@ export class GeographicWorld {
     if (this.dongChuaCuuTheChurch?.secondaryGates) {
       for (const g of this.dongChuaCuuTheChurch.secondaryGates) {
         this.allGateClearances.push({ x: g.x, z: g.z, radius: 16.0 });
+      }
+    }
+    if (this.youthPlayground?.entrance) {
+      this.allGateClearances.push({
+        x: this.youthPlayground.entrance.x,
+        z: this.youthPlayground.entrance.z,
+        radius: 16.5,
+      });
+    }
+    if (this.ubndPalace?.entrance) {
+      this.allGateClearances.push({
+        x: this.ubndPalace.entrance.x,
+        z: this.ubndPalace.entrance.z,
+        radius: 16.0,
+      });
+    }
+    if (this.hoChiMinhMuseum?.gates) {
+      for (const g of this.hoChiMinhMuseum.gates) {
+        this.allGateClearances.push({ x: g.x, z: g.z, radius: 15.0 });
+      }
+    }
+    if (this.benTrangCafe?.entrance) {
+      this.allGateClearances.push({
+        x: this.benTrangCafe.entrance.x,
+        z: this.benTrangCafe.entrance.z,
+        radius: 14.0,
+      });
+    }
+    if (this.hueCit?.entrance) {
+      this.allGateClearances.push({
+        x: this.hueCit.entrance.x,
+        z: this.hueCit.entrance.z,
+        radius: 15.0,
+      });
+    }
+    if (this.hueHospital?.gates) {
+      for (const g of this.hueHospital.gates) {
+        this.allGateClearances.push({ x: g.x, z: g.z, radius: 15.0 });
       }
     }
     for (const crossing of activeCorridorCrossings) {
@@ -1012,7 +1116,6 @@ export class GeographicWorld {
       );
       this.boardwalkRails.push(...extSegments);
     }
-    this.youthPlayground = getById(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
     this.station = getById(175063593) ? new HueStation(this) : null;
     this.campusWallGrid = campusWallIndex(this.campusWallSegments);
@@ -1065,6 +1168,12 @@ export class GeographicWorld {
       this.quangTrungEastPrecinct?.groundAt(x, z, referenceY) ??
       this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
       this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY) ??
+      this.youthPlayground?.groundAt(x, z, referenceY) ??
+      this.ubndPalace?.groundAt(x, z, referenceY) ??
+      this.hoChiMinhMuseum?.groundAt(x, z, referenceY) ??
+      this.benTrangCafe?.groundAt(x, z, referenceY) ??
+      this.hueCit?.groundAt(x, z, referenceY) ??
+      this.hueHospital?.groundAt(x, z, referenceY) ??
       this.dongDaCorridor?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
     if (Number.isFinite(referenceY) && referenceY < 2.2) {
@@ -1176,6 +1285,12 @@ export class GeographicWorld {
       this.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
       this.benhVienRhmHue?.blocksTree(p.x, p.z) ||
       this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
+      this.youthPlayground?.blocksTree(p.x, p.z) ||
+      this.ubndPalace?.blocksTree(p.x, p.z) ||
+      this.hoChiMinhMuseum?.blocksTree(p.x, p.z) ||
+      this.benTrangCafe?.blocksTree(p.x, p.z) ||
+      this.hueCit?.blocksTree(p.x, p.z) ||
+      this.hueHospital?.blocksTree(p.x, p.z) ||
       this.truongTienSurroundings?.blocksTree(p.x, p.z) ||
       this.dongDaCorridor?.blocksTree(p.x, p.z)
     )
@@ -1273,6 +1388,18 @@ export class GeographicWorld {
     if (surrRide === false) return false;
     const ddRide = this.dongDaCorridor?.canRide(x, z, referenceY);
     if (ddRide === false) return false;
+    const youthRide = this.youthPlayground?.canRide(x, z);
+    if (youthRide === false) return false;
+    const ubndRide = this.ubndPalace?.canRide(x, z);
+    if (ubndRide === false) return false;
+    const museumRide = this.hoChiMinhMuseum?.canRide(x, z);
+    if (museumRide === false) return false;
+    const benTrangRide = this.benTrangCafe?.canRide(x, z);
+    if (benTrangRide === false) return false;
+    const hueCitRide = this.hueCit?.canRide(x, z);
+    if (hueCitRide === false) return false;
+    const hueHospitalRide = this.hueHospital?.canRide(x, z);
+    if (hueHospitalRide === false) return false;
     const activeRiver = this.riverRings || getRiver();
     const inRiver = activeRiver.some((r) => inside({ x, z }, r));
     if (this.boardwalkView && (!Number.isFinite(referenceY) || referenceY < 2.2)) {
@@ -1298,6 +1425,16 @@ export class GeographicWorld {
     if (this.hitsTree(x, z, referenceY)) return false;
     if (eastRide === true) return true;
     if (ddRide === true) return true;
+    if (
+      youthRide === true ||
+      ubndRide === true ||
+      museumRide === true ||
+      benTrangRide === true ||
+      hueCitRide === true ||
+      hueHospitalRide === true
+    ) {
+      return true;
+    }
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
         (b) =>
@@ -1400,6 +1537,11 @@ export class GeographicWorld {
     this.fireflyPark?.update?.(time);
     this.fountainPark?.update?.(time);
     this.youthPlayground?.update(time);
+    this.ubndPalace?.update(time);
+    this.hoChiMinhMuseum?.update(time);
+    this.benTrangCafe?.update(time);
+    this.hueCit?.update(time);
+    this.hueHospital?.update(time);
     this.propertyEnclosures?.update(time);
     this.quocHocCampus?.update(time, position);
     this.haiBaTrungCampus?.update(time, position);

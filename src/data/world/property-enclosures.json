@@ -285,7 +285,7 @@
       "title": "Bệnh viện Trung ương Huế",
       "source": "osm-campus",
       "sourceOSM": "relation/21912794",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0005",
         "TN-0040",
@@ -5120,7 +5120,7 @@
       "title": "Bảo tàng Hồ Chí Minh",
       "source": "inferred-parcel",
       "sourceOSM": "way/240266284",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0073"
       ],
@@ -5196,7 +5196,7 @@
       "title": "TN-0074",
       "source": "inferred-parcel",
       "sourceOSM": "way/240266285",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0074"
       ],
@@ -5288,7 +5288,7 @@
       "title": "TN-0075",
       "source": "inferred-parcel",
       "sourceOSM": "way/240266286",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0075"
       ],
@@ -5664,7 +5664,7 @@
       "title": "HueCIT · Trung tâm CNTT",
       "source": "inferred-parcel",
       "sourceOSM": "way/354775345",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0078"
       ],
@@ -6614,7 +6614,7 @@
       "title": "Ủy ban nhân dân thành phố Huế",
       "source": "inferred-parcel",
       "sourceOSM": "way/695770476",
-      "managedExternally": false,
+      "managedExternally": true,
       "members": [
         "TN-0091"
       ],
