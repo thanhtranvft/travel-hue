@@ -106,13 +106,20 @@ export class TagChaseHUD {
     this.roundModal.id = "tag-round-modal";
     this.roundModal.hidden = true;
 
+    const topHost = document.querySelector("#hud-top-center") || host;
+    topHost.prepend(this.topbar);
+    const boostBanner = topHost.querySelector("#boost-banner");
+    if (boostBanner) {
+      boostBanner.after(this.toast);
+    } else {
+      topHost.append(this.toast);
+    }
+
     host.append(
       this.radarLayer,
-      this.topbar,
       this.board,
       this.partyBar,
       this.emoteBar,
-      this.toast,
       this.roundModal,
     );
 
@@ -186,6 +193,23 @@ export class TagChaseHUD {
     const now = Date.now();
     if (!this.toast.hidden && now >= this.toastUntil) {
       this.toast.hidden = true;
+    }
+
+    const brandEl = document.querySelector(".brand");
+    const topCenterEl = document.querySelector("#hud-top-center");
+    if (brandEl && typeof brandEl.getBoundingClientRect === "function") {
+      const rect = brandEl.getBoundingClientRect();
+      if (rect.height > 0) {
+        let boardTop = rect.bottom + 8;
+        if (topCenterEl && typeof topCenterEl.getBoundingClientRect === "function") {
+          const tcRect = topCenterEl.getBoundingClientRect();
+          const stackedBelowBrand = tcRect.height > 0 && tcRect.top >= rect.bottom - 4 && tcRect.left < 185;
+          if (stackedBelowBrand) {
+            boardTop = Math.max(boardTop, tcRect.bottom + 8);
+          }
+        }
+        this.board.style.top = `${Math.round(boardTop)}px`;
+      }
     }
 
     const phase = tagState?.phase || "waiting";

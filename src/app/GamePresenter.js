@@ -122,19 +122,22 @@ export class GamePresenter {
     this.boundaryHint.textContent =
       "Đã tới ranh giới khu vực. Chọn khu khác để tiếp tục.";
     document.querySelector("#app").append(this.boundaryHint);
+    const toastHost =
+      document.querySelector("#hud-top-center") ||
+      document.querySelector("#app");
     this.patrolNotice = document.createElement("aside");
     this.patrolNotice.id = "patrol-toast";
     this.patrolNotice.hidden = true;
     this.patrolNotice.setAttribute("role", "status");
     this.patrolNotice.textContent = `Cảnh sát: “${patrolConfig.dialogue}”`;
-    document.querySelector("#app").append(this.patrolNotice);
+    toastHost.append(this.patrolNotice);
     this.vendorCalls = new VendorCalls();
     this.vendorNoticeUntil = -Infinity;
     this.vendorNotice = document.createElement("aside");
     this.vendorNotice.id = "vendor-toast";
     this.vendorNotice.hidden = true;
     this.vendorNotice.setAttribute("role", "status");
-    document.querySelector("#app").append(this.vendorNotice);
+    toastHost.append(this.vendorNotice);
     this.churchBell = new ChurchBellController();
     this.churchBellNoticeUntil = -Infinity;
     this.churchBellNotice = document.createElement("aside");
@@ -143,7 +146,7 @@ export class GamePresenter {
     this.churchBellNotice.setAttribute("role", "status");
     this.churchBellNotice.textContent =
       "🔔 Tiếng chuông Nhà thờ Dòng Chúa Cứu Thế đang ngân vang…";
-    document.querySelector("#app").append(this.churchBellNotice);
+    toastHost.append(this.churchBellNotice);
     this.gameMode = new GameModeController(this);
     this.charms = new CharmController(this);
     this.speedAura = new SpeedAuraEffect();

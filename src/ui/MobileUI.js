@@ -15,9 +15,12 @@ export function initializeLandscapeMode() {
     ownsFullscreen = false,
     busy = false;
   const update = () => {
-    button.setAttribute("aria-pressed", String(requested || ownsFullscreen));
-    button.textContent =
-      requested || ownsFullscreen ? "⛶ Thoát ngang" : "↔ Chơi ngang";
+    const active = Boolean(requested || ownsFullscreen);
+    button.setAttribute("aria-pressed", String(active));
+    button.textContent = active ? "⛶" : "↔";
+    const label = active ? "Thoát ngang" : "Chơi ngang";
+    button.title = label;
+    button.setAttribute("aria-label", label);
   };
   const enter = async ({ showHintOnFailure = true } = {}) => {
     if (busy) return;
@@ -139,10 +142,12 @@ export function initializeAudioUI(audio) {
     volume = document.querySelector("#audio-volume");
   let settingsOpen = false;
   const masterButton = document.createElement("button");
+  masterButton.type = "button";
   masterButton.id = "master-audio-toggle";
   masterButton.setAttribute("aria-label", "Bật hoặc tắt toàn bộ âm thanh");
   button.after(masterButton);
   const expand = document.createElement("button");
+  expand.type = "button";
   expand.id = "audio-settings-toggle";
   expand.setAttribute("aria-controls", "sound-settings");
   button.after(expand);
@@ -180,12 +185,21 @@ export function initializeAudioUI(audio) {
   });
   const sync = () => {
     button.setAttribute("aria-pressed", String(audio.musicEnabled));
-    button.textContent = audio.musicEnabled ? "♫ Tắt nhạc" : "♫ Bật nhạc";
+    button.textContent = audio.musicEnabled ? "♫" : "♪̸";
+    const musicLabel = audio.musicEnabled ? "Tắt nhạc" : "Bật nhạc";
+    button.title = musicLabel;
+    button.setAttribute("aria-label", musicLabel);
+
     masterButton.setAttribute("aria-pressed", String(audio.enabled));
-    masterButton.textContent = audio.enabled ? "🔊 Tắt âm" : "🔇 Bật âm";
+    masterButton.textContent = audio.enabled ? "🔊" : "🔇";
+    const masterLabel = audio.enabled ? "Tắt âm" : "Bật âm";
+    masterButton.title = masterLabel;
+    masterButton.setAttribute("aria-label", masterLabel);
+
     settings.hidden = !audio.musicEnabled || !settingsOpen;
     expand.hidden = !audio.musicEnabled || settingsOpen;
-    expand.textContent = "⚙ Nhạc ▾";
+    expand.textContent = "⚙";
+    expand.title = "Chọn nhạc & âm lượng";
     expand.setAttribute("aria-label", "Mở bảng nhạc");
     expand.setAttribute(
       "aria-expanded",

@@ -38,17 +38,28 @@ import { areaIsEnabled, defaultArea } from "./app/catalog.js";
 document.querySelector("#app").innerHTML = `
   <canvas id="game"></canvas>
   <div id="speed-vignette" aria-hidden="true"></div>
-  <aside id="collision-toast" role="alert" hidden><strong>⚠ Va chạm giao thông!</strong><p id="collision-message"></p><span>Space để phanh · Quan sát và đi bên phải</span></aside>
-  <aside id="boost-banner" role="status" hidden><span class="boost-label">⚡ +10% TỐC ĐỘ</span><i class="boost-track"><b class="boost-fill"></b></i></aside>
-  <aside id="charm-toast" role="status" hidden>✨ Vật phẩm bùa tăng tốc vừa làm mới ngẫu nhiên trên bản đồ!</aside>
   <div id="scene-loading" role="status">Đang chuẩn bị hành trình bên sông Hương…</div><div id="asset-notice" role="status" hidden>Một số cảnh vật chưa tải được. Đang dùng mô hình dự phòng.</div>
   <div class="hud">
     <div class="topbar">
       <div class="brand"><div><small>Huế · City Tour</small><h1 id="brand-area-title">${defaultArea?.title || "Huế · City Tour"}</h1><div class="map-note">Tọa độ OSM · kiến trúc ước lượng</div></div><div class="brand-account" id="brand-account" hidden><span id="current-user-name"></span><div class="brand-actions"><button id="home-btn" type="button" title="Về Trang chủ / Đổi chế độ">Về Trang chủ / Đổi chế độ</button><button id="logout-btn" type="button" title="Đăng xuất để đổi tên">Đăng xuất</button></div></div></div>
-      <div class="tour-toolbar"><button id="map-toggle" type="button" title="Hiện / Ẩn bản đồ khu vực [M]" aria-pressed="false" aria-expanded="false" aria-controls="map-panel">🗺 Bản đồ</button><button id="reset" title="Về đầu khu vực [R]">↺ Về đầu</button></div>
+      <div id="hud-top-center" class="hud-top-center">
+        <aside id="boost-banner" role="status" hidden><span class="boost-label">⚡ +10% TỐC ĐỘ</span><i class="boost-track"><b class="boost-fill"></b></i></aside>
+        <aside id="charm-toast" role="status" hidden>✨ Vật phẩm bùa tăng tốc vừa làm mới ngẫu nhiên trên bản đồ!</aside>
+        <aside id="collision-toast" role="alert" hidden><strong>⚠ Va chạm giao thông!</strong><p id="collision-message"></p><span>Space để phanh · Quan sát và đi bên phải</span></aside>
+        <article class="card" id="landmark-card"><span>Di sản bên đường</span><h2></h2><p></p></article>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-controls-row">
+          <div class="utility-buttons"><button id="audio-toggle" type="button" aria-pressed="false" title="Bật / Tắt nhạc">♫</button><button id="landscape-toggle" type="button" aria-pressed="false" title="Chơi ngang">↔</button></div>
+          <div class="tour-toolbar"><button id="map-toggle" type="button" title="Hiện / Ẩn bản đồ khu vực [M]" aria-pressed="false" aria-expanded="false" aria-controls="map-panel">🗺 Bản đồ</button><button id="reset" title="Về đầu khu vực [R]">↺ Về đầu</button></div>
+        </div>
+        <div class="utility-toolbar">
+          <div id="sound-settings" hidden><label>Âm lượng <input id="audio-volume" type="range" min="0" max="100" value="45" aria-label="Âm lượng game"></label><span id="sound-location">Giai điệu bên sông Hương</span></div>
+          <span id="audio-status" role="status"></span>
+        </div>
+      </div>
     </div>
     <div class="hud-spacer" aria-hidden="true"></div>
-    <div class="utility-toolbar"><div class="utility-buttons"><button id="audio-toggle" aria-pressed="false">♫ Bật nhạc</button><button id="landscape-toggle" aria-pressed="false">↔ Chơi ngang</button></div><div id="sound-settings" hidden><label>Âm lượng <input id="audio-volume" type="range" min="0" max="100" value="45" aria-label="Âm lượng game"></label><span id="sound-location">Giai điệu bên sông Hương</span></div><span id="audio-status" role="status"></span></div>
     <div class="bottom">
       <section class="map-panel" id="map-panel" hidden><div class="map-panel-head"><button id="expand-map" title="Mở rộng / Thu nhỏ bản đồ">BẢN ĐỒ KHU VỰC ↗</button><button id="close-map" type="button" title="Ẩn bản đồ [M]" aria-label="Ẩn bản đồ">✕</button></div><div class="map-area-title" id="map-area-title">Khoa Quốc tế → Tràng Tiền</div><canvas id="minimap" width="480" height="340" aria-label="Bản đồ khu vực và tọa độ di chuyển"></canvas><div class="map-coords" id="map-coords">16.45898°N · 107.58096°E</div><div class="map-local-coords" id="map-local-coords">X: 313 m · Z: -283 m</div><a id="open-osm" href="https://www.openstreetmap.org/" target="_blank" rel="noopener noreferrer">Đối chiếu OSM ↗</a></section>
       <div class="touch-controls"><div class="thumbstick" id="move-stick" role="group" aria-label="Cần lái bên trái: kéo nhẹ để đi bộ, kéo hết mức để chạy, hoặc rẽ"><span class="stick-arrows" aria-hidden="true">＋</span><span id="stick-thumb" aria-hidden="true"></span><span class="touch-caption">ĐI / RẼ</span></div></div>
@@ -61,7 +72,6 @@ document.querySelector("#app").innerHTML = `
       <div class="ride-panel"><div class="status"><strong id="destination">Quốc Học · Lê Lợi</strong><div id="distance">Đang đứng · Vẫy tay</div><div class="progress"><i id="progress"></i></div></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span></div><div class="guide"><b>WASD</b> đi/lái · <b>Shift</b> chạy · <b>1-4</b> bùa tốc độ · <b>M</b> bản đồ</div></div>
     </div>
   </div>
-  <article class="card" id="landmark-card"><span>Di sản bên đường</span><h2></h2><p></p></article>
   <aside id="orientation-hint" role="status" hidden><p id="orientation-message"></p><button id="dismiss-orientation">Đã hiểu</button></aside><a class="map-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors · ODbL</a>`;
 
 const audio = new CityAudio();

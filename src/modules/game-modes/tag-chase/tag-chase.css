@@ -39,18 +39,13 @@
   line-height: 1;
 }
 
-/* Top Status Banner */
+/* Top Status Banner (stacked inside #hud-top-center) */
 #tag-chase-topbar {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 12;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  max-width: min(440px, calc(100vw - 260px));
+  max-width: 100%;
   pointer-events: none;
 }
 
@@ -121,13 +116,14 @@
   color: #ffe3cc;
 }
 
-/* Mini Scoreboard */
+/* Mini Scoreboard (Left side, below .brand) */
 #tag-chase-board {
   position: fixed;
-  top: 148px;
-  right: 16px;
+  top: 140px;
+  left: 16px;
+  right: auto;
   z-index: 11;
-  width: 205px;
+  width: 196px;
   padding: 7px 10px;
   border-radius: 14px;
   background: rgba(12, 31, 27, 0.88);
@@ -384,24 +380,21 @@
   white-space: nowrap;
 }
 
-/* Action Toast */
+/* Action Toast (stacked inside #hud-top-center) */
 #tag-action-toast {
-  position: fixed;
-  top: 96px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 16;
-  padding: 8px 16px;
+  padding: 7px 14px;
   border-radius: 999px;
   background: rgba(14, 38, 32, 0.94);
   border: 1px solid #ffd66b;
   color: #fff8de;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
   pointer-events: none;
-  max-width: min(440px, calc(100vw - 24px));
+  max-width: 100%;
   text-align: center;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 #tag-action-toast[data-tone="alert"] {
@@ -482,10 +475,6 @@
 }
 
 @media (pointer: coarse), (max-width: 760px), (max-height: 500px) {
-  #tag-chase-topbar {
-    top: max(50px, calc(env(safe-area-inset-top) + 46px));
-    max-width: calc(100vw - 18px);
-  }
   .tc-top-row {
     padding: 4px 10px;
     gap: 6px;
@@ -503,9 +492,10 @@
     font-size: 10px;
   }
   #tag-chase-board {
-    top: 116px;
-    right: 9px;
-    width: 158px;
+    top: 112px;
+    left: 9px;
+    right: auto;
+    width: 162px;
     padding: 6px 8px;
   }
   #tag-party-bar {
@@ -538,19 +528,21 @@
     font-size: 16px;
   }
   #tag-action-toast {
-    top: 124px;
-    font-size: 11px;
+    font-size: 10.5px;
+    padding: 5px 11px;
   }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  #tag-chase-topbar {
-    top: max(6px, env(safe-area-inset-top));
-  }
   #tag-chase-board {
-    top: 104px;
-    right: 12px;
-    width: 162px;
+    top: 64px;
+    left: 12px;
+    right: auto;
+    width: 152px;
+    padding: 5px 8px;
+  }
+  .tc-board-list li {
+    font-size: 10px;
   }
   #tag-party-bar {
     right: max(16px, env(safe-area-inset-right));
