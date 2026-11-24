@@ -30,34 +30,40 @@ function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
 
 function createCaoThangWallTexture() {
   return createCanvasTexture(512, 512, (ctx, w, h) => {
-    // Warm ivory-ochre classroom block facade
-    ctx.fillStyle = "#efe5cf";
+    // Off-white cream facade stucco matching photo 2
+    ctx.fillStyle = "#f2efe6";
     ctx.fillRect(0, 0, w, h);
 
-    // Brick-terracotta plinth along ground level
-    ctx.fillStyle = "#7e3630";
-    ctx.fillRect(0, h - 52, w, 52);
-    ctx.fillStyle = "#d9d1c2";
-    ctx.fillRect(0, h - 56, w, 8);
+    // Subtle stone plinth & ground-floor shaded portico band
+    ctx.fillStyle = "#cfc9bc";
+    ctx.fillRect(0, h - 46, w, 46);
+    ctx.fillStyle = "#ddd6c7";
+    ctx.fillRect(0, 326, w, 140);
 
-    // Floor cornices
-    for (const bandY of [0, 154, 310]) {
-      ctx.fillStyle = "#893b34";
-      ctx.fillRect(0, bandY, w, 12);
+    // Horizontal concrete roof cornice & mid-floor band
+    for (const bandY of [0, 158, 316]) {
+      ctx.fillStyle = "#e0d9ca";
+      ctx.fillRect(0, bandY, w, 14);
     }
 
-    // Classroom window bays across 3 stories
-    for (const floorY of [32, 186, 340]) {
+    // White multi-pane windows crowned by projecting concrete sun-visor hoods
+    for (const floorY of [32, 186, 344]) {
       for (const wx of [34, 198, 362]) {
+        // Concrete sun hood shadow & slab above each window
+        ctx.fillStyle = "#dcd5c5";
+        ctx.fillRect(wx - 12, floorY - 12, 130, 12);
+        ctx.fillStyle = "rgba(80,76,68,0.2)";
+        ctx.fillRect(wx - 10, floorY, 126, 7);
+
         ctx.fillStyle = "#ffffff";
-        ctx.fillRect(wx - 6, floorY - 5, 118, 106);
-        ctx.fillStyle = "#224d78";
-        ctx.fillRect(wx, floorY, 106, 94);
-        ctx.fillStyle = "#193858";
-        ctx.fillRect(wx + 8, floorY + 8, 90, 78);
-        ctx.fillStyle = "#6c97be";
-        ctx.fillRect(wx + 51, floorY + 6, 4, 82);
-        ctx.fillRect(wx + 6, floorY + 46, 94, 4);
+        ctx.fillRect(wx - 5, floorY + 2, 116, 102);
+        ctx.fillStyle = "#334756";
+        ctx.fillRect(wx, floorY + 6, 106, 92);
+        // White inner louver & grid panes
+        ctx.fillStyle = "#e9e6de";
+        ctx.fillRect(wx + 50, floorY + 6, 5, 92);
+        ctx.fillRect(wx, floorY + 34, 106, 4);
+        ctx.fillRect(wx, floorY + 66, 106, 4);
       }
     }
   });
@@ -87,18 +93,31 @@ function createCourtyardPavingTexture() {
     512,
     512,
     (ctx, w, h) => {
-      ctx.fillStyle = "#a3a098";
+      // Light warm-grey diagonal square concrete courtyard pavers matching photo 2
+      ctx.fillStyle = "#b9b8b4";
       ctx.fillRect(0, 0, w, h);
-      ctx.strokeStyle = "rgba(92,89,82,0.22)";
+      ctx.save?.();
+      ctx.translate?.(w / 2, h / 2);
+      ctx.rotate?.(Math.PI / 4);
+      const step = 48;
+      for (let y = -w; y <= w; y += step) {
+        for (let x = -w; x <= w; x += step) {
+          const alt = ((Math.round(x / step) + Math.round(y / step)) & 1) === 0;
+          ctx.fillStyle = alt ? "#c9c8c3" : "#bdaca8";
+          ctx.fillRect(x + 2, y + 2, step - 4, step - 4);
+        }
+      }
+      ctx.strokeStyle = "rgba(85,84,80,0.34)";
       ctx.lineWidth = 2;
-      for (let p = 0; p <= w; p += 64) {
+      for (let p = -w; p <= w; p += step) {
         ctx.beginPath?.();
-        ctx.moveTo?.(p, 0);
-        ctx.lineTo?.(p, h);
-        ctx.moveTo?.(0, p);
+        ctx.moveTo?.(p, -w);
+        ctx.lineTo?.(p, w);
+        ctx.moveTo?.(-w, p);
         ctx.lineTo?.(w, p);
         ctx.stroke?.();
       }
+      ctx.restore?.();
     },
     10,
     10,
@@ -405,8 +424,8 @@ export class CaoThangCampus {
 
     // Benches around front and inner courtyards
     const benchSpecs = [
-      [-10, 26, 0],
-      [12, 26, 0],
+      [-10, 24, 0],
+      [12, 24, 0],
       [2.5, 45, 0],
       [6.5, 45, 0],
     ];
@@ -414,6 +433,107 @@ export class CaoThangCampus {
       yard.add(createBench(bx, 0.3, -bf, yaw));
       this.obstacles.push({ side: bx, fwd: bf, radius: 1.1 });
     }
+
+    // Ceremonial "LỄ KHAI GIẢNG" red-carpet stage & blue motto fascia in front of main building portico (photo 2!)
+    const stageGroup = new THREE.Group();
+    stageGroup.name = "cao-thang-ceremony-stage";
+    stageGroup.position.set(1.5, 0.3, -29.2);
+
+    // Wide crimson red carpet extending onto courtyard + raised red stage platform
+    stageGroup.add(
+      box([9.2, 0.04, 5.4], "#b81818", [0, 0.02, 0.8]),
+      box([6.8, 0.32, 3.2], "#d11f1f", [0, 0.18, 0.1]),
+    );
+    // Deep forest-green & red Gold-Star backdrop wall ("LỄ KHAI GIẢNG")
+    const backdropTex = createCanvasTexture(768, 384, (ctx, w, h) => {
+      ctx.fillStyle = "#0e523a";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#c41e1a";
+      ctx.fillRect(0, 0, w * 0.25, h);
+      // Yellow star
+      ctx.fillStyle = "#ffde00";
+      if (ctx.beginPath && ctx.moveTo && ctx.lineTo) {
+        ctx.beginPath();
+        const cx0 = w * 0.125;
+        const cy0 = h * 0.22;
+        for (let i = 0; i < 10; i++) {
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const r = i % 2 === 0 ? 34 : 13;
+          if (i === 0) ctx.moveTo(cx0 + Math.cos(a) * r, cy0 + Math.sin(a) * r);
+          else ctx.lineTo(cx0 + Math.cos(a) * r, cy0 + Math.sin(a) * r);
+        }
+        ctx.closePath?.();
+        ctx.fill();
+      }
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#ffe55e";
+      ctx.font = "bold 46px 'Be Vietnam Pro', Arial, sans-serif";
+      ctx.fillText("LỄ KHAI GIẢNG", w * 0.62, h * 0.36);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "600 28px 'Be Vietnam Pro', Arial, sans-serif";
+      ctx.fillText("TRƯỜNG THPT CAO THẮNG · HUẾ", w * 0.62, h * 0.6);
+    });
+    const backdrop = new THREE.Mesh(
+      new THREE.BoxGeometry(5.6, 2.75, 0.18),
+      new THREE.MeshStandardMaterial({
+        color: backdropTex ? "#ffffff" : "#0e523a",
+        map: backdropTex,
+        roughness: 0.65,
+      }),
+    );
+    backdrop.position.set(0, 1.72, -1.25);
+    backdrop.castShadow = true;
+    stageGroup.add(backdrop);
+
+    // Full-width royal-blue school motto fascia hanging across front colonnade beam
+    const mottoTex = createCanvasTexture(1280, 112, (ctx, w, h) => {
+      ctx.fillStyle = "#165094";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#f4f7fa";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(6, 6, w - 12, h - 12);
+      ctx.fillStyle = "#ffffff";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 36px 'Be Vietnam Pro', Arial, sans-serif";
+      ctx.fillText(
+        "XÂY DỰNG MÔI TRƯỜNG GIÁO DỤC KỶ CƯƠNG, THÂN THIỆN VÀ CHẤT LƯỢNG",
+        w / 2,
+        h / 2,
+        w - 40,
+      );
+    });
+    const mottoBanner = new THREE.Mesh(
+      new THREE.PlaneGeometry(16.5, 0.88),
+      new THREE.MeshStandardMaterial({
+        color: mottoTex ? "#ffffff" : "#165094",
+        map: mottoTex,
+        roughness: 0.48,
+        side: THREE.DoubleSide,
+      }),
+    );
+    mottoBanner.position.set(0, 3.65, -1.35);
+    stageGroup.add(mottoBanner);
+
+    // Flanking potted sculpted bonsai ficus trees matching photo 2
+    for (const bx of [-4.2, -3.5, 3.5, 4.3]) {
+      const pot = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.42, 0.32, 0.52, 10),
+        mat("#5d4839", 0.82),
+      );
+      pot.position.set(bx, 0.26, 0.35);
+      const foliage = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(0.72, 1),
+        mat("#2f6b2c", 0.85),
+      );
+      foliage.position.set(bx, 1.15, 0.35);
+      foliage.scale.set(1.05, 1.35, 1.05);
+      foliage.castShadow = true;
+      stageGroup.add(pot, foliage);
+    }
+    yard.add(stageGroup);
+    this.obstacles.push({ side: 1.5, fwd: 29.2, radius: 3.1 });
 
     this.group.add(yard);
   }

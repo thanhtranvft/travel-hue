@@ -213,6 +213,17 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
         assert.equal(world.canPlaceCharm(ox, oz), false, `Outside boardwalk water at (${ox}, ${oz}) should never allow charms`);
       }
     }
+
+    // 7. Extended boardwalk reaches past Phu Xuan and under Truong Tien with hawkers
+    assert.ok(world.boardwalkView.totalLateralCount >= 8, "includes 4 extended lateral connectors");
+    assert.ok(
+      world.boardwalkView.mainPoints.some((p) => p.x >= 1260 && p.z <= -1270),
+      "boardwalk spans continuously past Cầu Phú Xuân to Cầu Tràng Tiền",
+    );
+    assert.ok(
+      world.boardwalkView.vendorPoints.filter((v) => v.vendorType === "hawker-vendor").length >= 3,
+      "under-bridge hawker vendors are present along extended boardwalk",
+    );
   } finally {
     restoreDoc();
   }

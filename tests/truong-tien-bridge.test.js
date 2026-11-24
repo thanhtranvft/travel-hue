@@ -240,3 +240,131 @@ test("Cầu Trường Tiền builds 6 vài 12 nhịp, 5 masonry river piers, 2 o
     restoreDoc();
   }
 });
+
+test("Truong Tien blocks crossing pedestrians and builds extended Lim boardwalk, under-bridge promenade, hawkers, right café, 4-way signal & Morin Hotel", async () => {
+  const { loadGeography } = await import("../src/modules/areas/AreaModel.js");
+  const { getMainRoads } = await import("../src/core/shared/geography/activeGeography.js");
+  const { BOARDWALK_Y } = await import("../src/core/world/roadSurface.js");
+  const { TRUONG_TIEN_NO_CROSS_IDS } = await import("../src/core/world/PedestrianLife.js");
+  const { VendorCalls } = await import("../src/core/world/VendorCalls.js");
+  const {
+    NGA4_MORIN_CENTER,
+    NGA4_SIGNAL_CORNERS,
+    PROMENADE_Y,
+    TRANG_TIEN_CAFE_CENTER,
+    UNDER_BRIDGE_PROMENADE_POINTS,
+  } = await import("../src/modules/areas/truong-tien/view/TruongTienSurroundings.js");
+
+  const restoreDoc = installMockDocument();
+  try {
+    const region = await loadGeography("truong-tien");
+    const scene = new THREE.Scene();
+    const world = new GeographicWorld(scene);
+    world.region = region;
+    world.build();
+
+    // 1. Extended Cầu Gỗ Lim reaches past Cầu Phú Xuân, under Cầu Tràng Tiền & into Công viên 3/2
+    assert.ok(world.boardwalkView, "extended boardwalk builds in truong-tien region");
+    assert.ok(
+      world.boardwalkView.mainPoints.some((p) => p.x >= 1330 && p.z <= -1340),
+      "Cầu Gỗ Lim extends through under Cầu Tràng Tiền into Công viên 3 Tháng 2",
+    );
+    assert.ok(world.boardwalkView.totalLateralCount >= 8);
+
+    const ttRoad = getMainRoads().find((r) => r.id === TRUONG_TIEN_ID);
+    const m = truongTienMetrics(ttRoad);
+    // Boardwalk under-bridge crossing point at (1264.5, -1275.5)
+    const underBwPt = { x: 1264.5, z: -1275.5 };
+    const qUnderBw = truongTienDeckQuery(ttRoad, underBwPt.x, underBwPt.z);
+    assert.ok(
+      qUnderBw.deckY - BOARDWALK_Y >= 2.2,
+      `Cầu Tràng Tiền clearance above boardwalk (${qUnderBw.deckY - BOARDWALK_Y}m) >= 2.2m`,
+    );
+    assert.ok(
+      Math.abs(world.groundAt(underBwPt.x, underBwPt.z, BOARDWALK_Y) - (BOARDWALK_Y + 0.008)) < 0.03,
+      "groundAt at boardwalk height under Cầu Tràng Tiền stays on boardwalk",
+    );
+    assert.equal(world.canRide(underBwPt.x, underBwPt.z, BOARDWALK_Y), true);
+
+    // 2. Under-bridge lakeside promenade, benches, lamps, and strollers
+    assert.ok(world.truongTienSurroundings, "TruongTienSurroundings built");
+    const promMid = UNDER_BRIDGE_PROMENADE_POINTS[2];
+    assert.ok(Math.abs(world.groundAt(promMid.x, promMid.z, PROMENADE_Y) - PROMENADE_Y) < 0.03);
+    assert.equal(world.canRide(promMid.x, promMid.z, PROMENADE_Y), true);
+
+    // 3. Under-bridge hawkers emit 'Ăn sáng con ơi' ONLY at ground level, NOT on high bridge deck
+    const vendors = world.getVendorPoints();
+    const underHawkers = vendors.filter((v) => v.vendorType === "hawker-vendor");
+    assert.ok(underHawkers.length >= 3, "under-bridge hawkers exposed via getVendorPoints()");
+    const calls = new VendorCalls();
+    const targetHawker = underHawkers[0];
+    assert.equal(
+      calls.update(1, { position: { x: targetHawker.x, y: 3.82, z: targetHawker.z } }, vendors),
+      null,
+      "bridge deck cyclist above hawker should not trigger under-bridge call",
+    );
+    const triggered = calls.update(
+      2,
+      { position: { x: targetHawker.x + 2, y: PROMENADE_Y, z: targetHawker.z + 2 } },
+      vendors,
+    );
+    assert.equal(triggered?.vendorType, "hawker-vendor");
+
+    // 4. Zero pedestrians cut across Cầu Tràng Tiền central roadway or crossing footways
+    const traffic = new GeographicTraffic(scene, world);
+    const badTrafficPeds = traffic.actors.filter(
+      (a) =>
+        a.type === "pedestrian" &&
+        (a.road?.id === TRUONG_TIEN_ID || TRUONG_TIEN_NO_CROSS_IDS.has(a.road?.id)),
+    );
+    assert.equal(badTrafficPeds.length, 0, "no GeographicTraffic pedestrians cross Cầu Tràng Tiền");
+
+    for (const person of world.pedestrianLife.people) {
+      assert.equal(
+        TRUONG_TIEN_NO_CROSS_IDS.has(person.road?.id),
+        false,
+        `PedestrianLife walker road ${person.road?.id} must not be a Cầu Tràng Tiền crossing way`,
+      );
+      if (person.road?.id === TRUONG_TIEN_ID) {
+        const q = truongTienDeckQuery(ttRoad, person.origin.x, person.origin.z);
+        assert.ok(Math.abs(q.lat) >= 7.5, "Truong Tien walkers stay strictly on outer pedestrian lanes");
+      }
+    }
+    assert.ok(
+      world.pedestrianLife.people.some((p) => p.underBridgePromenade),
+      "dedicated strollers walk the under-bridge riverside promenade & extended boardwalk",
+    );
+
+    // 5. Right-side café, 4-way traffic signal intersection & Khách sạn Saigon Morin behind spawn
+    assert.ok(world.landmarks.has("trang-tien-cafe"), "right-side café landmark registered");
+    assert.equal(
+      world.canRide(TRANG_TIEN_CAFE_CENTER.x - 2, TRANG_TIEN_CAFE_CENTER.z - 2, PROMENADE_Y),
+      true,
+      "outdoor riverside café patio is rideable",
+    );
+    assert.equal(
+      world.canRide(TRANG_TIEN_CAFE_CENTER.x + 2, TRANG_TIEN_CAFE_CENTER.z + 2, PROMENADE_Y),
+      false,
+      "café pavilion structure blocks riding",
+    );
+    assert.ok(
+      scene.getObjectByName("trang-tien-riverside-cafe"),
+      "right-side café 3D group exists in scene",
+    );
+
+    assert.equal(world.truongTienSurroundings.signalControllers.length, 4, "4 corner signals at Ngã 4");
+    for (const c of NGA4_SIGNAL_CORNERS) {
+      assert.ok(Math.hypot(c.x - NGA4_MORIN_CENTER.x, c.z - NGA4_MORIN_CENTER.z) > 15);
+    }
+    world.truongTienSurroundings.update(1.0);
+    const nsPhase1 = world.truongTienSurroundings.signalControllers[2].heads[0][2].color.getHex();
+    world.truongTienSurroundings.update(7.0);
+    const nsPhase7 = world.truongTienSurroundings.signalControllers[2].heads[0][2].color.getHex();
+    assert.notEqual(nsPhase1, nsPhase7, "Ngã 4 traffic signal animates between green and red");
+
+    assert.ok(world.landmarks.has("saigon-morin"), "Khách sạn Saigon Morin landmark registered");
+    assert.equal(world.canRide(1320, -1140, 0.32), false, "Khách sạn Saigon Morin interior blocks cycling");
+  } finally {
+    restoreDoc();
+  }
+});

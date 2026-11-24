@@ -161,7 +161,9 @@ export class LivingGrass {
         world.quangTrungCampus?.blocksGrass(p.x, p.z) ||
         world.quangTrungEastPrecinct?.blocksGrass(p.x, p.z) ||
         world.benhVienRhmHue?.blocksGrass(p.x, p.z) ||
-        world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z)
+        world.dongChuaCuuTheChurch?.blocksGrass(p.x, p.z) ||
+        world.truongTienSurroundings?.blocksGrass(p.x, p.z) ||
+        world.dongDaCorridor?.blocksGrass(p.x, p.z)
       )
         continue;
       this.dummy.position.set(p.x, 0.055, p.z);

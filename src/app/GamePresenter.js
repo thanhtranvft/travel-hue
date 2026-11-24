@@ -622,7 +622,8 @@ export class GamePresenter {
       this.patrolNoticeUntil = this.elapsed + 4;
     }
     if (this.elapsed > this.patrolNoticeUntil) this.patrolNotice.hidden = true;
-    const vendors = this.world.quangTrungCampus?.vendorPoints;
+    const vendors =
+      this.world.getVendorPoints?.() || this.world.quangTrungCampus?.vendorPoints;
     if (vendors?.length) {
       const vendor = this.vendorCalls.update(this.elapsed, this.bike, vendors);
       if (vendor) {

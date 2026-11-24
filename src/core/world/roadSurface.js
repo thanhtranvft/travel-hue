@@ -6,13 +6,14 @@ const BOARDWALK_IDS = new Set([1167513732, 1167513733, 683633953]);
 export const BOARDWALK_Y = 0.68;
 export const TRUONG_TIEN_ID = 174759688;
 export const TRUONG_TIEN_SIDEWALK_IDS = new Set([1167997494, 1493443040]);
-export const TRUONG_TIEN_CAMBER = 3.05;
+export const TRUONG_TIEN_CAMBER = 4.45;
 export const TRUONG_TIEN_WALK_LIFT = 0.08;
 
 export function truongTienElevation(t) {
   const u = Math.max(0, Math.min(1, t));
   if (u <= 0 || u >= 1) return ROAD_Y;
-  return ROAD_Y + TRUONG_TIEN_CAMBER * Math.sin(Math.PI * u);
+  const arch = 1 - Math.pow(1 - Math.sin(Math.PI * u), 3.2);
+  return ROAD_Y + TRUONG_TIEN_CAMBER * arch;
 }
 
 export function truongTienProgress(road, x, z) {

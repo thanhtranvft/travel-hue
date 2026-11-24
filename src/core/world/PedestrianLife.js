@@ -3,6 +3,7 @@ import { getFeatures, getPointsOf } from "../shared/geography/activeGeography.js
 import { inside, nearestPoint } from "../shared/geography/geometry.js";
 import { roadWidth, isFootway } from "./roadProfile.js";
 import {
+  BOARDWALK_Y,
   TRUONG_TIEN_ID,
   TRUONG_TIEN_SIDEWALK_IDS,
   TRUONG_TIEN_WALK_LIFT,
@@ -11,6 +12,27 @@ import {
 import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
 import { makePerson, animateWalker } from "./People.js";
 import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
+import {
+  PROMENADE_Y,
+  UNDER_BRIDGE_PROMENADE_POINTS,
+} from "../../modules/areas/truong-tien/view/TruongTienSurroundings.js";
+import { truongTienDeckQuery } from "../../modules/areas/truong-tien/view/BridgeView.js";
+
+export const TRUONG_TIEN_NO_CROSS_IDS = new Set([
+  39421601,
+  39420171,
+  1167513749,
+  1167513750,
+  1493443039,
+  1167997495,
+  1446966276,
+  1446966277,
+  1443492618,
+  1167997493,
+  1167529087,
+  1167529091,
+  257257957,
+]);
 
 export function pedestrianGround(world, road, p) {
   if (road.id === TRUONG_TIEN_ID) {
@@ -66,6 +88,28 @@ export function pedestrianSafe(world, p, park, walkwayRoad) {
     )
   )
     return false;
+  if (!bridge && world.truongTienRoad) {
+    const tq = truongTienDeckQuery(world.truongTienRoad, p.x, p.z);
+    if (tq.onBridge) {
+      const underBridgeLower =
+        tq.along >= 348 &&
+        tq.along <= 386 &&
+        (world.boardwalkView?.queryDeck(p.x, p.z)?.onBoardwalk ||
+          world.truongTienSurroundings?.isOnPromenade(p.x, p.z));
+      if (!underBridgeLower) return false;
+    }
+    const approachHit = world.renderRoads
+      ?.filter((r) => r.id === 39421601 || r.id === 39420171)
+      .some((r) => nearestPoint(p, r.points).distance < 11.5);
+    if (approachHit) return false;
+  }
+  if (walkwayRoad?.id === TRUONG_TIEN_ID) {
+    const tq = truongTienDeckQuery(walkwayRoad, p.x, p.z);
+    if (!tq.onBridge || tq.along < 15 || tq.along > 394 || Math.abs(tq.lat) < 7.5) {
+      return false;
+    }
+  }
+  if (world.dongDaCorridor?.blocksPedestrian?.(p.x, p.z)) return false;
   return !world.buildingPolygons.some(
     (b) =>
       p.x > b.minX &&
@@ -123,6 +167,7 @@ export class PedestrianLife {
       .filter(
         (r) =>
           !TRUONG_TIEN_SIDEWALK_IDS.has(r.id) &&
+          !TRUONG_TIEN_NO_CROSS_IDS.has(r.id) &&
           (isFootway(r) ||
             [
               "primary",
@@ -246,6 +291,53 @@ export class PedestrianLife {
         this.stats.parkPeople += placed;
       }
     }
+
+    // Dedicated strollers along the under-bridge riverside promenade & extended Cầu Gỗ Lim
+    if (world.truongTienSurroundings) {
+      for (let i = 1; i < UNDER_BRIDGE_PROMENADE_POINTS.length; i++) {
+        const a = UNDER_BRIDGE_PROMENADE_POINTS[i - 1];
+        const b = UNDER_BRIDGE_PROMENADE_POINTS[i];
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const nx = -dz / len;
+        const nz = dx / len;
+        const sideOffset = (i % 2 === 0 ? 1 : -1) * 1.1;
+        const start = { x: a.x + nx * sideOffset, z: a.z + nz * sideOffset };
+        const end = { x: b.x + nx * sideOffset, z: b.z + nz * sideOffset };
+        add(start, "walk", {
+          start,
+          end,
+          side: i % 2 === 0 ? 1 : -1,
+          fixedY: PROMENADE_Y,
+          underBridgePromenade: true,
+        });
+        this.people.at(-1).mesh.position.y = PROMENADE_Y;
+      }
+    }
+    if (world.boardwalkView?.mainPoints?.length > 4) {
+      const bwPts = world.boardwalkView.mainPoints;
+      for (let i = 1; i < Math.min(bwPts.length, 9); i += 2) {
+        const a = bwPts[i - 1];
+        const b = bwPts[i];
+        const dx = b.x - a.x;
+        const dz = b.z - a.z;
+        const len = Math.hypot(dx, dz) || 1;
+        const nx = -dz / len;
+        const nz = dx / len;
+        const sideOffset = (i % 4 === 1 ? 1 : -1) * 0.9;
+        const start = { x: a.x + nx * sideOffset, z: a.z + nz * sideOffset };
+        const end = { x: b.x + nx * sideOffset, z: b.z + nz * sideOffset };
+        add(start, "walk", {
+          start,
+          end,
+          side: i % 4 === 1 ? 1 : -1,
+          fixedY: BOARDWALK_Y + 0.008,
+          underBridgePromenade: true,
+        });
+        this.people.at(-1).mesh.position.y = BOARDWALK_Y + 0.008;
+      }
+    }
   }
   update(time, bike) {
     if (
@@ -285,6 +377,8 @@ export class PedestrianLife {
             person.road,
             mesh.position,
           );
+        else if (Number.isFinite(person.fixedY))
+          mesh.position.y = person.fixedY;
       } else if (person.mode === "play") {
         const p = {
           x: origin.x + Math.sin(time * 0.8 + phase) * 0.7,

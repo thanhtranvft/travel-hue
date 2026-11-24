@@ -685,7 +685,7 @@ function createNguyenChiDieuGate() {
   return group;
 }
 
-function createCaoThangSignPanel(width = 6.3, height = 1.05) {
+function createCaoThangSignPanel(width = 6.3, height = 1.02) {
   const texture = createGateCanvasTexture(1536, 256, (c, w, h) => {
     c.fillStyle = "#184f8c";
     c.fillRect(0, 0, w, h);
@@ -714,72 +714,199 @@ function createCaoThangSignPanel(width = 6.3, height = 1.05) {
   return panel;
 }
 
+function createCaoThangBannerTexture(text, bg = "#cf221d", fg = "#ffe96b") {
+  return createGateCanvasTexture(1536, 160, (c, w, h) => {
+    c.fillStyle = bg;
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = fg;
+    c.lineWidth = 8;
+    c.strokeRect(8, 8, w - 16, h - 16);
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = fg;
+    c.font = "bold 50px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText(text, w / 2, h / 2, w - 56);
+  });
+}
+
 function createCaoThangGate() {
   const group = new THREE.Group();
   group.name = "cao-thang-gate";
-  const ivory = "#f2ede3";
-  const brick = "#88342e";
-  const royalBlue = "#1e5d9e";
-  const ironMat = mat("#33414e", 0.45, 0.7);
+  const terracotta = "#c78962";
+  const terracottaDark = "#a86843";
+  const creamBeam = "#efe6c8";
+  const stonePlinth = "#9b9387";
+  const gateSteel = "#c8cdd2";
+  const ironMat = mat("#646e77", 0.42, 0.72);
 
-  const innerX = 3.65;
-  const outerX = 6.15;
-  for (const px of [-outerX, -innerX, innerX, outerX]) {
-    const isInner = Math.abs(px) < 4.5;
-    const w = isInner ? 0.86 : 0.72;
-    const h = isInner ? 5.15 : 4.0;
-    const d = isInner ? 0.9 : 0.76;
+  // Main terracotta piers matching photo: wide left masonry sign-pier (-6.1..-3.65) + right main pier (+3.85) + right pedestrian bay pier (+6.45)
+  const innerLeftX = -3.75;
+  const innerRightX = 3.85;
+  const outerRightX = 6.35;
+
+  // Left wide masonry wing wall with dark-slate granite school plaque
+  group.add(
+    box([3.55, 0.34, 0.96], stonePlinth, [-5.15, 0.17, 0]),
+    box([3.4, 3.65, 0.84], terracotta, [-5.15, 2.02, 0]),
+    box([0.92, 4.75, 0.92], terracotta, [innerLeftX, 2.55, 0]),
+    box([1.08, 0.18, 1.08], creamBeam, [innerLeftX, 4.98, 0]),
+  );
+  // Decorative masonry sub-columns crowning left wing
+  for (const sx of [-6.35, -5.05, -3.75]) {
+    group.add(box([0.62, 4.6, 0.88], terracottaDark, [sx, 2.48, 0]));
+  }
+  const leftPlaqueTex = createGateCanvasTexture(768, 384, (c, w, h) => {
+    c.fillStyle = "#3f464d";
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = "#d8be72";
+    c.lineWidth = 10;
+    c.strokeRect(12, 12, w - 24, h - 24);
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+    c.fillStyle = "#f2e7c9";
+    c.font = "600 34px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("SỞ GIÁO DỤC VÀ ĐÀO TẠO THỪA THIÊN HUẾ", w / 2, h * 0.28, w - 48);
+    c.fillStyle = "#f5d76e";
+    c.font = "bold 66px 'Be Vietnam Pro', Arial, sans-serif";
+    c.fillText("TRƯỜNG THPT", w / 2, h * 0.54);
+    c.fillText("CAO THẮNG", w / 2, h * 0.78);
+  });
+  const leftPlaque = new THREE.Mesh(
+    new THREE.PlaneGeometry(2.65, 1.38),
+    new THREE.MeshStandardMaterial({
+      color: leftPlaqueTex ? "#ffffff" : "#3f464d",
+      map: leftPlaqueTex,
+      roughness: 0.45,
+      side: THREE.DoubleSide,
+    }),
+  );
+  leftPlaque.position.set(-5.35, 2.05, 0.47);
+  group.add(leftPlaque);
+
+  // Right main terracotta pier + right pedestrian wing pier
+  for (const [px, w, h] of [
+    [innerRightX, 0.96, 4.75],
+    [outerRightX, 0.68, 3.65],
+  ]) {
     group.add(
-      box([w + 0.16, 0.36, d + 0.16], brick, [px, 0.18, 0]),
-      box([w, h, d], ivory, [px, h / 2 + 0.2, 0]),
-      box([w + 0.16, 0.18, d + 0.16], brick, [px, h + 0.24, 0]),
-      box([w + 0.22, 0.14, d + 0.22], ivory, [px, h + 0.38, 0]),
+      box([w + 0.16, 0.34, 0.96], stonePlinth, [px, 0.17, 0]),
+      box([w, h, 0.88], terracotta, [px, h / 2 + 0.2, 0]),
+      box([w + 0.14, 0.16, 0.98], creamBeam, [px, h + 0.22, 0]),
     );
   }
 
-  // Main upper lintel & stepped architectural pediment
+  // Wide horizontal cream concrete lintel canopy spanning all piers (y = 4.35..5.05)
   group.add(
-    box([innerX * 2 + 0.9, 1.18, 0.72], ivory, [0, 4.35, 0]),
-    box([innerX * 2 + 1.3, 0.18, 0.92], brick, [0, 5.0, 0]),
-    box([5.2, 0.65, 0.65], ivory, [0, 5.4, 0]),
-    box([5.5, 0.16, 0.78], brick, [0, 5.76, 0]),
+    box([13.2, 1.02, 0.94], creamBeam, [-0.35, 4.35, 0]),
+    box([13.8, 0.24, 1.55], "#e5d7b0", [-0.35, 4.96, 0.08]),
+    // Right pedestrian lower overhang canopy
+    box([2.65, 0.22, 1.15], creamBeam, [(innerRightX + outerRightX) / 2, 3.38, 0]),
   );
 
-  // Side portal lintels & open iron pedestrian bays
-  for (const sx of [-1, 1]) {
-    const midX = sx * ((innerX + outerX) / 2);
-    const span = outerX - innerX;
-    group.add(
-      box([span + 0.2, 0.56, 0.64], ivory, [midX, 3.65, 0]),
-      box([span + 0.45, 0.16, 0.78], brick, [midX, 3.98, 0]),
-      box([0.9, 1.85, 0.38], ivory, [sx * (outerX + 0.68), 0.92, 0]),
-      box([0.96, 0.16, 0.46], brick, [sx * (outerX + 0.68), 1.9, 0]),
+  // Red celebration propaganda banner mounted atop the horizontal lintel (visible in photo!)
+  const redBannerTex = createCaoThangBannerTexture(
+    "TINH THẦN CÁCH MẠNG THÁNG TÁM VÀ QUỐC KHÁNH 2/9 BẤT DIỆT!",
+  );
+  const redBanner = new THREE.Mesh(
+    new THREE.BoxGeometry(8.8, 0.56, 0.14),
+    new THREE.MeshStandardMaterial({
+      color: redBannerTex ? "#ffffff" : "#cf221d",
+      map: redBannerTex,
+      roughness: 0.52,
+    }),
+  );
+  redBanner.name = "cao-thang-red-banner";
+  redBanner.position.set(0, 5.38, 0.42);
+  group.add(redBanner);
+
+  // Twin centered Vietnamese red star flags + 6 colorful festive pennants along gate top
+  const vnFlagTex = createGateCanvasTexture(256, 170, (c, w, h) => {
+    c.fillStyle = "#da251d";
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = "#ffde00";
+    if (c.beginPath && c.moveTo && c.lineTo) {
+      c.beginPath();
+      const cx0 = w / 2;
+      const cy0 = h / 2;
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const r = i % 2 === 0 ? h * 0.3 : h * 0.12;
+        if (i === 0) c.moveTo(cx0 + Math.cos(a) * r, cy0 + Math.sin(a) * r);
+        else c.lineTo(cx0 + Math.cos(a) * r, cy0 + Math.sin(a) * r);
+      }
+      c.closePath?.();
+      c.fill();
+    }
+  });
+  for (const [fx, dir] of [
+    [-0.18, -1],
+    [0.18, 1],
+  ]) {
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.028, 0.036, 2.7, 6),
+      mat("#dfe4e8", 0.35, 0.8),
     );
-    for (let b = 0; b < 7; b++) {
-      const bar = new THREE.Mesh(
-        new THREE.BoxGeometry(0.045, 2.3, 0.045),
-        ironMat,
-      );
-      bar.position.set(sx * (innerX + 0.62 + b * 0.19), 1.35, 0.14);
+    pole.position.set(fx, 6.25, 0.15);
+    pole.rotation.z = dir * 0.16;
+    const flag = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.15, 0.76),
+      new THREE.MeshStandardMaterial({
+        color: vnFlagTex ? "#ffffff" : "#da251d",
+        map: vnFlagTex,
+        side: THREE.DoubleSide,
+      }),
+    );
+    flag.position.set(fx + dir * 0.65, 6.95, 0.15);
+    group.add(pole, flag);
+  }
+  const pennantColors = ["#e58ca8", "#2d8a4e", "#2b89d8", "#d63b7a", "#e88b2e", "#e5a632"];
+  [-5.6, -4.4, -2.5, 2.4, 4.1, 5.6].forEach((px, idx) => {
+    const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.45, 5), mat("#d8dee3", 0.4));
+    stick.position.set(px, 5.78, 0.25);
+    const pFlag = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.65, 0.85),
+      mat(pennantColors[idx % pennantColors.length], 0.72, 0, { side: THREE.DoubleSide }),
+    );
+    pFlag.position.set(px + 0.26, 6.08, 0.25);
+    pFlag.rotation.z = -0.18;
+    group.add(stick, pFlag);
+  });
+
+  // Light-grey sliding steel gate leaves parked neatly to the sides (central bay stays open!)
+  for (const sx of [-1, 1]) {
+    const gx = sx < 0 ? -3.15 : 3.25;
+    group.add(box([1.15, 1.28, 0.08], gateSteel, [gx, 0.82, 0.14]));
+    for (let b = 0; b < 5; b++) {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.4, 0.04), ironMat);
+      bar.position.set(gx - 0.44 + b * 0.22, 2.15, 0.14);
       group.add(bar);
     }
-    group.add(
-      box([1.45, 0.07, 0.07], royalBlue, [midX, 2.48, 0.14]),
-      box([1.45, 0.48, 0.06], royalBlue, [midX, 0.44, 0.14]),
-    );
+    group.add(box([1.15, 0.06, 0.06], gateSteel, [gx, 2.86, 0.14]));
   }
+  // Right pedestrian bay iron fence bars
+  for (let b = 0; b < 6; b++) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.045, 2.25, 0.045), ironMat);
+    bar.position.set(innerRightX + 0.65 + b * 0.24, 1.35, 0.14);
+    group.add(bar);
+  }
+  group.add(
+    box([1.75, 0.07, 0.07], "#2e4866", [(innerRightX + outerRightX) / 2, 2.48, 0.14]),
+    box([1.75, 0.48, 0.06], "#2e4866", [(innerRightX + outerRightX) / 2, 0.44, 0.14]),
+  );
 
-  const frontPanel = createCaoThangSignPanel(6.25, 1.02);
-  frontPanel.position.set(0, 4.35, 0.4);
+  // Unobstructed front & back school nameplate: TRƯỜNG THPT CAO THẮNG
+  const frontPanel = createCaoThangSignPanel(6.25, 1.0);
+  frontPanel.position.set(0, 4.35, 0.5);
   group.add(frontPanel);
 
-  const backPanel = createCaoThangSignPanel(6.25, 1.02);
-  backPanel.position.set(0, 4.35, -0.4);
+  const backPanel = createCaoThangSignPanel(6.25, 1.0);
+  backPanel.position.set(0, 4.35, -0.5);
   backPanel.rotation.y = Math.PI;
   backPanel.name = "gate-name-panel-back";
   group.add(backPanel);
 
-  group.add(box([7.6, 0.08, 13], "#c9c4b8", [0, -0.02, -3.5]));
+  // Terracotta-brick paved gate threshold matching photo
+  group.add(box([7.8, 0.08, 13], "#b97362", [0, -0.02, -3.5]));
   return group;
 }
 

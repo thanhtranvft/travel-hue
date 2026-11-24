@@ -114,3 +114,70 @@ test("student collision randomly selects between the two student WAV variants", 
     globalThis.fetch = originalFetch;
   }
 });
+
+test("all 5 campus student populations expose isStudent=true for collision dispatch", async () => {
+  const THREE = await import("three");
+  const { loadGeography } = await import("../src/modules/areas/AreaModel.js");
+  const { GeographicWorld } = await import("../src/core/world/GeographicWorld.js");
+  const prevDoc = globalThis.document;
+  const noop = () => {};
+  const ctx = {
+    fillStyle: "",
+    strokeStyle: "",
+    lineWidth: 1,
+    font: "",
+    textAlign: "center",
+    fillRect: noop,
+    strokeRect: noop,
+    clearRect: noop,
+    beginPath: noop,
+    moveTo: noop,
+    lineTo: noop,
+    stroke: noop,
+    fill: noop,
+    roundRect: noop,
+    fillText: noop,
+    scale: noop,
+    measureText: () => ({ width: 40 }),
+    createLinearGradient: () => ({ addColorStop: noop }),
+  };
+  globalThis.document = {
+    createElement: () => ({ width: 256, height: 256, getContext: () => ctx }),
+  };
+  try {
+    const counts = {};
+    for (const areaId of ["quoc-hoc", "nguyen-chi-dieu", "quang-trung"]) {
+      const region = await loadGeography(areaId);
+      const world = new GeographicWorld(new THREE.Scene());
+      world.region = region;
+      world.build();
+      if (areaId === "quoc-hoc") {
+        const qhStudents = world.quocHocCampus?.students?.students || [];
+        const hbtStudents = world.haiBaTrungCampus?.students?.students || [];
+        assert.ok(qhStudents.length > 0, "quoc-hoc students exist");
+        assert.ok(hbtStudents.length > 0, "hai-ba-trung students exist");
+        assert.ok(qhStudents.every((s) => s.isStudent === true));
+        assert.ok(hbtStudents.every((s) => s.isStudent === true));
+        counts["quoc-hoc"] = qhStudents.length;
+        counts["hai-ba-trung"] = hbtStudents.length;
+      } else if (areaId === "nguyen-chi-dieu") {
+        const ncdStudents = world.nguyenChiDieuCampus?.students?.students || [];
+        const ctStudents = world.caoThangCampus?.students?.students || [];
+        assert.ok(ncdStudents.length > 0, "nguyen-chi-dieu students exist");
+        assert.ok(ctStudents.length > 0, "cao-thang students exist");
+        assert.ok(ncdStudents.every((s) => s.isStudent === true));
+        assert.ok(ctStudents.every((s) => s.isStudent === true));
+        counts["nguyen-chi-dieu"] = ncdStudents.length;
+        counts["cao-thang"] = ctStudents.length;
+      } else if (areaId === "quang-trung") {
+        const qtStudents = world.quangTrungCampus?.students?.students || [];
+        assert.ok(qtStudents.length > 0, "quang-trung students exist");
+        assert.ok(qtStudents.every((s) => s.isStudent === true));
+        counts["quang-trung"] = qtStudents.length;
+      }
+    }
+    assert.equal(Object.keys(counts).length, 5);
+  } finally {
+    globalThis.document = prevDoc;
+  }
+});

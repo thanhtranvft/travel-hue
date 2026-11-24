@@ -1,12 +1,61 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
-import { BOARDWALK_Y } from "../../../../core/world/roadSurface.js";
+import { BOARDWALK_Y, TRUONG_TIEN_ID } from "../../../../core/world/roadSurface.js";
+import { createComNamHawker } from "../../quang-trung/view/QuangTrungVendors.js";
 
 const MAIN_BOARDWALK_IDS = [683633953, 1167513733, 1167513732];
 export const LATERAL_BRIDGE_IDS = [1473289702, 1493443035, 1493443034, 1493443036];
 const BANK_PROMENADE_ID = 1167513730;
 const PHU_XUAN_SPAN_ID = 39419121;
+
+// Seamless riverside extension from east end of OSM 683633953 ([1082.6, -1099.7]),
+// continuing along the south riverbank edge cleanly underneath Cầu Tràng Tiền (s ~ 358)
+// into Công viên 3 Tháng 2 waterfront.
+export const BOARDWALK_EXTENSION_POINTS = [
+  { x: 1093.0, z: -1109.5 },
+  { x: 1140.0, z: -1152.0 },
+  { x: 1195.0, z: -1202.0 },
+  { x: 1242.0, z: -1245.5 },
+  { x: 1255.0, z: -1264.0 },
+  { x: 1264.5, z: -1275.5 },
+  { x: 1275.0, z: -1286.5 },
+  { x: 1296.0, z: -1305.5 },
+  { x: 1320.0, z: -1328.0 },
+  { x: 1344.0, z: -1350.0 },
+];
+
+// Lateral wooden connecting bridges linking extended Cầu Gỗ Lim to the south-bank promenade
+export const UNDER_BRIDGE_LATERAL_BRIDGES = [
+  {
+    id: "ext-lat-diem-phung-thi",
+    points: [
+      { x: 1195.0, z: -1202.0 },
+      { x: 1210.5, z: -1188.0 },
+    ],
+  },
+  {
+    id: "ext-lat-truong-tien-west",
+    points: [
+      { x: 1255.0, z: -1264.0 },
+      { x: 1269.5, z: -1251.5 },
+    ],
+  },
+  {
+    id: "ext-lat-truong-tien-east",
+    points: [
+      { x: 1283.5, z: -1294.0 },
+      { x: 1297.0, z: -1280.5 },
+    ],
+  },
+  {
+    id: "ext-lat-cong-vien-32",
+    points: [
+      { x: 1320.0, z: -1328.0 },
+      { x: 1334.0, z: -1314.5 },
+    ],
+  },
+];
 
 export function lateralBridgeHeight(road, index, mainPoints) {
   if (!road?.points?.length || !mainPoints?.length) return 0.26;
@@ -76,12 +125,14 @@ function createLimWoodTexture(mobile = false) {
   return texture;
 }
 
-function stitchMainBoardwalk(roads) {
+export function stitchMainBoardwalk(roads) {
   const segA = roads.find((r) => r.id === 683633953);
   const segB = roads.find((r) => r.id === 1167513733);
   const segC = roads.find((r) => r.id === 1167513732);
   if (!segA || !segB || !segC) return [];
+  const extEastToWest = BOARDWALK_EXTENSION_POINTS.slice().reverse();
   const raw = [
+    ...extEastToWest,
     ...segA.points,
     ...segB.points.slice(1),
     ...segC.points.slice(1),
@@ -311,8 +362,12 @@ export function addLimWoodBoardwalk(world, roads) {
   const newelTransforms = [];
   const handrailParts = [];
 
-  for (const latId of LATERAL_BRIDGE_IDS) {
-    const road = roads.find((r) => r.id === latId);
+  const allLateralSpecs = [
+    ...LATERAL_BRIDGE_IDS.map((id) => roads.find((r) => r.id === id)).filter(Boolean),
+    ...UNDER_BRIDGE_LATERAL_BRIDGES,
+  ];
+
+  for (const road of allLateralSpecs) {
     if (!road || road.points.length < 2) continue;
     const d0 = nearestPoint(road.points[0], mainPoints).distance;
     const d1 = nearestPoint(road.points.at(-1), mainPoints).distance;
@@ -612,15 +667,18 @@ export function addLimWoodBoardwalk(world, roads) {
     group.add(crosses);
   }
 
-  // 5. Outer riverside rectangular timber planter boxes with green shrubs (skip under Phu Xuan bridge)
+  // 5. Outer riverside rectangular timber planter boxes with green shrubs (skip under Phu Xuan & Truong Tien bridges)
   const phuXuanRoad = roads.find((r) => r.id === PHU_XUAN_SPAN_ID);
+  const truongTienRoad = roads.find((r) => r.id === TRUONG_TIEN_ID);
   const planterFrames = [];
   for (let s = 14; s <= totalMainLen - 14; s += 8.5) {
     const f = frameAtArc(mainFrames, s);
     if (!f) continue;
     if (
-      phuXuanRoad &&
-      nearestPoint({ x: f.x, z: f.z }, phuXuanRoad.points).distance < 14
+      (phuXuanRoad &&
+        nearestPoint({ x: f.x, z: f.z }, phuXuanRoad.points).distance < 14) ||
+      (truongTienRoad &&
+        nearestPoint({ x: f.x, z: f.z }, truongTienRoad.points).distance < 15)
     ) {
       continue;
     }
@@ -790,19 +848,84 @@ export function addLimWoodBoardwalk(world, roads) {
     };
   };
 
+  // 7. Các bà bán hàng rong dưới chân cầu Tràng Tiền / bờ Cầu Gỗ Lim ("Ăn sáng con ơi")
+  const hawkerAnimations = [];
+  const hawkerPoints = [];
+  const underBridgeHawkers = [
+    {
+      id: "under-bridge-hawker-west",
+      x: 1271.5,
+      y: 0.24,
+      z: -1255.2,
+      style: "ganh",
+      shirtColor: "#8b5e42",
+      yaw: -2.4,
+      title: "Bà bán hàng rong dưới chân cầu",
+    },
+    {
+      id: "under-bridge-hawker-center",
+      x: 1278.5,
+      y: 0.24,
+      z: -1263.8,
+      style: "tray",
+      shirtColor: "#5a7c6c",
+      yaw: -2.35,
+      title: "Bà bán hàng rong dưới chân cầu",
+    },
+    {
+      id: "under-bridge-hawker-east",
+      x: 1293.5,
+      y: 0.24,
+      z: -1277.5,
+      style: "ganh",
+      shirtColor: "#7c6790",
+      yaw: -2.25,
+      title: "Bà bán hàng rong ven sông",
+    },
+  ];
+
+  for (const spec of underBridgeHawkers) {
+    const hawker = createComNamHawker({
+      style: spec.style,
+      shirtColor: spec.shirtColor,
+      facingYaw: spec.yaw,
+    });
+    hawker.group.position.set(spec.x, spec.y, spec.z);
+    group.add(hawker.group);
+    hawkerAnimations.push(...hawker.animated);
+    hawkerPoints.push({
+      id: spec.id,
+      vendorType: "hawker-vendor",
+      title: spec.title,
+      dialogue: "Ăn sáng con ơi",
+      x: spec.x,
+      y: spec.y,
+      z: spec.z,
+      callDistance: 9.5,
+      rearmDistance: 15,
+    });
+  }
+
   world.scene.add(group);
   world.boardwalkView = {
     group,
+    mainPoints,
+    halfWidth: halfW,
     pierCount: allPierPiles.length,
     slatCount: slatTransforms.length,
     planterCount: planterFrames.length,
     lateralCount: LATERAL_BRIDGE_IDS.length,
+    totalLateralCount: allLateralSpecs.length,
     lateralJunctions,
+    vendorPoints: hawkerPoints,
     queryDeck,
     groundAt(x, z, referenceY) {
       if (Number.isFinite(referenceY) && referenceY >= 2.2) return null;
       const q = queryDeck(x, z);
       return q.onBoardwalk ? q.deckY : null;
+    },
+    update(time) {
+      for (const fn of hawkerAnimations) fn(time);
     },
   };
   return world.boardwalkView;

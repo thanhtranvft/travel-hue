@@ -10,6 +10,7 @@ import {
   TRUONG_TIEN_WALK_LIFT,
   truongTienElevation,
 } from "../world/roadSurface.js";
+import { TRUONG_TIEN_NO_CROSS_IDS } from "../world/PedestrianLife.js";
 import { box, mat } from "../shared/architecture/shared.js";
 import { sweptContact } from "./collision.js";
 import { policeScooter } from "./PoliceScooter.js";
@@ -196,8 +197,15 @@ export class GeographicTraffic extends TrafficSystem {
         (r) =>
           r.tags.highway === "footway" &&
           !TRUONG_TIEN_SIDEWALK_IDS.has(r.id) &&
+          !TRUONG_TIEN_NO_CROSS_IDS.has(r.id) &&
+          r.id !== 1167513741 &&
           r.points.length > 3 &&
           inBounds(r),
+      ),
+      pedestrianVehicleRoads = vehicleRoads.filter(
+        (r) =>
+          r.id !== TRUONG_TIEN_ID &&
+          !TRUONG_TIEN_NO_CROSS_IDS.has(r.id),
       );
     this.patrolWarnings = new PatrolWarnings(patrolConfig);
     if (patrolConfig.enabled && vehicleRoads.length) {
@@ -240,9 +248,18 @@ export class GeographicTraffic extends TrafficSystem {
     }
     const bridgeRoads = vehicleRoads.filter((r) => r.isBridgeRoute);
     this.actors.forEach((actor, index) => {
-      const pavement = actor.type === "pedestrian" && index % 2 === 0,
+      const pedVehiclePool = pedestrianVehicleRoads.length
+          ? pedestrianVehicleRoads
+          : vehicleRoads,
+        pavement =
+          actor.type === "pedestrian" &&
+          (index % 2 === 0 || !footpaths.length),
         candidates =
-          actor.type === "pedestrian" && !pavement ? footpaths : vehicleRoads,
+          actor.type === "pedestrian" && !pavement
+            ? footpaths
+            : actor.type === "pedestrian"
+              ? pedVehiclePool
+              : vehicleRoads,
         road =
           actor.patrolRoad ||
           (actor.type !== "pedestrian" &&

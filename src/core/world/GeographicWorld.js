@@ -9,9 +9,12 @@ import {
 import { addPhuXuanBridge } from "../../modules/areas/quoc-hoc/view/PhuXuanBridgeView.js";
 import {
   addLimWoodBoardwalk,
+  BOARDWALK_EXTENSION_POINTS,
   LATERAL_BRIDGE_IDS,
   lateralBridgeHeight,
+  stitchMainBoardwalk,
 } from "../../modules/areas/south-bank/view/BoardwalkView.js";
+import { TruongTienSurroundings } from "../../modules/areas/truong-tien/view/TruongTienSurroundings.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { SharedModelLoader as GLTFLoader } from "../shared/resources/sceneResources.js";
 import {
@@ -35,6 +38,7 @@ import { addStreetDetails } from "./StreetDetails.js";
 import { roadsidePoint } from "./streetPlacement.js";
 import { isFootway, roadWidth } from "./roadProfile.js";
 import {
+  BOARDWALK_Y,
   roadSurfaceHeight,
   TRUONG_TIEN_ID,
   TRUONG_TIEN_SIDEWALK_IDS,
@@ -74,6 +78,11 @@ import { QuangTrungCampus } from "../../modules/areas/quang-trung/view/QuangTrun
 import { BenhVienRhmHue } from "../../modules/areas/quang-trung/view/BenhVienRhmHue.js";
 import { DongChuaCuuTheChurch } from "../../modules/areas/quang-trung/view/DongChuaCuuTheChurch.js";
 import { QuangTrungEastPrecinct } from "../../modules/areas/quang-trung/view/QuangTrungEastPrecinct.js";
+import {
+  DongDaCorridor,
+  DONG_DA_CUSTOM_BUILDING_IDS,
+  dongDaToWorld,
+} from "../../modules/areas/nguyen-chi-dieu/view/DongDaCorridor.js";
 import quangTrungCampuses from "../../modules/areas/quang-trung/data/campuses.json" with { type: "json" };
 import {
   applyWorldPlanarUVs,
@@ -105,6 +114,8 @@ const CUSTOM_LANDMARK_BUILDING_IDS = new Set([
   1174028275,
   1174028276,
   1174028274,
+  239566031,
+  239972926,
 ]);
 
 const QUANG_TRUNG_SUPPRESSED_ROAD_IDS = new Set([
@@ -350,11 +361,7 @@ export class GeographicWorld {
             p.z <= this.bounds.maxZ,
         ),
     );
-    this.boardwalkMainPoints = [683633953, 1167513733, 1167513732]
-      .flatMap((id, idx) => {
-        const pts = activeRoads.find((r) => r.id === id)?.points || [];
-        return idx === 0 ? pts : pts.slice(1);
-      });
+    this.boardwalkMainPoints = stitchMainBoardwalk(activeRoads);
     const customSurfaceIds = new Set([
       ...activeBoardwalkWayIds,
       ...LATERAL_BRIDGE_IDS,
@@ -464,6 +471,13 @@ export class GeographicWorld {
         continue;
       if (this.region?.id === "quang-trung" && isQuangTrungEastPrecinctBuilding(center))
         continue;
+      if (
+        this.region?.id === "nguyen-chi-dieu" &&
+        DONG_DA_CUSTOM_BUILDING_IDS.has(feature.id)
+      ) {
+        rendered++;
+        continue;
+      }
       if (CUSTOM_LANDMARK_BUILDING_IDS.has(feature.id)) {
         this.buildingPolygons.push({
           points,
@@ -812,6 +826,9 @@ export class GeographicWorld {
     if (this.region?.id === "quang-trung") {
       this.quangTrungEastPrecinct = new QuangTrungEastPrecinct(this);
     }
+    if (this.region?.id === "nguyen-chi-dieu") {
+      this.dongDaCorridor = new DongDaCorridor(this);
+    }
     this.allGateClearances = [
       ...(this.schoolGates || []).map((g) => ({ x: g.x, z: g.z, radius: 14.5 })),
     ];
@@ -834,6 +851,13 @@ export class GeographicWorld {
         ...this.quangTrungEastPrecinct.toWorld(85.5, 1.0),
         radius: 14.5,
       });
+    }
+    if (this.dongDaCorridor) {
+      this.allGateClearances.push(
+        { ...dongDaToWorld(126.0, 11.4), radius: 14.5 },
+        { ...dongDaToWorld(197.0, 11.4), radius: 14.5 },
+        { ...dongDaToWorld(35.0, -22.0), radius: 15.0 },
+      );
     }
     if (this.dongChuaCuuTheChurch?.secondaryGates) {
       for (const g of this.dongChuaCuuTheChurch.secondaryGates) {
@@ -942,6 +966,16 @@ export class GeographicWorld {
     this.projectPoint = project;
     this.riverRings = activeRiver;
     addStreetDetails(this, activeFeatures);
+    if (
+      this.truongTienRoad ||
+      getById(239566031) ||
+      getById(39421601)
+    ) {
+      this.truongTienSurroundings = new TruongTienSurroundings(
+        this,
+        activeFeatures,
+      );
+    }
     filterCampusTrees();
     const boardwalkView = addLimWoodBoardwalk(this, activeRoads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
@@ -959,6 +993,24 @@ export class GeographicWorld {
         );
       });
       this.boardwalkRails.push(...segments);
+    }
+    if (boardwalkView) {
+      const extRoad = {
+        points: [
+          { x: 1082.6392924302818, z: -1099.6975024450662 },
+          ...BOARDWALK_EXTENSION_POINTS,
+        ],
+      };
+      const extSegments = railSegments(extRoad, 4.2, () => BOARDWALK_Y).filter(
+        ({ a, b }) => {
+          const mx = (a.x + b.x) / 2;
+          const mz = (a.z + b.z) / 2;
+          return lateralJunctions.every(
+            (j) => Math.hypot(mx - j.x, mz - j.z) >= 2.1,
+          );
+        },
+      );
+      this.boardwalkRails.push(...extSegments);
     }
     this.youthPlayground = getById(695775607) ? new YouthPlayground(this) : null;
     this.propertyEnclosures = new PropertyEnclosures(this);
@@ -1012,8 +1064,15 @@ export class GeographicWorld {
       this.quangTrungCampus?.groundAt(x, z, referenceY) ??
       this.quangTrungEastPrecinct?.groundAt(x, z, referenceY) ??
       this.benhVienRhmHue?.groundAt(x, z, referenceY) ??
-      this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY);
+      this.dongChuaCuuTheChurch?.groundAt(x, z, referenceY) ??
+      this.dongDaCorridor?.groundAt(x, z, referenceY);
     if (campusY !== null && campusY !== undefined) return campusY;
+    if (Number.isFinite(referenceY) && referenceY < 2.2) {
+      const lowBwY = this.boardwalkView?.groundAt?.(x, z, referenceY);
+      if (lowBwY !== null && lowBwY !== undefined) return lowBwY;
+      const lowSurrY = this.truongTienSurroundings?.groundAt?.(x, z, referenceY);
+      if (lowSurrY !== null && lowSurrY !== undefined) return lowSurrY;
+    }
     if (this.truongTienRoad) {
       const q = truongTienDeckQuery(this.truongTienRoad, x, z);
       if (
@@ -1029,6 +1088,8 @@ export class GeographicWorld {
     }
     const boardwalkY = this.boardwalkView?.groundAt?.(x, z, referenceY);
     if (boardwalkY !== null && boardwalkY !== undefined) return boardwalkY;
+    const surrY = this.truongTienSurroundings?.groundAt?.(x, z, referenceY);
+    if (surrY !== null && surrY !== undefined) return surrY;
     const parkY = this.quocHocPark?.groundAt(x, z, referenceY);
     if (
       parkY !== null &&
@@ -1114,7 +1175,9 @@ export class GeographicWorld {
       this.quangTrungCampus?.blocksTree(p.x, p.z) ||
       this.quangTrungEastPrecinct?.blocksTree(p.x, p.z) ||
       this.benhVienRhmHue?.blocksTree(p.x, p.z) ||
-      this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z)
+      this.dongChuaCuuTheChurch?.blocksTree(p.x, p.z) ||
+      this.truongTienSurroundings?.blocksTree(p.x, p.z) ||
+      this.dongDaCorridor?.blocksTree(p.x, p.z)
     )
       return false;
     const gx = Math.floor(p.x / 64);
@@ -1163,7 +1226,17 @@ export class GeographicWorld {
       this.nguyenChiDieuCampus,
       this.caoThangCampus,
       this.quangTrungCampus,
+      this.dongDaCorridor?.uniStudents
+        ? { students: this.dongDaCorridor.uniStudents }
+        : null,
     ].flatMap((campus) => campus?.students?.students || []);
+  }
+  getVendorPoints() {
+    return [
+      ...(this.quangTrungCampus?.vendorPoints || []),
+      ...(this.boardwalkView?.vendorPoints || []),
+      ...(this.truongTienSurroundings?.vendorPoints || []),
+    ];
   }
   nearCampusWalls(x, z) {
     return this.campusWallGrid
@@ -1196,6 +1269,10 @@ export class GeographicWorld {
     if (churchRide === false) return false;
     const eastRide = this.quangTrungEastPrecinct?.canRide(x, z);
     if (eastRide === false) return false;
+    const surrRide = this.truongTienSurroundings?.canRide(x, z, referenceY);
+    if (surrRide === false) return false;
+    const ddRide = this.dongDaCorridor?.canRide(x, z, referenceY);
+    if (ddRide === false) return false;
     const activeRiver = this.riverRings || getRiver();
     const inRiver = activeRiver.some((r) => inside({ x, z }, r));
     if (this.boardwalkView && (!Number.isFinite(referenceY) || referenceY < 2.2)) {
@@ -1205,6 +1282,7 @@ export class GeographicWorld {
         if (inRiver) return false;
       }
     }
+    if (surrRide === true && !this.hitsTree(x, z, referenceY)) return true;
     const parkRide =
       Number.isFinite(referenceY) && referenceY >= 1.8
         ? null
@@ -1219,6 +1297,7 @@ export class GeographicWorld {
     if (campusRide === false) return false;
     if (this.hitsTree(x, z, referenceY)) return false;
     if (eastRide === true) return true;
+    if (ddRide === true) return true;
     if (campusRide === true) {
       const blockedByBuilding = this.buildingPolygons.some(
         (b) =>
@@ -1328,6 +1407,9 @@ export class GeographicWorld {
     this.caoThangCampus?.update(time, position);
     this.quangTrungCampus?.update(time, position);
     this.quangTrungEastPrecinct?.update(time, position);
+    this.boardwalkView?.update?.(time);
+    this.truongTienSurroundings?.update?.(time);
+    this.dongDaCorridor?.update?.(time, position);
     if (position) {
       this.grass?.update(position);
       this.pedestrianLife?.update(time, position);

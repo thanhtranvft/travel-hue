@@ -19,6 +19,7 @@ import {
 import { NguyenChiDieuCampus } from "../src/modules/areas/nguyen-chi-dieu/view/NguyenChiDieuCampus.js";
 import { CaoThangCampus } from "../src/modules/areas/nguyen-chi-dieu/view/CaoThangCampus.js";
 import { VincomPlazaHue } from "../src/modules/areas/nguyen-chi-dieu/view/VincomPlazaHue.js";
+import { dongDaToWorld } from "../src/modules/areas/nguyen-chi-dieu/view/DongDaCorridor.js";
 import { GeographicTraffic } from "../src/core/traffic/GeographicTraffic.js";
 import { GeographicWorld } from "../src/core/world/GeographicWorld.js";
 import { roadWidth, isFootway } from "../src/core/world/roadProfile.js";
@@ -272,8 +273,16 @@ test("Trường THPT Cao Thắng gate, fence, 6 buildings, flagpole, and boy/gir
       "all 6 OSM buildings inside Cao Thắng campus are styled",
     );
     assert.ok(
+      gate.object.getObjectByName("cao-thang-red-banner"),
+      "Cao Thắng gate displays top red banner",
+    );
+    assert.ok(
       campus.group.getObjectByName("cao-thang-flagpole"),
       "Cao Thắng flagpole is present",
+    );
+    assert.ok(
+      campus.group.getObjectByName("cao-thang-ceremony-stage"),
+      "Cao Thắng ceremonial red-carpet stage is present",
     );
 
     const counts = campus.students.getCounts();
@@ -447,4 +456,126 @@ test("Trường Nguyễn Chí Diểu area has sidewalks on both sides, no trees 
     assert.deepEqual(played, ["pedestrian"]);
   });
 });
+
+test("Đống Đa corridor has Ngã 4 Lý Thường Kiệt traffic signals, wide median with 2 crossings, left Hotel/Cafe, right Miến Lươn/Gahi/2-gate ĐH Khoa học/40 Đống Đa parking", async () => {
+  const areaCfg = appConfig.areas.items.find(
+    (d) => d.id === "nguyen-chi-dieu",
+  );
+  const region = await loadGeography("nguyen-chi-dieu");
+  withMockDocument(() => {
+    const scene = new THREE.Scene();
+    const world = new GeographicWorld(scene);
+    world.region = region;
+    world.quality = { shadows: false, grassSamples: 200 };
+    world.build();
+
+    const corridor = world.dongDaCorridor;
+    assert.ok(corridor, "DongDaCorridor instantiated for nguyen-chi-dieu");
+
+    // 1. Ngã 4 Đống Đa – Lý Thường Kiệt 4 corner traffic signal poles & signal phase cycling
+    assert.ok(
+      corridor.group.getObjectByName("nga4-dong-da-ly-thuong-kiet"),
+      "Ngã 4 Đống Đa – Lý Thường Kiệt group built",
+    );
+    for (const sigId of [
+      "dd-ltk-sig-festival",
+      "dd-ltk-sig-mienluon",
+      "dd-ltk-sig-sw",
+      "dd-ltk-sig-nw",
+    ]) {
+      assert.ok(
+        corridor.group.getObjectByName(sigId),
+        `traffic signal ${sigId} present`,
+      );
+    }
+    assert.equal(corridor.signalControllers.length, 4);
+    world.update(1.0, areaCfg.spawn);
+    const sig0Green = corridor.signalControllers[0].heads[0][2].color.getHex();
+    world.update(7.0, areaCfg.spawn);
+    const sig0Red = corridor.signalControllers[0].heads[0][0].color.getHex();
+    assert.notEqual(sig0Green, 0x10361e, "phase 0 green lit at t=1s");
+    assert.notEqual(sig0Red, 0x3b1210, "phase 0 red lit at t=7s");
+
+    // 2. Left & right street frontages + landmarks
+    for (const objName of [
+      "dong-da-wide-median",
+      "festival-hue-hotel",
+      "festival-laporte-cafe",
+      "quan-mien-luon-dong-da",
+      "gahi-cafe-36-dong-da",
+      "dhkh-hue-rear-campus",
+      "dhkh-rear-gate-1",
+      "dhkh-rear-gate-2",
+      "dong-da-40-parking-bay",
+    ]) {
+      assert.ok(corridor.group.getObjectByName(objName), `${objName} built`);
+    }
+    for (const lmId of [
+      "festival-hotel",
+      "festival-cafe",
+      "mien-luon-dong-da",
+      "gahi-cafe",
+      "dhkh-hue-rear",
+      "dong-da-40-parking",
+    ]) {
+      assert.ok(world.landmarks.has(lmId), `landmark ${lmId} registered`);
+    }
+
+    // 3. Wide median blocks crossing everywhere except intersections & exact 2 legal openings
+    for (const blockedFwd of [75, 160, 240, 350]) {
+      const p = dongDaToWorld(blockedFwd, -6.5);
+      assert.equal(
+        world.canRide(p.x, p.z, 0.23),
+        false,
+        `wide median blocks crossing at fwd=${blockedFwd}`,
+      );
+    }
+    for (const openFwd of [5, 125.5, 196.5, 294]) {
+      const p = dongDaToWorld(openFwd, -6.5);
+      assert.equal(
+        world.canRide(p.x, p.z, 0.23),
+        true,
+        `median opening / intersection allows crossing at fwd=${openFwd}`,
+      );
+    }
+
+    // 4. Both ĐH Khoa học rear gates allow entry while perimeter wall & 40 Đống Đa parked cars block riding
+    for (const gateFwd of [126.0, 197.0]) {
+      const threshold = dongDaToWorld(gateFwd, 11.4);
+      const insideYard = dongDaToWorld(gateFwd, 16.0);
+      assert.equal(
+        world.canRide(threshold.x, threshold.z, 0.26),
+        true,
+        `ĐH Khoa học rear gate at fwd=${gateFwd} threshold passable`,
+      );
+      assert.equal(
+        world.canRide(insideYard.x, insideYard.z, 0.26),
+        true,
+        `ĐH Khoa học rear gate at fwd=${gateFwd} courtyard passable`,
+      );
+    }
+    const wallPoint = dongDaToWorld(100.0, 11.4);
+    assert.equal(
+      world.canRide(wallPoint.x, wallPoint.z, 0.23),
+      false,
+      "ĐH Khoa học perimeter wall blocks riding outside gates",
+    );
+    const parkedCar = dongDaToWorld(227.5, 7.8);
+    assert.equal(
+      world.canRide(parkedCar.x, parkedCar.z, 0.27),
+      false,
+      "parked car at 40 Đống Đa blocks riding",
+    );
+
+    // 5. All 10 online spawn slots stay passable
+    for (const [i, slot] of areaCfg.spawnSlots.entries()) {
+      assert.equal(
+        world.canRide(slot.x, slot.z, 0.32),
+        true,
+        `spawnSlot[${i}] remains passable`,
+      );
+    }
+  });
+});
+
 

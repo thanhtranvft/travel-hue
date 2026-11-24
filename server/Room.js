@@ -28,6 +28,10 @@ import {
   TRUONG_TIEN_WALK_OUTER,
   truongTienDeckQuery,
 } from "../src/modules/areas/truong-tien/view/BridgeView.js";
+import {
+  lateralBridgeHeight,
+  stitchMainBoardwalk,
+} from "../src/modules/areas/south-bank/view/BoardwalkView.js";
 import { spacedSpawn } from './spawn.js';
 
 const BOARDWALK_WAY_IDS = new Set([683633953, 1167513733, 1167513732]);
@@ -205,6 +209,7 @@ export class Room {
     const areaRoads = Array.isArray(area.roads) ? area.roads : [];
     const riverRings = Array.isArray(area.riverRings) ? area.riverRings : [];
     const truongTienRoad = areaRoads.find((r) => r.id === TRUONG_TIEN_ID);
+    const boardwalkMainPoints = stitchMainBoardwalk(areaRoads);
     const nearestAreaRoad = (x, z) => {
       let best = { distance: Infinity, road: null, index: 1, t: 0 };
       for (const road of areaRoads) {
@@ -215,6 +220,19 @@ export class Room {
         }
       }
       return best;
+    };
+    const roadHeightAtHit = (hit) => {
+      if (!hit.road) return 0.25;
+      if (BOARDWALK_WAY_IDS.has(hit.road.id)) return BOARDWALK_Y + 0.008;
+      const i = Math.max(1, hit.index || 1);
+      if (LATERAL_BOARDWALK_IDS.has(hit.road.id) && boardwalkMainPoints.length) {
+        const y0 = lateralBridgeHeight(hit.road, i - 1, boardwalkMainPoints);
+        const y1 = lateralBridgeHeight(hit.road, i, boardwalkMainPoints);
+        return y0 * (1 - (hit.t || 0)) + y1 * (hit.t || 0) + 0.008;
+      }
+      const y0 = roadSurfaceHeight(hit.road, i - 1);
+      const y1 = roadSurfaceHeight(hit.road, i);
+      return y0 * (1 - (hit.t || 0)) + y1 * (hit.t || 0);
     };
     const charms = generateRegionCharms(area.region, {
       idPrefix: `${regionId}-${seq}`,
@@ -244,6 +262,7 @@ export class Room {
             BOARDWALK_WAY_IDS.has(hit.road.id) ||
             LATERAL_BOARDWALK_IDS.has(hit.road.id);
           if (!isBridgeOrBoardwalk) return false;
+          if (roadHeightAtHit(hit) < 0.32) return false;
         }
         const half = roadWidth(hit.road) / 2;
         return hit.distance <= Math.max(0.45, half - 0.5);
@@ -254,13 +273,7 @@ export class Room {
           const q = truongTienDeckQuery(truongTienRoad, x, z);
           if (q.onBridge) return q.deckY;
         }
-        const hit = nearestAreaRoad(x, z);
-        if (!hit.road) return 0.25;
-        if (BOARDWALK_WAY_IDS.has(hit.road.id)) return BOARDWALK_Y + 0.008;
-        const i = Math.max(1, hit.index || 1);
-        const y0 = roadSurfaceHeight(hit.road, i - 1);
-        const y1 = roadSurfaceHeight(hit.road, i);
-        return y0 * (1 - (hit.t || 0)) + y1 * (hit.t || 0);
+        return roadHeightAtHit(nearestAreaRoad(x, z));
       },
     });
     const entry = {
