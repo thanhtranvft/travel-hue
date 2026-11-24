@@ -362,3 +362,62 @@ test("real WebSocket: 2 clients join tag-chase and exchange emote mode_action", 
     app.close();
   }
 });
+
+test("reloaded player with token remains visible and accumulates survival and tag points in tag-chase", () => {
+  let now = 1000;
+  const room = new Room(createTestAreas(), { now: () => now });
+  const a = joinTagPlayer(room, "An");
+  const b = joinTagPlayer(room, "Bình");
+
+  // Advance through countdown into active play
+  now += TAG_CHASE_CONFIG.countdownMs + 500;
+  room.snapshot();
+
+  // Client A advances seq to 40, then reloads and rejoins with seq restarting at 1
+  room.state(a.player, moveMsg(a.player, 40, a.player.x, a.player.z + 1.0, 4));
+  room.state(b.player, moveMsg(b.player, 10, b.player.x, b.player.z + 1.0, 4));
+  assert.equal(a.player.ready, true);
+  assert.equal(b.player.ready, true);
+
+  room.disconnect(a.player);
+  now += 800;
+  const resumed = joinTagPlayer(room, "An", { token: a.player.token });
+  assert.equal(resumed.messages[0]?.type, "welcome");
+  const partyIdx = resumed.messages.findIndex(
+    (m) => m.type === "mode_event" && m.event === "party_inventory",
+  );
+  assert.ok(partyIdx > 0, "party_inventory mode_event must arrive after welcome");
+
+  now += 100;
+  const targetZ = resumed.player.z + 0.8;
+  room.state(resumed.player, moveMsg(resumed.player, 1, resumed.player.x, targetZ, 4));
+  assert.equal(resumed.player.ready, true);
+  assert.equal(resumed.player.z, targetZ);
+
+  // Advance past any countdown triggered by 2-player reconnect back into playing
+  now += TAG_CHASE_CONFIG.countdownMs + 200;
+  room.snapshot();
+
+  // Survival ticks accumulate for runner when both players are ready
+  const runner = [resumed.player, b.player].find((p) => p.tagStats.role === "runner");
+  const scoreBefore = runner.tagStats.score;
+  const ticks = Math.ceil((TAG_CHASE_CONFIG.survivalTickMs + 500) / 500);
+  for (let i = 0; i < ticks; i++) {
+    now += 500;
+    room.snapshot();
+  }
+  assert.ok(runner.tagStats.score > scoreBefore, "runner survival score increases after reconnect");
+
+  // Tag swap awards points after reconnect
+  const hunter = [resumed.player, b.player].find((p) => p.tagStats.role === "hunter");
+  const hunterBefore = hunter.tagStats.score;
+  now += 3500;
+  hunter.immuneUntil = 0;
+  runner.immuneUntil = 0;
+  hunter.stunnedUntil = 0;
+  Object.assign(hunter, { x: 0, z: 30, activeAt: now });
+  Object.assign(runner, { x: 0, z: 31.1, speed: 4, activeAt: now });
+  room.state(hunter, moveMsg(hunter, 50, 0, 30.8, 5));
+  assert.ok(hunter.tagStats.score >= hunterBefore + TAG_CHASE_CONFIG.hunterTagPoints);
+});
+

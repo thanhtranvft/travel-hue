@@ -266,3 +266,36 @@ test("WebSocket accepts proxied X-Forwarded-Host and configured allowedOrigins, 
     await app.close();
   }
 });
+
+test("token reconnect resets seq so reloaded player becomes ready and visible to other players", () => {
+  let now = 1000;
+  const room = new Room(areas, { now: () => now, reconnectMs: 15000 });
+  const a = join(room, "Người chơi A");
+  const b = join(room, "Người chơi B");
+
+  now += 500;
+  room.state(a.player, move(a.player, 50, 0, 1.5, 4));
+  room.state(b.player, move(b.player, 1, 0, 4.0, 4));
+  assert.equal(a.player.ready, true);
+  assert.equal(a.player.seq, 50);
+
+  room.disconnect(a.player);
+  now += 1000;
+  const resumed = join(room, "Người chơi A", { token: a.player.token });
+  assert.equal(resumed.player.id, a.player.id);
+  assert.equal(resumed.player.seq, -1);
+  assert.equal(resumed.messages[0]?.type, "welcome");
+
+  now += 100;
+  room.state(resumed.player, move(resumed.player, 1, 0, 2.0, 4));
+  assert.equal(resumed.player.ready, true);
+  assert.equal(resumed.player.seq, 1);
+  assert.equal(resumed.player.z, 2.0);
+
+  room.snapshot();
+  const bSnap = b.messages.filter((m) => m.type === "snapshot").at(-1);
+  const aInSnap = bSnap.players.find((p) => p.id === a.player.id);
+  assert.equal(aInSnap?.ready, true);
+  assert.equal(aInSnap?.z, 2.0);
+});
+

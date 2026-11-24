@@ -352,9 +352,9 @@ export class Room {
     p.gameMode = nextGameMode;
     p.roomKey = nextRoomKey;
     this.spawn(p, id, nextRoomKey);
-    this.ensureModeState(nextRoomKey, nextGameMode)?.onJoin?.(p, this);
     const charmEntry = this.ensureRegionCharms(id, false, nextGameMode);
     this.send(p, { type: "relocate", player: this.publicPlayer(p) });
+    this.ensureModeState(nextRoomKey, nextGameMode)?.onJoin?.(p, this);
     this.send(p, {
       type: "charms",
       region: id,

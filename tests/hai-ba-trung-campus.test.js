@@ -165,3 +165,48 @@ test("Hai Bà Trưng Tam Quan gate, baluster fence, 12 buildings, flagpole islan
     assert.equal(campus.canRide(outsidePos.x, outsidePos.z), null);
   });
 });
+
+test("Map 01 builds cleanly and rides smoothly past Quốc Học & Hai Bà Trưng gate without LivingGrass stalls", async () => {
+  const prevDoc = globalThis.document;
+  const noop = () => {};
+  const grad = { addColorStop: noop };
+  const ctx = new Proxy(
+    {},
+    {
+      get: (_, k) => {
+        if (k === "measureText") return () => ({ width: 50 });
+        if (k === "createLinearGradient" || k === "createRadialGradient") return () => grad;
+        if (k === "getImageData") return (x, y, w, h) => ({ data: new Uint8ClampedArray(w * h * 4) });
+        return noop;
+      },
+    },
+  );
+  globalThis.document = {
+    createElement: () => ({ width: 256, height: 256, getContext: () => ctx }),
+  };
+  try {
+    const { loadGeography } = await import("../src/modules/areas/AreaModel.js");
+    const { GeographicWorld } = await import("../src/core/world/GeographicWorld.js");
+    const { renderQuality } = await import("../src/core/rendering/renderQuality.js");
+    const { optimizeMobileStaticScene } = await import("../src/core/rendering/MobileStaticScene.js");
+    const region = await loadGeography("quoc-hoc");
+    const scene = new THREE.Scene();
+    const world = new GeographicWorld(scene);
+    world.quality = renderQuality({ coarse: true, width: 390, dpr: 2 });
+    world.region = region;
+    world.build();
+    optimizeMobileStaticScene(world);
+
+    assert.ok(world.grass.mesh.count > 0, "LivingGrass places initial batch immediately");
+    for (let i = 0; i < 20; i++) {
+      const x = 605 + i * 2.2;
+      const z = -470 - i * 5.2;
+      const y = world.groundAt(x, z, 0.2);
+      assert.equal(Number.isFinite(y), true, `finite ground height near Hai Ba Trung gate (${x}, ${z})`);
+      world.update(i * 0.016, { x, y, z });
+    }
+  } finally {
+    globalThis.document = prevDoc;
+  }
+});
+

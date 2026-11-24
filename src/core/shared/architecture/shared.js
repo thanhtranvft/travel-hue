@@ -1,8 +1,30 @@
 import * as THREE from "three";
-export const mat = (color, roughness = 0.75, metalness = 0.05) =>
-  new THREE.MeshStandardMaterial({ color, roughness, metalness });
+const matCache = new Map();
+const boxGeoCache = new Map();
+export const mat = (color, roughness = 0.75, metalness = 0.05) => {
+  const key = `${color}|${roughness}|${metalness}`;
+  let cached = matCache.get(key);
+  if (!cached) {
+    cached = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    cached.addEventListener("dispose", () => {
+      if (matCache.get(key) === cached) matCache.delete(key);
+    });
+    matCache.set(key, cached);
+  }
+  return cached;
+};
 export function box(size, color, position = [0, 0, 0]) {
-  const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(color));
+  const [w, h, d] = size;
+  const geoKey = `${w}|${h}|${d}`;
+  let geo = boxGeoCache.get(geoKey);
+  if (!geo) {
+    geo = new THREE.BoxGeometry(w, h, d);
+    geo.addEventListener("dispose", () => {
+      if (boxGeoCache.get(geoKey) === geo) boxGeoCache.delete(geoKey);
+    });
+    boxGeoCache.set(geoKey, geo);
+  }
+  const m = new THREE.Mesh(geo, mat(color));
   m.position.set(...position);
   m.castShadow = m.receiveShadow = true;
   return m;

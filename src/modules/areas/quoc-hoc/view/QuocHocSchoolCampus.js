@@ -10,7 +10,26 @@ import {
   inside,
   nearestPoint,
 } from "../../../../core/shared/geography/geometry.js";
-import { box, mat } from "../../../../core/shared/architecture/shared.js";
+
+const _qhMatCache = new Map();
+function mat(color, roughness = 0.75, metalness = 0.05) {
+  const key = `${color}|${roughness}|${metalness}`;
+  let m = _qhMatCache.get(key);
+  if (!m) {
+    m = new THREE.MeshStandardMaterial({ color, roughness, metalness });
+    m.addEventListener("dispose", () => {
+      if (_qhMatCache.get(key) === m) _qhMatCache.delete(key);
+    });
+    _qhMatCache.set(key, m);
+  }
+  return m;
+}
+function box(size, color, position = [0, 0, 0]) {
+  const m = new THREE.Mesh(new THREE.BoxGeometry(...size), mat(color));
+  m.position.set(...position);
+  m.castShadow = m.receiveShadow = true;
+  return m;
+}
 import {
   applyWorldPlanarUVs,
   createManicuredLawnMaterial,
@@ -677,62 +696,89 @@ function createCampusBenchAssets() {
   };
 }
 
-function createCampusBench(x, y, z, yaw = 0, assets = createCampusBenchAssets(), { withPad = false } = {}) {
-  const g = new THREE.Group();
-  g.name = "campus-stone-bench";
-  g.position.set(x, y, z);
-  g.rotation.y = yaw;
+function buildMergedPartGeo(parts) {
+  const tmp = new THREE.Object3D();
+  const geos = parts.map(({ geo, pos = [0, 0, 0], rot = [0, 0, 0] }) => {
+    tmp.position.set(pos[0], pos[1], pos[2]);
+    tmp.rotation.set(rot[0], rot[1], rot[2]);
+    tmp.scale.set(1, 1, 1);
+    tmp.updateMatrix();
+    const g = geo.index ? geo.toNonIndexed() : geo.clone();
+    g.applyMatrix4(tmp.matrix);
+    return g;
+  });
+  const merged = mergeGeometries(geos, false);
+  geos.forEach((g) => g.dispose());
+  return merged;
+}
 
-  if (withPad) {
-    const pad = new THREE.Mesh(assets.padGeo, assets.padMat);
-    pad.position.set(0, -0.02, 0.08);
-    pad.receiveShadow = true;
-    g.add(pad);
+function addInstancedCampusBenches(parent, specs, assets) {
+  if (!specs.length) return;
+  const seatGeo = buildMergedPartGeo([
+    { geo: assets.seatGeo, pos: [0, 0.445, 0.03] },
+    { geo: assets.backGeo, pos: [0, 0.67, -0.19], rot: [-0.14, 0, 0] },
+  ]);
+  const legGeo = buildMergedPartGeo([
+    { geo: assets.footGeo, pos: [-0.66, 0.04, 0] },
+    { geo: assets.footGeo, pos: [0.66, 0.04, 0] },
+    { geo: assets.legGeo, pos: [-0.66, 0.25, 0] },
+    { geo: assets.legGeo, pos: [0.66, 0.25, 0] },
+    { geo: assets.braceGeo, pos: [0, 0.22, -0.02] },
+    { geo: assets.armPostGeo, pos: [-0.82, 0.5, 0.16] },
+    { geo: assets.armPostGeo, pos: [0.82, 0.5, 0.16] },
+  ]);
+  const trimGeo = buildMergedPartGeo([
+    { geo: assets.bullnoseGeo, pos: [0, 0.445, 0.27], rot: [0, 0, Math.PI / 2] },
+    { geo: assets.capGeo, pos: [0, 0.87, -0.22], rot: [-0.14, 0, 0] },
+    { geo: assets.armGeo, pos: [-0.82, 0.59, 0.02] },
+    { geo: assets.armGeo, pos: [0.82, 0.59, 0.02] },
+  ]);
+  const padGeo = buildMergedPartGeo([
+    { geo: assets.padGeo, pos: [0, -0.02, 0.08] },
+  ]);
+
+  const padSpecs = specs.filter((b) => b.withPad);
+  const seatInst = new THREE.InstancedMesh(seatGeo, assets.seatMat, specs.length);
+  const legInst = new THREE.InstancedMesh(legGeo, assets.legMat, specs.length);
+  const trimInst = new THREE.InstancedMesh(trimGeo, assets.trimMat, specs.length);
+  seatInst.castShadow = seatInst.receiveShadow = true;
+  legInst.castShadow = legInst.receiveShadow = true;
+  trimInst.castShadow = trimInst.receiveShadow = true;
+
+  const dummy = new THREE.Object3D();
+  specs.forEach((b, idx) => {
+    const anchor = new THREE.Group();
+    anchor.name = "campus-stone-bench";
+    anchor.position.set(b.side, b.y, -b.fwd);
+    anchor.rotation.y = b.yaw;
+    parent.add(anchor);
+
+    dummy.position.set(b.side, b.y, -b.fwd);
+    dummy.rotation.set(0, b.yaw, 0);
+    dummy.scale.set(1, 1, 1);
+    dummy.updateMatrix();
+    seatInst.setMatrixAt(idx, dummy.matrix);
+    legInst.setMatrixAt(idx, dummy.matrix);
+    trimInst.setMatrixAt(idx, dummy.matrix);
+  });
+  seatInst.instanceMatrix.needsUpdate = true;
+  legInst.instanceMatrix.needsUpdate = true;
+  trimInst.instanceMatrix.needsUpdate = true;
+  parent.add(seatInst, legInst, trimInst);
+
+  if (padSpecs.length) {
+    const padInst = new THREE.InstancedMesh(padGeo, assets.padMat, padSpecs.length);
+    padInst.receiveShadow = true;
+    padSpecs.forEach((b, idx) => {
+      dummy.position.set(b.side, b.y, -b.fwd);
+      dummy.rotation.set(0, b.yaw, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      padInst.setMatrixAt(idx, dummy.matrix);
+    });
+    padInst.instanceMatrix.needsUpdate = true;
+    parent.add(padInst);
   }
-
-  for (const sx of [-0.66, 0.66]) {
-    const foot = new THREE.Mesh(assets.footGeo, assets.legMat);
-    foot.position.set(sx, 0.04, 0);
-    foot.castShadow = foot.receiveShadow = true;
-    const leg = new THREE.Mesh(assets.legGeo, assets.legMat);
-    leg.position.set(sx, 0.25, 0);
-    leg.castShadow = leg.receiveShadow = true;
-    g.add(foot, leg);
-  }
-
-  const brace = new THREE.Mesh(assets.braceGeo, assets.legMat);
-  brace.position.set(0, 0.22, -0.02);
-  g.add(brace);
-
-  const seat = new THREE.Mesh(assets.seatGeo, assets.seatMat);
-  seat.position.set(0, 0.445, 0.03);
-  seat.castShadow = seat.receiveShadow = true;
-
-  const bullnose = new THREE.Mesh(assets.bullnoseGeo, assets.trimMat);
-  bullnose.rotation.z = Math.PI / 2;
-  bullnose.position.set(0, 0.445, 0.27);
-
-  const back = new THREE.Mesh(assets.backGeo, assets.seatMat);
-  back.position.set(0, 0.67, -0.19);
-  back.rotation.x = -0.14;
-  back.castShadow = back.receiveShadow = true;
-
-  const cap = new THREE.Mesh(assets.capGeo, assets.trimMat);
-  cap.position.set(0, 0.87, -0.22);
-  cap.rotation.x = -0.14;
-  g.add(seat, bullnose, back, cap);
-
-  // Curved stone armrests on both ends
-  for (const sx of [-0.82, 0.82]) {
-    const arm = new THREE.Mesh(assets.armGeo, assets.trimMat);
-    arm.position.set(sx, 0.59, 0.02);
-    arm.castShadow = arm.receiveShadow = true;
-    const armPost = new THREE.Mesh(assets.armPostGeo, assets.legMat);
-    armPost.position.set(sx, 0.5, 0.16);
-    g.add(arm, armPost);
-  }
-
-  return g;
 }
 
 function createCampusLamp(x, y, z) {
@@ -772,80 +818,7 @@ function createCampusLamp(x, y, z) {
   return g;
 }
 
-function createCampusTree(x, y, z, scale = 1, poinciana = false, seed = 1) {
-  const g = new THREE.Group();
-  g.position.set(x, y, z);
-  g.rotation.y = seed * 1.618;
-  const trunkMat = mat("#64513e", 0.9);
-  const trunkH = 3.2 * scale;
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.19 * scale, 0.34 * scale, trunkH, 7),
-    trunkMat,
-  );
-  trunk.position.y = trunkH / 2;
-  trunk.castShadow = trunk.receiveShadow = true;
-  g.add(trunk);
 
-  for (let b = 0; b < 3; b++) {
-    const a = (b * Math.PI * 2) / 3 + 0.35;
-    const branch = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08 * scale, 0.14 * scale, 2.0 * scale, 6),
-      trunkMat,
-    );
-    branch.position.set(
-      Math.cos(a) * 0.65 * scale,
-      trunkH + 0.5 * scale,
-      Math.sin(a) * 0.65 * scale,
-    );
-    branch.rotation.z = -Math.cos(a) * 0.56;
-    branch.rotation.x = Math.sin(a) * 0.56;
-    g.add(branch);
-  }
-
-  const greens = poinciana
-    ? ["#447b34", "#558f3d", "#3a6b2b", "#649c48"]
-    : ["#32652b", "#417a35", "#518c40", "#619a4c"];
-  const crowns = [
-    [0, trunkH + 2.0 * scale, 0, 2.1 * scale, 0.66],
-    [1.45 * scale, trunkH + 1.45 * scale, 0.85 * scale, 1.58 * scale, 0.65],
-    [-1.4 * scale, trunkH + 1.5 * scale, 0.75 * scale, 1.62 * scale, 0.64],
-    [0.25 * scale, trunkH + 1.38 * scale, -1.45 * scale, 1.6 * scale, 0.68],
-    [-0.95 * scale, trunkH + 2.15 * scale, -0.8 * scale, 1.45 * scale, 0.62],
-    [1.0 * scale, trunkH + 2.1 * scale, -0.55 * scale, 1.4 * scale, 0.62],
-    [0.1 * scale, trunkH + 2.55 * scale, 0.45 * scale, 1.35 * scale, 0.58],
-  ];
-  crowns.forEach(([cx, cy, cz, r, sy], i) => {
-    const c = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(r, 1),
-      mat(greens[i % greens.length], 0.86),
-    );
-    c.position.set(cx, cy, cz);
-    c.scale.set(1.18, sy, 1.14);
-    c.castShadow = c.receiveShadow = true;
-    g.add(c);
-  });
-
-  if (poinciana) {
-    // Vibrant scarlet-red Phượng Vĩ blossom clusters atop canopy
-    const bloomMat = mat("#e14424", 0.62);
-    for (let i = 0; i < 9; i++) {
-      const a = (i * Math.PI * 2) / 9 + 0.2;
-      const r = i < 2 ? 0.45 * scale : 1.58 * scale;
-      const bloom = new THREE.Mesh(
-        new THREE.DodecahedronGeometry(0.65 * scale, 0),
-        bloomMat,
-      );
-      bloom.position.set(
-        Math.cos(a) * r,
-        trunkH + (2.15 + (i % 3) * 0.35) * scale,
-        Math.sin(a) * r,
-      );
-      bloom.scale.set(1.25, 0.48, 1.25);
-      g.add(bloom);
-    }
-  }
-  return g;
-}
 
 function createPalmTree(x, y, z, scale = 1) {
   const g = new THREE.Group();
@@ -1380,8 +1353,8 @@ export class QuocHocSchoolCampus {
     for (const b of benchSpecs) {
       const wp = this.toWorld(b.side, b.fwd);
       this.benches.push({ ...b, x: wp.x, z: wp.z });
-      yard.add(createCampusBench(b.side, b.y, -b.fwd, b.yaw, benchAssets, { withPad: b.withPad }));
     }
+    addInstancedCampusBenches(yard, benchSpecs, benchAssets);
     for (const [lx, lz] of [
       [-11.5, statueZ + 10.5],
       [11.5, statueZ + 10.5],
@@ -1477,6 +1450,7 @@ export class QuocHocSchoolCampus {
       [18, 222, 1.35, true],
     ];
 
+    const treeEntries = [];
     candidateSpecs.forEach(([side, fwd, scale, poinciana], idx) => {
       const w = this.toWorld(side, fwd);
       if (!this.inCampus(w.x, w.z)) return;
@@ -1486,10 +1460,121 @@ export class QuocHocSchoolCampus {
           inside(w, poly) || nearestPoint(w, poly).distance < 3.4,
       );
       if (hitsBuilding) return;
-      this.group.add(
-        createCampusTree(w.x, 0.14, w.z, scale, poinciana, idx + 1),
-      );
+      treeEntries.push({ x: w.x, y: 0.14, z: w.z, scale, poinciana, seed: idx + 1 });
     });
+
+    if (treeEntries.length) {
+      const trunkMat = mat("#64513e", 0.9);
+      const bloomMat = mat("#e14424", 0.62);
+      const trunkGeo = new THREE.CylinderGeometry(0.19, 0.34, 3.2, 7);
+      const branchGeo = new THREE.CylinderGeometry(0.08, 0.14, 2.0, 6);
+      const crownGeo = new THREE.DodecahedronGeometry(1, 1);
+      const bloomGeo = new THREE.DodecahedronGeometry(0.65, 0);
+
+      const trunkInst = new THREE.InstancedMesh(trunkGeo, trunkMat, treeEntries.length);
+      trunkInst.castShadow = trunkInst.receiveShadow = true;
+      const branchInst = new THREE.InstancedMesh(branchGeo, trunkMat, treeEntries.length * 3);
+
+      const treeDummy = new THREE.Object3D();
+      const partDummy = new THREE.Object3D();
+      const mat4 = new THREE.Matrix4();
+      const crownByColor = new Map();
+      const bloomMatrices = [];
+
+      const crownDefs = [
+        [0, 2.0, 0, 2.1, 0.66],
+        [1.45, 1.45, 0.85, 1.58, 0.65],
+        [-1.4, 1.5, 0.75, 1.62, 0.64],
+        [0.25, 1.38, -1.45, 1.6, 0.68],
+        [-0.95, 2.15, -0.8, 1.45, 0.62],
+        [1.0, 2.1, -0.55, 1.4, 0.62],
+        [0.1, 2.55, 0.45, 1.35, 0.58],
+      ];
+
+      let branchIdx = 0;
+      treeEntries.forEach(({ x, y, z, scale, poinciana, seed }, tIdx) => {
+        treeDummy.position.set(x, y, z);
+        treeDummy.rotation.set(0, seed * 1.618, 0);
+        treeDummy.scale.set(1, 1, 1);
+        treeDummy.updateMatrix();
+
+        const trunkH = 3.2 * scale;
+        partDummy.position.set(0, trunkH / 2, 0);
+        partDummy.rotation.set(0, 0, 0);
+        partDummy.scale.set(scale, scale, scale);
+        partDummy.updateMatrix();
+        mat4.multiplyMatrices(treeDummy.matrix, partDummy.matrix);
+        trunkInst.setMatrixAt(tIdx, mat4);
+
+        for (let b = 0; b < 3; b++) {
+          const a = (b * Math.PI * 2) / 3 + 0.35;
+          partDummy.position.set(
+            Math.cos(a) * 0.65 * scale,
+            trunkH + 0.5 * scale,
+            Math.sin(a) * 0.65 * scale,
+          );
+          partDummy.rotation.set(Math.sin(a) * 0.56, 0, -Math.cos(a) * 0.56);
+          partDummy.scale.set(scale, scale, scale);
+          partDummy.updateMatrix();
+          mat4.multiplyMatrices(treeDummy.matrix, partDummy.matrix);
+          branchInst.setMatrixAt(branchIdx++, mat4);
+        }
+
+        const greens = poinciana
+          ? ["#447b34", "#558f3d", "#3a6b2b", "#649c48"]
+          : ["#32652b", "#417a35", "#518c40", "#619a4c"];
+        crownDefs.forEach(([cx, cy, cz, r, sy], ci) => {
+          const col = greens[ci % greens.length];
+          let list = crownByColor.get(col);
+          if (!list) {
+            list = [];
+            crownByColor.set(col, list);
+          }
+          partDummy.position.set(cx * scale, trunkH + cy * scale, cz * scale);
+          partDummy.rotation.set(0, 0, 0);
+          partDummy.scale.set(1.18 * r * scale, sy * r * scale, 1.14 * r * scale);
+          partDummy.updateMatrix();
+          list.push(new THREE.Matrix4().multiplyMatrices(treeDummy.matrix, partDummy.matrix));
+        });
+
+        if (poinciana) {
+          for (let i = 0; i < 9; i++) {
+            const a = (i * Math.PI * 2) / 9 + 0.2;
+            const r = i < 2 ? 0.45 * scale : 1.58 * scale;
+            partDummy.position.set(
+              Math.cos(a) * r,
+              trunkH + (2.15 + (i % 3) * 0.35) * scale,
+              Math.sin(a) * r,
+            );
+            partDummy.rotation.set(0, 0, 0);
+            partDummy.scale.set(1.25 * scale, 0.48 * scale, 1.25 * scale);
+            partDummy.updateMatrix();
+            bloomMatrices.push(
+              new THREE.Matrix4().multiplyMatrices(treeDummy.matrix, partDummy.matrix),
+            );
+          }
+        }
+      });
+
+      trunkInst.instanceMatrix.needsUpdate = true;
+      branchInst.instanceMatrix.needsUpdate = true;
+      this.group.add(trunkInst, branchInst);
+
+      for (const [col, mats] of crownByColor.entries()) {
+        const inst = new THREE.InstancedMesh(crownGeo, mat(col, 0.86), mats.length);
+        inst.castShadow = inst.receiveShadow = true;
+        mats.forEach((m, i) => inst.setMatrixAt(i, m));
+        inst.instanceMatrix.needsUpdate = true;
+        this.group.add(inst);
+      }
+
+      if (bloomMatrices.length) {
+        const bloomInst = new THREE.InstancedMesh(bloomGeo, bloomMat, bloomMatrices.length);
+        bloomMatrices.forEach((m, i) => bloomInst.setMatrixAt(i, m));
+        bloomInst.instanceMatrix.needsUpdate = true;
+        this.group.add(bloomInst);
+      }
+    }
   }
 
   groundAt(wx, wz, referenceY) {
@@ -1617,24 +1702,29 @@ export class QuocHocSchoolCampus {
   }
 
   update(time, playerPos = null) {
-    for (const flag of this.flags) {
-      const pos = flag.geometry.attributes.position;
-      const base = flag.userData.basePos;
-      const seed = flag.userData.seed || 0;
-      if (!pos || !base) continue;
-      for (let i = 0; i < pos.count; i++) {
-        const bx = base[i * 3];
-        const by = base[i * 3 + 1];
-        const u = Math.min(1, Math.max(0, bx / 2.65));
-        const wave =
-          Math.sin(u * 4.5 - time * 3.8 + seed) * 0.18 * u +
-          Math.sin(u * 8.0 - time * 5.6 + seed + by * 0.6) * 0.06 * u;
-        const droop = -0.14 * u * u + Math.sin(time * 2.1 + u * 2 + seed) * 0.03 * u;
-        pos.setZ(i, base[i * 3 + 2] + wave);
-        pos.setY(i, by + droop);
+    const animateFlags =
+      !playerPos ||
+      Math.hypot(playerPos.x - this.gate.x, playerPos.z - this.gate.z) <= 220;
+    if (animateFlags) {
+      for (const flag of this.flags) {
+        const pos = flag.geometry.attributes.position;
+        const base = flag.userData.basePos;
+        const seed = flag.userData.seed || 0;
+        if (!pos || !base) continue;
+        for (let i = 0; i < pos.count; i++) {
+          const bx = base[i * 3];
+          const by = base[i * 3 + 1];
+          const u = Math.min(1, Math.max(0, bx / 2.65));
+          const wave =
+            Math.sin(u * 4.5 - time * 3.8 + seed) * 0.18 * u +
+            Math.sin(u * 8.0 - time * 5.6 + seed + by * 0.6) * 0.06 * u;
+          const droop = -0.14 * u * u + Math.sin(time * 2.1 + u * 2 + seed) * 0.03 * u;
+          pos.setZ(i, base[i * 3 + 2] + wave);
+          pos.setY(i, by + droop);
+        }
+        pos.needsUpdate = true;
+        flag.geometry.computeVertexNormals();
       }
-      pos.needsUpdate = true;
-      flag.geometry.computeVertexNormals();
     }
     this.students?.update(time, playerPos);
   }
