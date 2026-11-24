@@ -69,13 +69,13 @@ test("renderGameModePicker shows default mode without speed-charm title bloat an
   const html01 = renderGameModePicker("quoc-hoc", "free-roam", { "quoc-hoc": 3 }, 10);
   assert.ok(html01.includes("Dạo phố tự do"));
   assert.ok(html01.includes("3/10 người"));
-  assert.ok(html01.includes("Rượt bắt tốc độ"));
+  assert.ok(html01.includes("Hành trình Huế"));
   assert.ok(html01.includes("Đua Check-point Cố Đô"));
   assert.equal(html01.includes("Dạo phố Online &amp; Săn bùa tốc độ"), false);
 
   const html02 = renderGameModePicker("south-bank", "free-roam", { "south-bank": 1 }, 10);
   assert.ok(html02.includes("Dạo phố tự do"));
-  assert.equal(html02.includes("Rượt bắt tốc độ"), false);
+  assert.equal(html02.includes("Hành trình Huế"), false);
   assert.ok(html02.includes("Map 01 &amp; Map 05"));
 });
 

@@ -11,8 +11,8 @@ import { TagChaseWorldFX } from "./TagChaseWorldFX.js";
 export const tagChaseMode = {
   id: "tag-chase",
   kind: "special",
-  title: "Rượt bắt tốc độ",
-  shortTitle: "Rượt bắt",
+  title: "Hành trình Huế — Khám phá & tranh tài",
+  shortTitle: "Hành trình Huế",
   description:
     "Khám phá địa danh Huế, tranh tài rượt bắt ngắn rồi cùng hoàn thành nhiệm vụ. Ghi nhận lượt ghé thăm và đóng góp đồng hành.",
   regions: ["quoc-hoc", "quang-trung"],
@@ -20,6 +20,22 @@ export const tagChaseMode = {
   upcoming: false,
   charmsEnabled: true,
   maxPlayers: 10,
+  lobbyInstructions: [
+    `Bắt đầu: ${TAG_CHASE_CONFIG.minPlayersToStart}–10 người cùng khu vực, đếm ngược ${TAG_CHASE_CONFIG.countdownMs / 1000}s khi đủ người. Có thể dạo phố trong lúc chờ.`,
+    `Khám phá · ${TAG_CHASE_CONFIG.explorationDurationMs / 1000}s: ghé địa danh +${TAG_CHASE_CONFIG.visitPoints}đ, mỗi nơi một lần/ván. Đứng yên hoặc đi qua lại không cộng lặp.`,
+    `Tranh tài · ${TAG_CHASE_CONFIG.chaseDurationMs / 1000}s: 1 Người Săn (2–4 người) hoặc 2 (5–10 người). Chạm để đổi vai +${TAG_CHASE_CONFIG.hunterTagPoints}đ; chạy trốn và thoát hiểm có điểm.`,
+    `Hợp tác · ${TAG_CHASE_CONFIG.coopDurationMs / 1000}–${(TAG_CHASE_CONFIG.coopDurationMs + 8 * TAG_CHASE_CONFIG.coopExtraMsPerPlayer) / 1000}s: gom ${TAG_CHASE_CONFIG.coopMinItems}–${TAG_CHASE_CONFIG.coopMaxItems} món quanh điểm hẹn, tùy sĩ số/vị trí. Mỗi món +${TAG_CHASE_CONFIG.coopPickupPoints}đ; hoàn thành +${TAG_CHASE_CONFIG.coopRewardPoints}đ cho người có đóng góp.`,
+    "Vật phẩm: nhặt hộp quà khi Tranh tài. Q — Nón Lá chặn một cú bắt/va chạm; E — Gió Hương làm chậm; F — Cà Phê giải choáng, tăng tốc. Chạm biểu tượng trên điện thoại.",
+    "Tự do đi lại toàn khu suốt ván. Bùa tăng tốc 1–4 dùng ở mọi giai đoạn; Q/E/F chỉ hiện và dùng khi Tranh tài. Tổng kết ghi nhận khám phá, đồng hành và tranh tài.",
+  ],
+  instructions: [
+    `Từ ${TAG_CHASE_CONFIG.minPlayersToStart}–10 người cùng khu vực. Khi đủ người, đếm ngược ${TAG_CHASE_CONFIG.countdownMs / 1000} giây. Bạn vẫn có thể dạo phố trong lúc chờ.`,
+    `Khám phá · ${TAG_CHASE_CONFIG.explorationDurationMs / 1000} giây: đến điểm hẹn, ghé các địa danh để nhận ${TAG_CHASE_CONFIG.visitPoints} điểm/địa danh/ván. Phải di chuyển; đi qua lại cùng một địa danh không được cộng lặp.`,
+    `Tranh tài · ${TAG_CHASE_CONFIG.chaseDurationMs / 1000} giây: 2–4 người có 1 Người Săn; 5–10 người có 2 Người Săn. Người Săn chạm Người Chạy để đổi vai và nhận ${TAG_CHASE_CONFIG.hunterTagPoints} điểm. Chạy trốn thực sự gần Người Săn và thoát hiểm cũng có điểm.`,
+    `Hợp tác · ${TAG_CHASE_CONFIG.coopDurationMs / 1000}–${(TAG_CHASE_CONFIG.coopDurationMs + 8 * TAG_CHASE_CONFIG.coopExtraMsPerPlayer) / 1000} giây: cùng gom đèn lồng/hoa sen quanh điểm hẹn. Hai người cần ${TAG_CHASE_CONFIG.coopMinItems} món, tăng theo sĩ số đến ${TAG_CHASE_CONFIG.coopMaxItems} món và giảm nếu không đủ vị trí hợp lệ. Mỗi món +${TAG_CHASE_CONFIG.coopPickupPoints} điểm; hoàn thành thưởng thêm ${TAG_CHASE_CONFIG.coopRewardPoints} điểm cho người có đóng góp.`,
+    "Ba vật phẩm Q/E/F nhận từ hộp quà trên đường và chỉ hiện, sử dụng trong giai đoạn Tranh tài: Q — Khiên Nón Lá chặn một cú bắt/va chạm; E — Gió Sông Hương làm chậm đối thủ gần đó; F — Cà Phê Muối giải choáng và tăng tốc ngắn. Trên điện thoại, chạm biểu tượng để dùng.",
+    "Tổng kết ghi nhận riêng lượt khám phá, đóng góp đồng hành và thành tích tranh tài. Bạn được đi lại trong toàn khu vực suốt vòng chơi. Bùa tăng tốc 1–4 vẫn dùng ở cả ba giai đoạn.",
+  ],
   createClientSession(game) {
     let latestTagState = null;
     let latestPlayers = [];

@@ -1,7 +1,17 @@
 import {
-  animateChibiActor,
+  animateChibiActor as animatePrimaryStudent,
   buildChibiActor,
 } from "../vehicle/ChibiCharacters.js";
+import * as THREE from "three";
+import {
+  buildHighSchoolStudent,
+  animateHighSchoolStudent,
+} from "./HighSchoolStudent.js";
+
+function animateChibiActor(rig, state) {
+  if (rig.highSchool) animateHighSchoolStudent(rig, state);
+  else animatePrimaryStudent(rig, state);
+}
 
 function yawFromDelta(dx, dz) {
   return Math.atan2(dx, dz);
@@ -18,6 +28,8 @@ export class CampusStudents {
     distanceCutoff = 120,
     scale = 1.0,
     includeBike = false,
+    schoolLevel = "primary",
+    benchSpots = [],
   } = {}) {
     this.target = parent || scene;
     this.toWorld = toWorld || ((side, fwd) => ({ x: side, z: fwd }));
@@ -26,19 +38,29 @@ export class CampusStudents {
     this.animatedObjects = [];
     this.students = [];
     this.lastTime = null;
+    this.shuttleGroups = [];
+    const buildStudent = (gender) =>
+      schoolLevel === "high-school"
+        ? buildHighSchoolStudent(gender)
+        : buildChibiActor(gender, { includeBike });
 
     let seed = 1;
 
     for (const spec of walkers) {
       const gender = spec.gender === "girl" ? "girl" : "boy";
-      const rig = buildChibiActor(gender, { includeBike });
-      const pts = (spec.points || []).map(([side, fwd]) => this.toWorld(side, fwd));
+      const rig = buildStudent(gender);
+      const pts = (spec.points || []).map(([side, fwd]) =>
+        this.toWorld(side, fwd),
+      );
       if (pts.length < 2) continue;
 
       const segLengths = [];
       let totalLen = 0;
       for (let i = 1; i < pts.length; i++) {
-        const len = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+        const len = Math.hypot(
+          pts[i].x - pts[i - 1].x,
+          pts[i].z - pts[i - 1].z,
+        );
         segLengths.push(len);
         totalLen += len;
       }
@@ -85,7 +107,15 @@ export class CampusStudents {
       seed++;
     }
 
-    for (const spot of chatSpots) {
+    for (const spot of [
+      ...chatSpots,
+      ...benchSpots.map((b) => ({
+        ...b,
+        activity: "seated",
+        members: ["boy", "girl"],
+        radius: 0.42,
+      })),
+    ]) {
       const center = this.toWorld(spot.side, spot.fwd);
       const members = spot.members || ["boy", "girl"];
       const radius = spot.radius ?? 0.95;
@@ -94,16 +124,34 @@ export class CampusStudents {
       members.forEach((rawGender, idx) => {
         const gender = rawGender === "girl" ? "girl" : "boy";
         const a = baseAngle + (idx * Math.PI * 2) / members.length;
-        const wx = center.x + Math.cos(a) * radius;
-        const wz = center.z + Math.sin(a) * radius;
+        const seated = spot.activity === "seated";
+        const offset = (idx - (members.length - 1) / 2) * 0.65;
+        const seatWorld = seated
+          ? this.toWorld(
+              spot.side + Math.cos(spot.yaw || 0) * offset,
+              spot.fwd + Math.sin(spot.yaw || 0) * offset,
+            )
+          : null;
+        const wx = seatWorld?.x ?? center.x + Math.cos(a) * radius;
+        const wz = seatWorld?.z ?? center.z + Math.sin(a) * radius;
         const y = this.groundAt(wx, wz) ?? 0.34;
 
-        const rig = buildChibiActor(gender, { includeBike });
+        const rig = buildStudent(gender);
         rig.actor.name = `campus-student-${gender}`;
         rig.actor.userData.studentGender = gender;
         rig.actor.scale.setScalar(spot.scale || scale);
         rig.actor.position.set(wx, y, wz);
         rig.actor.rotation.y = yawFromDelta(center.x - wx, center.z - wz);
+        if (seated) {
+          const facing = this.toWorld(
+            spot.side + Math.sin(spot.yaw || 0),
+            spot.fwd - Math.cos(spot.yaw || 0),
+          );
+          rig.actor.rotation.y = yawFromDelta(
+            facing.x - center.x,
+            facing.z - center.z,
+          );
+        }
 
         this.target?.add(rig.actor);
         this.animatedObjects.push(rig.actor);
@@ -114,6 +162,7 @@ export class CampusStudents {
           phase: 0,
           idleTime: seed * 1.15 + idx * 0.9,
           steer: 0,
+          activity: spot.activity || "chat",
         };
         animateChibiActor(rig, animState);
 
@@ -121,6 +170,9 @@ export class CampusStudents {
           type: "pedestrian",
           isStudent: true,
           kind: "chat",
+          activity: spot.activity || "chat",
+          kickIndex: idx,
+          kickMembers: members.length,
           gender,
           rig,
           mesh: rig.actor,
@@ -137,6 +189,37 @@ export class CampusStudents {
           animState,
         });
       });
+      if (spot.activity === "shuttlecock") {
+        const shuttle = new THREE.Group();
+        shuttle.name = "school-shuttlecock";
+        const base = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.055, 0.07, 0.04, 8),
+          new THREE.MeshStandardMaterial({ color: "#df6336" }),
+        );
+        shuttle.add(base);
+        const featherMat = new THREE.MeshStandardMaterial({
+          color: "#fff1c6",
+          side: THREE.DoubleSide,
+        });
+        for (let i = 0; i < 3; i++) {
+          const feather = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.07, 0.23),
+            featherMat,
+          );
+          feather.position.y = 0.12;
+          feather.rotation.y = (i * Math.PI) / 3;
+          shuttle.add(feather);
+        }
+        this.target?.add(shuttle);
+        this.animatedObjects.push(shuttle);
+        this.shuttleGroups.push({
+          mesh: shuttle,
+          center,
+          radius,
+          baseAngle,
+          count: members.length,
+        });
+      }
       seed++;
     }
 
@@ -181,6 +264,9 @@ export class CampusStudents {
         s.animState.stance = "idle";
         s.animState.speed = 0;
         s.animState.idleTime = time + s.phaseSeed;
+        s.animState.activity = s.activity;
+        s.animState.kickPhase =
+          ((time / 1.3 - s.kickIndex) * Math.PI * 2) / (s.kickMembers || 1);
         animateChibiActor(s.rig, s.animState);
         s.heading = actor.rotation.y;
         continue;
@@ -196,7 +282,10 @@ export class CampusStudents {
         let dist = forward ? travel : s.totalLen * 2 - travel;
 
         let segIdx = 0;
-        while (segIdx < s.segLengths.length - 1 && dist > s.segLengths[segIdx]) {
+        while (
+          segIdx < s.segLengths.length - 1 &&
+          dist > s.segLengths[segIdx]
+        ) {
           dist -= s.segLengths[segIdx];
           segIdx++;
         }
@@ -225,11 +314,37 @@ export class CampusStudents {
         s.speed = 0;
         s.animState.stance = "idle";
         s.animState.idleTime = time + s.phaseSeed;
+        s.animState.activity = s.activity;
+        s.animState.kickPhase =
+          ((time / 1.3 - s.kickIndex) * Math.PI * 2) / (s.kickMembers || 1);
         actor.rotation.y =
           s.baseYaw + Math.sin(time * 0.8 + s.phaseSeed) * 0.08;
         s.heading = actor.rotation.y;
         animateChibiActor(s.rig, s.animState);
       }
+    }
+    for (const group of this.shuttleGroups) {
+      const { mesh, center, radius, baseAngle, count } = group;
+      mesh.visible =
+        !playerPos ||
+        Math.hypot(center.x - playerPos.x, center.z - playerPos.z) <=
+          Math.sqrt(this.distanceCutoffSq);
+      if (!mesh.visible) continue;
+      const cycle = time / 1.3,
+        from = Math.floor(cycle) % count,
+        u = cycle % 1;
+      const a = baseAngle + (from * Math.PI * 2) / count,
+        b = baseAngle + (((from + 1) % count) * Math.PI * 2) / count;
+      const x =
+        center.x + (Math.cos(a) * (1 - u) + Math.cos(b) * u) * (radius - 0.3);
+      const z =
+        center.z + (Math.sin(a) * (1 - u) + Math.sin(b) * u) * (radius - 0.3);
+      mesh.position.set(
+        x,
+        (this.groundAt(x, z) ?? 0.34) + 0.25 + Math.sin(u * Math.PI) * 1.65,
+        z,
+      );
+      mesh.rotation.set(u * 2, cycle * 2, Math.sin(u * Math.PI) * 0.25);
     }
   }
 }

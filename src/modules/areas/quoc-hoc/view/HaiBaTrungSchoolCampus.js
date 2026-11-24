@@ -1695,6 +1695,8 @@ export class HaiBaTrungSchoolCampus {
 
   buildStudents() {
     this.students = new CampusStudents({
+      schoolLevel: "high-school",
+      benchSpots: this.benches.filter(b=>b.fwd===56.8).slice(0,2),
       parent: this.group,
       toWorld: (side, fwd) => this.toWorld(side, fwd),
       groundAt: (wx, wz) => this.groundAt(wx, wz) ?? 0.34,
@@ -1709,6 +1711,8 @@ export class HaiBaTrungSchoolCampus {
         { gender: "boy", points: [[11.0, 144], [21.5, 144]], speed: 1.22, offset: 0.5 },
       ],
       chatSpots: [
+        { side: -16, fwd: 242, members: ["boy","girl","boy","girl"], radius: 2.2, activity: "shuttlecock" },
+        { side: 20, fwd: 144, members: ["girl","boy","girl"], radius: 1.8, activity: "shuttlecock" },
         { side: -14.5, fwd: 144, members: ["girl", "girl", "boy"], radius: 0.9 },
         { side: 16.5, fwd: 160, members: ["boy", "girl", "boy"], radius: 0.9 },
         { side: -16, fwd: 160, members: ["girl", "boy"], radius: 0.78 },

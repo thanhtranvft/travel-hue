@@ -1,0 +1,370 @@
+{
+  "dom": {
+    "title": "Cún con đi dạo Huế",
+    "text": "Khoa Quốc tế → Tràng Tiền\nKiểm tra\nVề Trang chủ / Đổi chế độ\nĐăng xuất\n🗺️ Khám phá Huế\nChờ bạn (1/2)\n0đ\n📖 Đọc về địa danh\n♫\n⚙\n🔊\n⛶\n🗺 Bản đồ\n↺ Về đầu\nRượt bắt · 1/10 người\nĐã kết nối\n＋\nĐI / RẼ\n+10%\n0\n+20%\n0\n+30%\n0\n+100%\n0\n4\nKM/H\n© OpenStreetMap contributors · ODbL\n🏅 Bảng điểm\n▾\n1.\n🗺️\nKiểm tra\n0đ\n💬",
+    "screen": {
+      "w": 844,
+      "h": 390
+    },
+    "overflow": false
+  },
+  "network": {
+    "welcome": {
+      "id": "b3164016-3fbf-426a-9be1-8a75d87ef9f1",
+      "player": {
+        "id": "b3164016-3fbf-426a-9be1-8a75d87ef9f1",
+        "name": "Kiểm tra",
+        "color": "#247bba",
+        "avatar": "dog",
+        "stance": "idle",
+        "region": "quoc-hoc",
+        "gameMode": "tag-chase",
+        "x": 313.59386599824217,
+        "y": 0,
+        "z": -283.9705933447322,
+        "heading": 2.311221923280749,
+        "speed": 0,
+        "lean": 0,
+        "ready": false,
+        "paused": false,
+        "boostTier": null,
+        "boostMultiplier": 1,
+        "connected": true
+      }
+    },
+    "tag": {
+      "type": "mode_event",
+      "event": "tag_state",
+      "phase": "waiting",
+      "stage": "exploration",
+      "stageRemainingMs": 0,
+      "roundNumber": 0,
+      "remainingMs": 0,
+      "hotspot": null,
+      "coop": {
+        "active": false
+      },
+      "partyBoxes": [],
+      "leaderboard": [
+        {
+          "id": "b3164016-3fbf-426a-9be1-8a75d87ef9f1",
+          "name": "Kiểm tra",
+          "color": "#247bba",
+          "role": "runner",
+          "score": 0,
+          "visits": 0,
+          "coopContributions": 0,
+          "tags": 0,
+          "closeCalls": 0,
+          "charmsUsed": 0,
+          "partyUsed": 0,
+          "shieldBlocks": 0
+        }
+      ],
+      "awards": null,
+      "playerCount": 1
+    },
+    "snapshot": {
+      "type": "snapshot",
+      "time": 1795534395222,
+      "region": "quoc-hoc",
+      "gameMode": "tag-chase",
+      "limit": 10,
+      "occupied": 1,
+      "players": [
+        {
+          "id": "b3164016-3fbf-426a-9be1-8a75d87ef9f1",
+          "name": "Kiểm tra",
+          "color": "#247bba",
+          "avatar": "dog",
+          "stance": "walk",
+          "region": "quoc-hoc",
+          "gameMode": "tag-chase",
+          "x": 321.6515739510408,
+          "y": 0.32,
+          "z": -291.33429306156773,
+          "heading": 2.311221923280749,
+          "speed": 1.645040127811176,
+          "lean": 0,
+          "ready": true,
+          "paused": false,
+          "boostTier": null,
+          "boostMultiplier": 1,
+          "connected": true,
+          "modeData": {
+            "role": "runner",
+            "score": 0,
+            "tags": 0,
+            "closeCalls": 0,
+            "shielded": false,
+            "slowed": false,
+            "coffeeBoost": false
+          }
+        }
+      ]
+    }
+  },
+  "events": [
+    {
+      "type": "charms",
+      "region": "quoc-hoc",
+      "gameMode": "tag-chase",
+      "charms": [
+        {
+          "id": "quoc-hoc::tag-chase-2-100-1",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 883.2,
+          "y": 0.12,
+          "z": -809.73
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-100-2",
+          "tier": "100",
+          "percent": 100,
+          "multiplier": 2,
+          "x": 1096.73,
+          "y": 0.12,
+          "z": -1093.46
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-30-3",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 896.81,
+          "y": 0.32,
+          "z": -845.43
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-30-4",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 642.68,
+          "y": 0.12,
+          "z": -601.46
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-30-5",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1395.16,
+          "y": 0.12,
+          "z": -1320.88
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-30-6",
+          "tier": "30",
+          "percent": 30,
+          "multiplier": 1.3,
+          "x": 1004.23,
+          "y": 0.32,
+          "z": -903.41
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-7",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 833.97,
+          "y": 4.8,
+          "z": -923.63
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-8",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 507.66,
+          "y": 0.32,
+          "z": -331.61
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-9",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 454.87,
+          "y": 0.32000000000000006,
+          "z": -408.4
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-10",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 1110.81,
+          "y": 0.32,
+          "z": -1008.22
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-11",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 400.51,
+          "y": 0.12,
+          "z": -439.28
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-12",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 538.14,
+          "y": 0.12,
+          "z": -497.24
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-13",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 790.67,
+          "y": 0.32,
+          "z": -716.38
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-20-14",
+          "tier": "20",
+          "percent": 20,
+          "multiplier": 1.2,
+          "x": 690.7,
+          "y": 0.12,
+          "z": -664.71
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-15",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 385.25,
+          "y": 0.32,
+          "z": -316.89
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-16",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 663.05,
+          "y": 0.12,
+          "z": -667.77
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-17",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1421.99,
+          "y": 0.12,
+          "z": -1295.13
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-18",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1040.14,
+          "y": 0.32,
+          "z": -936.28
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-19",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 893.03,
+          "y": 0.32,
+          "z": -800.34
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-20",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1186.94,
+          "y": 0.12,
+          "z": -1086.58
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-21",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1339.05,
+          "y": 0.31999999999999995,
+          "z": -1213.01
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-22",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1386.14,
+          "y": 0.12,
+          "z": -1263.17
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-23",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 530.16,
+          "y": 0.32,
+          "z": -306.32
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-24",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1143.74,
+          "y": 0.12,
+          "z": -1045.16
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-25",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1186.95,
+          "y": 0.32,
+          "z": -949.48
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-26",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 866.65,
+          "y": 0.32,
+          "z": -779.79
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-27",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 1361.25,
+          "y": 0.32,
+          "z": -1227.95
+        },
+        {
+          "id": "quoc-hoc::tag-chase-2-10-28",
+          "tier": "10",
+          "percent": 10,
+          "multiplier": 1.1,
+          "x": 652.42,
+          "y": 0.12,
+          "z": -611.1
+        }
+      ],
+      "nextRefreshAt": 1795534419622,
+      "refreshed": true
+    }
+  ]
+}

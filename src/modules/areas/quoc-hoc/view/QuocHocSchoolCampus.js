@@ -1678,6 +1678,8 @@ export class QuocHocSchoolCampus {
 
   buildStudents() {
     this.students = new CampusStudents({
+      schoolLevel: "high-school",
+      benchSpots: this.benches.filter(b=>b.fwd===135.6).slice(0,2),
       parent: this.group,
       toWorld: (side, fwd) => this.toWorld(side, fwd),
       groundAt: (wx, wz) => this.groundAt(wx, wz) ?? 0.34,
@@ -1692,6 +1694,8 @@ export class QuocHocSchoolCampus {
         { gender: "boy", points: [[5.2, 138], [5.2, 118]], speed: 1.22, offset: 0.7 },
       ],
       chatSpots: [
+        { side: -14, fwd: 182, members: ["boy","girl","boy","girl"], radius: 2.2, activity: "shuttlecock" },
+        { side: 18, fwd: 143, members: ["boy","boy","girl"], radius: 1.8, activity: "shuttlecock" },
         { side: -10.5, fwd: this.axisLength - 7.5, members: ["girl", "boy", "girl"], radius: 0.9 },
         { side: 10.5, fwd: this.axisLength + 6.5, members: ["boy", "girl", "boy"], radius: 0.9 },
         { side: -22, fwd: 138.5, members: ["girl", "boy"], radius: 0.75 },

@@ -190,6 +190,16 @@ export function renderGameModePicker(
   return `${cards}${regionNote}`;
 }
 
+export function renderGameModeRules(modeId) {
+  const mode = getGameMode(modeId);
+  const instructions = mode.lobbyInstructions?.length ? mode.lobbyInstructions : mode.instructions?.length ? mode.instructions : [
+    "Tự do khám phá khu vực đã chọn, gặp gỡ người chơi, nghe âm thanh đường phố và tìm hiểu các địa danh Huế.",
+    "WASD hoặc phím mũi tên để di chuyển; kéo chuột để xoay camera. Trên điện thoại dùng cần điều khiển bên trái và kéo vùng nhìn bên phải.",
+    "Nhặt bùa tăng tốc trên đường, dùng phím 1–4 hoặc chạm biểu tượng. Đi chậm gần người đi bộ và xe cộ; mở Bản đồ để xem vị trí.",
+  ];
+  return `<h2 id="lobby-rules-heading">Luật chơi <span>· ${escapeHtml(mode.shortTitle)}</span></h2><ol class="lobby-rules-list">${instructions.map(text=>`<li>${escapeHtml(text)}</li>`).join("")}</ol>`;
+}
+
 export function chooseSession(
   previousName = "",
   onStart = () => {},
@@ -332,6 +342,7 @@ export function chooseSession(
           </div>
         </aside>
       </div>
+      <section id="game-mode-rules" class="lobby-rules-footer" aria-labelledby="lobby-rules-heading"></section>
     </form>`;
 
     document.querySelector("#app").append(overlay);
@@ -380,6 +391,11 @@ export function chooseSession(
 
     const syncRadios = () => {
       selectedGameMode = cleanGameModeId(selectedGameMode, selectedRegion);
+      const rulesEl = overlay.querySelector("#game-mode-rules");
+      if (rulesEl && rulesEl.dataset.mode !== selectedGameMode) {
+        rulesEl.innerHTML = renderGameModeRules(selectedGameMode);
+        rulesEl.dataset.mode = selectedGameMode;
+      }
       avatarButtons.forEach((btn) =>
         btn.setAttribute(
           "aria-checked",

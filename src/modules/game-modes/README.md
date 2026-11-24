@@ -16,7 +16,7 @@ Thư mục `src/modules/game-modes/` quản lý toàn bộ các chế độ chơ
 
 ## Danh sách thư mục chế độ
 - `free-roam/` — Dạo phố tự do (mặc định).
-- `tag-chase/` — **Rượt bắt tốc độ** (Map 01 & Map 05, đã kích hoạt). Xem chi tiết tại `tag-chase/README.md`.
+- `tag-chase/` — **Hành trình Huế — Khám phá & tranh tài** (Map 01 & Map 05, đã kích hoạt). Xem chi tiết tại `tag-chase/README.md`.
 - `checkpoint-race/` — **Đua Check-point Cố Đô** (Map 01 & Map 05, đang chuẩn bị mở).
 - `registry.js` — Danh mục, kiểm tra vùng hợp lệ (`cleanGameModeId`, `getModesForRegion`, `roomKeyFor`).
 - `GameModeController.js` — Bộ điều phối vòng đời phía Client gắn vào `GamePresenter`.

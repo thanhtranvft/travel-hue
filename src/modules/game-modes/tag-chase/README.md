@@ -1,4 +1,4 @@
-# Rượt bắt tốc độ: khám phá Huế và tranh tài
+# Hành trình Huế — Khám phá & tranh tài
 
 Áp dụng map `quoc-hoc`, `quang-trung`; 2–10 người bắt đầu sau 4 giây. Một người vẫn dạo phố trong khi chờ bạn. Toàn khu vực luôn đi lại được.
 

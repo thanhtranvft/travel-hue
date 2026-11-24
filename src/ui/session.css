@@ -1,4 +1,5 @@
 .session-overlay {
+  box-sizing: border-box;
   position: fixed;
   inset: 0;
   z-index: 100;
@@ -18,7 +19,7 @@
 
 .session-form.lobby-shell {
   box-sizing: border-box;
-  width: min(1000px, 100%);
+  width: min(1480px, 100%);
   margin: auto;
   padding: clamp(18px, 2.4vw, 28px);
   border-radius: 22px;
@@ -853,4 +854,82 @@
   #current-user-name {
     max-width: 72px;
   }
+}
+.lobby-rules-footer {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-top: 1px solid #dfc38b40;
+  border-radius: 0 0 12px 12px;
+  background: #0d211d80;
+}
+.lobby-rules-footer h2 { margin: 0 0 9px; font-size: 13px; color: #f6d59b; }
+.lobby-rules-footer h2 span { font-weight: 400; color: #bed0c6; }
+.lobby-rules-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 28px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #c2d4ca;
+}
+.lobby-rules-list li { padding-left: 2px; }
+.lobby-rules-list li::marker { color: #e6c585; font-weight: 600; }
+
+@media (min-width: 1100px) {
+  .session-overlay { padding: 14px 24px; }
+  .session-form.lobby-shell { padding: 18px 22px; }
+  .lobby-header { padding-bottom: 12px; gap: 12px 24px; }
+  .lobby-header h1 { font-size: 30px; }
+  .lobby-grid { grid-template-columns: minmax(0, 1.18fr) minmax(0, .78fr) minmax(0, 1fr); gap: 22px; margin-top: 14px; }
+  .lobby-main { display: contents; }
+  .lobby-aside { min-width: 0; gap: 12px; }
+  .lobby-section { align-content: start; gap: 8px; min-width: 0; }
+  .map-picker-grid { gap: 7px; }
+  .map-card { min-height: 65px; grid-template-columns: 76px minmax(0, 1fr); gap: 9px; padding: 7px; }
+  .map-card-thumb { width: 76px; height: 48px; }
+  .map-card-top strong { white-space: normal; font-size: 12px; }
+  .map-card-sub { font-size: 11px; }
+  .avatar-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lobby-main .avatar-card { min-height: 84px; }
+  .transport-switch { width: 100%; }
+  .transport-btn { min-height: 34px; }
+  .activity-picker { gap: 7px; }
+  .activity-card { min-height: 60px; padding: 9px 11px; }
+  .activity-card strong { font-size: 12px; }
+  .activity-card span { font-size: 11.5px; line-height: 1.4; }
+  .activity-card.is-upcoming { min-height: 38px; }
+  .activity-card.is-upcoming > span:last-child { display: none; }
+  .lobby-launch { padding-top: 9px; gap: 6px; }
+  .lobby-cta { min-height: 44px; padding: 10px 16px; }
+  .lobby-selection-summary, .session-note { font-size: 11px; }
+  .session-form #entry-error:empty { display: none; }
+  .lobby-rules-footer { margin-top: 14px; padding: 12px 14px; }
+}
+@media (max-width: 1099px) {
+  .lobby-rules-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1100px) and (max-height: 800px) {
+  .session-overlay { padding: 10px 18px; }
+  .session-form.lobby-shell { padding: 14px 18px; }
+  .lobby-header h1 { font-size: 27px; margin: 3px 0; }
+  .lobby-header { padding-bottom: 9px; }
+  .lobby-lead { font-size: 12px; }
+  .identity-input-wrap, .identity-saved { padding: 8px 12px; }
+  .identity-input-wrap input { min-height: 38px; padding: 6px 10px; }
+  .lobby-grid { margin-top: 10px; gap: 18px; }
+  .map-card { min-height: 59px; padding: 5px 7px; }
+  .map-card-thumb { height: 42px; }
+  .lobby-main .avatar-card { min-height: 76px; padding: 6px; gap: 3px; }
+  .lobby-main .avatar-icon { width: 34px; height: 34px; }
+  .lobby-main .avatar-icon svg { width: 30px; height: 30px; }
+  .activity-card { padding: 7px 10px; min-height: 52px; }
+  .lobby-aside { gap: 9px; }
+  .lobby-rules-footer { margin-top: 10px; padding: 10px 12px; }
+  .lobby-rules-list { line-height: 1.45; gap: 8px 26px; }
+}
+@media (max-width: 600px) {
+  .lobby-rules-list { grid-template-columns: 1fr; font-size: 12px; }
+  .lobby-rules-footer { padding: 12px 8px; }
 }
