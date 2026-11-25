@@ -707,9 +707,9 @@ export class GamePresenter {
       onBike = this.bike.stance === "bike",
       onBoat = this.bike.stance === "boat",
       onFish = this.bike.stance === "fish",
-      baseDist = onBoat ? 5.6 : onFish ? 4.1 : onBike ? 4.85 : 3.9,
-      camHeight = onBoat ? 2.35 : onFish ? 1.75 : onBike ? 1.9 : 1.68,
-      lookLift = onBoat ? 1.1 : onFish ? 0.85 : onBike ? 1.15 : 0.98,
+      baseDist = onBoat ? 5.6 : onFish ? 4.35 : onBike ? 4.85 : 3.9,
+      camHeight = onBoat ? 2.35 : onFish ? 2.08 : onBike ? 1.9 : 1.68,
+      lookLift = onBoat ? 1.1 : onFish ? 0.68 : onBike ? 1.15 : 0.98,
       distance = baseDist + speed * 0.07,
       p = this.bike.position;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))
@@ -763,6 +763,16 @@ export class GamePresenter {
     }
     if (this.stun > 0)
       this.desired.x += Math.sin(this.elapsed * 46) * this.stun * 0.08;
+    const fishPull =
+      onFish &&
+      (this.bike.fishState?.phase === "reeling" ||
+        this.bike.fishState?.phase === "caught")
+        ? this.bike.fishState?.pullPulse || 0
+        : 0;
+    if (fishPull > 0.03) {
+      this.desired.x += Math.sin(this.elapsed * 39) * fishPull * 0.032;
+      this.desired.y += Math.cos(this.elapsed * 33) * fishPull * 0.02;
+    }
     if (
       recenter ||
       !Number.isFinite(this.camera.position.x) ||
@@ -771,10 +781,12 @@ export class GamePresenter {
     )
       this.camera.position.copy(this.desired);
     else this.camera.position.lerp(this.desired, 1 - Math.exp(-10 * dt));
+    const lookForward = onFish ? 1.2 : 1.8;
+    const lookY = onFish ? 0.72 : 1.1;
     this.cameraTarget.set(
-      p.x + Math.sin(yaw) * 1.8,
-      p.y + 1.1,
-      p.z + Math.cos(yaw) * 1.8,
+      p.x + Math.sin(yaw) * lookForward,
+      p.y + lookY,
+      p.z + Math.cos(yaw) * lookForward,
     );
     if (
       recenter ||

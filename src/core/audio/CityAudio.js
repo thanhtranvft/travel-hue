@@ -810,11 +810,65 @@ export class CityAudio {
       pluck(this.ctx, this.master, m, t + i * 0.05, 0.13, 0.55),
     );
   }
-  playWaterSplash() {
-    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+  playWaterSplash(intensity = 1) {
+    if (!this.enabled || this.ctx?.state !== "running") return;
     const t = this.ctx.currentTime;
-    if (this.noiseBuffer) this.noiseBurst(t, 0.26, 0.12, 950);
-    pluck(this.ctx, this.master, 67, t + 0.02, 0.08, 0.3);
+    const scale = Math.max(0.6, Math.min(1.8, intensity));
+    if (this.noiseBuffer) this.noiseBurst(t, 0.24 * scale, 0.12 * scale, 950 + scale * 320);
+    pluck(this.ctx, this.master, 67, t + 0.02, 0.08 * scale, 0.3);
+  }
+  playReelPull(weight = 1, goodHit = true) {
+    if (!this.enabled || this.ctx?.state !== "running") return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const w = Math.max(0.5, Math.min(1.6, weight));
+
+    // Mechanical reel ratchet clicks + taut fishing line strain
+    const clicks = goodHit ? 3 : 1;
+    for (let i = 0; i < clicks; i++) {
+      const ct = t + i * 0.036;
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+      clickOsc.type = "triangle";
+      clickOsc.frequency.setValueAtTime((goodHit ? 540 : 320) + i * 75, ct);
+      clickOsc.frequency.exponentialRampToValueAtTime(190, ct + 0.03);
+      clickGain.gain.setValueAtTime(0.001, ct);
+      clickGain.gain.linearRampToValueAtTime(goodHit ? 0.095 : 0.055, ct + 0.004);
+      clickGain.gain.exponentialRampToValueAtTime(0.0001, ct + 0.035);
+      clickOsc.connect(clickGain).connect(this.master);
+      clickOsc.start(ct);
+      clickOsc.stop(ct + 0.045);
+      clickOsc.onended = () => {
+        clickOsc.disconnect();
+        clickGain.disconnect();
+      };
+    }
+
+    if (goodHit) {
+      // Heavy low line tension groan + water churn
+      const strainOsc = ctx.createOscillator();
+      const strainGain = ctx.createGain();
+      strainOsc.type = "sawtooth";
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 520 + w * 260;
+      strainOsc.frequency.setValueAtTime(115 * (0.9 + w * 0.12), t);
+      strainOsc.frequency.exponentialRampToValueAtTime(215 * (0.9 + w * 0.15), t + 0.18);
+      strainGain.gain.setValueAtTime(0.001, t);
+      strainGain.gain.linearRampToValueAtTime(0.085 * w, t + 0.025);
+      strainGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+      strainOsc.connect(lp).connect(strainGain).connect(this.master);
+      strainOsc.start(t);
+      strainOsc.stop(t + 0.24);
+      strainOsc.onended = () => {
+        strainOsc.disconnect();
+        lp.disconnect();
+        strainGain.disconnect();
+      };
+      if (this.noiseBuffer && w >= 0.95) {
+        this.noiseBurst(t + 0.02, 0.16, 0.08 * w, 820);
+      }
+    }
   }
   playFishBiteAlert() {
     if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
@@ -822,11 +876,62 @@ export class CityAudio {
     pluck(this.ctx, this.master, 84, t, 0.14, 0.22);
     pluck(this.ctx, this.master, 88, t + 0.08, 0.16, 0.28);
   }
-  playFishCatchFanfare() {
+  playFishCatchFanfare(speciesId = "ca-bong") {
     if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
-    const t = this.ctx.currentTime;
-    [72, 76, 79, 84, 88].forEach((m, i) =>
-      pluck(this.ctx, this.master, m, t + i * 0.05, 0.15, 0.48),
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const isBigFish =
+      speciesId === "ca-koi" || speciesId === "ca-chep" || speciesId === "ca-ro-phi";
+    const isTrophy = speciesId === "ca-koi" || speciesId === "ca-chep";
+
+    if (isBigFish) {
+      // Heavy fish breaching water splash + deep low-end thump
+      if (this.noiseBuffer) {
+        this.noiseBurst(t, isTrophy ? 0.44 : 0.32, isTrophy ? 0.24 : 0.17, 1550);
+      }
+      const sub = ctx.createOscillator();
+      const subGain = ctx.createGain();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(isTrophy ? 128 : 112, t);
+      sub.frequency.exponentialRampToValueAtTime(46, t + 0.28);
+      subGain.gain.setValueAtTime(0.001, t);
+      subGain.gain.linearRampToValueAtTime(isTrophy ? 0.24 : 0.17, t + 0.018);
+      subGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.34);
+      sub.connect(subGain).connect(this.master);
+      sub.start(t);
+      sub.stop(t + 0.36);
+      sub.onended = () => {
+        sub.disconnect();
+        subGain.disconnect();
+      };
+
+      // Triumphant brass-flute + resonant bass fanfare for big fish
+      pluck(ctx, this.master, 48, t + 0.04, 0.18, 0.85);
+      pluck(ctx, this.master, 55, t + 0.18, 0.16, 0.85);
+      const melody = isTrophy
+        ? [72, 76, 79, 84, 88, 91, 96]
+        : [72, 76, 79, 84, 88];
+      melody.forEach((m, i) => {
+        const nt = t + 0.05 + i * 0.065;
+        pluck(ctx, this.master, m, nt, isTrophy ? 0.17 : 0.15, 0.65);
+        if (i >= melody.length - 3) {
+          flute(ctx, this.master, m, nt, isTrophy ? 0.14 : 0.1, 0.68);
+        }
+      });
+      if (speciesId === "ca-koi") {
+        // Extra sparkling trophy chord for Imperial Koi
+        pluck(ctx, this.master, 84, t + 0.5, 0.16, 0.95);
+        pluck(ctx, this.master, 91, t + 0.5, 0.14, 0.95);
+        flute(ctx, this.master, 96, t + 0.5, 0.13, 1.0);
+      }
+      return;
+    }
+
+    if (this.noiseBuffer) {
+      this.noiseBurst(t, 0.18, 0.1, 1100);
+    }
+    [72, 76, 79, 84].forEach((m, i) =>
+      pluck(ctx, this.master, m, t + i * 0.055, 0.14, 0.45),
     );
   }
   playBoatBell() {

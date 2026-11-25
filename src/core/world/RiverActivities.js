@@ -10,6 +10,7 @@ export const FISH_SPECIES = [
     rarity: "Thường",
     points: 15,
     weight: 36,
+    pullWeight: 0.52,
     targetWidth: 0.31,
     cursorSpeed: 1.0,
     badgeColor: "#9cc5d9",
@@ -21,6 +22,7 @@ export const FISH_SPECIES = [
     rarity: "Khá phổ biến",
     points: 25,
     weight: 26,
+    pullWeight: 0.74,
     targetWidth: 0.27,
     cursorSpeed: 1.2,
     badgeColor: "#a9d6a5",
@@ -32,6 +34,7 @@ export const FISH_SPECIES = [
     rarity: "Ít gặp",
     points: 40,
     weight: 19,
+    pullWeight: 0.96,
     targetWidth: 0.23,
     cursorSpeed: 1.42,
     badgeColor: "#7ea8be",
@@ -43,6 +46,7 @@ export const FISH_SPECIES = [
     rarity: "Hiếm",
     points: 65,
     weight: 12,
+    pullWeight: 1.24,
     targetWidth: 0.19,
     cursorSpeed: 1.66,
     badgeColor: "#f6bd60",
@@ -54,6 +58,7 @@ export const FISH_SPECIES = [
     rarity: "Cực hiếm",
     points: 100,
     weight: 7,
+    pullWeight: 1.5,
     targetWidth: 0.16,
     cursorSpeed: 1.9,
     badgeColor: "#f26b4f",
@@ -82,6 +87,7 @@ export function createFishingGameState() {
     targetWidth: 0.28,
     cursorSpeed: 1.15,
     progress: 0,
+    pullPulse: 0,
     species: null,
     lastCatch: null,
     lastFeedback: "Nhấn Quăng cần để thả câu xuống sông Hương",
@@ -91,6 +97,7 @@ export function createFishingGameState() {
       state.biteTimer = 0;
       state.resultTimer = 0;
       state.progress = 0;
+      state.pullPulse = 0;
       state.cursor = 0.5;
       state.cursorDir = 1;
       state.species = null;
@@ -99,6 +106,9 @@ export function createFishingGameState() {
     },
     step(dt, rng = Math.random) {
       if (!Number.isFinite(dt) || dt <= 0) return {};
+      if (state.pullPulse > 0) {
+        state.pullPulse = Math.max(0, state.pullPulse - dt * 2.1);
+      }
       if (state.phase === "waiting") {
         state.waitTimer -= dt;
         if (state.waitTimer <= 0) {
@@ -164,6 +174,7 @@ export function createFishingGameState() {
       if (state.phase === "bite") {
         state.phase = "reeling";
         state.progress = 0.42;
+        state.pullPulse = 1;
         state.lastFeedback = "Đã dính! Canh con trỏ vào vùng xanh để kéo lên!";
         return { action: "hooked", species: state.species };
       }
@@ -173,20 +184,22 @@ export function createFishingGameState() {
           state.targetWidth * 0.56;
         if (hit) {
           state.progress = Math.min(1, state.progress + 0.33);
+          state.pullPulse = 1;
           if (state.progress >= 1) {
             state.phase = "caught";
             state.lastCatch = state.species;
             state.resultTimer = 2.5;
-            state.lastFeedback = `Tuyệt vời! Câu được ${state.species?.title || "cá"}!`;
+            state.lastFeedback = `Tuyệt vời! Kéo lên được ${state.species?.title || "cá"}!`;
             return { action: "caught", species: state.species };
           }
           state.targetCenter = 0.22 + rng() * 0.56;
-          state.lastFeedback = "Kéo chuẩn rồi! Tiếp tục nhịp kế!";
-          return { action: "hit", progress: state.progress };
+          state.lastFeedback = "Cần cong căng dây! Tiếp tục kéo lên!";
+          return { action: "hit", progress: state.progress, species: state.species };
         }
         state.progress = Math.max(0.06, state.progress - 0.14);
+        state.pullPulse = 0.35;
         state.lastFeedback = "Trượt nhịp! Canh vào ô xanh lá!";
-        return { action: "miss", progress: state.progress };
+        return { action: "miss", progress: state.progress, species: state.species };
       }
       return { action: "noop" };
     },
@@ -196,6 +209,7 @@ export function createFishingGameState() {
       state.biteTimer = 0;
       state.resultTimer = 0;
       state.progress = 0;
+      state.pullPulse = 0;
       state.cursor = 0.5;
       state.cursorDir = 1;
       state.targetCenter = 0.5;
@@ -278,12 +292,13 @@ export class RiverActivities {
       <div class="fishing-head">
         <div>
           <span class="fishing-kicker">Bờ sông Bia Quốc Học</span>
-          <strong>🎣 Câu cá sông Hương</strong>
+          <strong>Câu cá sông Hương</strong>
         </div>
-        <button type="button" id="fishing-exit-btn" class="river-btn river-btn-ghost">Đứng dậy · Trả cần [Esc]</button>
+        <button type="button" id="fishing-exit-btn" class="river-btn river-btn-ghost">Đứng dậy [Esc]</button>
       </div>
       <div class="fishing-status-row">
         <span id="fishing-phase-badge" class="fishing-phase-badge">Sẵn sàng</span>
+        <span class="fishing-sep" aria-hidden="true">·</span>
         <span id="fishing-species-label" class="fishing-species-label">Chưa có cá</span>
       </div>
       <p id="fishing-feedback" class="fishing-feedback"></p>
@@ -699,12 +714,18 @@ export class RiverActivities {
   handleSpaceAction() {
     if (this.mode !== "fishing") return false;
     const res = this.fishing.pullReel();
+    const pullWeight = (res.species || this.fishing.species)?.pullWeight || 0.9;
     if (res.action === "cast") {
-      this.game.audio?.playWaterSplash?.();
-    } else if (res.action === "hooked" || res.action === "hit") {
-      this.game.audio?.playFishBiteAlert?.();
+      this.game.audio?.playWaterSplash?.(0.9);
+    } else if (res.action === "hooked") {
+      this.game.audio?.playReelPull?.(pullWeight, true);
+      this.game.audio?.playWaterSplash?.(pullWeight);
+    } else if (res.action === "hit") {
+      this.game.audio?.playReelPull?.(pullWeight, true);
+    } else if (res.action === "miss") {
+      this.game.audio?.playReelPull?.(pullWeight * 0.55, false);
     } else if (res.action === "caught") {
-      this.game.audio?.playFishCatchFanfare?.();
+      this.game.audio?.playFishCatchFanfare?.(res.species?.id);
       this.awardFishCatch(res.species);
     }
     this.refreshFishingUi();
@@ -726,7 +747,13 @@ export class RiverActivities {
     const spec = species || FISH_SPECIES[0];
     this.fishCount += 1;
     this.riverScore += spec.points;
-    this.showRewardToast(`+${spec.points}đ · Bắt được ${spec.title}!`);
+    const isBigFish =
+      spec.id === "ca-koi" || spec.id === "ca-chep" || spec.id === "ca-ro-phi";
+    this.showRewardToast(
+      isBigFish
+        ? `CÁ TO! +${spec.points}đ · Kéo được ${spec.title}!`
+        : `+${spec.points}đ · Bắt được ${spec.title}!`,
+    );
     this.refreshScoreBadge();
     if (this.game.online) {
       this.game.online.sendModeAction("river_reward", {
@@ -765,6 +792,7 @@ export class RiverActivities {
             ? this.fishing.lastCatch?.id || this.fishing.species?.id || null
             : this.fishing.species?.id || null,
         resultTimer: this.fishing.resultTimer || 0,
+        pullPulse: this.fishing.pullPulse || 0,
       };
       bike.fishState = fishState;
       bike.update(dt, 0, 0, false, {
@@ -931,12 +959,17 @@ export class RiverActivities {
 
     const phaseMap = {
       ready: "Sẵn sàng",
-      waiting: "Đang chờ...",
+      waiting: "Đang chờ",
       bite: "CÁ CẮN!",
-      reeling: "Đang kéo",
+      reeling: "Đang kéo nặng",
       caught: "Trúng lớn!",
       escaped: "Sẩy mất",
     };
+    this.ui.fishingEl.dataset.phase = f.phase;
+    this.ui.fishingEl.dataset.heavy =
+      f.phase === "reeling" || (f.phase === "caught" && f.pullPulse > 0.2)
+        ? "true"
+        : "false";
     this.ui.phaseBadge.textContent = phaseMap[f.phase] || f.phase;
     this.ui.phaseBadge.dataset.phase = f.phase;
     this.ui.speciesLabel.textContent = f.species
@@ -958,7 +991,7 @@ export class RiverActivities {
     } else if (f.phase === "bite") {
       this.ui.actionBtn.textContent = "GIẬT CẦN NGAY! [Space]";
     } else {
-      this.ui.actionBtn.textContent = "Kéo nhịp trong vùng xanh [Space]";
+      this.ui.actionBtn.textContent = "Kéo nhịp mạnh [Space]";
     }
   }
 
@@ -977,6 +1010,9 @@ export class RiverActivities {
   }
 
   refreshPanels() {
+    if (typeof document !== "undefined" && document.body?.dataset) {
+      document.body.dataset.riverActivity = this.mode || "";
+    }
     this.refreshScoreBadge();
     if (!this.ui) return;
 

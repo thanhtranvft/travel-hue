@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import * as THREE from "three";
 import {
   createFishingGameState,
@@ -77,10 +79,15 @@ test("createFishingGameState progresses cast -> waiting -> bite -> reeling -> ca
   const hooked = f.pullReel(() => 0.5);
   assert.equal(hooked.action, "hooked");
   assert.equal(f.phase, "reeling");
+  assert.equal(f.pullPulse, 1);
+
+  f.step(0.25);
+  assert.ok(f.pullPulse < 1 && f.pullPulse > 0, "pullPulse should decay smoothly");
 
   f.cursor = f.targetCenter;
   const hit1 = f.pullReel(() => 0.5);
   assert.equal(hit1.action, "hit");
+  assert.equal(f.pullPulse, 1);
   f.cursor = f.targetCenter;
   const hit2 = f.pullReel(() => 0.5);
   assert.equal(hit2.action, "caught");
@@ -104,12 +111,32 @@ test("all 6 chibi avatars animate 3D fishing rod, reveal & reel up caught specie
     bike.update(0.1, 0, 0, false, {
       stance: "fish",
       poseOnly: true,
-      fishState: { phase: "reeling" },
+      fishState: { phase: "reeling", speciesId: "ca-koi", pullPulse: 0.9 },
     });
     assert.ok(
       rod.rodPivot.rotation.x < -0.1,
       `expected reeling rod lift for ${id}`,
     );
+    assert.ok(
+      rod.rodTipPivot && rod.rodTipPivot.rotation.x > 0.25,
+      `expected heavy-pull upper tip flex for ${id}`,
+    );
+    assert.equal(
+      rod.waterSplash?.visible,
+      true,
+      `expected water splash ring visible while reeling big fish for ${id}`,
+    );
+    if (bike.rig.character.torsoPivot) {
+      assert.ok(
+        bike.rig.character.torsoPivot.rotation.x < 0,
+        `expected fisher torso to brace back for ${id}`,
+      );
+    } else if (bike.rig.character.spinePivot) {
+      assert.ok(
+        bike.rig.character.spinePivot.rotation.x < -0.95,
+        `expected animal spine to brace back for ${id}`,
+      );
+    }
 
     // When caught, only matching real 3D fish appears and rises out of the water
     bike.update(0.1, 0, 0, false, {
@@ -395,7 +422,7 @@ test("BiaQuocHoc carp/koi shoal, unobstructed dock signboard, riverward boat hea
     assert.equal(boatMsgs.some((m) => m.type === "collision"), false);
     assert.equal(walkMsgs.some((m) => m.type === "collision"), false);
 
-    // Fishing countryside music state toggles cleanly
+    // Fishing countryside music state & heavy-pull / big-fish audio cues
     assert.ok(countrysideFishingMelody.length >= 16);
     assert.ok(countrysideFishingBass.length >= 2);
     const origAddEvt = globalThis.addEventListener;
@@ -406,9 +433,81 @@ test("BiaQuocHoc carp/koi shoal, unobstructed dock signboard, riverward boat hea
       assert.equal(audio.setFishingMode(true), true);
       assert.equal(audio.fishingMode, true);
       assert.equal(audio.setFishingMode(false), false);
+
+      // Safe no-op when audio context is not running
+      audio.playReelPull(1.5, true);
+      audio.playFishCatchFanfare("ca-koi");
+
+      // Active WebAudio graph synthesizes heavy reel tension + big fish catch fanfare
+      let oscCount = 0;
+      let bufCount = 0;
+      const makeParam = () => ({
+        value: 0,
+        setValueAtTime() {},
+        linearRampToValueAtTime() {},
+        exponentialRampToValueAtTime() {},
+      });
+      const makeNode = () => ({
+        frequency: makeParam(),
+        gain: makeParam(),
+        Q: makeParam(),
+        type: "",
+        buffer: null,
+        connect(target) {
+          return target;
+        },
+        disconnect() {},
+        start() {},
+        stop() {},
+      });
+      audio.enabled = true;
+      audio.master = makeNode();
+      audio.noiseBuffer = {};
+      audio.ctx = {
+        state: "running",
+        currentTime: 1,
+        createOscillator() {
+          oscCount += 1;
+          return makeNode();
+        },
+        createGain() {
+          return makeNode();
+        },
+        createBiquadFilter() {
+          return makeNode();
+        },
+        createBufferSource() {
+          bufCount += 1;
+          return makeNode();
+        },
+      };
+      audio.playReelPull(1.5, true);
+      const afterPullOsc = oscCount;
+      const afterPullBuf = bufCount;
+      assert.ok(afterPullOsc >= 4, "heavy reel pull should synthesize clicks + strain osc");
+      assert.ok(afterPullBuf >= 1, "heavy reel pull should trigger water churn burst");
+
+      oscCount = 0;
+      bufCount = 0;
+      audio.playFishCatchFanfare("ca-bong");
+      const smallFishOsc = oscCount;
+
+      oscCount = 0;
+      bufCount = 0;
+      audio.playFishCatchFanfare("ca-koi");
+      assert.ok(oscCount > smallFishOsc, "big koi catch should layer extra bass + sparkle notes");
+      assert.ok(bufCount >= 1, "big koi catch should trigger water breach splash");
     } finally {
       globalThis.addEventListener = origAddEvt;
     }
+
+    // Fishing minigame HUD stays docked off-center so it does not cover the seated fisher
+    const riverCss = fs.readFileSync(
+      path.resolve("src/core/world/river-activities.css"),
+      "utf8",
+    );
+    assert.match(riverCss, /#fishing-minigame\s*\{[^}]*--panel-tx:\s*0%[^}]*left:\s*16px/);
+    assert.match(riverCss, /body\[data-river-activity="fishing"\]\s+\.touch-controls/);
   } finally {
     if (origDoc === undefined) delete globalThis.document;
     else globalThis.document = origDoc;

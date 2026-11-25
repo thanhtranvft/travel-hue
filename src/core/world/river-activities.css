@@ -28,17 +28,18 @@
 #river-rental-prompt,
 #fishing-minigame,
 #boat-controls-bar {
+  --panel-tx: -50%;
   position: fixed;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translateX(var(--panel-tx));
   z-index: 32;
-  width: min(440px, calc(100vw - 24px));
-  background: rgba(13, 33, 38, 0.92);
-  border: 1px solid rgba(242, 203, 109, 0.55);
+  width: min(420px, calc(100vw - 24px));
+  background: rgba(11, 28, 32, 0.88);
+  border: 1px solid rgba(242, 203, 109, 0.45);
   border-radius: 14px;
   color: #f6f2e9;
-  padding: 12px 14px;
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  padding: 10px 13px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
   backdrop-filter: blur(10px);
   pointer-events: auto;
 }
@@ -47,9 +48,32 @@
   bottom: clamp(104px, 15vh, 134px);
 }
 
-#fishing-minigame,
 #boat-controls-bar {
-  bottom: clamp(92px, 13vh, 118px);
+  bottom: clamp(16px, 3vh, 28px);
+}
+
+#fishing-minigame {
+  --panel-tx: 0%;
+  left: 16px;
+  bottom: 16px;
+  width: min(328px, calc(100vw - 32px));
+}
+
+#fishing-minigame[data-heavy="true"] {
+  border-color: rgba(255, 204, 102, 0.85);
+  animation: fishing-rod-tug 0.24s ease-in-out infinite;
+}
+
+@keyframes fishing-rod-tug {
+  0%, 100% {
+    transform: translateX(var(--panel-tx)) translateY(0);
+  }
+  25% {
+    transform: translateX(calc(var(--panel-tx) + 2px)) translateY(1.5px);
+  }
+  75% {
+    transform: translateX(calc(var(--panel-tx) - 2px)) translateY(-1px);
+  }
 }
 
 .river-prompt-head,
@@ -87,7 +111,7 @@
 .fishing-actions {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .river-btn {
@@ -96,6 +120,7 @@
   padding: 7px 12px;
   font-size: 12.5px;
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
   transition: transform 0.12s ease, opacity 0.12s ease, background 0.15s ease;
@@ -124,47 +149,45 @@
 
 .fishing-kicker {
   display: block;
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  letter-spacing: 0.04em;
   color: #f0c05a;
 }
 
 .fishing-head strong {
-  font-size: 14.5px;
+  font-size: 14px;
   color: #fff6dc;
 }
 
 .fishing-status-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 
 .fishing-phase-badge {
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.12);
-  color: #f5f2e8;
+  color: #e6f0ed;
 }
 
 .fishing-phase-badge[data-phase="bite"] {
-  background: #d9534f;
-  color: #fff;
+  color: #ff7e78;
 }
 
 .fishing-phase-badge[data-phase="reeling"] {
-  background: #2f9e75;
-  color: #fff;
+  color: #63e6ab;
 }
 
 .fishing-phase-badge[data-phase="caught"] {
-  background: #e6aa32;
-  color: #1c1405;
+  color: #ffd369;
+}
+
+.fishing-sep {
+  color: rgba(255, 255, 255, 0.35);
 }
 
 .fishing-species-label {
@@ -174,19 +197,20 @@
 }
 
 .fishing-feedback {
-  margin: 6px 0 8px;
-  font-size: 12px;
+  margin: 4px 0 7px;
+  font-size: 11.5px;
   color: #d6e4e0;
+  line-height: 1.35;
 }
 
 .fishing-meter-group {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .fishing-bar {
   position: relative;
-  height: 16px;
+  height: 14px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.12);
   overflow: hidden;
@@ -212,7 +236,7 @@
 }
 
 .fishing-progress-track {
-  height: 7px;
+  height: 6px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
@@ -238,21 +262,58 @@
   color: #cde0dc;
 }
 
+body[data-river-activity="fishing"] .touch-controls,
+body[data-river-activity="fishing"] .ride-panel {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (pointer: coarse), (max-width: 768px), (max-height: 500px) {
   #river-rental-prompt,
-  #fishing-minigame,
   #boat-controls-bar {
-    bottom: max(160px, calc(env(safe-area-inset-bottom) + 152px));
+    --panel-tx: -50%;
+    left: 50%;
+    bottom: max(156px, calc(env(safe-area-inset-bottom) + 148px));
+  }
+
+  #fishing-minigame {
+    --panel-tx: -50%;
+    left: 50%;
+    bottom: max(8px, calc(env(safe-area-inset-bottom) + 6px));
+    width: min(350px, calc(100vw - 20px));
+    padding: 8px 11px;
+  }
+
+  #fishing-minigame .fishing-kicker {
+    display: none;
+  }
+
+  #fishing-minigame .fishing-feedback {
+    margin: 3px 0 5px;
+    font-size: 11px;
+  }
+
+  #fishing-minigame .fishing-actions {
+    margin-top: 6px;
   }
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
   #river-rental-prompt,
-  #fishing-minigame,
   #boat-controls-bar {
-    bottom: max(82px, calc(env(safe-area-inset-bottom) + 74px));
+    --panel-tx: -50%;
+    left: 50%;
+    bottom: max(74px, calc(env(safe-area-inset-bottom) + 68px));
     width: min(380px, calc(100vw - 290px));
     padding: 8px 11px;
+  }
+
+  #fishing-minigame {
+    --panel-tx: 0%;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(10px, calc(env(safe-area-inset-bottom) + 6px));
+    width: min(312px, calc(100vw - 24px));
+    padding: 8px 10px;
   }
 
   .river-prompt-actions,
@@ -262,7 +323,7 @@
   }
 
   .fishing-feedback {
-    margin: 4px 0 6px;
-    font-size: 11px;
+    margin: 3px 0 5px;
+    font-size: 10.5px;
   }
 }

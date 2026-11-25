@@ -489,25 +489,53 @@ function buildFishingRod() {
   const lineMat = getSharedMat("#f4f7fa", 0.4, 0.1);
   const bobberRedMat = getSharedMat("#e24438", 0.45, 0.05);
   const bobberWhiteMat = getSharedMat("#ffffff", 0.45, 0.05);
+  const splashMat = new THREE.MeshBasicMaterial({
+    color: "#d9fbff",
+    transparent: true,
+    opacity: 0.75,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
 
   const rodPivot = new THREE.Group();
   group.add(rodPivot);
 
   addPart(rodPivot, new THREE.CylinderGeometry(0.017, 0.021, 0.24, 8), handleMat, 0, 0.08, 0.04, Math.PI * 0.34, 0, 0);
   addPart(rodPivot, new THREE.CylinderGeometry(0.022, 0.022, 0.04, 8), reelMat, 0.022, 0.12, 0.14, 0, 0, Math.PI / 2);
-  addPart(rodPivot, new THREE.CylinderGeometry(0.006, 0.015, 1.48, 8), bambooMat, 0, 0.56, 0.66, Math.PI * 0.34, 0, 0);
+  // Stiffer lower shaft up to midpoint (0, 0.51, 0.62)
+  addPart(rodPivot, new THREE.CylinderGeometry(0.011, 0.015, 0.78, 8), bambooMat, 0, 0.33, 0.35, Math.PI * 0.34, 0, 0);
+
+  // Flexible upper tip pivot that arches downward under heavy fish tension
+  const rodTipPivot = new THREE.Group();
+  rodTipPivot.name = "fishing-rod-tip-pivot";
+  rodTipPivot.position.set(0, 0.51, 0.62);
+  rodPivot.add(rodTipPivot);
+  addPart(rodTipPivot, new THREE.CylinderGeometry(0.005, 0.011, 0.74, 8), bambooMat, 0, 0.215, 0.31, Math.PI * 0.34, 0, 0);
 
   const lineAnchor = new THREE.Group();
-  lineAnchor.position.set(0, 0.94, 1.24);
-  rodPivot.add(lineAnchor);
+  lineAnchor.position.set(0, 0.43, 0.62);
+  rodTipPivot.add(lineAnchor);
 
-  const line = addPart(lineAnchor, new THREE.CylinderGeometry(0.0025, 0.0025, 0.92, 4), lineMat, 0, -0.46, 0);
+  const line = addPart(lineAnchor, new THREE.CylinderGeometry(0.003, 0.003, 0.92, 4), lineMat, 0, -0.46, 0);
   line.castShadow = false;
   const bobber = new THREE.Group();
   bobber.position.set(0, -0.92, 0);
   addPart(bobber, new THREE.SphereGeometry(0.036, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), bobberRedMat, 0, 0, 0);
   addPart(bobber, new THREE.SphereGeometry(0.036, 8, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bobberWhiteMat, 0, 0, 0);
   lineAnchor.add(bobber);
+
+  const waterSplash = new THREE.Group();
+  waterSplash.name = "fishing-water-splash";
+  waterSplash.position.set(0, -0.88, 0);
+  waterSplash.visible = false;
+  const splashGeo1 = new THREE.RingGeometry(0.11, 0.17, 16);
+  splashGeo1.rotateX(-Math.PI / 2);
+  const splashGeo2 = new THREE.RingGeometry(0.22, 0.28, 16);
+  splashGeo2.rotateX(-Math.PI / 2);
+  const splashInner = new THREE.Mesh(splashGeo1, splashMat);
+  const splashOuter = new THREE.Mesh(splashGeo2, splashMat);
+  waterSplash.add(splashInner, splashOuter);
+  lineAnchor.add(waterSplash);
 
   const caughtFishAnchor = new THREE.Group();
   caughtFishAnchor.name = "fishing-caught-fish-anchor";
@@ -524,7 +552,17 @@ function buildFishingRod() {
   lineAnchor.add(caughtFishAnchor);
 
   group.visible = false;
-  return { group, rodPivot, lineAnchor, line, bobber, caughtFishAnchor, caughtFishMeshes };
+  return {
+    group,
+    rodPivot,
+    rodTipPivot,
+    lineAnchor,
+    line,
+    bobber,
+    waterSplash,
+    caughtFishAnchor,
+    caughtFishMeshes,
+  };
 }
 
 function buildHumanRig(avatarId) {
@@ -1191,37 +1229,86 @@ export function animateChibiActor(
       bike.pedalR.rotation.x = -pedalPhase;
     }
   }
+  const fishWeightMap = {
+    "ca-bong": 0.52,
+    "ca-diec": 0.74,
+    "ca-ro-phi": 0.96,
+    "ca-chep": 1.24,
+    "ca-koi": 1.5,
+  };
+  const fPhase =
+    typeof fishState === "string" ? fishState : fishState?.phase || "ready";
+  const fSpeciesId =
+    typeof fishState === "object"
+      ? fishState?.speciesId || fishState?.species?.id || null
+      : null;
+  const fResultTimer =
+    typeof fishState === "object" && Number.isFinite(fishState?.resultTimer)
+      ? fishState.resultTimer
+      : 0;
+  const fPullPulse =
+    typeof fishState === "object" && Number.isFinite(fishState?.pullPulse)
+      ? Math.max(0, Math.min(1, fishState.pullPulse))
+      : 0;
+  const fWeight = fishWeightMap[fSpeciesId] || 0.85;
+
   if (char.fishingRod?.group) {
     char.fishingRod.group.visible = isFish;
     const rod = char.fishingRod;
     if (isFish) {
-      const fPhase =
-        typeof fishState === "string" ? fishState : fishState?.phase || "ready";
-      const fSpeciesId =
-        typeof fishState === "object"
-          ? fishState?.speciesId || fishState?.species?.id || null
-          : null;
-      const fResultTimer =
-        typeof fishState === "object" && Number.isFinite(fishState?.resultTimer)
-          ? fishState.resultTimer
-          : 0;
       const biteJitter =
         fPhase === "bite"
           ? Math.sin(idleTime * 28) * 0.08
           : fPhase === "reeling"
-            ? Math.sin(idleTime * 16) * 0.05
-            : Math.sin(idleTime * 2.2) * 0.025;
+            ? Math.sin(idleTime * 19) * (0.045 + fPullPulse * 0.05)
+            : Math.sin(idleTime * 2.2) * 0.022;
+      const heaveWave =
+        fPhase === "reeling"
+          ? Math.sin(idleTime * 11.5) * (0.14 + fPullPulse * 0.14)
+          : 0;
+
       rod.rodPivot.rotation.x =
         fPhase === "caught"
-          ? -0.48 + Math.sin(idleTime * 8) * 0.05
+          ? -0.58 - fWeight * 0.09 + Math.sin(idleTime * 9) * 0.05
           : fPhase === "reeling"
-            ? -0.35 + Math.sin(idleTime * 9) * 0.14
+            ? -0.44 - fWeight * 0.11 - fPullPulse * 0.18 + heaveWave
             : fPhase === "bite"
-              ? 0.16 + biteJitter
+              ? 0.18 + biteJitter
               : Math.sin(idleTime * 1.4) * 0.04;
+      rod.rodPivot.rotation.z =
+        fPhase === "reeling"
+          ? Math.sin(idleTime * 14) * (0.06 + fWeight * 0.04)
+          : fPhase === "caught"
+            ? Math.sin(idleTime * 7) * 0.045
+            : 0;
+
+      if (rod.rodTipPivot) {
+        // Upper rod tip flexes visibly forward/down when fighting heavy fish or hoisting it up
+        const flex =
+          fPhase === "reeling"
+            ? 0.24 + fWeight * 0.22 + fPullPulse * 0.16 + Math.abs(Math.sin(idleTime * 17)) * 0.08
+            : fPhase === "caught"
+              ? 0.14 + fWeight * 0.18 + Math.sin(idleTime * 11) * 0.045
+              : fPhase === "bite"
+                ? 0.12 + Math.abs(biteJitter)
+                : 0.02;
+        rod.rodTipPivot.rotation.x = flex;
+      }
+
+      if (rod.waterSplash) {
+        const showSplash =
+          fPhase === "bite" ||
+          fPhase === "reeling" ||
+          (fPhase === "caught" && fResultTimer > 1.35);
+        rod.waterSplash.visible = showSplash;
+        if (showSplash) {
+          const pulse = 0.85 + ((idleTime * (fPhase === "reeling" ? 3.2 : 2.1)) % 1) * (0.65 + fWeight * 0.35);
+          rod.waterSplash.scale.set(pulse, 1, pulse);
+        }
+      }
 
       if (fPhase === "caught" && fSpeciesId && rod.caughtFishMeshes?.[fSpeciesId]) {
-        const lift = Math.max(0.25, Math.min(1, (2.5 - fResultTimer) / 0.85));
+        const lift = Math.max(0.18, Math.min(1, (2.5 - fResultTimer) / (0.65 + fWeight * 0.22)));
         const lineScale = 1 - lift * 0.56;
         if (rod.line) {
           rod.line.scale.y = lineScale;
@@ -1231,15 +1318,15 @@ export function animateChibiActor(
         rod.caughtFishAnchor.visible = true;
         rod.caughtFishAnchor.position.set(0, rod.bobber.position.y - 0.16, 0);
         rod.caughtFishAnchor.rotation.set(
-          Math.sin(idleTime * 14) * 0.16,
-          idleTime * 1.8,
-          Math.sin(idleTime * 18) * 0.24,
+          Math.sin(idleTime * 15) * (0.14 + fWeight * 0.05),
+          idleTime * (1.5 + 0.5 / fWeight),
+          Math.sin(idleTime * 19) * (0.2 + fWeight * 0.08),
         );
         for (const [id, mesh] of Object.entries(rod.caughtFishMeshes)) {
           const active = id === fSpeciesId;
           mesh.visible = active;
           if (active && mesh.userData.tailPivot) {
-            mesh.userData.tailPivot.rotation.y = Math.sin(idleTime * 24) * 0.45;
+            mesh.userData.tailPivot.rotation.y = Math.sin(idleTime * 26) * 0.48;
           }
         }
       } else {
@@ -1255,10 +1342,14 @@ export function animateChibiActor(
           }
         }
       }
-    } else if (rod.caughtFishAnchor) {
-      rod.caughtFishAnchor.visible = false;
-      for (const mesh of Object.values(rod.caughtFishMeshes || {})) {
-        mesh.visible = false;
+    } else {
+      if (rod.rodTipPivot) rod.rodTipPivot.rotation.x = 0;
+      if (rod.waterSplash) rod.waterSplash.visible = false;
+      if (rod.caughtFishAnchor) {
+        rod.caughtFishAnchor.visible = false;
+        for (const mesh of Object.values(rod.caughtFishMeshes || {})) {
+          mesh.visible = false;
+        }
       }
     }
   }
@@ -1300,18 +1391,26 @@ export function animateChibiActor(
 
     if (isFish) {
       const breathe = Math.sin(idleTime * 2.1);
-      const fPhase =
-        typeof fishState === "string" ? fishState : fishState?.phase || "ready";
-      const yank =
-        fPhase === "reeling"
-          ? Math.sin(idleTime * 10) * 0.18
-          : fPhase === "caught"
-            ? -0.25
-            : 0;
-      char.bodyPivot.position.set(0, 0.34, -0.02);
-      char.bodyPivot.rotation.set(0, 0, 0);
-      char.torsoPivot.rotation.set(0.08 + breathe * 0.02, 0, 0);
-      char.headPivot.rotation.set(0.14 + breathe * 0.03, Math.sin(idleTime * 0.65) * 0.08, 0);
+      const isReeling = fPhase === "reeling";
+      const isCaught = fPhase === "caught";
+      const strainLean = isReeling
+        ? -0.22 - fWeight * 0.11 - fPullPulse * 0.12 + Math.sin(idleTime * 11.5) * 0.06
+        : isCaught
+          ? -0.2 - fWeight * 0.08
+          : 0.08 + breathe * 0.02;
+      const yank = isReeling
+        ? -0.26 - fPullPulse * 0.22 + Math.sin(idleTime * 11.5) * 0.2
+        : isCaught
+          ? -0.34 - fWeight * 0.08
+          : 0;
+      char.bodyPivot.position.set(0, isReeling ? 0.315 : 0.34, isReeling ? -0.045 : -0.02);
+      char.bodyPivot.rotation.set(0, 0, isReeling ? Math.sin(idleTime * 14) * 0.04 : 0);
+      char.torsoPivot.rotation.set(strainLean, 0, 0);
+      char.headPivot.rotation.set(
+        isReeling ? 0.22 : isCaught ? -0.05 : 0.14 + breathe * 0.03,
+        Math.sin(idleTime * 0.65) * 0.08,
+        0,
+      );
 
       char.leftLeg.position.set(-0.105, -0.02, 0.03);
       char.rightLeg.position.set(0.105, -0.02, 0.03);
@@ -1320,12 +1419,12 @@ export function animateChibiActor(
       char.leftLeg.shin.rotation.set(1.18 + Math.sin(idleTime * 1.3) * 0.08, 0, 0);
       char.rightLeg.shin.rotation.set(1.18 - Math.sin(idleTime * 1.3) * 0.08, 0, 0);
 
-      char.leftArm.rotation.set(-0.78 + yank * 0.6, 0.16, 0.05);
+      char.leftArm.rotation.set(-0.78 + yank * 0.65, 0.16, 0.05);
       char.rightArm.rotation.set(-0.88 + yank, -0.1, -0.05);
-      char.leftArm.forearm.rotation.set(-0.35, 0, 0);
-      char.rightArm.forearm.rotation.set(-0.32, 0, 0);
-      char.scarfTailL.rotation.x = 0.08 + breathe * 0.03;
-      char.scarfTailR.rotation.x = 0.08 - breathe * 0.03;
+      char.leftArm.forearm.rotation.set(isReeling ? -0.58 : -0.35, 0, 0);
+      char.rightArm.forearm.rotation.set(isReeling ? -0.52 : -0.32, 0, 0);
+      char.scarfTailL.rotation.x = 0.08 + breathe * 0.03 + (isReeling ? 0.16 : 0);
+      char.scarfTailR.rotation.x = 0.08 - breathe * 0.03 + (isReeling ? 0.16 : 0);
       return;
     }
 
@@ -1460,23 +1559,26 @@ export function animateChibiActor(
   }
 
   if (isFish) {
-    const fPhase =
-      typeof fishState === "string" ? fishState : fishState?.phase || "ready";
-    const yank =
-      fPhase === "reeling"
-        ? Math.sin(idleTime * 10) * 0.16
-        : fPhase === "caught"
-          ? -0.22
-          : 0;
-    char.bodyPivot.position.set(0, 0.34, -0.02);
-    char.bodyPivot.rotation.set(0, 0, 0);
-    char.spinePivot.rotation.set(-0.82, 0, 0);
-    char.headPivot.rotation.set(0.84, Math.sin(idleTime * 0.7) * 0.08, 0);
-    char.tailPivot.rotation.set(0.3, Math.sin(idleTime * 3.8) * 0.25, 0);
+    const isReeling = fPhase === "reeling";
+    const isCaught = fPhase === "caught";
+    const yank = isReeling
+      ? -0.24 - fPullPulse * 0.2 + Math.sin(idleTime * 11.5) * 0.18
+      : isCaught
+        ? -0.3 - fWeight * 0.07
+        : 0;
+    char.bodyPivot.position.set(0, isReeling ? 0.315 : 0.34, isReeling ? -0.04 : -0.02);
+    char.bodyPivot.rotation.set(0, 0, isReeling ? Math.sin(idleTime * 14) * 0.04 : 0);
+    char.spinePivot.rotation.set(
+      isReeling ? -1.04 - fWeight * 0.09 - fPullPulse * 0.1 : isCaught ? -0.98 : -0.82,
+      0,
+      0,
+    );
+    char.headPivot.rotation.set(isReeling ? 0.96 : 0.84, Math.sin(idleTime * 0.7) * 0.08, 0);
+    char.tailPivot.rotation.set(0.3, Math.sin(idleTime * (isReeling ? 8.5 : 3.8)) * 0.28, 0);
 
     char.frontLeftLeg.position.set(-0.14, 0.14, 0.11);
     char.frontRightLeg.position.set(0.14, 0.14, 0.11);
-    char.frontLeftLeg.rotation.set(-0.78 + yank * 0.5, 0, -0.1);
+    char.frontLeftLeg.rotation.set(-0.78 + yank * 0.6, 0, -0.1);
     char.frontRightLeg.rotation.set(-0.88 + yank, 0, 0.1);
     char.backLeftLeg.position.set(-0.12, -0.08, 0.06);
     char.backRightLeg.position.set(0.12, -0.08, 0.06);
