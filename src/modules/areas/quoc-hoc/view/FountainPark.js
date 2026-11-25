@@ -597,22 +597,22 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   // Continuous Ironwood (Gỗ Lim) Riverfront Promenade connecting FireflyTreePark (lx=218) -> East (lx=366)
   const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const riverWalk = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(147.9, 0.256, 4.8, 3.2),
+    createIronwoodPromenadeGeometry(147.96, 0.256, 4.8, 3.2),
     ironwoodWalkMat,
   );
   riverWalk.position.set(292, 0.128, -14.2);
   riverWalk.receiveShadow = true;
 
   // Dark ironwood outer edge curbs flanking riverWalk (open at central river stair)
-  const leftCurbW = cx - 4.4 - 218.05;
+  const leftCurbW = cx - 4.4 - 218.02;
   if (leftCurbW > 1) {
-    group.add(box([leftCurbW, 0.29, 0.22], "#4c2d17", [218.05 + leftCurbW / 2, 0.145, -16.72]));
+    group.add(box([leftCurbW, 0.29, 0.22], "#4c2d17", [218.02 + leftCurbW / 2, 0.145, -16.72]));
   }
-  const rightCurbW = 365.95 - (cx + 4.4);
+  const rightCurbW = 365.98 - (cx + 4.4);
   if (rightCurbW > 1) {
     group.add(box([rightCurbW, 0.29, 0.22], "#4c2d17", [cx + 4.4 + rightCurbW / 2, 0.145, -16.72]));
   }
-  group.add(box([147.9, 0.28, 0.16], "#4c2d17", [292, 0.14, -11.72]));
+  group.add(box([147.96, 0.28, 0.16], "#4c2d17", [292, 0.14, -11.72]));
 
   // Lê Lợi South Perimeter Walk linking wing footpaths along Lê Lợi curb
   const frontWalk = new THREE.Mesh(
@@ -622,7 +622,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   frontWalk.position.set(292, 0.12, 37.6);
   frontWalk.receiveShadow = true;
 
-  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (top <= 0.21m so >=10mm clear of apses/plaza/riverWalk)
+  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (top <= 0.195m so >=10mm clear of adjacent parks/apses/plaza)
   const wingWalkSegments = [
     // West wing connecting to FireflyTreePark (lx = 218)
     { a: { lx: cx - 36, lz: cz }, b: { lx: 218, lz: cz }, width: 3.4 },
@@ -640,12 +640,21 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     const dx = b.lx - a.lx;
     const dz = b.lz - a.lz;
     const len = Math.hypot(dx, dz) || 1;
-    const topY = 0.21 - tierIdx * 0.01;
+    const padA = 0.3;
+    const touchesBoundary = b.lx <= 218.01 || b.lx >= 365.99;
+    const padB = touchesBoundary ? 0 : 0.3;
+    const totalLen = len + padA + padB;
+    const shiftAlong = (padB - padA) / 2;
+    const topY = 0.195 - tierIdx * 0.009;
     const mesh = new THREE.Mesh(
-      new THREE.BoxGeometry(width, 0.24, len + 0.6),
+      new THREE.BoxGeometry(width, 0.24, totalLen),
       graniteMat,
     );
-    mesh.position.set((a.lx + b.lx) / 2, topY - 0.12, (a.lz + b.lz) / 2);
+    mesh.position.set(
+      (a.lx + b.lx) / 2 + (dx / len) * shiftAlong,
+      topY - 0.12,
+      (a.lz + b.lz) / 2 + (dz / len) * shiftAlong,
+    );
     mesh.rotation.y = Math.atan2(dx, dz);
     mesh.receiveShadow = true;
     return mesh;

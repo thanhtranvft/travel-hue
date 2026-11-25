@@ -1225,8 +1225,10 @@ export class GeographicWorld {
     const boardwalkView = addLimWoodBoardwalk(this, activeRoads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
     const bayMouthOpenings = boardwalkView?.bayMouthOpenings || [];
+    const rampMouthOpenings = boardwalkView?.rampMouthOpenings || [];
     const isRailOpening = (mx, mz) =>
       lateralJunctions.some((j) => Math.hypot(mx - j.x, mz - j.z) < 2.1) ||
+      rampMouthOpenings.some((r) => Math.hypot(mx - r.x, mz - r.z) < r.halfOpening) ||
       bayMouthOpenings.some(
         (b) => Math.hypot(mx - b.x, mz - b.z) < b.halfOpening,
       );
@@ -1260,6 +1262,9 @@ export class GeographicWorld {
       this.boardwalkRails.push(...extSegments);
       if (boardwalkView.bayRailSegments?.length) {
         this.boardwalkRails.push(...boardwalkView.bayRailSegments);
+      }
+      if (boardwalkView.rampRailSegments?.length) {
+        this.boardwalkRails.push(...boardwalkView.rampRailSegments);
       }
       if (!this.landmarks.has("cau-go-lim") && boardwalkView.mainPoints?.length) {
         const midPt =

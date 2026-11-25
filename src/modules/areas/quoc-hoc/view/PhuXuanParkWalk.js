@@ -531,9 +531,11 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     {
       width: 4.6,
       points: [
-        { lx: 366.05, lz: -14.2 },
+        { lx: 366.02, lz: -14.2 },
         { lx: 402, lz: -14.2 },
+        { lx: 437.3, lz: -14.01 },
         { lx: 439.5, lz: -14.0 },
+        { lx: 441.7, lz: -13.97 },
         { lx: 488, lz: -13.3 },
         { lx: 512, lz: -12.6 },
         { lx: 536.5, lz: -11.4 },
@@ -618,6 +620,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       points: [
         { lx: 439.5, lz: 38.4 },
         { lx: 439.5, lz: -2.4 },
+        { lx: 439.5, lz: -14.0 },
       ],
     },
     {
@@ -719,14 +722,25 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     ribbonMesh.receiveShadow = true;
     group.add(ribbonMesh);
     if (isIronwood) {
-      for (const sideOffset of [-(path.width / 2 + 0.09), path.width / 2 + 0.09]) {
-        const curb = new THREE.Mesh(
-          buildRibbonSideCurbGeometry(path.points, sideOffset, 0.18, 0.285, 0.08),
+      const riverCurbChunks = [
+        path.points.slice(0, 3), // 366.0 .. 437.3 (opens cleanly at Cầu Gỗ Lim west ramp)
+        path.points.slice(4),    // 441.7 .. 536.5
+      ];
+      for (const chunk of riverCurbChunks) {
+        if (chunk.length < 2) continue;
+        const riverCurb = new THREE.Mesh(
+          buildRibbonSideCurbGeometry(chunk, -(path.width / 2 + 0.09), 0.18, 0.285, 0.08),
           ironwoodTrimMat,
         );
-        curb.castShadow = curb.receiveShadow = true;
-        group.add(curb);
+        riverCurb.castShadow = riverCurb.receiveShadow = true;
+        group.add(riverCurb);
       }
+      const innerCurb = new THREE.Mesh(
+        buildRibbonSideCurbGeometry(path.points, path.width / 2 + 0.09, 0.18, 0.285, 0.08),
+        ironwoodTrimMat,
+      );
+      innerCurb.castShadow = innerCurb.receiveShadow = true;
+      group.add(innerCurb);
     }
     for (let i = 1; i < path.points.length; i++) {
       const seg = {
@@ -1031,9 +1045,9 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Yield cleanly where Cầu Gỗ Lim lateral wooden ramps rise over shoreline
-      if (Math.abs(lx - 439.5) < 1.9 && lz < -3.2 && lz > -18.5) return null;
-      if (Math.abs(lx - 535.0) < 1.9 && lz < -11.4 && lz > -22.5) return null;
+      // Yield cleanly where Cầu Gỗ Lim shore ramps rise riverward of the ironwood promenade
+      if (Math.abs(lx - 439.5) < 2.35 && lz < -16.1 && lz > -18.5) return null;
+      if (Math.abs(lx - 535.0) < 1.9 && lz < -13.2 && lz > -22.5) return null;
 
       // Curb ramps along Lê Lợi
       for (const r of curbEntries) {

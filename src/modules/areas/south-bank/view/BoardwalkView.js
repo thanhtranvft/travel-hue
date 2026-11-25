@@ -339,19 +339,53 @@ export function addLimWoodBoardwalk(world, roads) {
   );
 
   const rampCorridors = [];
-  // Entry/exit timber shore ramps sloping cleanly down to promenade level (east 0.24m, west 0.256m ironwood walk)
-  for (const end of [
-    { origin: mainFrames[0], dir: -1, endY: 0.24 },
-    { origin: mainFrames.at(-1), dir: 1, endY: 0.256 },
-  ]) {
-    const f = end.origin;
-    const rampPts = [
-      { x: f.x, z: f.z, y: BOARDWALK_Y },
-      { x: f.x + f.tx * end.dir * 4.5, z: f.z + f.tz * end.dir * 4.5, y: end.endY },
-    ];
-    const rFrames = buildFrames(
-      end.dir < 0 ? [rampPts[1], rampPts[0]] : rampPts,
-    );
+  const rampMouthOpenings = [];
+  const rampRailSegments = [];
+
+  const buildLinearRampPoints = (pts, startY, endY) => {
+    let total = 0;
+    const dists = [0];
+    for (let i = 1; i < pts.length; i++) {
+      total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].z - pts[i - 1].z);
+      dists.push(total);
+    }
+    return pts.map((p, i) => ({
+      x: p.x,
+      z: p.z,
+      y: startY + (endY - startY) * (dists[i] / (total || 1)),
+    }));
+  };
+
+  // East ramp: leaves mainFrames[0] (1344, -1350) collinearly then smoothly curves inland onto Công viên 3/2 footway 257257958 on dry land
+  const eastEnd = mainFrames[0];
+  const eastRampPts = buildLinearRampPoints(
+    [
+      { x: eastEnd.x, z: eastEnd.z },
+      { x: eastEnd.x - eastEnd.tx * 1.8, z: eastEnd.z - eastEnd.tz * 1.8 },
+      { x: 1348.2, z: -1350.6 },
+      { x: 1351.0, z: -1346.5 },
+      { x: 1352.58, z: -1339.96 },
+    ],
+    BOARDWALK_Y,
+    0.236,
+  );
+  rampMouthOpenings.push({ x: eastEnd.x, z: eastEnd.z, halfOpening: 2.35 });
+
+  // West ramp: meets PhuXuanParkWalk riverfront ironwood promenade edge cleanly at 0.256m (y=0.252 + 0.004)
+  const westEnd = mainFrames.at(-1);
+  const westRampPts = buildLinearRampPoints(
+    [
+      { x: westEnd.x, z: westEnd.z },
+      { x: westEnd.x + westEnd.tx * 1.7, z: westEnd.z + westEnd.tz * 1.7 },
+    ],
+    BOARDWALK_Y,
+    0.252,
+  );
+
+  const rampHandrailParts = [];
+  const eastRampPiles = [];
+  for (const [rIdx, rampPts] of [eastRampPts, westRampPts].entries()) {
+    const rFrames = buildFrames(rampPts);
     rampCorridors.push(rFrames);
     deckParts.push(buildTopDeck(rFrames, halfW, 0.004, 3.2));
     beamParts.push(
@@ -366,6 +400,56 @@ export function addLimWoodBoardwalk(world, roads) {
         4,
       ),
     );
+    // For the longer curved east shore ramp over shallow water, add safety rails & midpoint pier piles
+    if (rIdx === 0) {
+      const rLen = rFrames.at(-1).s;
+      for (const ratio of [0.32, 0.64]) {
+        const pf = frameAtArc(rFrames, rLen * ratio);
+        if (pf) eastRampPiles.push(pf);
+      }
+      const trimS = 1.4;
+      const trimE = Math.max(trimS + 1.0, rLen - 1.0);
+      const rSideFrames = [
+        frameAtArc(rFrames, trimS),
+        ...rFrames.filter((rf) => rf.s > trimS && rf.s < trimE),
+        frameAtArc(rFrames, trimE),
+      ].filter(Boolean);
+      if (rSideFrames.length >= 2) {
+        for (const side of [-1, 1]) {
+          const rLat = side * (halfW - 0.09);
+          for (let i = 1; i < rSideFrames.length; i++) {
+            const fa = rSideFrames[i - 1];
+            const fb = rSideFrames[i];
+            rampRailSegments.push({
+              a: { x: fa.x + fa.nx * rLat, z: fa.z + fa.nz * rLat, y: fa.y },
+              b: { x: fb.x + fb.nx * rLat, z: fb.z + fb.nz * rLat, y: fb.y },
+            });
+          }
+          rampHandrailParts.push(
+            buildExtrudedStrip(
+              rSideFrames,
+              [
+                [rLat - 0.055, 0.88],
+                [rLat - 0.055, 0.96],
+                [rLat + 0.055, 0.96],
+                [rLat + 0.055, 0.88],
+              ],
+              4,
+            ),
+            buildExtrudedStrip(
+              rSideFrames,
+              [
+                [rLat - 0.03, 0.44],
+                [rLat - 0.03, 0.49],
+                [rLat + 0.03, 0.49],
+                [rLat + 0.03, 0.44],
+              ],
+              4,
+            ),
+          );
+        }
+      }
+    }
   }
 
   // 2. Collect lateral cross-bridge junctions & construct the lateral wooden footbridges
@@ -377,7 +461,7 @@ export function addLimWoodBoardwalk(world, roads) {
   const metalBalusterTransforms = [];
   const newelTransforms = [];
   const lanternTransforms = [];
-  const handrailParts = [];
+  const handrailParts = [...rampHandrailParts];
   const metalRailParts = [];
 
   const allLateralSpecs = [
@@ -732,9 +816,10 @@ export function addLimWoodBoardwalk(world, roads) {
     }
   }
 
-  // 4. Main boardwalk railings (skipping lateral bridge openings & viewing bay mouths)
+  // 4. Main boardwalk railings (skipping lateral bridge openings, east ramp mouth & viewing bay mouths)
   const isBankOpening = (x, z) =>
     lateralJunctions.some((j) => Math.hypot(x - j.x, z - j.z) < 2.1) ||
+    rampMouthOpenings.some((r) => Math.hypot(x - r.x, z - r.z) < r.halfOpening) ||
     bayMouthOpenings.some((b) => Math.hypot(x - b.x, z - b.z) < b.halfOpening);
 
   for (const side of [-1, 1]) {
@@ -988,6 +1073,16 @@ export function addLimWoodBoardwalk(world, roads) {
       });
     }
   }
+  for (const f of eastRampPiles) {
+    allCrossBeams.push({ x: f.x, y: f.y - 0.32, z: f.z, yaw: Math.atan2(f.tx, f.tz), scaleX: 1 });
+    for (const side of [-1, 1]) {
+      allPierPiles.push({
+        x: f.x + f.nx * side * 1.4,
+        z: f.z + f.nz * side * 1.4,
+        h: f.y + 0.35,
+      });
+    }
+  }
 
   if (allPierPiles.length) {
     const pileGeo = new THREE.CylinderGeometry(0.22, 0.24, 1.0, 10);
@@ -1196,25 +1291,33 @@ export function addLimWoodBoardwalk(world, roads) {
     let onBay = false;
     let bayInsideDeck = false;
     let bayInsideSafe = false;
-    let bestDeckY = onMain ? mainHit.y + 0.008 : -Infinity;
+    let bestDeckY = onMain ? mainHit.y + 0.004 : -Infinity;
     let minCenterDist = onMain ? mainHit.dist : Infinity;
     let insideSafeMargin = onMain && mainHit.dist <= halfW - 0.55;
+    let rampDeckY = -Infinity;
+    let rampAheadOfMain = false;
 
     for (const rf of rampCorridors) {
       const hit = closestOnFrames(rf, x, z);
       if (hit.dist <= halfW + 0.08) {
         onRamp = true;
-        bestDeckY = Math.max(bestDeckY, hit.y + 0.007);
+        const tip = rf[0];
+        const ahead = (x - tip.x) * tip.tx + (z - tip.z) * tip.tz;
+        if (ahead > 0.01) rampAheadOfMain = true;
+        rampDeckY = Math.max(rampDeckY, hit.y + 0.004);
         minCenterDist = Math.min(minCenterDist, hit.dist);
         if (hit.dist <= halfW - 0.55) insideSafeMargin = true;
       }
+    }
+    if (onRamp) {
+      bestDeckY = rampAheadOfMain || !onMain ? rampDeckY : Math.max(bestDeckY, rampDeckY);
     }
 
     for (const { frames: lf, halfW: lhw } of lateralCorridors) {
       const hit = closestOnFrames(lf, x, z);
       if (hit.dist <= lhw + 0.08) {
         onLateral = true;
-        bestDeckY = Math.max(bestDeckY, hit.y + 0.008);
+        bestDeckY = Math.max(bestDeckY, hit.y + 0.006);
         minCenterDist = Math.min(minCenterDist, hit.dist);
         if (hit.dist <= lhw - 0.5) insideSafeMargin = true;
       }
@@ -1229,7 +1332,7 @@ export function addLimWoodBoardwalk(world, roads) {
         const radial = Math.hypot(dt, Math.max(0, dn - halfW));
         if (radial <= b.radius + 0.08) {
           onBay = true;
-          bestDeckY = Math.max(bestDeckY, b.y + 0.008);
+          bestDeckY = Math.max(bestDeckY, b.y + 0.004);
           minCenterDist = Math.min(minCenterDist, radial);
           if (radial <= b.radius - 0.18) bayInsideDeck = true;
           if (radial <= b.radius - 0.65) {
@@ -1330,6 +1433,8 @@ export function addLimWoodBoardwalk(world, roads) {
     viewingBays,
     bayMouthOpenings,
     bayRailSegments,
+    rampMouthOpenings,
+    rampRailSegments,
     lateralCount: LATERAL_BRIDGE_IDS.length,
     totalLateralCount: allLateralSpecs.length,
     lateralJunctions,

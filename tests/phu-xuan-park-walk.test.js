@@ -125,11 +125,19 @@ test("FountainPark wings and PhuXuanParkWalk form unbroken footpaths to Cầu Ph
     const centerPlinth = biaPark.toWorld(511.5, 17.1);
     assert.equal(phuXuanWalk.canRide(centerPlinth.x, centerPlinth.z), false);
 
-    // Lateral Cầu Gỗ Lim ramps yield groundAt to elevated boardwalk deck
-    const limRampWest = biaPark.toWorld(439.5, -10.5);
+    // Lateral Cầu Gỗ Lim ramps yield groundAt riverward of ironwood promenade
+    const limRampWest = biaPark.toWorld(439.5, -17.0);
     const limRampEast = biaPark.toWorld(535.0, -16.0);
     assert.equal(phuXuanWalk.groundAt(limRampWest.x, limRampWest.z, 0.5), null);
     assert.equal(phuXuanWalk.groundAt(limRampEast.x, limRampEast.z, 0.5), null);
+
+    // Axial link from mid-park roundabout (439.5, -2.4) to ironwood riverwalk (439.5, -14.0) is smoothly paved & rideable
+    const westApproachMid = biaPark.toWorld(439.5, -10.5);
+    assert.equal(phuXuanWalk.groundAt(westApproachMid.x, westApproachMid.z, 0.24), 0.24);
+    assert.equal(phuXuanWalk.canRide(westApproachMid.x, westApproachMid.z), true);
+    const westIronwoodJoin = biaPark.toWorld(439.5, -14.0);
+    assert.equal(phuXuanWalk.groundAt(westIronwoodJoin.x, westIronwoodJoin.z, 0.25), 0.256);
+    assert.equal(phuXuanWalk.canRide(westIronwoodJoin.x, westIronwoodJoin.z), true);
 
     // Slip road 1169319988 & Cầu Phú Xuân carriageway remain completely untouched
     for (const [lx, lz] of [

@@ -82,11 +82,12 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
     const world = new GeographicWorld(scene);
     world.region = {
       id: "quoc-hoc",
-      bounds: { minX: 450, maxX: 1200, minZ: -1300, maxZ: -700 },
+      bounds: { minX: 450, maxX: 1400, minZ: -1400, maxZ: -700 },
       radius: 500,
       extensions: [],
       path: [
         [884.86, -865.65],
+        [1352.58, -1339.96],
         [620.31, -1174.43],
       ],
     };
@@ -250,6 +251,32 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
       world.boardwalkView.vendorPoints.filter((v) => v.vendorType === "hawker-vendor").length >= 3,
       "under-bridge hawker vendors are present along extended boardwalk",
     );
+
+    // 8. West shore ramp slopes smoothly down to PhuXuanParkWalk ironwood promenade with zero sudden cliff
+    const westTip = world.boardwalkView.mainPoints.at(-1);
+    const westPrev = world.boardwalkView.mainPoints.at(-2);
+    const wLen = Math.hypot(westTip.x - westPrev.x, westTip.z - westPrev.z) || 1;
+    const wtx = (westTip.x - westPrev.x) / wLen;
+    const wtz = (westTip.z - westPrev.z) / wLen;
+    let prevWestY = world.groundAt(westTip.x, westTip.z, 0.68);
+    for (let t = 0.25; t <= 4.0; t += 0.25) {
+      const px = westTip.x + wtx * t;
+      const pz = westTip.z + wtz * t;
+      const y = world.groundAt(px, pz, prevWestY);
+      assert.equal(world.canRide(px, pz, y), true, `West ramp exit at t=${t} must be rideable`);
+      assert.ok(
+        Math.abs(y - prevWestY) <= 0.08,
+        `West ramp step delta too large at t=${t}: ${prevWestY} -> ${y}`,
+      );
+      prevWestY = y;
+    }
+
+    // 9. East shore ramp curves onto dry land in Công viên 3/2 (footway 257257958) without ending in river
+    const eastLanding = { x: 1352.58, z: -1339.96 };
+    const eastLandingY = world.groundAt(eastLanding.x, eastLanding.z, 0.3);
+    assert.ok(eastLandingY >= 0.22 && eastLandingY <= 0.26, `East ramp lands cleanly at ${eastLandingY}`);
+    assert.equal(world.canRide(eastLanding.x, eastLanding.z, eastLandingY), true, "East ramp landing on dry land is rideable");
+    assert.equal(world.canRide(1344.8, -1350.6, BOARDWALK_Y), true, "East ramp mouth is open (not blocked by boardwalk rail)");
   } finally {
     restoreDoc();
   }

@@ -539,15 +539,15 @@ export function createBiaQuocHocPark(world, site, heading) {
   westWing.position.set(-53.55, 0.128, -13.3);
   westWing.receiveShadow = true;
   const eastWing = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(36.3, 0.256, 4.4, 3.2),
+    createIronwoodPromenadeGeometry(36.38, 0.256, 4.4, 3.2),
     ironwoodWalkMat,
   );
-  eastWing.position.set(49.75, 0.128, -13.3);
+  eastWing.position.set(49.79, 0.128, -13.3);
   eastWing.receiveShadow = true;
   group.add(westWing, eastWing);
   for (const [cxW, wLen] of [
     [-53.55, 35.9],
-    [49.75, 36.3],
+    [49.79, 36.38],
   ]) {
     for (const edgeZ of [-15.58, -11.02]) {
       group.add(box([wLen, 0.285, 0.14], "#4c2d17", [cxW, 0.1425, edgeZ]));

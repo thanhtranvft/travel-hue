@@ -375,7 +375,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   // 2. CONTINUOUS IRONWOOD (GỖ LIM) RIVERSIDE PROMENADE & APPROACH WALKWAY FROM HAI BÀ TRƯNG GATE
   const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const promenade = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(149.9, 0.256, 4.4, 3.2),
+    createIronwoodPromenadeGeometry(149.96, 0.256, 4.4, 3.2),
     ironwoodWalkMat,
   );
   promenade.position.set(143.0, 0.128, -13.3);
@@ -383,12 +383,12 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // River-side & inner dark timber edge curbs framing the ironwood promenade
   const riverWall = new THREE.Mesh(
-    new THREE.BoxGeometry(149.9, 0.29, 0.28),
+    new THREE.BoxGeometry(149.96, 0.29, 0.28),
     mat("#4c2d17", 0.8),
   );
   riverWall.position.set(143.0, 0.145, -15.65);
   const innerCurb = new THREE.Mesh(
-    new THREE.BoxGeometry(149.9, 0.28, 0.16),
+    new THREE.BoxGeometry(149.96, 0.28, 0.16),
     mat("#4c2d17", 0.8),
   );
   innerCurb.position.set(143.0, 0.14, -11.0);
