@@ -115,6 +115,20 @@ test("sessionPersistence saves, restores, sanitizes expired boost, marks inactiv
   // Corrupt JSON does not throw
   storage.setItem(ACTIVE_SESSION_STORAGE_KEY, "{bad json");
   assert.equal(loadActiveSession(storage, 14000), null);
+
+  // Legacy south-bank region migrates to merged quoc-hoc region
+  storage.setItem(
+    ACTIVE_SESSION_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      active: true,
+      name: "Huế",
+      region: "south-bank",
+      savedAt: 15000,
+    }),
+  );
+  const migrated = loadActiveSession(storage, 15500);
+  assert.equal(migrated.region, "quoc-hoc");
 });
 
 test("Room.join preserves position, inventory, active boost and reports summary on same-region reconnect", () => {

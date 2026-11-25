@@ -2,7 +2,11 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
+import {
+  createIronwoodPromenadeGeometry,
+  createIronwoodWalkMaterial,
+  createManicuredLawnTexture,
+} from "../../../../core/world/turfTextures.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -331,9 +335,9 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   });
   const curbMat = mat("#cfc9bb", 0.86);
 
-  // 1. CONTINUOUS LUSH PARK LAWN BASE (lx: +70 to +218, lz: -28 to +38.8)
-  const lawnSpanX = 148;
-  const lawnCenterX = 144;
+  // 1. CONTINUOUS LUSH PARK LAWN BASE (lx: +68 to +218, lz: -28 to +38.8)
+  const lawnSpanX = 149.9;
+  const lawnCenterX = 143.0;
   const lawnMesh = new THREE.Mesh(
     new THREE.BoxGeometry(lawnSpanX, 0.14, 67),
     lawnMat,
@@ -344,7 +348,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // Riverbank green embankment strip down to Perfume River water line
   const shorePoints = [];
-  for (let lx = 70; lx <= 218; lx += 4) {
+  for (let lx = 68; lx <= 218; lx += 4) {
     shorePoints.push({ lx, zTop: -15.5, zBot: sampleShoreZ(lx) - 0.3 });
   }
   const bankPos = [];
@@ -368,20 +372,27 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   bankMesh.receiveShadow = true;
   group.add(bankMesh);
 
-  // 2. CONTINUOUS GRANITE RIVERSIDE PROMENADE & APPROACH WALKWAY FROM HAI BÀ TRƯNG GATE
+  // 2. CONTINUOUS IRONWOOD (GỖ LIM) RIVERSIDE PROMENADE & APPROACH WALKWAY FROM HAI BÀ TRƯNG GATE
+  const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const promenade = new THREE.Mesh(
-    new THREE.BoxGeometry(148, 0.23, 4.6),
-    graniteMat,
+    createIronwoodPromenadeGeometry(149.9, 0.256, 4.4, 3.2),
+    ironwoodWalkMat,
   );
-  promenade.position.set(144, 0.115, -13.3);
+  promenade.position.set(143.0, 0.128, -13.3);
   promenade.receiveShadow = true;
 
-  // River-side granite edge parapet along promenade
+  // River-side & inner dark timber edge curbs framing the ironwood promenade
   const riverWall = new THREE.Mesh(
-    new THREE.BoxGeometry(148, 0.28, 0.35),
-    curbMat,
+    new THREE.BoxGeometry(149.9, 0.29, 0.28),
+    mat("#4c2d17", 0.8),
   );
-  riverWall.position.set(144, 0.24, -15.6);
+  riverWall.position.set(143.0, 0.145, -15.65);
+  const innerCurb = new THREE.Mesh(
+    new THREE.BoxGeometry(149.9, 0.28, 0.16),
+    mat("#4c2d17", 0.8),
+  );
+  innerCurb.position.set(143.0, 0.14, -11.0);
+  group.add(innerCurb);
 
   // Approach walkway from Lê Lợi sidewalk directly opposite Trường Hai Bà Trưng gate
   const gateWalk = new THREE.Mesh(
@@ -629,7 +640,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // 8. BENCHES, HERITAGE LAMPS & FRAMING SHADE TREES (central sightline lx 137..173 kept clear!)
   for (const bx of [86, 106, 126, 178, 198, 212]) {
-    group.add(createParkBench(bx, 0.23, -14.2, Math.PI));
+    group.add(createParkBench(bx, 0.256, -14.2, Math.PI));
   }
   for (const [lx, lz] of [
     [92, -12],
@@ -639,7 +650,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     [186, -12],
     [212, -12],
   ]) {
-    group.add(createParkLamp(lx, 0.23, lz));
+    group.add(createParkLamp(lx, lz <= -11 ? 0.256 : 0.23, lz));
   }
 
   const framingTrees = [
@@ -698,16 +709,17 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 70 || lx > 218 || lz < sampleShoreZ(lx) - 1 || lz > 41)
+      if (lx < 68 || lx > 218 || lz < sampleShoreZ(lx) - 1 || lz > 41)
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
+      // Continuous riverside ironwood promenade
+      if (lz >= -15.6 && lz <= -11.0) return 0.256;
       // Sandy circular clearing
       if (Math.hypot(lx - treeLx, lz - treeLz) <= clearingRadius + 0.4) {
         return 0.24;
       }
-      // Riverside promenade, Hai Bà Trưng approach walk & East garden link to Fountain Park
-      if (lz >= -15.6 && lz <= -11.0) return 0.23;
+      // Hai Bà Trưng approach walk & East garden link to Fountain Park
       if (Math.abs(lx - treeLx) <= 4.7 && lz >= 18 && lz <= 38.8) return 0.205;
       if (lx >= treeLx + 20 && lx <= 218 && Math.abs(lz - 6.5) <= 2.0) return 0.205;
       // Approach ramp at Lê Lợi
@@ -724,7 +736,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     canRide(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 70 || lx > 218 || lz < sampleShoreZ(lx) || lz > 40.5)
+      if (lx < 68 || lx > 218 || lz < sampleShoreZ(lx) || lz > 40.5)
         return null;
       // Solid trunk + circular wrap-around bench ring
       if (Math.hypot(lx - treeLx, lz - treeLz) < benchRadius + 0.6) {
@@ -745,12 +757,12 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 70 && lx <= 218 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
+      return lx >= 68 && lx <= 218 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
       // Keep the entire Cây Đom Đóm clearing, approach from Hai Bà Trưng, and promenade clear of generic OSM trees
-      if (lx >= 70 && lx <= 218 && lz >= -28 && lz <= -10) return true;
+      if (lx >= 68 && lx <= 218 && lz >= -28 && lz <= -10) return true;
       if (Math.hypot(lx - treeLx, lz - treeLz) < clearingRadius + 6) return true;
       if (Math.abs(lx - treeLx) < 14 && lz >= 0 && lz <= 42) return true;
       return false;

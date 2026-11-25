@@ -6,7 +6,7 @@
       {
         "id": "quoc-hoc",
         "title": "Khoa Quốc tế → Tràng Tiền",
-        "subtitle": "Lê Lợi · ĐH Huế → Quốc Học → Tràng Tiền",
+        "subtitle": "Lê Lợi · ĐH Huế → Quốc Học → Cầu Gỗ Lim → Tràng Tiền",
         "color": "#e7bd77",
         "path": [
           [
@@ -321,7 +321,7 @@
         },
         "landmarks": [],
         "geo": true,
-        "enabled": true
+        "enabled": false
       },
       {
         "id": "truong-tien",

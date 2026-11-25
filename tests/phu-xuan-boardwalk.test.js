@@ -214,8 +214,34 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
       }
     }
 
-    // 7. Extended boardwalk reaches past Phu Xuan and under Truong Tien with hawkers
+    // 7. Extended boardwalk reaches past Phu Xuan and under Truong Tien with hawkers and viewing bays
     assert.ok(world.boardwalkView.totalLateralCount >= 8, "includes 4 extended lateral connectors");
+    assert.ok(world.boardwalkView.viewingBayCount >= 3, "has semi-circular riverfront viewing bays");
+    const sampleBay =
+      world.boardwalkView.viewingBays.find(
+        (b) => b.x >= world.bounds.minX + 10 && b.x <= world.bounds.maxX - 10,
+      ) || world.boardwalkView.viewingBays.at(-1);
+    assert.ok(sampleBay, "has viewing bay inside boardwalk test region");
+    const bayCenterPt = {
+      x: sampleBay.x + sampleBay.nx * sampleBay.side * (world.boardwalkView.halfWidth + 1.2),
+      z: sampleBay.z + sampleBay.nz * sampleBay.side * (world.boardwalkView.halfWidth + 1.2),
+    };
+    const bayQuery = world.boardwalkView.queryDeck(bayCenterPt.x, bayCenterPt.z);
+    assert.equal(bayQuery.onBay, true);
+    assert.equal(bayQuery.insideDeck, true);
+    assert.equal(bayQuery.insideSafeMargin, true);
+    assert.equal(world.canRide(bayCenterPt.x, bayCenterPt.z, BOARDWALK_Y), true);
+
+    const bayRailPt = {
+      x: sampleBay.x + sampleBay.nx * sampleBay.side * (world.boardwalkView.halfWidth - 0.1 + sampleBay.radius - 0.12),
+      z: sampleBay.z + sampleBay.nz * sampleBay.side * (world.boardwalkView.halfWidth - 0.1 + sampleBay.radius - 0.12),
+    };
+    assert.equal(
+      world.canRide(bayRailPt.x, bayRailPt.z, BOARDWALK_Y),
+      false,
+      "Curved viewing bay railing blocks riding off into river",
+    );
+
     assert.ok(
       world.boardwalkView.mainPoints.some((p) => p.x >= 1260 && p.z <= -1270),
       "boardwalk spans continuously past Cầu Phú Xuân to Cầu Tràng Tiền",

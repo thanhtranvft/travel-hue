@@ -2,7 +2,11 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
+import {
+  createIronwoodPromenadeGeometry,
+  createIronwoodWalkMaterial,
+  createManicuredLawnTexture,
+} from "../../../../core/world/turfTextures.js";
 import { createRiverFishMesh } from "../../../../core/world/RiverFish.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -335,9 +339,6 @@ function redPergola(startX, endX, zCenter) {
   const len = Math.abs(endX - startX);
   const cx = (startX + endX) / 2;
 
-  // Stone colonnade walkway underneath (top 0.255m clear of plaza 0.24m)
-  g.add(box([len + 2.4, 0.06, 3.6], "#cec9bd", [cx, 0.225, zCenter]));
-
   const cols = 7;
   const redMat = mat("#9e2d25", 0.48, 0.08);
   const creamMat = mat("#efe9dc", 0.72);
@@ -351,7 +352,7 @@ function redPergola(startX, endX, zCenter) {
         new THREE.BoxGeometry(0.38, 0.26, 0.38),
         creamMat,
       );
-      plinth.position.set(x, 0.35, zCenter + sz);
+      plinth.position.set(x, 0.386, zCenter + sz);
       const col = new THREE.Mesh(
         new THREE.CylinderGeometry(0.13, 0.15, 2.95, 10),
         redMat,
@@ -529,20 +530,29 @@ export function createBiaQuocHocPark(world, site, heading) {
   medInner.receiveShadow = true;
   group.add(medOuter, medInner);
 
-  // Granite upper riverfront promenade wings extending to West & East parks
+  // Ironwood (gỗ lim) upper riverfront promenade wings extending to West & East parks (y = 0.256m)
+  const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const westWing = new THREE.Mesh(
-    new THREE.BoxGeometry(36.0, 0.24, 4.4),
-    graniteMat,
+    createIronwoodPromenadeGeometry(35.9, 0.256, 4.4, 3.2),
+    ironwoodWalkMat,
   );
-  westWing.position.set(-53.5, 0.12, -13.3);
+  westWing.position.set(-53.55, 0.128, -13.3);
   westWing.receiveShadow = true;
   const eastWing = new THREE.Mesh(
-    new THREE.BoxGeometry(36.0, 0.24, 4.4),
-    graniteMat,
+    createIronwoodPromenadeGeometry(36.3, 0.256, 4.4, 3.2),
+    ironwoodWalkMat,
   );
-  eastWing.position.set(49.5, 0.12, -13.3);
+  eastWing.position.set(49.75, 0.128, -13.3);
   eastWing.receiveShadow = true;
   group.add(westWing, eastWing);
+  for (const [cxW, wLen] of [
+    [-53.55, 35.9],
+    [49.75, 36.3],
+  ]) {
+    for (const edgeZ of [-15.58, -11.02]) {
+      group.add(box([wLen, 0.285, 0.14], "#4c2d17", [cxW, 0.1425, edgeZ]));
+    }
+  }
 
   // Stone perimeter bollards along Le Loi plaza edge (open 18m central ceremonial gateway)
   const bollardGeo = new THREE.CylinderGeometry(0.14, 0.18, 0.62, 8);
@@ -820,7 +830,7 @@ export function createBiaQuocHocPark(world, site, heading) {
 
   // Flanking floral islands & park benches along upper promenade
   for (const bx of [-26, -10, 10, 24, 40, 54]) {
-    group.add(heritageBench(bx, 0.24, -14.2, Math.PI));
+    group.add(heritageBench(bx, bx > 31.5 ? 0.256 : 0.24, -14.2, Math.PI));
   }
   for (const [fx, fz, col] of [
     [-44, 16, "#e3a634"],
@@ -843,7 +853,8 @@ export function createBiaQuocHocPark(world, site, heading) {
     [33, -12, false],
     [48, -12, false],
   ]) {
-    group.add(heritageLamp(lx, 0.24, lz, tall));
+    const baseY = lx > 31.5 && lz >= -15.5 && lz <= -11.1 ? 0.256 : 0.24;
+    group.add(heritageLamp(lx, baseY, lz, tall));
   }
 
   // Lush layered Hue trees framing the West & East park wings and outer Le Loi edges
@@ -1033,11 +1044,15 @@ export function createBiaQuocHocPark(world, site, heading) {
         return 0.24;
       }
 
-      // Grand Granite Plaza & Upper Promenade
+      // Continuous Ironwood Riverfront Promenade Wings & Grand Granite Plaza
       if (
-        (lx >= -35.5 && lx <= 31.5 && lz >= -15.5 && lz <= 36.8) ||
-        (lx >= -72 && lx <= 70 && lz >= -15.5 && lz <= -11.1)
+        ((lx >= -72 && lx < -35.5) || (lx > 31.5 && lx <= 68)) &&
+        lz >= -15.5 &&
+        lz <= -11.1
       ) {
+        return 0.256;
+      }
+      if (lx >= -35.5 && lx <= 31.5 && lz >= -15.5 && lz <= 36.8) {
         return 0.24;
       }
 
@@ -1087,6 +1102,14 @@ export function createBiaQuocHocPark(world, site, heading) {
       // Block fishing rental stall counter & rod rack
       if (Math.abs(lx - stallLx) < 1.55 && Math.abs(lz - stallLz) < 1.1)
         return false;
+      // Allow riding along the ironwood riverside promenade wings
+      if (
+        ((lx >= -72 && lx < -35.5) || (lx > 31.5 && lx <= 68)) &&
+        lz >= -15.5 &&
+        lz <= -11.1
+      ) {
+        return true;
+      }
       // Allow riding onto the cantilevered curved wooden riverside overlook deck!
       if (
         lx >= -63.5 &&

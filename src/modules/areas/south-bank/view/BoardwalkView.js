@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { BOARDWALK_Y, TRUONG_TIEN_ID } from "../../../../core/world/roadSurface.js";
+import { createIronwoodPlankTexture } from "../../../../core/world/turfTextures.js";
 import { createComNamHawker } from "../../quang-trung/view/QuangTrungVendors.js";
 
 const MAIN_BOARDWALK_IDS = [683633953, 1167513733, 1167513732];
@@ -75,69 +76,18 @@ export function lateralBridgeHeight(road, index, mainPoints) {
   return 0.26 + (BOARDWALK_Y - 0.26) * ratio;
 }
 
-function createLimWoodTexture(mobile = false) {
-  const size = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-
-  ctx.fillStyle = "#7a4a27";
-  ctx.fillRect(0, 0, size, size);
-
-  let seed = 313;
-  const rand = () => {
-    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-
-  // Horizontal planks in UV space (maps across deck width X, repeats along length Y)
-  const plankCount = 16;
-  const plankH = size / plankCount;
-  const tones = ["#85522d", "#794825", "#8f5a33", "#6f4120", "#7f4d29"];
-  for (let p = 0; p < plankCount; p++) {
-    const y0 = p * plankH;
-    ctx.fillStyle = tones[Math.floor(rand() * tones.length)];
-    ctx.fillRect(0, y0, size, plankH - 1.5);
-
-    // Subtle timber grain streaks running across the plank (horizontal)
-    for (let g = 0; g < (mobile ? 10 : 20); g++) {
-      const gy = y0 + 2 + rand() * (plankH - 4);
-      ctx.fillStyle =
-        rand() > 0.5 ? "rgba(42,20,8,0.18)" : "rgba(182,126,74,0.14)";
-      ctx.fillRect(rand() * size * 0.4, gy, size * (0.35 + rand() * 0.65), 1.1);
-    }
-
-    // Dark recessed seam between adjacent ironwood planks
-    ctx.fillStyle = "#3a200e";
-    ctx.fillRect(0, y0 + plankH - 1.6, size, 1.6);
-  }
-
-  // Faint lengthwise bolt/board edge shadow near outer plank ends
-  ctx.fillStyle = "rgba(38,20,9,0.2)";
-  ctx.fillRect(0, 0, 5, size);
-  ctx.fillRect(size - 5, 0, 5, size);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = 4;
-  return texture;
-}
-
 export function stitchMainBoardwalk(roads) {
   const segA = roads.find((r) => r.id === 683633953);
   const segB = roads.find((r) => r.id === 1167513733);
   const segC = roads.find((r) => r.id === 1167513732);
   if (!segA || !segB || !segC) return [];
   const extEastToWest = BOARDWALK_EXTENSION_POINTS.slice().reverse();
-  const raw = [
+  return [
     ...extEastToWest,
     ...segA.points,
     ...segB.points.slice(1),
     ...segC.points.slice(1),
   ].map((p) => ({ x: p.x, z: p.z, y: BOARDWALK_Y }));
-  return raw;
 }
 
 function buildFrames(points) {
@@ -220,6 +170,49 @@ function buildTopDeck(frames, halfWidth, yTopOffset = 0, plankRepeatLength = 3.2
   return geo;
 }
 
+function buildViewingBayDeck(frame, side, halfW, bayRadius, yTopOffset = 0.004, plankRepeatLength = 3.2) {
+  const segs = 16;
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  const y = frame.y + yTopOffset;
+
+  // Vertex pairs along outer deck edge (chord c_i) and semicircle (arc a_i), starting strictly at |lat| >= halfW
+  for (let i = 0; i <= segs; i++) {
+    const alpha = (i / segs) * Math.PI;
+    const tangentOff = -Math.cos(alpha) * bayRadius;
+    const radialOut = Math.sin(alpha) * bayRadius;
+
+    const cx = frame.x + frame.tx * tangentOff + frame.nx * side * halfW;
+    const cz = frame.z + frame.tz * tangentOff + frame.nz * side * halfW;
+    const ax = frame.x + frame.tx * tangentOff + frame.nx * side * (halfW + radialOut);
+    const az = frame.z + frame.tz * tangentOff + frame.nz * side * (halfW + radialOut);
+
+    const vCoord = (frame.s + tangentOff) / plankRepeatLength;
+    positions.push(cx, y, cz, ax, y, az);
+    uvs.push(0, vCoord, radialOut / (halfW * 2), vCoord);
+  }
+
+  for (let i = 0; i < segs; i++) {
+    const p0 = i * 2;
+    const p1 = (i + 1) * 2;
+    if (i === 0) {
+      indices.push(p0, p1 + 1, p1);
+    } else if (i === segs - 1) {
+      indices.push(p0, p0 + 1, p1);
+    } else {
+      indices.push(p0, p0 + 1, p1, p0 + 1, p1 + 1, p1);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
 function buildExtrudedStrip(frames, profile, uRepeat = 6) {
   const ring = profile.length;
   const positions = [];
@@ -257,29 +250,46 @@ export function addLimWoodBoardwalk(world, roads) {
   const group = new THREE.Group();
   group.name = "lim-wood-boardwalk";
 
-  const woodTex = createLimWoodTexture(mobile);
+  const woodTex = createIronwoodPlankTexture(1, 1, { mobile, rich: true });
   const deckMat = new THREE.MeshStandardMaterial({
-    color: "#ffffff",
+    color: woodTex ? "#ffffff" : "#7b4c28",
     map: woodTex,
-    roughness: 0.78,
-    metalness: 0.04,
+    roughness: 0.62,
+    metalness: 0.06,
     side: THREE.DoubleSide,
   });
   const fasciaMat = new THREE.MeshStandardMaterial({
-    color: "#57381f",
-    roughness: 0.85,
-    metalness: 0.04,
-    side: THREE.DoubleSide,
-  });
-  const railMat = new THREE.MeshStandardMaterial({
-    color: "#7a4e2c",
+    color: "#4a2b14",
     roughness: 0.78,
     metalness: 0.05,
     side: THREE.DoubleSide,
   });
+  const railMat = new THREE.MeshStandardMaterial({
+    color: "#6e4221",
+    roughness: 0.68,
+    metalness: 0.06,
+    side: THREE.DoubleSide,
+  });
+  const metalRailMat = new THREE.MeshStandardMaterial({
+    color: "#8f958f",
+    roughness: 0.36,
+    metalness: 0.64,
+    side: THREE.DoubleSide,
+  });
+  const bronzeCapMat = new THREE.MeshStandardMaterial({
+    color: "#2c241d",
+    roughness: 0.44,
+    metalness: 0.56,
+  });
+  const lanternMat = new THREE.MeshStandardMaterial({
+    color: "#fff4d4",
+    emissive: "#ffbe48",
+    emissiveIntensity: 0.95,
+    roughness: 0.22,
+  });
   const pierMat = new THREE.MeshStandardMaterial({
     color: "#5e6159",
-    roughness: 0.92,
+    roughness: 0.9,
     metalness: 0.05,
   });
   const concreteWallMat = new THREE.MeshStandardMaterial({
@@ -293,8 +303,13 @@ export function addLimWoodBoardwalk(world, roads) {
     roughness: 0.95,
   });
   const shrubMat = new THREE.MeshStandardMaterial({
-    color: "#55823b",
+    color: "#4a7d35",
     roughness: 0.82,
+  });
+  const bloomMat = new THREE.MeshStandardMaterial({
+    color: "#ffffff",
+    roughness: 0.68,
+    metalness: 0.02,
   });
 
   const mainFrames = buildFrames(mainPoints);
@@ -304,7 +319,7 @@ export function addLimWoodBoardwalk(world, roads) {
   const deckParts = [];
   const beamParts = [];
 
-  // 1. Main boardwalk plank top (y = 0.68m) + thick structural timber fascia/slab (y = 0.42..0.68m)
+  // 1. Main boardwalk plank top (y = 0.684m) + thick dark-ironwood fascia/curb (y = 0.40..0.68m)
   deckParts.push(buildTopDeck(mainFrames, halfW, 0.004, 3.2));
   beamParts.push(
     buildExtrudedStrip(
@@ -324,15 +339,15 @@ export function addLimWoodBoardwalk(world, roads) {
   );
 
   const rampCorridors = [];
-  // Entry/exit timber shore ramps sloping cleanly down to footpath level (0.14m)
+  // Entry/exit timber shore ramps sloping cleanly down to promenade level (east 0.24m, west 0.256m ironwood walk)
   for (const end of [
-    { origin: mainFrames[0], dir: -1 },
-    { origin: mainFrames.at(-1), dir: 1 },
+    { origin: mainFrames[0], dir: -1, endY: 0.24 },
+    { origin: mainFrames.at(-1), dir: 1, endY: 0.256 },
   ]) {
     const f = end.origin;
     const rampPts = [
       { x: f.x, z: f.z, y: BOARDWALK_Y },
-      { x: f.x + f.tx * end.dir * 4.5, z: f.z + f.tz * end.dir * 4.5, y: 0.14 },
+      { x: f.x + f.tx * end.dir * 4.5, z: f.z + f.tz * end.dir * 4.5, y: end.endY },
     ];
     const rFrames = buildFrames(
       end.dir < 0 ? [rampPts[1], rampPts[0]] : rampPts,
@@ -353,14 +368,17 @@ export function addLimWoodBoardwalk(world, roads) {
     );
   }
 
-  // 2. Collect lateral cross-bridge junctions & construct the 4 lateral wooden footbridges
+  // 2. Collect lateral cross-bridge junctions & construct the lateral wooden footbridges
   const lateralJunctions = [];
   const lateralCorridors = [];
   const lateralPiers = [];
   const bankPoints = [];
   const slatTransforms = [];
+  const metalBalusterTransforms = [];
   const newelTransforms = [];
+  const lanternTransforms = [];
   const handrailParts = [];
+  const metalRailParts = [];
 
   const allLateralSpecs = [
     ...LATERAL_BRIDGE_IDS.map((id) => roads.find((r) => r.id === id)).filter(Boolean),
@@ -378,7 +396,6 @@ export function addLimWoodBoardwalk(world, roads) {
     lateralJunctions.push(ordered[0]);
     bankPoints.push(ordered.at(-1));
 
-    // Compute arc-length heights sloping from BOARDWALK_Y (0.68) at boardwalk to 0.24m at bank quay
     let latTotal = 0;
     for (let i = 1; i < ordered.length; i++) {
       latTotal += Math.hypot(
@@ -418,13 +435,12 @@ export function addLimWoodBoardwalk(world, roads) {
       ),
     );
 
-    // Mid-span river piers supporting lateral footbridges
     for (const ratio of [0.35, 0.68]) {
       const pf = frameAtArc(lFrames, lFrames.at(-1).s * ratio);
       if (pf) lateralPiers.push(pf);
     }
 
-    // Railings along both sides of lateral cross-bridge (trimmed clean at main boardwalk outer edge)
+    // Lateral railings: warm timber top cap rail + galvanized steel mid/bottom rails & vertical balusters
     const trimStart = Math.min(2.05, lLen * 0.25);
     const trimmedRailFrames = [
       frameAtArc(lFrames, trimStart),
@@ -437,22 +453,44 @@ export function addLimWoodBoardwalk(world, roads) {
           buildExtrudedStrip(
             trimmedRailFrames,
             [
-              [rLat - 0.06, 0.96],
-              [rLat - 0.06, 1.03],
-              [rLat + 0.06, 1.03],
-              [rLat + 0.06, 0.96],
+              [rLat - 0.065, 0.96],
+              [rLat - 0.065, 1.035],
+              [rLat + 0.065, 1.035],
+              [rLat + 0.065, 0.96],
+            ],
+            4,
+          ),
+        );
+        metalRailParts.push(
+          buildExtrudedStrip(
+            trimmedRailFrames,
+            [
+              [rLat - 0.026, 0.44],
+              [rLat - 0.026, 0.48],
+              [rLat + 0.026, 0.48],
+              [rLat + 0.026, 0.44],
+            ],
+            4,
+          ),
+          buildExtrudedStrip(
+            trimmedRailFrames,
+            [
+              [rLat - 0.03, 0.11],
+              [rLat - 0.03, 0.16],
+              [rLat + 0.03, 0.16],
+              [rLat + 0.03, 0.11],
             ],
             4,
           ),
         );
       }
       const yaw = Math.atan2(lFrames[0].tx, lFrames[0].tz);
-      for (let d = trimStart + 0.25; d <= lLen - 0.3; d += 0.34) {
+      for (let d = trimStart + 0.2; d <= lLen - 0.25; d += 0.24) {
         const sf = frameAtArc(lFrames, d);
         if (!sf) continue;
-        slatTransforms.push({
+        metalBalusterTransforms.push({
           x: sf.x + sf.nx * rLat,
-          y: sf.y + 0.49,
+          y: sf.y + 0.5,
           z: sf.z + sf.nz * rLat,
           yaw: Math.atan2(sf.tx, sf.tz),
         });
@@ -462,7 +500,7 @@ export function addLimWoodBoardwalk(world, roads) {
         if (!nf) continue;
         newelTransforms.push({
           x: nf.x + nf.nx * rLat,
-          y: nf.y + 0.52,
+          y: nf.y + 0.53,
           z: nf.z + nf.nz * rLat,
           yaw: Math.atan2(nf.tx, nf.tz) || yaw,
         });
@@ -470,11 +508,235 @@ export function addLimWoodBoardwalk(world, roads) {
     }
   }
 
-  // 3. Determine which side of main boardwalk faces river vs bank
-  const isBankOpening = (x, z) =>
-    lateralJunctions.some((j) => Math.hypot(x - j.x, z - j.z) < 2.1);
+  // 3. Semi-circular riverfront viewing bays ("vọng cảnh bán nguyệt") along open river stretches
+  const phuXuanRoad = roads.find((r) => r.id === PHU_XUAN_SPAN_ID);
+  const truongTienRoad = roads.find((r) => r.id === TRUONG_TIEN_ID);
+  const segA683 = roads.find((r) => r.id === 683633953);
+  const protectedTestPts = segA683?.points?.slice(0, 2) || [];
 
-  // Split main boardwalk railings into continuous runs skipping lateral bridge openings
+  const bayRadius = 3.2;
+  const viewingBays = [];
+  const bayMouthOpenings = [];
+  const bayRailSegments = [];
+  const bayBenchParts = [];
+  const bayPlanterSites = [];
+
+  for (let s = 44; s <= totalMainLen - 44 && viewingBays.length < 5; s += 12) {
+    if (viewingBays.some((b) => Math.abs(b.s - s) < 120)) continue;
+    const f = frameAtArc(mainFrames, s);
+    if (!f) continue;
+    const fPrev = frameAtArc(mainFrames, s - 7);
+    const fNext = frameAtArc(mainFrames, s + 7);
+    if (!fPrev || !fNext || fPrev.tx * fNext.tx + fPrev.tz * fNext.tz < 0.92) continue;
+
+    if (
+      (phuXuanRoad && nearestPoint({ x: f.x, z: f.z }, phuXuanRoad.points).distance < 18) ||
+      (truongTienRoad && nearestPoint({ x: f.x, z: f.z }, truongTienRoad.points).distance < 20) ||
+      lateralJunctions.some((j) => Math.hypot(f.x - j.x, f.z - j.z) < 14) ||
+      protectedTestPts.some((pt) => Math.hypot(f.x - pt.x, f.z - pt.z) < 26)
+    ) {
+      continue;
+    }
+
+    const plusInRiver = world.riverRings?.some((ring) =>
+      inside({ x: f.x + f.nx * 24, z: f.z + f.nz * 24 }, ring),
+    );
+    const minusInRiver = world.riverRings?.some((ring) =>
+      inside({ x: f.x - f.nx * 24, z: f.z - f.nz * 24 }, ring),
+    );
+    if (plusInRiver === minusInRiver) continue;
+    const side = plusInRiver ? 1 : -1;
+
+    // Ensure outer bay nose is strictly inside open river water
+    const nosePt = {
+      x: f.x + f.nx * side * (halfW + bayRadius + 1.2),
+      z: f.z + f.nz * side * (halfW + bayRadius + 1.2),
+    };
+    if (!world.riverRings?.some((ring) => inside(nosePt, ring))) continue;
+
+    viewingBays.push({
+      s,
+      x: f.x,
+      z: f.z,
+      y: f.y,
+      tx: f.tx,
+      tz: f.tz,
+      nx: f.nx,
+      nz: f.nz,
+      side,
+      radius: bayRadius,
+    });
+
+    bayMouthOpenings.push({
+      x: f.x + f.nx * side * (halfW - 0.1),
+      z: f.z + f.nz * side * (halfW - 0.1),
+      halfOpening: bayRadius - 0.25,
+    });
+
+    // Semi-circular deck (strictly outside main deck boundary |lat| >= halfW)
+    deckParts.push(buildViewingBayDeck(f, side, halfW, bayRadius, 0.004, 3.2));
+
+    // Curved fascia + curved handrail along outer semicircular rim
+    const arcSegs = 16;
+    const fasciaArcPts = [];
+    const railArcPts = [];
+    const rRail = bayRadius - 0.12;
+    for (let k = 0; k <= arcSegs; k++) {
+      const alpha = (k / arcSegs) * Math.PI;
+      const tOff = -Math.cos(alpha) * (bayRadius + 0.04);
+      const rOff = Math.sin(alpha) * (bayRadius + 0.04);
+      fasciaArcPts.push({
+        x: f.x + f.tx * tOff + f.nx * side * (halfW + rOff),
+        z: f.z + f.tz * tOff + f.nz * side * (halfW + rOff),
+        y: f.y,
+      });
+
+      const rtOff = -Math.cos(alpha) * rRail;
+      const rrOff = Math.sin(alpha) * rRail;
+      railArcPts.push({
+        x: f.x + f.tx * rtOff + f.nx * side * (halfW - 0.1 + rrOff),
+        z: f.z + f.tz * rtOff + f.nz * side * (halfW - 0.1 + rrOff),
+        y: f.y,
+      });
+    }
+
+    const fasciaArcFrames = buildFrames(fasciaArcPts);
+    beamParts.push(
+      buildExtrudedStrip(
+        fasciaArcFrames,
+        [
+          [-0.08, -0.025],
+          [-0.08, -0.28],
+          [0.06, -0.28],
+          [0.06, -0.025],
+        ],
+        4,
+      ),
+    );
+
+    const railArcFrames = buildFrames(railArcPts);
+    handrailParts.push(
+      buildExtrudedStrip(
+        railArcFrames,
+        [
+          [-0.075, 0.96],
+          [-0.075, 1.035],
+          [0.075, 1.035],
+          [0.075, 0.96],
+        ],
+        4,
+      ),
+      buildExtrudedStrip(
+        railArcFrames,
+        [
+          [-0.032, 0.45],
+          [-0.032, 0.5],
+          [0.032, 0.5],
+          [0.032, 0.45],
+        ],
+        4,
+      ),
+      buildExtrudedStrip(
+        railArcFrames,
+        [
+          [-0.04, 0.12],
+          [-0.04, 0.18],
+          [0.04, 0.18],
+          [0.04, 0.12],
+        ],
+        4,
+      ),
+    );
+
+    for (let i = 1; i < railArcPts.length; i++) {
+      bayRailSegments.push({ a: railArcPts[i - 1], b: railArcPts[i] });
+    }
+
+    const railArcLen = railArcFrames.at(-1).s;
+    for (let d = 0.22; d <= railArcLen - 0.22; d += 0.22) {
+      const sf = frameAtArc(railArcFrames, d);
+      if (!sf) continue;
+      slatTransforms.push({
+        x: sf.x,
+        y: sf.y + 0.5,
+        z: sf.z,
+        yaw: Math.atan2(sf.tx, sf.tz),
+      });
+    }
+    for (let pIdx = 0; pIdx <= 4; pIdx++) {
+      const nf = frameAtArc(railArcFrames, (railArcLen * pIdx) / 4);
+      if (!nf) continue;
+      const yaw = Math.atan2(nf.tx, nf.tz);
+      const postT = { x: nf.x, y: nf.y + 0.53, z: nf.z, yaw };
+      newelTransforms.push(postT);
+      if (pIdx === 0 || pIdx === 2 || pIdx === 4) {
+        lanternTransforms.push({
+          x: nf.x,
+          y: nf.y + 1.15,
+          z: nf.z,
+          yaw,
+        });
+      }
+    }
+
+    // 2 concrete support piles under outer semicircle
+    for (const alpha of [Math.PI * 0.32, Math.PI * 0.68]) {
+      const ptOff = -Math.cos(alpha) * (bayRadius * 0.65);
+      const prOff = Math.sin(alpha) * (bayRadius * 0.65);
+      viewingBays.at(-1).piles = viewingBays.at(-1).piles || [];
+      viewingBays.at(-1).piles.push({
+        x: f.x + f.tx * ptOff + f.nx * side * (halfW + prOff),
+        z: f.z + f.tz * ptOff + f.nz * side * (halfW + prOff),
+        y: f.y,
+      });
+    }
+
+    // Built-in curved ironwood bench facing the main boardwalk inside outer bay arc
+    const benchPts = [];
+    for (let k = 0; k <= 6; k++) {
+      const alpha = Math.PI * (0.3 + 0.4 * (k / 6));
+      const btOff = -Math.cos(alpha) * (bayRadius - 0.52);
+      const brOff = Math.sin(alpha) * (bayRadius - 0.52);
+      benchPts.push({
+        x: f.x + f.tx * btOff + f.nx * side * (halfW - 0.08 + brOff),
+        z: f.z + f.tz * btOff + f.nz * side * (halfW - 0.08 + brOff),
+        y: f.y,
+      });
+    }
+    const benchFrames = buildFrames(benchPts);
+    bayBenchParts.push(
+      buildExtrudedStrip(
+        benchFrames,
+        [
+          [-0.21, 0.4],
+          [-0.21, 0.47],
+          [0.21, 0.47],
+          [0.21, 0.4],
+        ],
+        3,
+      ),
+    );
+    for (const ratio of [0.15, 0.5, 0.85]) {
+      const bf = frameAtArc(benchFrames, benchFrames.at(-1).s * ratio);
+      if (!bf) continue;
+      const leg = new THREE.BoxGeometry(0.1, 0.4, 0.36);
+      leg.rotateY(Math.atan2(bf.tx, bf.tz));
+      leg.translate(bf.x, bf.y + 0.2, bf.z);
+      bayBenchParts.push(leg);
+    }
+
+    // Flanking bougainvillea planter boxes outside bay shoulders
+    for (const sign of [-1, 1]) {
+      const sf = frameAtArc(mainFrames, s + sign * (bayRadius + 1.8));
+      if (sf) bayPlanterSites.push({ f: sf, side });
+    }
+  }
+
+  // 4. Main boardwalk railings (skipping lateral bridge openings & viewing bay mouths)
+  const isBankOpening = (x, z) =>
+    lateralJunctions.some((j) => Math.hypot(x - j.x, z - j.z) < 2.1) ||
+    bayMouthOpenings.some((b) => Math.hypot(x - b.x, z - b.z) < b.halfOpening);
+
   for (const side of [-1, 1]) {
     const rLat = side * (halfW - 0.1);
     let currentRun = [];
@@ -485,15 +747,23 @@ export function addLimWoodBoardwalk(world, roads) {
           buildExtrudedStrip(
             runFrames,
             [
-              [-0.065, 0.96],
-              [-0.065, 1.04],
-              [0.065, 1.04],
-              [0.065, 0.96],
+              [-0.075, 0.96],
+              [-0.075, 1.035],
+              [0.075, 1.035],
+              [0.075, 0.96],
             ],
             4,
           ),
-        );
-        handrailParts.push(
+          buildExtrudedStrip(
+            runFrames,
+            [
+              [-0.032, 0.45],
+              [-0.032, 0.5],
+              [0.032, 0.5],
+              [0.032, 0.45],
+            ],
+            4,
+          ),
           buildExtrudedStrip(
             runFrames,
             [
@@ -509,7 +779,7 @@ export function addLimWoodBoardwalk(world, roads) {
       currentRun = [];
     };
 
-    for (let s = 0.5; s <= totalMainLen - 0.5; s += 0.33) {
+    for (let s = 0.5; s <= totalMainLen - 0.5; s += 0.22) {
       const f = frameAtArc(mainFrames, s);
       if (!f) continue;
       const rx = f.x + f.nx * rLat;
@@ -521,29 +791,40 @@ export function addLimWoodBoardwalk(world, roads) {
       currentRun.push({ x: rx, z: rz, y: f.y });
       slatTransforms.push({
         x: rx,
-        y: f.y + 0.49,
+        y: f.y + 0.5,
         z: rz,
         yaw: Math.atan2(f.tx, f.tz),
       });
     }
     flushRun();
 
+    let postIdx = 0;
     for (let s = 0.5; s <= totalMainLen - 0.5; s += 2.3) {
       const f = frameAtArc(mainFrames, s);
       if (!f) continue;
       const rx = f.x + f.nx * rLat;
       const rz = f.z + f.nz * rLat;
       if (isBankOpening(rx, rz)) continue;
+      const yaw = Math.atan2(f.tx, f.tz);
       newelTransforms.push({
         x: rx,
-        y: f.y + 0.52,
+        y: f.y + 0.53,
         z: rz,
-        yaw: Math.atan2(f.tx, f.tz),
+        yaw,
       });
+      if (postIdx % 2 === 0) {
+        lanternTransforms.push({
+          x: rx,
+          y: f.y + 1.15,
+          z: rz,
+          yaw,
+        });
+      }
+      postIdx++;
     }
   }
 
-  // Merge main deck, fascia/beams, and railings
+  // Merge main deck, fascia/beams, benches, and railings
   const deckGeo = mergeGeometries(deckParts);
   deckParts.forEach((g) => g.dispose());
   const deckMesh = new THREE.Mesh(deckGeo, deckMat);
@@ -565,11 +846,27 @@ export function addLimWoodBoardwalk(world, roads) {
     group.add(hrMesh);
   }
 
+  if (metalRailParts.length) {
+    const mrGeo = mergeGeometries(metalRailParts);
+    metalRailParts.forEach((g) => g.dispose());
+    const mrMesh = new THREE.Mesh(mrGeo, metalRailMat);
+    mrMesh.castShadow = true;
+    group.add(mrMesh);
+  }
+
+  if (bayBenchParts.length) {
+    const bbGeo = mergeGeometries(bayBenchParts);
+    bayBenchParts.forEach((g) => g.dispose());
+    const bbMesh = new THREE.Mesh(bbGeo, railMat);
+    bbMesh.castShadow = bbMesh.receiveShadow = true;
+    group.add(bbMesh);
+  }
+
   const dummy = new THREE.Object3D();
 
-  // Instanced dense vertical timber slats
+  // Instanced dense vertical ironwood slats
   if (slatTransforms.length) {
-    const slatGeo = new THREE.BoxGeometry(0.055, 0.98, 0.055);
+    const slatGeo = new THREE.BoxGeometry(0.052, 0.98, 0.052);
     const slats = new THREE.InstancedMesh(
       slatGeo,
       railMat,
@@ -587,12 +884,38 @@ export function addLimWoodBoardwalk(world, roads) {
     group.add(slats);
   }
 
-  // Instanced main timber posts
+  // Instanced galvanized steel lateral cross-bridge balusters
+  if (metalBalusterTransforms.length) {
+    const balGeo = new THREE.BoxGeometry(0.036, 0.96, 0.036);
+    const bals = new THREE.InstancedMesh(
+      balGeo,
+      metalRailMat,
+      metalBalusterTransforms.length,
+    );
+    metalBalusterTransforms.forEach((t, i) => {
+      dummy.position.set(t.x, t.y, t.z);
+      dummy.rotation.set(0, t.yaw, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      bals.setMatrixAt(i, dummy.matrix);
+    });
+    bals.instanceMatrix.needsUpdate = true;
+    bals.computeBoundingSphere();
+    group.add(bals);
+  }
+
+  // Instanced main timber posts + dark bronze caps + warm glowing bollard lights
   if (newelTransforms.length) {
-    const postGeo = new THREE.BoxGeometry(0.115, 1.06, 0.115);
+    const postGeo = new THREE.BoxGeometry(0.13, 1.08, 0.13);
+    const capGeo = new THREE.BoxGeometry(0.16, 0.04, 0.16);
     const posts = new THREE.InstancedMesh(
       postGeo,
       fasciaMat,
+      newelTransforms.length,
+    );
+    const caps = new THREE.InstancedMesh(
+      capGeo,
+      bronzeCapMat,
       newelTransforms.length,
     );
     newelTransforms.forEach((t, i) => {
@@ -601,13 +924,38 @@ export function addLimWoodBoardwalk(world, roads) {
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
       posts.setMatrixAt(i, dummy.matrix);
+
+      dummy.position.set(t.x, t.y + 0.55, t.z);
+      dummy.updateMatrix();
+      caps.setMatrixAt(i, dummy.matrix);
     });
-    posts.instanceMatrix.needsUpdate = true;
-    posts.computeBoundingSphere();
-    group.add(posts);
+    for (const inst of [posts, caps]) {
+      inst.instanceMatrix.needsUpdate = true;
+      inst.computeBoundingSphere();
+      group.add(inst);
+    }
   }
 
-  // 4. River concrete/pile piers & cross-beams supporting the boardwalk & cross-bridges
+  if (lanternTransforms.length) {
+    const globeGeo = new THREE.CylinderGeometry(0.075, 0.085, 0.13, 8);
+    const globes = new THREE.InstancedMesh(
+      globeGeo,
+      lanternMat,
+      lanternTransforms.length,
+    );
+    lanternTransforms.forEach((t, i) => {
+      dummy.position.set(t.x, t.y, t.z);
+      dummy.rotation.set(0, t.yaw, 0);
+      dummy.scale.set(1, 1, 1);
+      dummy.updateMatrix();
+      globes.setMatrixAt(i, dummy.matrix);
+    });
+    globes.instanceMatrix.needsUpdate = true;
+    globes.computeBoundingSphere();
+    group.add(globes);
+  }
+
+  // 5. River concrete/pile piers & cross-beams supporting the boardwalk, viewing bays & cross-bridges
   const mainPierFrames = [];
   for (let s = 4; s <= totalMainLen - 4; s += 6.5) {
     const f = frameAtArc(mainFrames, s);
@@ -620,10 +968,14 @@ export function addLimWoodBoardwalk(world, roads) {
     for (const side of [-1, 1]) {
       allPierPiles.push({
         x: f.x + f.nx * side * 1.45,
-        y: (f.y - 0.34 - 0.65) / 2,
         z: f.z + f.nz * side * 1.45,
         h: f.y + 0.35,
       });
+    }
+  }
+  for (const bay of viewingBays) {
+    for (const p of bay.piles || []) {
+      allPierPiles.push({ x: p.x, z: p.z, h: p.y + 0.35 });
     }
   }
   for (const f of lateralPiers) {
@@ -631,7 +983,6 @@ export function addLimWoodBoardwalk(world, roads) {
     for (const side of [-1, 1]) {
       allPierPiles.push({
         x: f.x + f.nx * side * 1.02,
-        y: (f.y - 0.3 - 0.65) / 2,
         z: f.z + f.nz * side * 1.02,
         h: f.y + 0.4,
       });
@@ -672,10 +1023,8 @@ export function addLimWoodBoardwalk(world, roads) {
     group.add(crosses);
   }
 
-  // 5. Outer riverside rectangular timber planter boxes with green shrubs (skip under Phu Xuan & Truong Tien bridges)
-  const phuXuanRoad = roads.find((r) => r.id === PHU_XUAN_SPAN_ID);
-  const truongTienRoad = roads.find((r) => r.id === TRUONG_TIEN_ID);
-  const planterFrames = [];
+  // 6. Outer riverside timber planter boxes with green shrubs & vibrant Bougainvillea blooms (Hoa Giấy)
+  const planterFrames = [...bayPlanterSites];
   for (let s = 14; s <= totalMainLen - 14; s += 8.5) {
     const f = frameAtArc(mainFrames, s);
     if (!f) continue;
@@ -683,11 +1032,11 @@ export function addLimWoodBoardwalk(world, roads) {
       (phuXuanRoad &&
         nearestPoint({ x: f.x, z: f.z }, phuXuanRoad.points).distance < 14) ||
       (truongTienRoad &&
-        nearestPoint({ x: f.x, z: f.z }, truongTienRoad.points).distance < 15)
+        nearestPoint({ x: f.x, z: f.z }, truongTienRoad.points).distance < 15) ||
+      viewingBays.some((b) => Math.hypot(f.x - b.x, f.z - b.z) < b.radius + 3.4)
     ) {
       continue;
     }
-    // Place planter box on the open river side (beyond the narrow bank inlet)
     const plusInRiver = world.riverRings?.some((ring) =>
       inside({ x: f.x + f.nx * 26, z: f.z + f.nz * 26 }, ring),
     );
@@ -704,58 +1053,91 @@ export function addLimWoodBoardwalk(world, roads) {
   }
 
   if (planterFrames.length) {
-    const boxGeo = new THREE.BoxGeometry(0.56, 0.52, 3.4);
+    const boxGeo = new THREE.BoxGeometry(0.58, 0.54, 3.4);
     const soilGeo = new THREE.BoxGeometry(0.46, 0.08, 3.25);
-    const shrubGeo = new THREE.DodecahedronGeometry(0.32, 0);
+    const shrubGeo = new THREE.DodecahedronGeometry(0.34, 0);
+    const bloomGeo = new THREE.DodecahedronGeometry(0.24, 0);
 
-    const boxes = new THREE.InstancedMesh(boxGeo, railMat, planterFrames.length);
+    const boxes = new THREE.InstancedMesh(boxGeo, fasciaMat, planterFrames.length);
     const soils = new THREE.InstancedMesh(soilGeo, soilMat, planterFrames.length);
     const shrubs = new THREE.InstancedMesh(
       shrubGeo,
       shrubMat,
       planterFrames.length * 4,
     );
+    const blooms = new THREE.InstancedMesh(
+      bloomGeo,
+      bloomMat,
+      planterFrames.length * 5,
+    );
+
+    const bloomPalette = [
+      new THREE.Color("#d93870"),
+      new THREE.Color("#ff6b9d"),
+      new THREE.Color("#e84855"),
+      new THREE.Color("#f472b6"),
+    ];
 
     let shrubIdx = 0;
+    let bloomIdx = 0;
     planterFrames.forEach(({ f, side }, idx) => {
       const yaw = Math.atan2(f.tx, f.tz);
-      const px = f.x + f.nx * side * (halfW + 0.24);
-      const pz = f.z + f.nz * side * (halfW + 0.24);
+      const px = f.x + f.nx * side * (halfW + 0.26);
+      const pz = f.z + f.nz * side * (halfW + 0.26);
 
-      dummy.position.set(px, f.y + 0.16, pz);
+      dummy.position.set(px, f.y + 0.17, pz);
       dummy.rotation.set(0, yaw, 0);
       dummy.scale.set(1, 1, 1);
       dummy.updateMatrix();
       boxes.setMatrixAt(idx, dummy.matrix);
 
-      dummy.position.set(px, f.y + 0.4, pz);
+      dummy.position.set(px, f.y + 0.42, pz);
       dummy.updateMatrix();
       soils.setMatrixAt(idx, dummy.matrix);
 
       for (const offset of [-1.1, -0.36, 0.38, 1.1]) {
         dummy.position.set(
           px + f.tx * offset,
-          f.y + 0.56 + ((shrubIdx % 3) * 0.04),
+          f.y + 0.58 + (shrubIdx % 3) * 0.04,
           pz + f.tz * offset,
         );
         dummy.rotation.set(0, yaw + shrubIdx * 0.6, 0);
-        dummy.scale.set(1.05, 0.72, 1.15);
+        dummy.scale.set(1.08, 0.78, 1.16);
         dummy.updateMatrix();
         shrubs.setMatrixAt(shrubIdx++, dummy.matrix);
       }
+
+      for (let b = 0; b < 5; b++) {
+        const offset = -1.25 + b * 0.62;
+        const latJ = (b % 2 === 0 ? 1 : -1) * 0.08;
+        dummy.position.set(
+          px + f.tx * offset + f.nx * latJ,
+          f.y + 0.76 + (b % 3) * 0.06,
+          pz + f.tz * offset + f.nz * latJ,
+        );
+        dummy.rotation.set(0.2 * b, yaw + b * 0.9, 0);
+        dummy.scale.set(1.15, 0.85, 1.1);
+        dummy.updateMatrix();
+        blooms.setMatrixAt(bloomIdx, dummy.matrix);
+        blooms.setColorAt?.(
+          bloomIdx,
+          bloomPalette[(idx + b) % bloomPalette.length],
+        );
+        bloomIdx++;
+      }
     });
 
-    for (const inst of [boxes, soils, shrubs]) {
+    if (blooms.instanceColor) blooms.instanceColor.needsUpdate = true;
+    for (const inst of [boxes, soils, shrubs, blooms]) {
       inst.instanceMatrix.needsUpdate = true;
       inst.computeBoundingSphere();
       group.add(inst);
     }
   }
 
-  // 6. Concrete south-bank retaining quay wall along mapped bank promenade (1167513730) & lateral bridge landings
+  // 7. Concrete south-bank retaining quay wall along mapped bank promenade (1167513730) & lateral bridge landings
   const bankRoad = roads.find((r) => r.id === BANK_PROMENADE_ID);
   if (bankRoad && bankRoad.points.length >= 2) {
-    // Combine bank promenade points with ordered western lateral landings toward 1167513742
     const quayPts = [...bankRoad.points];
     for (const id of [1493443035, 1473289702]) {
       const lr = roads.find((r) => r.id === id);
@@ -811,6 +1193,9 @@ export function addLimWoodBoardwalk(world, roads) {
     const onMain = mainHit.dist <= halfW + 0.08;
     let onRamp = false;
     let onLateral = false;
+    let onBay = false;
+    let bayInsideDeck = false;
+    let bayInsideSafe = false;
     let bestDeckY = onMain ? mainHit.y + 0.008 : -Infinity;
     let minCenterDist = onMain ? mainHit.dist : Infinity;
     let insideSafeMargin = onMain && mainHit.dist <= halfW - 0.55;
@@ -835,25 +1220,47 @@ export function addLimWoodBoardwalk(world, roads) {
       }
     }
 
-    const onBoardwalk = onMain || onRamp || onLateral;
+    for (const b of viewingBays) {
+      const dx = x - b.x;
+      const dz = z - b.z;
+      const dt = dx * b.tx + dz * b.tz;
+      const dn = dx * b.nx * b.side + dz * b.nz * b.side;
+      if (dn >= halfW - 0.12) {
+        const radial = Math.hypot(dt, Math.max(0, dn - halfW));
+        if (radial <= b.radius + 0.08) {
+          onBay = true;
+          bestDeckY = Math.max(bestDeckY, b.y + 0.008);
+          minCenterDist = Math.min(minCenterDist, radial);
+          if (radial <= b.radius - 0.18) bayInsideDeck = true;
+          if (radial <= b.radius - 0.65) {
+            bayInsideSafe = true;
+            insideSafeMargin = true;
+          }
+        }
+      }
+    }
+
+    const onBoardwalk = onMain || onRamp || onLateral || onBay;
     if (!onBoardwalk) return { onBoardwalk: false };
     const insideDeck =
       (onMain && mainHit.dist <= halfW - 0.14) ||
       (onRamp && minCenterDist <= halfW - 0.14) ||
-      (onLateral && minCenterDist <= 1.38);
+      (onLateral && minCenterDist <= 1.38) ||
+      bayInsideDeck;
     return {
       onBoardwalk: true,
       insideDeck,
-      insideSafeMargin,
+      insideSafeMargin: insideSafeMargin || bayInsideSafe,
       onMain,
       onRamp,
       onLateral,
+      onBay,
       dist: minCenterDist,
       deckY: bestDeckY,
     };
   };
 
-  // 7. Các bà bán hàng rong dưới chân cầu Tràng Tiền / bờ Cầu Gỗ Lim ("Ăn sáng con ơi")
+  // 8. Các bà bán hàng rong dưới chân cầu Tràng Tiền / bờ Cầu Gỗ Lim ("Ăn sáng con ơi")
   const hawkerAnimations = [];
   const hawkerPoints = [];
   const underBridgeHawkers = [
@@ -919,6 +1326,10 @@ export function addLimWoodBoardwalk(world, roads) {
     pierCount: allPierPiles.length,
     slatCount: slatTransforms.length,
     planterCount: planterFrames.length,
+    viewingBayCount: viewingBays.length,
+    viewingBays,
+    bayMouthOpenings,
+    bayRailSegments,
     lateralCount: LATERAL_BRIDGE_IDS.length,
     totalLateralCount: allLateralSpecs.length,
     lateralJunctions,

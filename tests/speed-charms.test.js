@@ -289,7 +289,7 @@ test("Speed charms stay strictly on roads or bridge decks and never spawn on Per
     createElement: () => ({ width: 256, height: 256, getContext: () => ctx }),
   };
   try {
-    for (const areaId of ["south-bank", "truong-tien", "quoc-hoc"]) {
+    for (const areaId of ["truong-tien", "quoc-hoc"]) {
       const region = await loadGeography(areaId);
       const world = new GeographicWorld(new THREE.Scene());
       world.region = region;

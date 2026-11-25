@@ -70,6 +70,11 @@ export function sanitizeActiveBoost(raw, now = Date.now()) {
   };
 }
 
+export function cleanRegionId(value) {
+  if (typeof value !== "string" || !/^[a-z0-9-]+$/.test(value)) return null;
+  return value === "south-bank" ? "quoc-hoc" : value;
+}
+
 export function loadActiveSession(
   storage = globalThis.localStorage,
   now = Date.now(),
@@ -81,10 +86,7 @@ export function loadActiveSession(
     if (!raw || typeof raw !== "object") return null;
     const name = cleanPlayerName(raw.name || "");
     const mode = cleanMode(raw.mode);
-    const region =
-      typeof raw.region === "string" && /^[a-z0-9-]+$/.test(raw.region)
-        ? raw.region
-        : null;
+    const region = cleanRegionId(raw.region);
     const gameMode = cleanGameModeId(
       raw.gameMode || DEFAULT_GAME_MODE_ID,
       region,
@@ -136,10 +138,7 @@ export function saveActiveSession(
     ...patch,
     savedAt: now,
   };
-  const region =
-    typeof merged.region === "string" && /^[a-z0-9-]+$/.test(merged.region)
-      ? merged.region
-      : existing.region;
+  const region = cleanRegionId(merged.region) || existing.region;
   const next = {
     active: Boolean(merged.active && cleanPlayerName(merged.name)),
     name: cleanPlayerName(merged.name),

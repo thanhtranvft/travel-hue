@@ -1,7 +1,11 @@
 import * as THREE from "three";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
+import {
+  createIronwoodPromenadeGeometry,
+  createIronwoodWalkMaterial,
+  createManicuredLawnTexture,
+} from "../../../../core/world/turfTextures.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -552,15 +556,15 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     new THREE.CylinderGeometry(plazaRadius, plazaRadius, 0.24, 56),
     graniteMat,
   );
-  plazaDisk.position.set(cx, 0.14, cz);
+  plazaDisk.position.set(cx, 0.124, cz);
   plazaDisk.receiveShadow = true;
 
-  // North-South Promenade straight from UBND Lê Lợi entrance to riverfront terrace (split clear of riverWalk/plazaDisk/frontWalk)
+  // North-South Promenade straight from UBND Lê Lợi entrance to riverfront terrace
   const nsWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(11.6, 0.24, 47.8),
+    new THREE.BoxGeometry(11.6, 0.232, 47.8),
     graniteMat,
   );
-  nsWalk.position.set(cx, 0.12, 12.1);
+  nsWalk.position.set(cx, 0.116, 12.1);
   nsWalk.receiveShadow = true;
 
   // Approach ramp at Lê Lợi sidewalk
@@ -571,32 +575,44 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   frontRamp.position.set(cx, 0.13, 39.2);
   frontRamp.rotation.x = 0.035;
 
-  // East-West Promenade connecting central plaza & side semi-circular fountains (inside plazaDisk + apses)
+  // East-West Promenade connecting central plaza & side semi-circular fountains
   const ewWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(72, 0.24, 8.6),
+    new THREE.BoxGeometry(72, 0.22, 8.6),
     graniteMat,
   );
   ewWalk.position.set(cx, 0.11, cz);
   ewWalk.receiveShadow = true;
 
-  // Curved semi-circular apse aprons framing side fountains (top 0.24m)
+  // Curved semi-circular apse aprons framing side fountains (top 0.232m)
   for (const sx of [-1, 1]) {
     const apse = new THREE.Mesh(
-      new THREE.CylinderGeometry(11.5, 11.5, 0.24, 32),
+      new THREE.CylinderGeometry(11.5, 11.5, 0.232, 32),
       graniteMat,
     );
-    apse.position.set(cx + sx * 27, 0.12, cz);
+    apse.position.set(cx + sx * 27, 0.116, cz);
     apse.receiveShadow = true;
     group.add(apse);
   }
 
-  // Continuous Riverfront Promenade connecting FireflyTreePark (lx=218) -> East (lx=366)
+  // Continuous Ironwood (Gỗ Lim) Riverfront Promenade connecting FireflyTreePark (lx=218) -> East (lx=366)
+  const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const riverWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(148, 0.24, 4.8),
-    graniteMat,
+    createIronwoodPromenadeGeometry(147.9, 0.256, 4.8, 3.2),
+    ironwoodWalkMat,
   );
-  riverWalk.position.set(292, 0.12, -14.2);
+  riverWalk.position.set(292, 0.128, -14.2);
   riverWalk.receiveShadow = true;
+
+  // Dark ironwood outer edge curbs flanking riverWalk (open at central river stair)
+  const leftCurbW = cx - 4.4 - 218.05;
+  if (leftCurbW > 1) {
+    group.add(box([leftCurbW, 0.29, 0.22], "#4c2d17", [218.05 + leftCurbW / 2, 0.145, -16.72]));
+  }
+  const rightCurbW = 365.95 - (cx + 4.4);
+  if (rightCurbW > 1) {
+    group.add(box([rightCurbW, 0.29, 0.22], "#4c2d17", [cx + 4.4 + rightCurbW / 2, 0.145, -16.72]));
+  }
+  group.add(box([147.9, 0.28, 0.16], "#4c2d17", [292, 0.14, -11.72]));
 
   // Lê Lợi South Perimeter Walk linking wing footpaths along Lê Lợi curb
   const frontWalk = new THREE.Mesh(
@@ -606,7 +622,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   frontWalk.position.set(292, 0.12, 37.6);
   frontWalk.receiveShadow = true;
 
-  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (top 0.22m so zero overlap Z-fighting with main walks/apses)
+  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (top <= 0.21m so >=10mm clear of apses/plaza/riverWalk)
   const wingWalkSegments = [
     // West wing connecting to FireflyTreePark (lx = 218)
     { a: { lx: cx - 36, lz: cz }, b: { lx: 218, lz: cz }, width: 3.4 },
@@ -624,7 +640,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     const dx = b.lx - a.lx;
     const dz = b.lz - a.lz;
     const len = Math.hypot(dx, dz) || 1;
-    const topY = 0.222 - tierIdx * 0.01;
+    const topY = 0.21 - tierIdx * 0.01;
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.24, len + 0.6),
       graniteMat,
@@ -681,8 +697,8 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     buildWingHedgeBed([[224, 1], [242, 1], [231, -10]], false),
   );
 
-  // Central riverfront granite stairway down to the Perfume River edge
-  const stairTopZ = -16.5;
+  // Central riverfront granite stairway down to the Perfume River edge (starts clearly riverward of riverWalk)
+  const stairTopZ = -16.65;
   const stairBotZ = sampleShoreZ(cx) + 0.5;
   const stairLen = Math.max(4, stairTopZ - stairBotZ);
   const riverStair = new THREE.Mesh(
@@ -895,7 +911,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     [234, -12.5],
     [346, -12.5],
   ]) {
-    group.add(createHeritageLamp(lx, 0.24, lz));
+    group.add(createHeritageLamp(lx, lz <= -11.8 ? 0.256 : 0.244, lz));
   }
 
   // Warm golden walkway border bollards framing the 4 quadrant beds
@@ -1224,13 +1240,13 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Central circular plaza & cross-axial granite promenades + wing small footpaths
+      // Continuous Ironwood Riverfront Promenade + Central circular plaza & cross-axial granite promenades
+      if (lz >= -16.6 && lz <= -11.8) return 0.256;
       if (Math.hypot(lx - cx, lz - cz) <= plazaRadius + 0.5) return 0.24;
       if (Math.abs(lx - cx) <= 5.8 && lz >= -16.6 && lz <= 38.8) return 0.24;
       if (Math.abs(lx - cx) <= 36 && Math.abs(lz - cz) <= 4.3) return 0.24;
       if (Math.hypot(lx - (cx - 27), lz - cz) <= 11.5) return 0.24;
       if (Math.hypot(lx - (cx + 27), lz - cz) <= 11.5) return 0.24;
-      if (lz >= -16.6 && lz <= -11.8) return 0.24;
       if (lz >= 36.0 && lz <= 39.2) return 0.24;
       for (const seg of wingWalkSegments) {
         const dx = seg.b.lx - seg.a.lx;

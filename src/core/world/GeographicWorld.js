@@ -1224,6 +1224,12 @@ export class GeographicWorld {
     filterCampusTrees();
     const boardwalkView = addLimWoodBoardwalk(this, activeRoads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
+    const bayMouthOpenings = boardwalkView?.bayMouthOpenings || [];
+    const isRailOpening = (mx, mz) =>
+      lateralJunctions.some((j) => Math.hypot(mx - j.x, mz - j.z) < 2.1) ||
+      bayMouthOpenings.some(
+        (b) => Math.hypot(mx - b.x, mz - b.z) < b.halfOpening,
+      );
     this.boardwalkRails = [];
     for (const road of this.renderRoads.filter((r) =>
       activeBoardwalkWayIds.includes(r.id),
@@ -1233,9 +1239,7 @@ export class GeographicWorld {
       ).filter(({ a, b }) => {
         const mx = (a.x + b.x) / 2;
         const mz = (a.z + b.z) / 2;
-        return lateralJunctions.every(
-          (j) => Math.hypot(mx - j.x, mz - j.z) >= 2.1,
-        );
+        return !isRailOpening(mx, mz);
       });
       this.boardwalkRails.push(...segments);
     }
@@ -1250,12 +1254,27 @@ export class GeographicWorld {
         ({ a, b }) => {
           const mx = (a.x + b.x) / 2;
           const mz = (a.z + b.z) / 2;
-          return lateralJunctions.every(
-            (j) => Math.hypot(mx - j.x, mz - j.z) >= 2.1,
-          );
+          return !isRailOpening(mx, mz);
         },
       );
       this.boardwalkRails.push(...extSegments);
+      if (boardwalkView.bayRailSegments?.length) {
+        this.boardwalkRails.push(...boardwalkView.bayRailSegments);
+      }
+      if (!this.landmarks.has("cau-go-lim") && boardwalkView.mainPoints?.length) {
+        const midPt =
+          boardwalkView.mainPoints[
+            Math.floor(boardwalkView.mainPoints.length * 0.45)
+          ] || boardwalkView.mainPoints[0];
+        this.landmarks.set("cau-go-lim", {
+          id: "cau-go-lim",
+          title: "Cầu đi bộ Gỗ Lim",
+          position: { x: midPt.x, z: midPt.z },
+          radius: 65,
+          description:
+            "Cầu đi bộ lát gỗ lim ven sông Hương với các sàn vọng cảnh bán nguyệt, bồn hoa giấy và đường dạo lát gỗ nối liền từ Công viên Bia Quốc Học.",
+        });
+      }
     }
     this.station = getById(175063593) ? new HueStation(this) : null;
     if (

@@ -4,6 +4,7 @@ import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import {
   applyWorldPlanarUVs,
   createCanvasTexture,
+  createIronwoodWalkMaterial,
   createManicuredLawnMaterial,
   createParkGraniteTexture,
 } from "../../../../core/world/turfTextures.js";
@@ -68,6 +69,80 @@ function buildWalkRibbonGeometry(points, width, y = 0.24) {
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
   applyWorldPlanarUVs(geo, 6.5);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildIronwoodRibbonGeometry(points, width, y = 0.256, plankRepeatLength = 3.2) {
+  const halfW = width / 2;
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+  let arc = 0;
+
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    if (i > 0) {
+      arc += Math.hypot(p.lx - points[i - 1].lx, p.lz - points[i - 1].lz);
+    }
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(points.length - 1, i + 1)];
+    const dx = next.lx - prev.lx;
+    const dz = next.lz - prev.lz;
+    const len = Math.hypot(dx, dz) || 1;
+    const nx = (-dz / len) * halfW;
+    const nz = (dx / len) * halfW;
+
+    positions.push(p.lx + nx, y, p.lz + nz, p.lx - nx, y, p.lz - nz);
+    uvs.push(0, arc / plankRepeatLength, 1, arc / plankRepeatLength);
+    if (i > 0) {
+      const a = (i - 1) * 2;
+      indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function buildRibbonSideCurbGeometry(points, halfOffset, width, topY, bottomY) {
+  const halfW = width / 2;
+  const positions = [];
+  const indices = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const prev = points[Math.max(0, i - 1)];
+    const next = points[Math.min(points.length - 1, i + 1)];
+    const dx = next.lx - prev.lx;
+    const dz = next.lz - prev.lz;
+    const len = Math.hypot(dx, dz) || 1;
+    const ux = -dz / len;
+    const uz = dx / len;
+    const cx = p.lx + ux * halfOffset;
+    const cz = p.lz + uz * halfOffset;
+
+    positions.push(
+      cx + ux * -halfW, bottomY, cz + uz * -halfW,
+      cx + ux * -halfW, topY, cz + uz * -halfW,
+      cx + ux * halfW, topY, cz + uz * halfW,
+      cx + ux * halfW, bottomY, cz + uz * halfW,
+    );
+    if (i > 0) {
+      const b0 = (i - 1) * 4;
+      const b1 = i * 4;
+      for (let k = 0; k < 4; k++) {
+        const kn = (k + 1) % 4;
+        indices.push(b0 + k, b0 + kn, b1 + k, b0 + kn, b1 + kn, b1 + k);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(indices);
   geo.computeVertexNormals();
   return geo;
 }
@@ -450,13 +525,13 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   bankMesh.receiveShadow = true;
   group.add(bankMesh);
 
-  // 2. SMALL GRANITE GARDEN FOOTPATH NETWORK (Đường đi bộ nhỏ tới Cầu Phú Xuân)
+  // 2. RIVERFRONT IRONWOOD PROMENADE (Đường đi bộ lát gỗ dọc bờ sông tới Cầu Gỗ Lim) + GARDEN GRANITE FOOTPATHS
   const walkPaths = [
-    // Continuous Riverfront Promenade extending from Fountain Park to Cầu Phú Xuân
+    // Continuous Riverfront Ironwood Promenade extending from Fountain Park to Cầu Gỗ Lim & Cầu Phú Xuân
     {
-      width: 4.4,
+      width: 4.6,
       points: [
-        { lx: 366, lz: -14.2 },
+        { lx: 366.05, lz: -14.2 },
         { lx: 402, lz: -14.2 },
         { lx: 439.5, lz: -14.0 },
         { lx: 488, lz: -13.3 },
@@ -609,7 +684,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
 
   // Flatten walk segments for fast distance queries
   const walkHeights = [
-    0.24,   // 0: riverfront promenade
+    0.256,  // 0: riverfront ironwood promenade
     0.24,   // 1: mid-park axial promenade
     0.23,   // 2: Lê Lợi roadside walk
     0.218,  // 3: Bay 1 x=396 N-S
@@ -628,21 +703,39 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     0.182,  // 16: Bay 3 West spoke
     0.206,  // 17: Bay 3 East spoke
   ];
+  const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
+  const ironwoodTrimMat = mat("#4c2d17", 0.8);
   const walkSegments = [];
+  const woodSegments = [];
   walkPaths.forEach((path, idx) => {
+    const isIronwood = idx === 0;
     const ribbonY = walkHeights[idx] ?? (0.17 + (idx % 5) * 0.011);
     const ribbonMesh = new THREE.Mesh(
-      buildWalkRibbonGeometry(path.points, path.width, ribbonY),
-      graniteMat,
+      isIronwood
+        ? buildIronwoodRibbonGeometry(path.points, path.width, ribbonY, 3.2)
+        : buildWalkRibbonGeometry(path.points, path.width, ribbonY),
+      isIronwood ? ironwoodWalkMat : graniteMat,
     );
     ribbonMesh.receiveShadow = true;
     group.add(ribbonMesh);
+    if (isIronwood) {
+      for (const sideOffset of [-(path.width / 2 + 0.09), path.width / 2 + 0.09]) {
+        const curb = new THREE.Mesh(
+          buildRibbonSideCurbGeometry(path.points, sideOffset, 0.18, 0.285, 0.08),
+          ironwoodTrimMat,
+        );
+        curb.castShadow = curb.receiveShadow = true;
+        group.add(curb);
+      }
+    }
     for (let i = 1; i < path.points.length; i++) {
-      walkSegments.push({
+      const seg = {
         a: path.points[i - 1],
         b: path.points[i],
         halfW: path.width / 2,
-      });
+      };
+      walkSegments.push(seg);
+      if (isIronwood) woodSegments.push(seg);
     }
   });
 
@@ -875,8 +968,17 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     group.add(createGardenTree(tx, 0.14, tz, sc, idx + 2));
   });
 
-  for (const bx of [378, 390, 412, 428, 454, 474, 498, 524]) {
-    group.add(createParkBench(bx, 0.24, -15.4, Math.PI));
+  for (const [bx, bz] of [
+    [378, -15.4],
+    [390, -15.4],
+    [412, -15.4],
+    [428, -15.4],
+    [454, -15.0],
+    [474, -14.8],
+    [498, -14.4],
+    [524, -13.4],
+  ]) {
+    group.add(createParkBench(bx, 0.256, bz, Math.PI));
   }
   for (const [bx, bz, yaw] of [
     [396 - 3.2, 17.5, Math.PI / 2],
@@ -900,7 +1002,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     [511.5, 28.5],
     [511.5, 5.8],
   ]) {
-    group.add(createHeritageLamp(lx, 0.24, lz));
+    group.add(createHeritageLamp(lx, lz <= -10.0 ? 0.256 : 0.24, lz));
   }
 
   world.scene.add(group);
@@ -942,6 +1044,14 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       }
 
       if (lz > parkMaxLz(lx)) return null;
+
+      if (
+        woodSegments.some(
+          (s) => distPointToSegment(lx, lz, s.a, s.b) <= s.halfW + 0.35,
+        )
+      ) {
+        return 0.256;
+      }
 
       if (isOnWalkway(lx, lz)) return 0.24;
 

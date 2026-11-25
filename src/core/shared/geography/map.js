@@ -151,7 +151,7 @@ export const geoDistricts = [
   makeDistrict(
     "quoc-hoc",
     "Khoa Quốc tế → Tràng Tiền",
-    "Lê Lợi · ĐH Huế → Quốc Học → Tràng Tiền",
+    "Lê Lợi · ĐH Huế → Quốc Học → Cầu Gỗ Lim → Tràng Tiền",
     "#e7bd77",
     mainTour,
   ),

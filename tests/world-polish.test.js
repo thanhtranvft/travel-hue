@@ -58,6 +58,7 @@ if (typeof globalThis.document === "undefined") {
   };
 }
 
+import { enabledAreas } from "../src/app/catalog.js";
 import { loadGeography } from "../src/modules/areas/AreaModel.js";
 import { GeographicWorld } from "../src/core/world/GeographicWorld.js";
 import { isFootway, roadWidth } from "../src/core/world/roadProfile.js";
@@ -68,7 +69,6 @@ import { nearestPoint, inside } from "../src/core/shared/geography/geometry.js";
 
 const REGIONS = [
   "quoc-hoc",
-  "south-bank",
   "truong-tien",
   "nguyen-chi-dieu",
   "quang-trung",
@@ -112,12 +112,21 @@ function closestSegmentDist(a, b, roadPoints) {
   );
 }
 
-test("All 5 regions build cleanly with zero road encroachment, complete intersection signs, safe trees, and no coplanar turf Z-fighting", async () => {
+test("All enabled regions build cleanly with zero road encroachment, complete intersection signs, safe trees, and no coplanar turf Z-fighting", async () => {
+  assert.equal(enabledAreas.some((a) => a.id === "south-bank"), false, "south-bank should be merged into quoc-hoc and disabled in catalog");
+  assert.equal(enabledAreas.some((a) => a.id === "quoc-hoc"), true);
   const box = new THREE.Box3();
 
   for (const regionId of REGIONS) {
     const region = await loadGeography(regionId);
     const world = buildWorldSync(region);
+    if (regionId === "quoc-hoc") {
+      assert.ok(world.boardwalkView, "quoc-hoc must include Cầu Gỗ Lim boardwalkView");
+      assert.ok(
+        world.landmarks?.has?.("cau-go-lim"),
+        "quoc-hoc must register cau-go-lim landmark",
+      );
+    }
     const carriageways = world.renderRoads.filter((r) => !isFootway(r));
     const minMargin = regionId === "nguyen-chi-dieu" ? 2.4 : 1.9;
 

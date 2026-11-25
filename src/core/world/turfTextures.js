@@ -136,3 +136,111 @@ export function createParkGraniteTexture(repeatX = 10, repeatY = 10) {
     repeatY,
   );
 }
+
+/**
+ * Shared polished ironwood (gỗ lim) plank texture matching Cầu Gỗ Lim sông Hương:
+ * rich warm lim-wood boards laid crosswise with crisp recessed joints, subtle timber grain,
+ * and discreet brass/steel deck fasteners.
+ */
+export function createIronwoodPlankTexture(
+  repeatX = 1,
+  repeatY = 1,
+  { mobile = false, rich = true } = {},
+) {
+  return createCanvasTexture(
+    mobile ? 256 : 512,
+    mobile ? 256 : 512,
+    (ctx, w, h) => {
+      ctx.fillStyle = rich ? "#704525" : "#7a4d2c";
+      ctx.fillRect(0, 0, w, h);
+
+      let seed = 419;
+      const rand = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+
+      const plankCount = 16;
+      const plankH = h / plankCount;
+      const tones = rich
+        ? ["#7b4c28", "#6f4322", "#86552f", "#673d1e", "#764826"]
+        : ["#84532e", "#794a27", "#8e5c36", "#6f4220", "#7f4e2a"];
+
+      for (let p = 0; p < plankCount; p++) {
+        const y0 = p * plankH;
+        const seam = mobile ? 1.5 : 2.6;
+        ctx.fillStyle = tones[Math.floor(rand() * tones.length)];
+        ctx.fillRect(0, y0, w, plankH - seam);
+
+        // Warm sunlit highlight band along plank center + darker edge bevel
+        ctx.fillStyle = "rgba(218, 162, 104, 0.10)";
+        ctx.fillRect(0, y0 + 1, w, plankH * 0.28);
+
+        // Longitudinal ironwood grain streaks
+        const grains = mobile ? 10 : 24;
+        for (let g = 0; g < grains; g++) {
+          const gy = y0 + 2 + rand() * (plankH - seam - 3);
+          ctx.fillStyle =
+            rand() > 0.45 ? "rgba(34, 16, 6, 0.20)" : "rgba(196, 138, 84, 0.14)";
+          ctx.fillRect(rand() * w * 0.35, gy, w * (0.3 + rand() * 0.7), 1.3);
+        }
+
+        // Discreet recessed stainless-steel deck screw heads near outer edges
+        if (!mobile) {
+          ctx.fillStyle = "rgba(42, 26, 16, 0.42)";
+          for (const bx of [w * 0.08, w * 0.92]) {
+            ctx.fillRect(bx, y0 + plankH * 0.26, 2.2, 2.2);
+            ctx.fillRect(bx, y0 + plankH * 0.64, 2.2, 2.2);
+          }
+        }
+
+        // Dark recessed gap between adjacent ironwood planks
+        ctx.fillStyle = "#2b1609";
+        ctx.fillRect(0, y0 + plankH - seam, w, seam);
+      }
+
+      // Outer deck shadow trim
+      ctx.fillStyle = "rgba(28, 14, 6, 0.22)";
+      ctx.fillRect(0, 0, Math.round(w * 0.02), h);
+      ctx.fillRect(w - Math.round(w * 0.02), 0, Math.round(w * 0.02), h);
+    },
+    repeatX,
+    repeatY,
+  );
+}
+
+export function createIronwoodWalkMaterial(repeatX = 1, repeatY = 1, options = {}) {
+  const map = createIronwoodPlankTexture(repeatX, repeatY, options);
+  return new THREE.MeshStandardMaterial({
+    color: map ? "#ffffff" : "#784c2b",
+    map,
+    roughness: 0.64,
+    metalness: 0.06,
+    side: THREE.DoubleSide,
+  });
+}
+
+export function createIronwoodPromenadeGeometry(
+  lenX,
+  height,
+  widthZ,
+  plankRepeatLength = 3.2,
+) {
+  const geo = new THREE.BoxGeometry(lenX, height, widthZ);
+  const pos = geo.attributes.position;
+  const norm = geo.attributes.normal;
+  const uv = geo.attributes.uv;
+  if (pos && norm && uv) {
+    for (let i = 0; i < pos.count; i++) {
+      if (Math.abs(norm.getY(i)) > 0.5) {
+        const u = (pos.getZ(i) + widthZ / 2) / (widthZ || 1);
+        const v = (pos.getX(i) + lenX / 2) / (plankRepeatLength || 3.2);
+        uv.setXY(i, u, v);
+      }
+    }
+    uv.needsUpdate = true;
+  }
+  return geo;
+}
+
+

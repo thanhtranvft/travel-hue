@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { sites, river, mainRoads } from "../src/core/shared/geography/map.js";
 import { nearestPoint } from "../src/core/shared/geography/geometry.js";
 import { createBiaQuocHocPark } from "../src/modules/areas/quoc-hoc/view/BiaQuocHocPark.js";
+import { createFireflyTreePark } from "../src/modules/areas/quoc-hoc/view/FireflyTreePark.js";
 import { createFountainPark } from "../src/modules/areas/quoc-hoc/view/FountainPark.js";
 import { createPhuXuanParkWalk } from "../src/modules/areas/quoc-hoc/view/PhuXuanParkWalk.js";
 import {
@@ -64,6 +65,7 @@ test("FountainPark wings and PhuXuanParkWalk form unbroken footpaths to Cầu Ph
       cameraObstacles: [],
     };
     const biaPark = createBiaQuocHocPark(world, biaSite, heading);
+    const fireflyPark = createFireflyTreePark(world, biaSite, heading);
     const fountainPark = createFountainPark(world, biaSite, heading, {
       ubnd: ubndSite,
     });
@@ -86,7 +88,6 @@ test("FountainPark wings and PhuXuanParkWalk form unbroken footpaths to Cầu Ph
       [511.5 + 10, 17.1], // circular walk ring
       [531.6, 18.4],      // east approach path toward Cầu Phú Xuân
       [535.5, -0.5],      // north-east waterfront link at Phú Xuân foot
-      [410, -14.2],       // riverfront promenade
     ]) {
       const p = biaPark.toWorld(lx, lz);
       assert.equal(
@@ -100,6 +101,24 @@ test("FountainPark wings and PhuXuanParkWalk form unbroken footpaths to Cầu Ph
         `Footpath (${lx}, ${lz}) should be rideable`,
       );
       assert.equal(phuXuanWalk.blocksGrass(p.x, p.z), true);
+    }
+
+    // Continuous 0.256m ironwood riverfront promenade extending across all 4 parks to Cầu Gỗ Lim
+    for (const [label, park, lx, lz] of [
+      ["BiaQuocHocPark", biaPark, 50, -13.3],
+      ["FireflyTreePark", fireflyPark, 144, -13.3],
+      ["FountainPark", fountainPark, 292, -14.2],
+      ["PhuXuanParkWalk-west", phuXuanWalk, 410, -14.2],
+      ["PhuXuanParkWalk-east", phuXuanWalk, 470, -13.6],
+    ]) {
+      const p = biaPark.toWorld(lx, lz);
+      assert.equal(
+        park.groundAt(p.x, p.z, 0.2),
+        0.256,
+        `${label} ironwood riverwalk (${lx}, ${lz}) should sit at 0.256m`,
+      );
+      assert.equal(park.canRide(p.x, p.z), true, `${label} ironwood riverwalk should be rideable`);
+      assert.equal(park.blocksGrass(p.x, p.z), true, `${label} ironwood riverwalk should block wild grass`);
     }
 
     // Central Lotus lantern plinth at (511.5, 17.1) blocks riding directly through column
