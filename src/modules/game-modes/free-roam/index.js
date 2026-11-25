@@ -1,3 +1,5 @@
+import { handleRiverRewardAction } from "../../../server/riverActivity.js";
+
 export const freeRoamMode = {
   id: "free-roam",
   kind: "default",
@@ -23,6 +25,11 @@ export const freeRoamMode = {
       onJoin() {},
       onLeave() {},
       onCollision() {},
+      onAction(p, message, room, now) {
+        if (handleRiverRewardAction(p, message, room, now)) {
+          room.snapshot();
+        }
+      },
       publicSummary() {
         return null;
       },

@@ -3,7 +3,7 @@ import { TouringBike } from "../vehicle/TouringBike.js";
 import { setRiderIdentity } from "../vehicle/RiderIdentity.js";
 import { disposeOldScene } from "../shared/resources/sceneResources.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
-import { cleanAvatarId, cleanStance } from "./protocol.js";
+import { cleanAvatarId, cleanBoatIndex, cleanStance } from "./protocol.js";
 import { SpeedAuraEffect } from "../world/CharmSceneFX.js";
 
 export class RemotePlayers {
@@ -67,7 +67,8 @@ export class RemotePlayers {
         hasPos &&
         target.region === region &&
         performance.now() - last < 2500 &&
-        Math.hypot(target.x - position.x, target.z - position.z) < 150;
+        Math.hypot(target.x - position.x, target.z - position.z) <
+          (target.stance === "boat" ? 220 : 150);
       if (!bike.visible) continue;
       const alpha = 1 - Math.exp(-18 * dt);
       if (
@@ -93,9 +94,11 @@ export class RemotePlayers {
       const speed = Number.isFinite(target.speed) ? target.speed : 0;
       const lean = Number.isFinite(target.lean) ? target.lean : 0;
       const stance = cleanStance(target.stance, speed);
+      const boatIndex = cleanBoatIndex(target.boatIndex, stance);
       bike.motion.speed = speed;
       bike.motion.steering = 0;
-      bike.update(dt, 0, 0, false, { stance });
+      if (stance === "boat") bike.setBoat?.(boatIndex);
+      bike.update(dt, 0, 0, false, { stance, boatIndex, poseOnly: true });
       bike.position.set(poseX, poseY, poseZ);
       bike.motion.heading = heading;
       bike.rotation.y = heading;

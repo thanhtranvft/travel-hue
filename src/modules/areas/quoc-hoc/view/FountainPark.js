@@ -366,12 +366,23 @@ function createTropicalFanPalm(x, y, z, scale = 1, seed = 1) {
   return g;
 }
 
-function createPedalBoat(x, y, z, yaw, bodyColor) {
+export const PEDAL_BOAT_SPECS = [
+  { index: 0, dx: 10.0, yaw: -0.25, color: "#f5f7fa", label: "Thiên Nga Trắng 01" },
+  { index: 1, dx: 12.6, yaw: -0.18, color: "#6ab8dc", label: "Vịt Xanh Biển 02" },
+  { index: 2, dx: 15.2, yaw: -0.28, color: "#f5f7fa", label: "Thiên Nga Trắng 03" },
+  { index: 3, dx: 18.0, yaw: -0.2, color: "#eb846c", label: "Vịt Hồng San Hô 04" },
+  { index: 4, dx: 20.6, yaw: -0.24, color: "#5fb3d8", label: "Vịt Lam Ngọc 05" },
+  { index: 5, dx: 23.2, yaw: -0.15, color: "#f5f7fa", label: "Thiên Nga Trắng 06" },
+];
+
+export function createPedalBoat(x, y, z, yaw, bodyColor = "#f5f7fa") {
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = yaw;
 
   const hull = box([1.45, 0.42, 2.75], bodyColor, [0, 0.22, 0]);
+  const seatL = box([0.46, 0.14, 0.56], "#2c3d48", [-0.3, 0.46, -0.15]);
+  const seatR = box([0.46, 0.14, 0.56], "#2c3d48", [0.3, 0.46, -0.15]);
   const canopyPoleL = box([0.06, 1.1, 0.06], "#dce2e6", [-0.58, 0.9, -0.3]);
   const canopyPoleR = box([0.06, 1.1, 0.06], "#dce2e6", [0.58, 0.9, -0.3]);
   const canopy = box([1.35, 0.12, 1.55], "#f7f5ee", [0, 1.46, -0.25]);
@@ -384,7 +395,7 @@ function createPedalBoat(x, y, z, yaw, bodyColor) {
   head.position.set(0, 1.18, 1.24);
   const beak = box([0.1, 0.08, 0.18], "#eb7b28", [0, 1.14, 1.38]);
 
-  g.add(hull, canopyPoleL, canopyPoleR, canopy, neck, head, beak);
+  g.add(hull, seatL, seatR, canopyPoleL, canopyPoleR, canopy, neck, head, beak);
   return g;
 }
 
@@ -909,24 +920,132 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     group.add(post, cap);
   }
 
-  // 8. MOORED SWAN / DRAGON PEDAL BOATS ON THE PERFUME RIVER EDGE
+  // 8. MOORED SWAN / DRAGON PEDAL BOATS ON THE PERFUME RIVER EDGE + TIMBER LANDING PIER
   const boats = [];
-  const boatConfigs = [
-    [cx + 10, -0.25, "#f5f7fa"],
-    [cx + 12.6, -0.18, "#6ab8dc"],
-    [cx + 15.2, -0.28, "#f5f7fa"],
-    [cx + 18.0, -0.2, "#eb846c"],
-    [cx + 20.6, -0.24, "#5fb3d8"],
-    [cx + 23.2, -0.15, "#f5f7fa"],
-  ];
-  boatConfigs.forEach(([bx, yaw, color], idx) => {
+  const boatWorldSpecs = [];
+  PEDAL_BOAT_SPECS.forEach((spec, idx) => {
+    const bx = cx + spec.dx;
     const bz = sampleShoreZ(bx) - 4.4 - (idx % 2) * 0.9;
-    const boat = createPedalBoat(bx, 0.02, bz, yaw, color);
+    const boat = createPedalBoat(bx, 0.02, bz, spec.yaw, spec.color);
     boat.userData.baseZ = bz;
     boat.userData.phase = idx * 0.9;
     group.add(boat);
     boats.push(boat);
+    const wPos = toWorld(bx, bz);
+    boatWorldSpecs.push({
+      index: idx,
+      x: wPos.x,
+      z: wPos.z,
+      yaw: heading + spec.yaw,
+      color: spec.color,
+      label: spec.label,
+    });
   });
+
+  // Timber landing pier extending cleanly riverward from the granite river stair (zero XZ overlap with riverStair)
+  const pierStartZ = stairBotZ - 0.06;
+  const pierLen = 3.0;
+  const pierCenterZ = pierStartZ - pierLen / 2;
+  const pierCenterX = cx + 1.5;
+  const pierY = 0.22;
+  const pierDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(6.0, 0.16, pierLen),
+    mat("#8d613c", 0.8),
+  );
+  pierDeck.position.set(pierCenterX, pierY - 0.08, pierCenterZ);
+  pierDeck.castShadow = pierDeck.receiveShadow = true;
+  group.add(pierDeck);
+  for (const px of [pierCenterX - 2.6, pierCenterX, pierCenterX + 2.6]) {
+    for (const pz of [pierStartZ - 0.4, pierStartZ - pierLen + 0.35]) {
+      const pile = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.16, 0.72, 8),
+        mat("#543a24", 0.9),
+      );
+      pile.position.set(px, -0.1, pz);
+      group.add(pile);
+    }
+  }
+  for (const bx of [pierCenterX - 2.6, pierCenterX + 2.6]) {
+    const bollard = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.13, 0.48, 8),
+      mat("#3e2c1c", 0.85),
+    );
+    bollard.position.set(bx, pierY + 0.24, pierStartZ - pierLen + 0.3);
+    group.add(bollard);
+  }
+
+  // Lifebuoy stand + Signboard + Rental Attendant NPC beside riverStair landing
+  const vendorLx = cx - 2.1;
+  const vendorLz = stairBotZ + 0.45;
+  const dockBooth = new THREE.Group();
+  dockBooth.position.set(vendorLx, 0.18, vendorLz);
+  if (typeof document !== "undefined") {
+    const dockSignTex = createCanvasTexture(256, 64, (ctx, w, h) => {
+      ctx.fillStyle = "#18464c";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#f2cb6d";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+      ctx.fillStyle = "#fff5d8";
+      ctx.font = "bold 20px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("ĐẠP VỊT SÔNG HƯƠNG", w / 2, h / 2);
+    });
+    const signBoard = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.72, 0.44),
+      new THREE.MeshStandardMaterial({
+        map: dockSignTex,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+      }),
+    );
+    signBoard.position.set(-0.75, 1.55, 0);
+    dockBooth.add(signBoard);
+  }
+  dockBooth.add(
+    box([0.08, 1.7, 0.08], "#523a23", [-1.35, 0.85, 0]),
+    box([0.08, 1.7, 0.08], "#523a23", [-0.15, 0.85, 0]),
+  );
+  const ringBuoy = new THREE.Mesh(
+    new THREE.TorusGeometry(0.28, 0.08, 8, 16),
+    mat("#eb6b38", 0.55),
+  );
+  ringBuoy.position.set(-0.75, 0.92, 0.12);
+  dockBooth.add(ringBuoy);
+
+  // Rental attendant NPC wearing lifevest + nón lá
+  const npc = new THREE.Group();
+  npc.position.set(0.35, 0, 0);
+  npc.rotation.y = Math.PI;
+  npc.add(
+    box([0.16, 0.55, 0.16], "#243442", [-0.11, 0.275, 0]),
+    box([0.16, 0.55, 0.16], "#243442", [0.11, 0.275, 0]),
+    box([0.42, 0.58, 0.26], "#ef7c38", [0, 0.84, 0]),
+    box([0.12, 0.42, 0.12], "#33759e", [-0.28, 0.82, 0]),
+    box([0.12, 0.42, 0.12], "#33759e", [0.28, 0.82, 0]),
+  );
+  const nHead = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 10, 8),
+    mat("#f6d2b5", 0.75),
+  );
+  nHead.position.set(0, 1.31, 0);
+  const nHat = new THREE.Mesh(
+    new THREE.ConeGeometry(0.31, 0.19, 14),
+    mat("#e5cf95", 0.82),
+  );
+  nHat.position.set(0, 1.51, 0);
+  npc.add(nHead, nHat);
+  dockBooth.add(npc);
+  group.add(dockBooth);
+
+  let occupiedBoatSet = new Set();
+  const setOccupiedBoats = (occupiedSet) => {
+    occupiedBoatSet = new Set(occupiedSet || []);
+    boats.forEach((boat, idx) => {
+      boat.visible = !occupiedBoatSet.has(idx);
+    });
+  };
 
   world.scene.add(group);
   world.cameraObstacles.push(copingMesh);
@@ -948,18 +1067,60 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     foamRing.scale.set(foamScale, foamScale, 1);
 
     for (const boat of boats) {
+      if (!boat.visible) continue;
       boat.position.y = 0.03 + Math.sin(time * 1.6 + boat.userData.phase) * 0.045;
       boat.rotation.z = Math.sin(time * 1.3 + boat.userData.phase) * 0.035;
     }
+  };
+
+  const vendorPos = toWorld(vendorLx, vendorLz);
+  const pierReturnWorld = toWorld(pierCenterX, pierStartZ - 1.1);
+  const dockLaunchWorld = toWorld(pierCenterX, pierStartZ - pierLen - 2.6);
+  const pedalDock = {
+    vendorPos: { ...vendorPos, y: 0.18 },
+    pierReturnPos: { ...pierReturnWorld, y: pierY },
+    dockWaterPos: { ...dockLaunchWorld, y: 0.03, heading },
+    boats: boatWorldSpecs,
+    isDockBlocked(wx, wz, excludeBoatIndex = -1) {
+      const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= pierCenterX - 3.6 &&
+        lx <= pierCenterX + 3.6 &&
+        lz >= pierStartZ - pierLen - 1.2 &&
+        lz <= pierStartZ + 1.0
+      ) {
+        return true;
+      }
+      for (const spec of boatWorldSpecs) {
+        if (spec.index === excludeBoatIndex) continue;
+        if (occupiedBoatSet.has(spec.index)) continue;
+        if (Math.hypot(wx - spec.x, wz - spec.z) < 2.35) return true;
+      }
+      return false;
+    },
   };
 
   return {
     group,
     fountainCenterLocal: { lx: cx, lz: cz },
     animatedObjects,
+    pedalDock,
+    setOccupiedBoats,
+    isWaterBlocked(wx, wz, pad = 2.0) {
+      const { lx, lz } = toLocal(wx, wz);
+      return lx >= 218 && lx <= 366 && lz >= sampleShoreZ(lx) - pad && lz <= 41;
+    },
     update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= pierCenterX - 3.0 &&
+        lx <= pierCenterX + 3.0 &&
+        lz >= pierStartZ - pierLen &&
+        lz <= pierStartZ
+      ) {
+        if (!Number.isFinite(referenceY) || referenceY < 1.8) return pierY;
+      }
       if (lx < 218 || lx > 366 || lz < sampleShoreZ(lx) - 1 || lz > 41)
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
@@ -1008,6 +1169,14 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     },
     canRide(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= pierCenterX - 2.8 &&
+        lx <= pierCenterX + 2.8 &&
+        lz >= pierStartZ - pierLen + 0.2 &&
+        lz <= pierStartZ + 0.2
+      ) {
+        return true;
+      }
       if (lx < 218 || lx > 366 || lz < sampleShoreZ(lx) || lz > 40.5)
         return null;
 
@@ -1020,6 +1189,8 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
         return false;
       // Block golden dragon floral centerpiece
       if (Math.abs(lx - cx) < 4.9 && Math.abs(lz - -10.8) < 2.1) return false;
+      // Block pedal rental stall & NPC hitbox
+      if (Math.hypot(lx - vendorLx, lz - vendorLz) < 0.95) return false;
 
       if (lz >= sampleShoreZ(lx) + 0.8 && lz <= 40.2) return true;
       return null;

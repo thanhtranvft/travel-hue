@@ -651,6 +651,16 @@ export function addPhuXuanBridge(world, roads) {
   world.phuXuanBridge = {
     group,
     pierCount: pierCenters.length,
+    piers: pierCenters.map((f) => ({
+      x: f.x,
+      z: f.z,
+      tx: f.tx,
+      tz: f.tz,
+      nx: f.nx,
+      nz: f.nz,
+      halfLen: 7.2,
+      halfWidth: 2.1,
+    })),
     lightCount: lightFrames.length * 2,
     frameCount: frames.length,
   };

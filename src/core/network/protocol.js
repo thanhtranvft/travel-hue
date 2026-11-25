@@ -14,7 +14,8 @@ export const PLAYER_COLORS = [
 ];
 export const AVATAR_IDS = ["boy", "girl", "dog", "cat", "cow", "buffalo"];
 export const DEFAULT_AVATAR_ID = "boy";
-export const STANCE_IDS = ["idle", "walk", "run", "bike"];
+export const STANCE_IDS = ["idle", "walk", "run", "bike", "fish", "boat"];
+export const PEDAL_BOAT_COUNT = 6;
 export { cleanCharmTier, MAX_BOOST_MULTIPLIER } from "../world/speedCharms.js";
 
 export const AVATAR_CATALOG = [
@@ -81,6 +82,12 @@ export function cleanStance(value, speed = 0) {
   if (abs >= 2.85) return "run";
   if (abs >= 0.14) return "walk";
   return "idle";
+}
+
+export function cleanBoatIndex(value, stance = "idle") {
+  if (stance !== "boat") return -1;
+  const idx = Number(value);
+  return Number.isInteger(idx) && idx >= 0 && idx < PEDAL_BOAT_COUNT ? idx : -1;
 }
 
 export function cleanPlayerName(value) {

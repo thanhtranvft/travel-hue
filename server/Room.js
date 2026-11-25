@@ -1,10 +1,12 @@
 import { randomUUID } from "node:crypto";
 import {
   cleanAvatarId,
+  cleanBoatIndex,
   cleanCharmTier,
   cleanPlayerName,
   cleanStance,
   MAX_PLAYERS,
+  PEDAL_BOAT_COUNT,
   PLAYER_COLORS,
   PROTOCOL_VERSION,
   sweptContact,
@@ -175,6 +177,9 @@ export class Room {
         name,
         avatar,
         stance: "idle",
+        boatIndex: -1,
+        riverScore: 0,
+        fishCount: 0,
         color: this.pickRoomColor(targetRoomKey),
         region: message.region,
         gameMode,
@@ -316,6 +321,7 @@ export class Room {
       lean: 0,
       ready: false,
       paused: false,
+      boatIndex: -1,
       seq: -1,
       stamp: this.now(),
       credit: 1.2,
@@ -661,6 +667,39 @@ export class Room {
     }
     const old = { x: p.x, z: p.z };
     p.credit = Math.max(0, p.credit - distance);
+    const nextStance = cleanStance(m.stance, m.speed);
+    let nextBoatIndex = cleanBoatIndex(m.boatIndex, nextStance);
+    if (nextStance === "boat") {
+      const takenBoats = new Set(
+        this.roomPlayers(pRoomKey, p)
+          .filter(
+            (other) =>
+              other.send &&
+              other.ready &&
+              cleanStance(other.stance, other.speed) === "boat" &&
+              other.boatIndex >= 0,
+          )
+          .map((other) => other.boatIndex),
+      );
+      if (nextBoatIndex < 0 || takenBoats.has(nextBoatIndex)) {
+        let free = -1;
+        for (let bi = 0; bi < PEDAL_BOAT_COUNT; bi++) {
+          if (!takenBoats.has(bi)) {
+            free = bi;
+            break;
+          }
+        }
+        nextBoatIndex = free;
+      }
+      if (nextBoatIndex < 0) {
+        p.boatIndex = -1;
+        p.stance = "idle";
+        p.speed = 0;
+        return this.send(p, { type: "correct", player: this.publicPlayer(p) });
+      }
+    } else {
+      nextBoatIndex = -1;
+    }
     Object.assign(p, {
       x: m.x,
       y: m.y,
@@ -669,7 +708,8 @@ export class Room {
       speed: m.speed,
       lean: m.lean,
       avatar: m.avatar ? cleanAvatarId(m.avatar) : cleanAvatarId(p.avatar),
-      stance: cleanStance(m.stance, m.speed),
+      stance: nextStance,
+      boatIndex: nextBoatIndex,
       ready: true,
       paused: false,
       activeAt: now,
@@ -716,7 +756,10 @@ export class Room {
     p.paused = true;
     p.speed = 0;
     p.lean = 0;
-    if (reason === 'region') p.ready = false;
+    if (reason === 'region') {
+      p.ready = false;
+      p.boatIndex = -1;
+    }
     this.snapshot();
   }
   disconnect(p, intentional = false) {
@@ -726,6 +769,7 @@ export class Room {
     } else {
       p.send = null;
       p.ready = false;
+      p.boatIndex = -1;
       p.expires = this.now() + this.reconnectMs;
     }
     this.snapshot();
@@ -743,6 +787,9 @@ export class Room {
       color,
       avatar,
       stance,
+      boatIndex,
+      riverScore,
+      fishCount,
       region,
       x,
       y,
@@ -753,12 +800,16 @@ export class Room {
       ready,
       paused,
     } = p;
+    const cleanS = cleanStance(stance, speed);
     return {
       id,
       name,
       color,
       avatar: cleanAvatarId(avatar),
-      stance: cleanStance(stance, speed),
+      stance: cleanS,
+      boatIndex: cleanBoatIndex(boatIndex, cleanS),
+      riverScore: riverScore || 0,
+      fishCount: fishCount || 0,
       region,
       gameMode: p.gameMode || DEFAULT_GAME_MODE_ID,
       x,

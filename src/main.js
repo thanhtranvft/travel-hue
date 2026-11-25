@@ -3,6 +3,7 @@ import "./mobile.css";
 import "./touch-layout.css";
 import "./ui/session.css";
 import "./modules/game-modes/tag-chase/tag-chase.css";
+import "./core/world/river-activities.css";
 import {
   chooseSession,
   createSessionPanel,

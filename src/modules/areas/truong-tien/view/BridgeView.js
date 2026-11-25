@@ -443,7 +443,7 @@ function createCutwaterPierGeometry(width, depth, height, bevel = 0.9) {
   return geo;
 }
 
-function createDragonBoat(variant = 0) {
+export function createDragonBoat(variant = 0) {
   const boat = new THREE.Group();
   const hullMat = new THREE.MeshStandardMaterial({
     color: "#3d2619",
@@ -1353,6 +1353,20 @@ export function addTruongTienBridge(world, road) {
     pierCount: TRUONG_TIEN_PIER_COUNT,
     balconyCount: TRUONG_TIEN_PIER_COUNT * 2,
     boatCount: boats.length,
+    mooredBoats: boats.map((b) => ({ x: b.baseX, z: b.baseZ })),
+    piers: metrics.pierStations.map((ps) => {
+      const f = frameAt(frames, ps);
+      return {
+        x: f.x,
+        z: f.z,
+        tx: f.tx,
+        tz: f.tz,
+        nx: f.nx,
+        nz: f.nz,
+        halfLen: 12.2,
+        halfWidth: 2.5,
+      };
+    }),
     roadHalfWidth: TRUONG_TIEN_ROAD_HALF,
     walkwayBounds: [TRUONG_TIEN_WALK_INNER, TRUONG_TIEN_WALK_OUTER],
     animatedObjects,

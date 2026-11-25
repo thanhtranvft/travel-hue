@@ -9,6 +9,8 @@ const STANCE_LABELS = {
   walk: "Đang đi bộ",
   run: "Đang chạy bộ",
   bike: "Đang đạp xe",
+  fish: "Đang ngồi câu cá",
+  boat: "Đang đạp vịt trên sông",
 };
 
 export class GameView {
@@ -114,7 +116,9 @@ export class GameView {
       soundLocation.textContent =
         game.audio.venueLevel > 0.07
           ? `Nhạc ven quán · ${game.audio.nearbyVenue.title}`
-          : "Giai điệu bên sông Hương";
+          : game.audio.caHueLevel > 0.03 && game.audio.activeCaHueBoat?.song
+            ? `🚤 Ca Huế: ${game.audio.activeCaHueBoat.song.shortTitle}`
+            : "Giai điệu bên sông Hương";
     let near = null,
       distance = Infinity;
     for (const lm of game.world.landmarks.values()) {

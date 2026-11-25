@@ -1,6 +1,6 @@
 import { restaurantZones } from "../world/streetVenues.js";
 import { nearestAudibleSource, proximityGain, sourcePan } from "./spatial.js";
-import { backgroundMelody, restaurantMelody, pluck, flute } from "./music.js";
+import { backgroundMelody, restaurantMelody, pluck, flute, frequency } from "./music.js";
 import { musicTracks, defaultMusicTrack } from "../../app/catalog.js";
 import { CollisionVoice } from "./CollisionVoice.js";
 
@@ -16,6 +16,13 @@ export class CityAudio {
     this.nearbyVenue = null;
     this.lastPedal = 0;
     this.collisionsPlayed = 0;
+    this.caHueBoats = [];
+    this.activeCaHueBoat = null;
+    this.caHueLevel = 0;
+    this.caHueStep = 0;
+    this.caHueLastSongId = null;
+    this.caHueAudioOverrides = new Map();
+    this.caHueMediaEl = null;
     this.onStatus = () => {};
     document.addEventListener("visibilitychange", () => {
       if (!this.ctx) return;
@@ -92,8 +99,89 @@ export class CityAudio {
     this.wheelGain.gain.value = 0;
     rolling.connect(wheelFilter).connect(this.wheelGain).connect(this.master);
     rolling.start();
+
+    // Spatial echoing Ca Huế traditional horn bus over the Perfume River
+    this.caHueBus = ctx.createGain();
+    this.caHueBus.gain.value = 0;
+    this.caHueLowpass = ctx.createBiquadFilter();
+    this.caHueLowpass.type = "lowpass";
+    this.caHueLowpass.frequency.value = 2400;
+    this.caHuePan = ctx.createStereoPanner();
+    this.caHueEchoDelay = ctx.createDelay(1.0);
+    this.caHueEchoDelay.delayTime.value = 0.36;
+    this.caHueEchoFilter = ctx.createBiquadFilter();
+    this.caHueEchoFilter.type = "lowpass";
+    this.caHueEchoFilter.frequency.value = 1150;
+    this.caHueEchoFeedback = ctx.createGain();
+    this.caHueEchoFeedback.gain.value = 0.34;
+    const caHueEchoWet = ctx.createGain();
+    caHueEchoWet.gain.value = 0.58;
+    this.caHueBus.connect(this.caHueLowpass);
+    this.caHueLowpass.connect(this.caHuePan);
+    this.caHueLowpass.connect(this.caHueEchoDelay);
+    this.caHueEchoDelay.connect(this.caHueEchoFilter);
+    this.caHueEchoFilter.connect(this.caHueEchoFeedback).connect(this.caHueEchoDelay);
+    this.caHueEchoFilter.connect(caHueEchoWet).connect(this.caHuePan);
+    this.caHuePan.connect(this.master);
+
     this.timer = setInterval(() => this.schedule(), 100);
     this.nextNote = ctx.currentTime + 0.08;
+    this.nextCaHueNote = ctx.currentTime + 0.1;
+  }
+  registerCaHueAudioUrl(songId, url) {
+    if (!songId) return;
+    if (url) this.caHueAudioOverrides.set(songId, url);
+    else this.caHueAudioOverrides.delete(songId);
+  }
+  playCaHueHornNote(ctx, output, midi, time, volume = 0.13, duration = 0.72) {
+    const hz = frequency(midi);
+    const body = ctx.createOscillator();
+    const fifth = ctx.createOscillator();
+    const vibrato = ctx.createOscillator();
+    const vibratoDepth = ctx.createGain();
+    const formant = ctx.createBiquadFilter();
+    const env = ctx.createGain();
+
+    body.type = "sawtooth";
+    body.frequency.setValueAtTime(hz, time);
+    fifth.type = "triangle";
+    fifth.frequency.setValueAtTime(hz * 0.5, time);
+
+    vibrato.frequency.value = 5.1;
+    vibratoDepth.gain.value = 14;
+    vibrato.connect(vibratoDepth).connect(body.detune);
+
+    formant.type = "bandpass";
+    formant.frequency.setValueAtTime(Math.min(1800, Math.max(520, hz * 2.1)), time);
+    formant.Q.value = 1.4;
+
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.linearRampToValueAtTime(volume, time + 0.09);
+    env.gain.setValueAtTime(volume * 0.8, time + duration * 0.58);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    const fifthGain = ctx.createGain();
+    fifthGain.gain.value = 0.45;
+    body.connect(formant).connect(env);
+    fifth.connect(fifthGain).connect(env);
+    env.connect(output);
+
+    body.start(time);
+    fifth.start(time);
+    vibrato.start(time);
+    const stopAt = time + duration + 0.04;
+    body.stop(stopAt);
+    fifth.stop(stopAt);
+    vibrato.stop(stopAt);
+    body.onended = () => {
+      body.disconnect();
+      fifth.disconnect();
+      fifthGain.disconnect();
+      vibrato.disconnect();
+      vibratoDepth.disconnect();
+      formant.disconnect();
+      env.disconnect();
+    };
   }
   scheduleCollisionPreload() {
     if (typeof requestIdleCallback === "function") {
@@ -198,8 +286,57 @@ export class CityAudio {
       this.step++;
       this.nextNote += this.track.stepSeconds;
     }
+
+    const boatSong = this.activeCaHueBoat?.song;
+    if (boatSong && this.caHueLevel > 0.015) {
+      const overrideUrl =
+        boatSong.audioUrl || this.caHueAudioOverrides.get(boatSong.id);
+      if (boatSong.id !== this.caHueLastSongId) {
+        this.caHueLastSongId = boatSong.id;
+        this.caHueStep = 0;
+        this.nextCaHueNote = now + 0.05;
+        if (this.caHueMediaEl) {
+          this.caHueMediaEl.pause();
+          this.caHueMediaEl = null;
+        }
+        if (overrideUrl && typeof Audio !== "undefined") {
+          try {
+            const el = new Audio(overrideUrl);
+            el.loop = true;
+            el.crossOrigin = "anonymous";
+            const src = ctx.createMediaElementSource(el);
+            src.connect(this.caHueBus);
+            void el.play().catch(() => {});
+            this.caHueMediaEl = el;
+          } catch {}
+        }
+      }
+      if (!overrideUrl && boatSong.notes?.length) {
+        if (this.nextCaHueNote < now - 0.35) this.nextCaHueNote = now + 0.05;
+        for (let c = 0; this.nextCaHueNote < now + 0.28 && c < 4; c++) {
+          const note = boatSong.notes[this.caHueStep % boatSong.notes.length];
+          const tempo = boatSong.tempo || 0.78;
+          if (note !== null && note !== undefined) {
+            this.playCaHueHornNote(
+              ctx,
+              this.caHueBus,
+              note,
+              this.nextCaHueNote,
+              0.14,
+              tempo * 0.94,
+            );
+          }
+          this.caHueStep++;
+          this.nextCaHueNote += tempo;
+        }
+      }
+    } else if (this.caHueMediaEl) {
+      this.caHueMediaEl.pause();
+      this.caHueMediaEl = null;
+      this.caHueLastSongId = null;
+    }
   }
-  update(bike, actors, cameraHeading) {
+  update(bike, actors, cameraHeading, caHueBoats = this.caHueBoats) {
     const nearby = nearestAudibleSource(
       bike.position,
       this.venues || restaurantZones,
@@ -207,12 +344,21 @@ export class CityAudio {
     );
     this.nearbyVenue = nearby?.source || null;
     this.venueLevel = nearby?.gain || 0;
+    const caHueSources = Array.isArray(caHueBoats) ? caHueBoats : [];
+    const caHueHit = nearestAudibleSource(bike.position, caHueSources, 175);
+    this.activeCaHueBoat = caHueHit?.source || null;
+    this.caHueLevel = caHueHit?.gain || 0;
     if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
     const ctx = this.ctx,
       t = ctx.currentTime,
       speed = Math.abs(bike.motion.speed);
     this.background.gain.setTargetAtTime(
-      !this.musicEnabled || !this.track ? 0 : 0.65 - this.venueLevel * 0.4,
+      !this.musicEnabled || !this.track
+        ? 0
+        : Math.max(
+            0.16,
+            0.65 - this.venueLevel * 0.4 - this.caHueLevel * 0.24,
+          ),
       t,
       0.7,
     );
@@ -232,6 +378,29 @@ export class CityAudio {
       t,
       0.2,
     );
+    if (this.caHueBus) {
+      this.caHueBus.gain.setTargetAtTime(
+        !this.musicEnabled ? 0 : this.caHueLevel * 0.44,
+        t,
+        0.4,
+      );
+      this.caHueLowpass.frequency.setTargetAtTime(
+        680 + this.caHueLevel * 2350,
+        t,
+        0.35,
+      );
+      this.caHuePan.pan.setTargetAtTime(
+        caHueHit
+          ? sourcePan(
+              caHueHit.source.x - bike.position.x,
+              caHueHit.source.z - bike.position.z,
+              cameraHeading,
+            )
+          : 0,
+        t,
+        0.2,
+      );
+    }
     this.wheelGain.gain.setTargetAtTime(
       Math.min(0.045, speed * 0.005),
       t,
@@ -556,8 +725,37 @@ export class CityAudio {
       pluck(this.ctx, this.master, m, t + i * 0.05, 0.13, 0.55),
     );
   }
+  playWaterSplash() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    if (this.noiseBuffer) this.noiseBurst(t, 0.26, 0.12, 950);
+    pluck(this.ctx, this.master, 67, t + 0.02, 0.08, 0.3);
+  }
+  playFishBiteAlert() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    pluck(this.ctx, this.master, 84, t, 0.14, 0.22);
+    pluck(this.ctx, this.master, 88, t + 0.08, 0.16, 0.28);
+  }
+  playFishCatchFanfare() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    [72, 76, 79, 84, 88].forEach((m, i) =>
+      pluck(this.ctx, this.master, m, t + i * 0.05, 0.15, 0.48),
+    );
+  }
+  playBoatBell() {
+    if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
+    const t = this.ctx.currentTime;
+    pluck(this.ctx, this.master, 79, t, 0.14, 0.45);
+    pluck(this.ctx, this.master, 86, t + 0.06, 0.11, 0.45);
+  }
   dispose() {
     clearInterval(this.timer);
+    if (this.caHueMediaEl) {
+      this.caHueMediaEl.pause();
+      this.caHueMediaEl = null;
+    }
     if (this.preloadIdleId != null && typeof cancelIdleCallback === "function") {
       cancelIdleCallback(this.preloadIdleId);
       this.preloadIdleId = null;

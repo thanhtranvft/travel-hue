@@ -1,3 +1,5 @@
+import { handleRiverRewardAction } from "../../../server/riverActivity.js";
+
 export const checkpointRaceMode = {
   id: "checkpoint-race",
   kind: "special",
@@ -23,6 +25,11 @@ export const checkpointRaceMode = {
       onJoin() {},
       onLeave() {},
       onCollision() {},
+      onAction(p, message, room, now) {
+        if (handleRiverRewardAction(p, message, room, now)) {
+          room.snapshot();
+        }
+      },
       publicSummary() {
         return null;
       },

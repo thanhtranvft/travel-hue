@@ -343,6 +343,16 @@ export const tagChaseMode = {
           return;
         }
 
+        if (msg.event === "river_reward") {
+          const icon = msg.kind === "boat_cruise" ? "🦆" : "🎣";
+          hud.showToast(
+            `${icon} ${msg.label || "Thưởng sông Hương"} · +${msg.points || 0}đ!`,
+            2800,
+            "success",
+          );
+          return;
+        }
+
         if (msg.event === "coop_start") {
           hud.showToast(`🏮 Nhiệm vụ toàn phòng: ${msg.title}!`, 3400, "info");
           return;

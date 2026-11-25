@@ -15,6 +15,7 @@ import {
   stitchMainBoardwalk,
 } from "../../modules/areas/south-bank/view/BoardwalkView.js";
 import { TruongTienSurroundings } from "../../modules/areas/truong-tien/view/TruongTienSurroundings.js";
+import { CaHueBoats } from "./CaHueBoats.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { SharedModelLoader as GLTFLoader } from "../shared/resources/sceneResources.js";
 import {
@@ -1256,6 +1257,14 @@ export class GeographicWorld {
       this.boardwalkRails.push(...extSegments);
     }
     this.station = getById(175063593) ? new HueStation(this) : null;
+    if (
+      ["quoc-hoc", "south-bank", "truong-tien"].includes(this.region?.id) ||
+      this.biaPark ||
+      this.phuXuanBridge ||
+      this.truongTienBridge
+    ) {
+      this.caHueBoats = new CaHueBoats(this);
+    }
     this.buildTreeGrid();
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
@@ -1505,6 +1514,70 @@ export class GeographicWorld {
       ? nearbyWalls(this.campusWallGrid, x, z)
       : this.campusWallSegments || [];
   }
+  riverSurfaceAt(x, z, time = 0) {
+    return 0.03 + Math.sin(time * 1.6 + x * 0.08 + z * 0.08) * 0.04;
+  }
+  getCaHueBoats() {
+    return this.caHueBoats?.getAudioSources() || [];
+  }
+  hitsBridgePier(x, z, pad = 2.0) {
+    const piers = [
+      ...(this.phuXuanBridge?.piers || []),
+      ...(this.truongTienBridge?.piers || []),
+    ];
+    for (const p of piers) {
+      const dx = x - p.x;
+      const dz = z - p.z;
+      const alongN = Math.abs(dx * p.nx + dz * p.nz);
+      const alongT = Math.abs(dx * p.tx + dz * p.tz);
+      if (alongN < p.halfLen + pad && alongT < p.halfWidth + pad) return true;
+    }
+    return false;
+  }
+  canBoat(x, z, activeBoatIndex = -1) {
+    if (!regionContains(this.region, x, z)) return false;
+    if (
+      x < this.bounds.minX ||
+      x > this.bounds.maxX ||
+      z < this.bounds.minZ ||
+      z > this.bounds.maxZ
+    ) {
+      return false;
+    }
+    const activeRiver = this.riverRings || getRiver();
+    if (!activeRiver?.length) return false;
+    const buf = 2.2;
+    const pts = [
+      { x, z },
+      { x: x + buf, z },
+      { x: x - buf, z },
+      { x, z: z + buf },
+      { x, z: z - buf },
+    ];
+    for (const pt of pts) {
+      if (!activeRiver.some((r) => inside(pt, r))) return false;
+    }
+    if (this.biaPark?.isWaterBlocked?.(x, z, 2.0)) return false;
+    if (this.fountainPark?.pedalDock?.isDockBlocked?.(x, z, activeBoatIndex)) {
+      return false;
+    }
+    if (this.boardwalkView?.mainPoints?.length) {
+      const hit = nearestPoint({ x, z }, this.boardwalkView.mainPoints);
+      if (hit.distance < (this.boardwalkView.halfWidth || 2.1) + 2.2) {
+        return false;
+      }
+    }
+    if (this.hitsBridgePier(x, z, 2.0)) return false;
+    if (this.caHueBoats?.hitsBoat(x, z, 2.8)) return false;
+    if (
+      this.truongTienBridge?.mooredBoats?.some(
+        (b) => Math.hypot(x - b.x, z - b.z) < 5.6,
+      )
+    ) {
+      return false;
+    }
+    return true;
+  }
   canRide(x, z, referenceY) {
     if (this.station?.blocks(x, z)) return false;
     if (!regionContains(this.region, x, z)) return false;
@@ -1681,6 +1754,7 @@ export class GeographicWorld {
   update(time, position) {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
     this.truongTienBridge?.update?.(time);
+    this.caHueBoats?.update?.(time);
     this.fireflyPark?.update?.(time);
     this.fountainPark?.update?.(time);
     this.youthPlayground?.update(time);

@@ -1,8 +1,17 @@
 import * as THREE from "three";
 import { BicycleMotion } from "./BicycleMotion.js";
-import { cleanAvatarId, cleanStance, DEFAULT_AVATAR_ID } from "../network/protocol.js";
+import {
+  cleanAvatarId,
+  cleanBoatIndex,
+  cleanStance,
+  DEFAULT_AVATAR_ID,
+} from "../network/protocol.js";
 import { disposeOldScene } from "../shared/resources/sceneResources.js";
 import { animateChibiActor, buildChibiActor } from "./ChibiCharacters.js";
+import {
+  createPedalBoat,
+  PEDAL_BOAT_SPECS,
+} from "../../modules/areas/quoc-hoc/view/FountainPark.js";
 
 export class TouringBike extends THREE.Group {
   constructor({ avatar = DEFAULT_AVATAR_ID, mode = "foot" } = {}) {
@@ -13,6 +22,11 @@ export class TouringBike extends THREE.Group {
     this.pedalPhase = 0;
     this.walkPhase = 0;
     this.idleTime = 0;
+    this.boatIndex = -1;
+    this.boatHull = null;
+    this.boatHullIndex = -1;
+    this.activityStance = null;
+    this.fishState = null;
     this.rider = new THREE.Group();
     this.rider.name = "chibi-rider-anchor";
     this.add(this.rider);
@@ -27,6 +41,67 @@ export class TouringBike extends THREE.Group {
     this.setAvatar(this.avatarId);
   }
   get stance() {
+    return this.motion.stance;
+  }
+  ensureBoatHull(boatIndex) {
+    const idx = cleanBoatIndex(boatIndex, "boat");
+    const safeIdx = idx >= 0 ? idx : 0;
+    if (!this.boatHull || this.boatHullIndex !== safeIdx) {
+      if (this.boatHull) {
+        this.boatHull.removeFromParent();
+        disposeOldScene(this.boatHull, new THREE.Group());
+      }
+      const spec = PEDAL_BOAT_SPECS[safeIdx] || PEDAL_BOAT_SPECS[0];
+      this.boatHull = createPedalBoat(0, 0, 0, 0, spec.color);
+      this.boatHullIndex = safeIdx;
+      this.add(this.boatHull);
+    }
+    return this.boatHull;
+  }
+  setBoat(boatIndex) {
+    const next = cleanBoatIndex(boatIndex, "boat");
+    this.boatIndex = next;
+    if (this.activityStance === "boat" || this.motion.stance === "boat") {
+      const hull = this.ensureBoatHull(next);
+      hull.visible = true;
+    }
+    return this.boatIndex;
+  }
+  setActivityStance(stance, options = {}) {
+    if (stance === "fish" || stance === "boat") {
+      this.activityStance = stance;
+      this.motion.stance = stance;
+      this.fishState = options.fishState ?? this.fishState;
+      if (stance === "boat") {
+        const idx = cleanBoatIndex(
+          options.boatIndex ?? (this.boatIndex >= 0 ? this.boatIndex : 0),
+          "boat",
+        );
+        this.boatIndex = idx >= 0 ? idx : 0;
+        const hull = this.ensureBoatHull(this.boatIndex);
+        hull.visible = true;
+      } else {
+        this.boatIndex = -1;
+        if (this.boatHull) this.boatHull.visible = false;
+      }
+    } else {
+      this.activityStance = null;
+      this.boatIndex = -1;
+      this.fishState = null;
+      if (this.boatHull) this.boatHull.visible = false;
+      this.motion.speed = 0;
+      this.motion.lean = 0;
+      this.motion.stance = this.transportMode === "bike" ? "bike" : "idle";
+    }
+    animateChibiActor(this.rig, {
+      stance: this.motion.stance,
+      speed: this.motion.speed,
+      phase: this.walkPhase,
+      idleTime: this.idleTime,
+      pedalPhase: this.pedalPhase,
+      steer: this.motion.steering,
+      fishState: this.fishState,
+    });
     return this.motion.stance;
   }
   setAvatar(avatarId) {
@@ -53,6 +128,7 @@ export class TouringBike extends THREE.Group {
       idleTime: this.idleTime,
       pedalPhase: this.pedalPhase,
       steer: this.motion.steering,
+      fishState: this.fishState,
     });
     return this.avatarId;
   }
@@ -62,6 +138,9 @@ export class TouringBike extends THREE.Group {
   }
   setTransportMode(mode) {
     const next = mode === "bike" ? "bike" : "foot";
+    this.activityStance = null;
+    this.boatIndex = -1;
+    if (this.boatHull) this.boatHull.visible = false;
     this.transportMode = this.motion.setMode(next);
     animateChibiActor(this.rig, {
       stance: this.motion.stance,
@@ -70,6 +149,7 @@ export class TouringBike extends THREE.Group {
       idleTime: this.idleTime,
       pedalPhase: this.pedalPhase,
       steer: this.motion.steering,
+      fishState: null,
     });
     return this.transportMode;
   }
@@ -82,6 +162,10 @@ export class TouringBike extends THREE.Group {
   reset(x, z, heading) {
     this.position.set(x, 0, z);
     this.rotation.set(0, heading, 0);
+    this.activityStance = null;
+    this.boatIndex = -1;
+    this.fishState = null;
+    if (this.boatHull) this.boatHull.visible = false;
     this.motion.reset(heading, this.transportMode);
     this.pedalPhase = 0;
     this.walkPhase = 0;
@@ -93,6 +177,7 @@ export class TouringBike extends THREE.Group {
       idleTime: 0,
       pedalPhase: 0,
       steer: 0,
+      fishState: null,
     });
   }
   update(dt, throttle, steer, brake = false, options = {}) {
@@ -100,20 +185,42 @@ export class TouringBike extends THREE.Group {
     const speedMultiplier = Number.isFinite(options?.speedMultiplier)
       ? options.speedMultiplier
       : 1;
-    const step = this.motion.step(dt, throttle, steer, brake, sprint, speedMultiplier);
-    this.position.x += step.dx;
-    this.position.z += step.dz;
-    this.rotation.y = this.motion.heading;
-    this.rotation.z = this.motion.lean;
-
-    const stance = options?.stance
+    const forcedStance = options?.stance
       ? cleanStance(options.stance, this.motion.speed)
-      : this.motion.stance;
+      : this.activityStance;
+
+    if (options?.poseOnly || forcedStance === "fish" || forcedStance === "boat") {
+      if (forcedStance) {
+        this.motion.stance = forcedStance;
+      } else {
+        this.motion.stance = cleanStance(options?.stance, this.motion.speed);
+      }
+      if (this.motion.stance === "boat") {
+        const bIdx = cleanBoatIndex(
+          options?.boatIndex ?? (this.boatIndex >= 0 ? this.boatIndex : 0),
+          "boat",
+        );
+        this.boatIndex = bIdx >= 0 ? bIdx : 0;
+        const hull = this.ensureBoatHull(this.boatIndex);
+        hull.visible = true;
+      } else if (this.boatHull) {
+        this.boatHull.visible = false;
+      }
+    } else {
+      if (this.boatHull) this.boatHull.visible = false;
+      const step = this.motion.step(dt, throttle, steer, brake, sprint, speedMultiplier);
+      this.position.x += step.dx;
+      this.position.z += step.dz;
+      this.rotation.y = this.motion.heading;
+      this.rotation.z = this.motion.lean;
+    }
+
+    const stance = forcedStance || this.motion.stance;
     this.motion.stance = stance;
 
     this.idleTime += dt;
     const absSpeed = Math.abs(this.motion.speed);
-    this.pedalPhase += this.motion.speed * dt * 3.1;
+    this.pedalPhase += (stance === "boat" ? Math.max(0.8, this.motion.speed) : this.motion.speed) * dt * 3.1;
     if (stance === "walk" || stance === "run") {
       this.walkPhase += Math.max(1.2, absSpeed) * dt * 2.55;
     }
@@ -132,7 +239,7 @@ export class TouringBike extends THREE.Group {
       idleTime: this.idleTime,
       pedalPhase: this.pedalPhase,
       steer: this.motion.steering,
+      fishState: options?.fishState ?? this.fishState,
     });
   }
 }
-

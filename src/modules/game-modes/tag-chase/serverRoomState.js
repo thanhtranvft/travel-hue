@@ -9,6 +9,7 @@ import {
   TAG_CHASE_CONFIG,
 } from "./constants.js";
 import { journeyRoadPoints } from "./journeyRoadPoints.js";
+import { handleRiverRewardAction } from "../../../../server/riverActivity.js";
 
 function emptyPartyInventory() {
   return {
@@ -774,6 +775,13 @@ export function createTagChaseRoomState(room, roomKey) {
           p.shieldUntil = 0;
           s.shieldBlocks++;
           s.score += 30;
+          broadcastState(now);
+        }
+        return;
+      }
+
+      if (action === "river_reward") {
+        if (handleRiverRewardAction(p, message, room, now)) {
           broadcastState(now);
         }
       }

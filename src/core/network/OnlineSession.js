@@ -53,6 +53,8 @@ export class OnlineSession {
       if (detail.reconnected && detail.player.stance === "bike") {
         game.bike.setTransportMode("bike");
         game.syncMode?.();
+      } else if (detail.reconnected && detail.player.stance === "boat") {
+        game.riverActivities?.restoreOnlineBoat?.(detail.player);
       }
       const nextRegion = detail.player?.region || game.world.region.id;
       const nextMode = cleanGameModeId(
@@ -79,6 +81,7 @@ export class OnlineSession {
       this.avatars.sync(detail.players, this.client.id);
       panel.snapshot(detail, this.client.id, areas);
       game.gameMode?.onSnapshot?.(detail, this.client.id);
+      game.riverActivities?.onServerSnapshot?.(detail, this.client.id);
     });
     this.client.addEventListener("charms", ({ detail }) => {
       game.charms?.applyServerCharms?.(detail);
@@ -102,6 +105,7 @@ export class OnlineSession {
         );
       }
       game.gameMode?.onServerEvent?.(detail);
+      game.riverActivities?.onServerEvent?.(detail);
     });
     this.client.addEventListener("error", ({ detail }) =>
       panel.status(
@@ -151,7 +155,13 @@ export class OnlineSession {
     if (!p || game.world.region.id !== p.region) return;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
     const refY = Number.isFinite(p.y) ? p.y : game.bike.position.y;
-    const y = game.world.groundAt(p.x, p.z, refY);
+    const isBoat = p.stance === "boat";
+    if (!snapCamera && !isBoat && game.riverActivities?.mode === "boating") {
+      game.riverActivities.handleServerRejectBoat?.(p);
+    }
+    const y = isBoat
+      ? (game.world.riverSurfaceAt?.(p.x, p.z) ?? refY)
+      : game.world.groundAt(p.x, p.z, refY);
     game.bike.position.set(p.x, y, p.z);
     if (Number.isFinite(p.speed)) game.bike.motion.speed = p.speed;
     if (Number.isFinite(p.heading)) {
@@ -193,6 +203,7 @@ export class OnlineSession {
       lean: m.lean,
       avatar: game.bike.avatarId,
       stance: game.bike.stance,
+      boatIndex: game.bike.stance === "boat" ? game.bike.boatIndex : -1,
     });
   }
   sendPickup(charmId) {

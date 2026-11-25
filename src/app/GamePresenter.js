@@ -18,6 +18,7 @@ import { SpeedAuraEffect } from "../core/world/CharmSceneFX.js";
 import { ChurchBellController } from "../core/audio/ChurchBellController.js";
 import { sourcePan } from "../core/audio/spatial.js";
 import { GameModeController } from "../modules/game-modes/GameModeController.js";
+import { RiverActivities } from "../core/world/RiverActivities.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
@@ -151,6 +152,7 @@ export class GamePresenter {
     this.charms = new CharmController(this);
     this.speedAura = new SpeedAuraEffect();
     this.speedAura.attachTo(this.bike);
+    this.riverActivities = new RiverActivities(this);
     this.travelTo(this.world.region.id);
     addEventListener("resize", () => this.resize());
     this.ready = Promise.allSettled([this.bike.loadDetailedModel()]).then(
@@ -181,6 +183,9 @@ export class GamePresenter {
         }
       }
       if (key === "r") this.reset();
+      if (key === "g") this.riverActivities?.handleKeyG?.();
+      if (e.code === "Space" || key === " ") this.riverActivities?.handleSpaceAction?.();
+      if (key === "escape") this.riverActivities?.handleEscape?.();
       if (key === "1") this.useCharm("10");
       if (key === "2") this.useCharm("20");
       if (key === "3") this.useCharm("30");
@@ -272,6 +277,7 @@ export class GamePresenter {
     if (this.churchBellNotice) this.churchBellNotice.hidden = true;
     this.churchBellNoticeUntil = -Infinity;
     document.querySelector("#collision-toast").hidden = true;
+    this.riverActivities?.reset?.();
     this.view?.resetLandmarkNotice?.();
     const { x, z, heading } = district.spawn;
     this.bike.reset(x, z, heading);
@@ -366,6 +372,10 @@ export class GamePresenter {
     return chosen;
   }
   toggleTransportMode() {
+    if (this.riverActivities?.mode === "boating") return this.bike.transportMode;
+    if (this.riverActivities?.mode === "fishing") {
+      this.riverActivities.exitFishing();
+    }
     const next = this.bike.toggleTransportMode();
     this.syncMode();
     this.updateHud();
@@ -436,6 +446,17 @@ export class GamePresenter {
     }
     const speedMultiplier =
       (this.charms?.speedMultiplier || 1) * (this.gameMode?.speedMultiplier || 1);
+    if (
+      this.riverActivities?.stepPhysics?.(dt, {
+        throttle,
+        steer,
+        brake,
+        sprint,
+        speedMultiplier,
+      })
+    ) {
+      return;
+    }
     this.bike.update(dt, throttle, steer, brake, { sprint, speedMultiplier });
     const nextX = this.bike.position.x,
       nextZ = this.bike.position.z;
@@ -559,6 +580,7 @@ export class GamePresenter {
     this.online?.update(dt);
     this.charms?.update(dt, this.elapsed);
     this.gameMode?.update(dt, this.elapsed);
+    this.riverActivities?.update?.(dt, this.elapsed);
     const activeBoost = this.charms?.activeBoost;
     this.speedAura?.update(this.elapsed, {
       active: Boolean(activeBoost && this.charms.speedMultiplier > 1),
@@ -583,6 +605,7 @@ export class GamePresenter {
       this.traffic.actors,
       this.cameraYaw +
         (Number.isFinite(this.input.drag.yaw) ? this.input.drag.yaw : 0),
+      this.world.getCaHueBoats?.(),
     );
     const patrol = this.traffic.patrolWarning?.(this.bike);
     if (patrol) {
@@ -678,9 +701,11 @@ export class GamePresenter {
     const yaw = this.cameraYaw + dragYaw,
       speed = Math.abs(this.bike.motion.speed),
       onBike = this.bike.stance === "bike",
-      baseDist = onBike ? 4.85 : 3.9,
-      camHeight = onBike ? 1.9 : 1.68,
-      lookLift = onBike ? 1.15 : 0.98,
+      onBoat = this.bike.stance === "boat",
+      onFish = this.bike.stance === "fish",
+      baseDist = onBoat ? 5.6 : onFish ? 4.1 : onBike ? 4.85 : 3.9,
+      camHeight = onBoat ? 2.35 : onFish ? 1.75 : onBike ? 1.9 : 1.68,
+      lookLift = onBoat ? 1.1 : onFish ? 0.85 : onBike ? 1.15 : 0.98,
       distance = baseDist + speed * 0.07,
       p = this.bike.position;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))

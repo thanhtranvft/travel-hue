@@ -479,6 +479,39 @@ function buildBackpack(parent, color = "#2260b8") {
   return pack;
 }
 
+function buildFishingRod() {
+  const group = new THREE.Group();
+  group.name = "chibi-fishing-rod";
+  const handleMat = getSharedMat("#4a3320", 0.78, 0.05);
+  const bambooMat = getSharedMat("#c59c52", 0.65, 0.06);
+  const reelMat = getSharedMat("#d8a63c", 0.35, 0.65);
+  const lineMat = getSharedMat("#f4f7fa", 0.4, 0.1);
+  const bobberRedMat = getSharedMat("#e24438", 0.45, 0.05);
+  const bobberWhiteMat = getSharedMat("#ffffff", 0.45, 0.05);
+
+  const rodPivot = new THREE.Group();
+  group.add(rodPivot);
+
+  addPart(rodPivot, new THREE.CylinderGeometry(0.017, 0.021, 0.24, 8), handleMat, 0, 0.08, 0.04, Math.PI * 0.34, 0, 0);
+  addPart(rodPivot, new THREE.CylinderGeometry(0.022, 0.022, 0.04, 8), reelMat, 0.022, 0.12, 0.14, 0, 0, Math.PI / 2);
+  addPart(rodPivot, new THREE.CylinderGeometry(0.006, 0.015, 1.48, 8), bambooMat, 0, 0.56, 0.66, Math.PI * 0.34, 0, 0);
+
+  const lineAnchor = new THREE.Group();
+  lineAnchor.position.set(0, 0.94, 1.24);
+  rodPivot.add(lineAnchor);
+
+  const line = addPart(lineAnchor, new THREE.CylinderGeometry(0.0025, 0.0025, 0.92, 4), lineMat, 0, -0.46, 0);
+  line.castShadow = false;
+  const bobber = new THREE.Group();
+  bobber.position.set(0, -0.92, 0);
+  addPart(bobber, new THREE.SphereGeometry(0.036, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), bobberRedMat, 0, 0, 0);
+  addPart(bobber, new THREE.SphereGeometry(0.036, 8, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bobberWhiteMat, 0, 0, 0);
+  lineAnchor.add(bobber);
+
+  group.visible = false;
+  return { group, rodPivot, lineAnchor, bobber };
+}
+
 function buildHumanRig(avatarId) {
   const isGirl = avatarId === "girl";
   const root = new THREE.Group();
@@ -784,6 +817,11 @@ function buildHumanRig(avatarId) {
   const leftLeg = buildLeg(-1);
   const rightLeg = buildLeg(1);
 
+  const fishingRod = buildFishingRod();
+  fishingRod.group.position.set(0, -0.13, 0.02);
+  fishingRod.group.rotation.set(0.45, 0, 0);
+  rightArm.forearm.add(fishingRod.group);
+
   return {
     id: avatarId,
     kind: "human",
@@ -799,6 +837,7 @@ function buildHumanRig(avatarId) {
     scarfTailR,
     hairPigtailL,
     hairPigtailR,
+    fishingRod,
     headTopY: 1.46,
     baseBodyY: 0.44,
   };
@@ -1053,6 +1092,11 @@ function buildAnimalRig(avatarId) {
   const backLeftLeg = makeAnimalLimb(-0.12, -0.15, 0.25);
   const backRightLeg = makeAnimalLimb(0.12, -0.15, 0.25);
 
+  const fishingRod = buildFishingRod();
+  fishingRod.group.position.set(0, -0.18, 0.04);
+  fishingRod.group.rotation.set(0.35, 0, 0);
+  frontRightLeg.add(fishingRod.group);
+
   return {
     id: avatarId,
     kind: "animal",
@@ -1068,6 +1112,7 @@ function buildAnimalRig(avatarId) {
     frontRightLeg,
     backLeftLeg,
     backRightLeg,
+    fishingRod,
     headTopY: avatarId === "buffalo" ? 1.18 : 1.12,
     baseBodyY: 0.38,
   };
@@ -1110,12 +1155,15 @@ export function animateChibiActor(
     idleTime = 0,
     pedalPhase = 0,
     steer = 0,
+    fishState = null,
   } = {},
 ) {
   if (!rig || !rig.character) return;
   const char = rig.character;
   const bike = rig.bike;
   const isBike = Boolean(bike) && stance === "bike";
+  const isFish = stance === "fish";
+  const isBoat = stance === "boat";
   const isRun = stance === "run";
   const isWalk = stance === "walk";
   const absSpeed = Math.abs(speed);
@@ -1126,6 +1174,25 @@ export function animateChibiActor(
       bike.steerPivot.rotation.y = steer * 0.42;
       bike.pedalL.rotation.x = -pedalPhase;
       bike.pedalR.rotation.x = -pedalPhase;
+    }
+  }
+  if (char.fishingRod?.group) {
+    char.fishingRod.group.visible = isFish;
+    if (isFish) {
+      const fPhase = fishState?.phase || "ready";
+      const biteJitter =
+        fPhase === "bite"
+          ? Math.sin(idleTime * 28) * 0.08
+          : fPhase === "reeling"
+            ? Math.sin(idleTime * 16) * 0.05
+            : Math.sin(idleTime * 2.2) * 0.025;
+      char.fishingRod.rodPivot.rotation.x =
+        fPhase === "reeling" || fPhase === "caught"
+          ? -0.35 + Math.sin(idleTime * 9) * 0.14
+          : fPhase === "bite"
+            ? 0.16 + biteJitter
+            : Math.sin(idleTime * 1.4) * 0.04;
+      char.fishingRod.bobber.position.y = -0.92 + biteJitter;
     }
   }
 
@@ -1161,6 +1228,61 @@ export function animateChibiActor(
         char.hairPigtailL.rotation.x = 0.15 + wind * 1.4;
         char.hairPigtailR.rotation.x = 0.15 - wind * 1.4;
       }
+      return;
+    }
+
+    if (isFish) {
+      const breathe = Math.sin(idleTime * 2.1);
+      const fPhase = fishState?.phase || "ready";
+      const yank =
+        fPhase === "reeling"
+          ? Math.sin(idleTime * 10) * 0.18
+          : fPhase === "caught"
+            ? -0.25
+            : 0;
+      char.bodyPivot.position.set(0, 0.34, -0.02);
+      char.bodyPivot.rotation.set(0, 0, 0);
+      char.torsoPivot.rotation.set(0.08 + breathe * 0.02, 0, 0);
+      char.headPivot.rotation.set(0.14 + breathe * 0.03, Math.sin(idleTime * 0.65) * 0.08, 0);
+
+      char.leftLeg.position.set(-0.105, -0.02, 0.03);
+      char.rightLeg.position.set(0.105, -0.02, 0.03);
+      char.leftLeg.rotation.set(-1.32, 0, 0.05);
+      char.rightLeg.rotation.set(-1.32, 0, -0.05);
+      char.leftLeg.shin.rotation.set(1.18 + Math.sin(idleTime * 1.3) * 0.08, 0, 0);
+      char.rightLeg.shin.rotation.set(1.18 - Math.sin(idleTime * 1.3) * 0.08, 0, 0);
+
+      char.leftArm.rotation.set(-0.78 + yank * 0.6, 0.16, 0.05);
+      char.rightArm.rotation.set(-0.88 + yank, -0.1, -0.05);
+      char.leftArm.forearm.rotation.set(-0.35, 0, 0);
+      char.rightArm.forearm.rotation.set(-0.32, 0, 0);
+      char.scarfTailL.rotation.x = 0.08 + breathe * 0.03;
+      char.scarfTailR.rotation.x = 0.08 - breathe * 0.03;
+      return;
+    }
+
+    if (isBoat) {
+      const pL = pedalPhase;
+      const pR = pedalPhase + Math.PI;
+      char.bodyPivot.position.set(0, 0.56, -0.14);
+      char.bodyPivot.rotation.set(0, 0, 0);
+      char.torsoPivot.rotation.set(0.08, 0, 0);
+      char.headPivot.rotation.set(-0.04, steer * 0.18, 0);
+
+      char.leftLeg.position.set(-0.115, -0.02, 0.06 + Math.cos(pL) * 0.05);
+      char.rightLeg.position.set(0.115, -0.02, 0.06 + Math.cos(pR) * 0.05);
+      char.leftLeg.rotation.set(-1.05 + Math.cos(pL) * 0.24, 0, 0);
+      char.rightLeg.rotation.set(-1.05 + Math.cos(pR) * 0.24, 0, 0);
+      char.leftLeg.shin.rotation.set(0.95 - Math.cos(pL) * 0.2, 0, 0);
+      char.rightLeg.shin.rotation.set(0.95 - Math.cos(pR) * 0.2, 0, 0);
+
+      char.leftArm.rotation.set(-0.74, 0.12, 0.08);
+      char.rightArm.rotation.set(-0.74, -0.12, -0.08);
+      char.leftArm.forearm.rotation.set(-0.42, 0, 0);
+      char.rightArm.forearm.rotation.set(-0.42, 0, 0);
+      const wind = Math.sin(idleTime * 5 + absSpeed) * 0.05;
+      char.scarfTailL.rotation.x = 0.14 + wind;
+      char.scarfTailR.rotation.x = 0.14 - wind;
       return;
     }
 
@@ -1266,6 +1388,46 @@ export function animateChibiActor(
     const flap = Math.sin(idleTime * 6 + absSpeed * 1.2) * 0.08;
     char.earL.rotation.z = flap;
     char.earR.rotation.z = -flap;
+    return;
+  }
+
+  if (isFish) {
+    const fPhase = fishState?.phase || "ready";
+    const yank = fPhase === "reeling" ? Math.sin(idleTime * 10) * 0.16 : 0;
+    char.bodyPivot.position.set(0, 0.34, -0.02);
+    char.bodyPivot.rotation.set(0, 0, 0);
+    char.spinePivot.rotation.set(-0.82, 0, 0);
+    char.headPivot.rotation.set(0.84, Math.sin(idleTime * 0.7) * 0.08, 0);
+    char.tailPivot.rotation.set(0.3, Math.sin(idleTime * 3.8) * 0.25, 0);
+
+    char.frontLeftLeg.position.set(-0.14, 0.14, 0.11);
+    char.frontRightLeg.position.set(0.14, 0.14, 0.11);
+    char.frontLeftLeg.rotation.set(-0.78 + yank * 0.5, 0, -0.1);
+    char.frontRightLeg.rotation.set(-0.88 + yank, 0, 0.1);
+    char.backLeftLeg.position.set(-0.12, -0.08, 0.06);
+    char.backRightLeg.position.set(0.12, -0.08, 0.06);
+    char.backLeftLeg.rotation.set(-1.18, 0, 0);
+    char.backRightLeg.rotation.set(-1.18, 0, 0);
+    return;
+  }
+
+  if (isBoat) {
+    const pL = pedalPhase;
+    const pR = pedalPhase + Math.PI;
+    char.bodyPivot.position.set(0, 0.54, -0.14);
+    char.bodyPivot.rotation.set(0, 0, 0);
+    char.spinePivot.rotation.set(-0.88, 0, 0);
+    char.headPivot.rotation.set(0.82, steer * 0.18, 0);
+    char.tailPivot.rotation.set(0.35, Math.sin(idleTime * 4.5 + absSpeed) * 0.28, 0);
+
+    char.frontLeftLeg.position.set(-0.14, 0.14, 0.11);
+    char.frontRightLeg.position.set(0.14, 0.14, 0.11);
+    char.frontLeftLeg.rotation.set(-0.92, 0, -0.12);
+    char.frontRightLeg.rotation.set(-0.92, 0, 0.12);
+    char.backLeftLeg.position.set(-0.12, -0.06 + Math.sin(pL) * 0.06, 0.07 + Math.cos(pL) * 0.04);
+    char.backRightLeg.position.set(0.12, -0.06 + Math.sin(pR) * 0.06, 0.07 + Math.cos(pR) * 0.04);
+    char.backLeftLeg.rotation.set(-0.68 + Math.cos(pL) * 0.26, 0, 0);
+    char.backRightLeg.rotation.set(-0.68 + Math.cos(pR) * 0.26, 0, 0);
     return;
   }
 

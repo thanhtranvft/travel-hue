@@ -704,6 +704,100 @@ export function createBiaQuocHocPark(world, site, heading) {
     );
   }
 
+  // 3B. RIVERSIDE FISHING ROD RENTAL STALL ("CHO THUÊ CẦN CÂU") ON WOODEN DECK
+  const stallLx = -18;
+  const stallLz = deckLandZ(stallLx) - 1.35;
+  const stall = new THREE.Group();
+  stall.name = "fishing-rental-stall";
+  stall.position.set(stallLx, deckY, stallLz);
+  stall.rotation.y = Math.PI;
+
+  const counterWood = mat("#7b5230", 0.82);
+  const roofMat = mat("#c6a05d", 0.85);
+  stall.add(
+    box([2.1, 0.92, 0.7], "#7b5230", [0, 0.46, 0]),
+    box([2.26, 0.08, 0.84], "#9c6d44", [0, 0.96, 0]),
+    box([0.1, 2.25, 0.1], "#5c3d22", [-0.95, 1.125, -0.3]),
+    box([0.1, 2.25, 0.1], "#5c3d22", [0.95, 1.125, -0.3]),
+    box([0.1, 2.05, 0.1], "#5c3d22", [-0.95, 1.025, 0.35]),
+    box([0.1, 2.05, 0.1], "#5c3d22", [0.95, 1.025, 0.35]),
+  );
+  const awning = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.07, 1.3), roofMat);
+  awning.position.set(0, 2.22, 0.05);
+  awning.rotation.x = 0.14;
+  awning.castShadow = true;
+  stall.add(awning);
+
+  if (typeof document !== "undefined") {
+    const signTex = createCanvasTexture(256, 64, (ctx, w, h) => {
+      ctx.fillStyle = "#14423b";
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#f2cb6d";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(4, 4, w - 8, h - 8);
+      ctx.fillStyle = "#fff4d2";
+      ctx.font = "bold 22px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("CHO THUÊ CẦN CÂU", w / 2, h / 2);
+    });
+    const signBoard = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.75, 0.44),
+      new THREE.MeshStandardMaterial({
+        map: signTex,
+        roughness: 0.7,
+        side: THREE.DoubleSide,
+      }),
+    );
+    signBoard.position.set(0, 1.92, -0.36);
+    signBoard.rotation.y = Math.PI;
+    stall.add(signBoard);
+  }
+
+  // Bamboo rod rack & 3 slanted fishing rods + bait bucket
+  stall.add(box([0.5, 0.65, 0.32], "#634125", [1.32, 0.325, 0.05]));
+  for (let r = 0; r < 3; r++) {
+    const rod = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.012, 0.024, 1.95, 6),
+      mat("#b48a46", 0.7),
+    );
+    rod.position.set(1.18 + r * 0.14, 1.05, 0.04);
+    rod.rotation.x = -0.18;
+    rod.rotation.z = -0.06 + r * 0.05;
+    stall.add(rod);
+  }
+  const bucket = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.18, 0.14, 0.32, 10),
+    mat("#2d7ea1", 0.6),
+  );
+  bucket.position.set(-1.28, 0.16, -0.15);
+  stall.add(bucket);
+
+  // Friendly riverside rental vendor NPC wearing nón lá & teal áo dài
+  const vendor = new THREE.Group();
+  vendor.position.set(0, 0, 0.68);
+  vendor.rotation.y = Math.PI;
+  vendor.add(
+    box([0.16, 0.56, 0.16], "#23303d", [-0.11, 0.28, 0]),
+    box([0.16, 0.56, 0.16], "#23303d", [0.11, 0.28, 0]),
+    box([0.42, 0.62, 0.26], "#1d6f72", [0, 0.86, 0]),
+    box([0.12, 0.44, 0.12], "#1d6f72", [-0.28, 0.84, 0]),
+    box([0.12, 0.44, 0.12], "#1d6f72", [0.28, 0.84, 0]),
+  );
+  const vHead = new THREE.Mesh(
+    new THREE.SphereGeometry(0.18, 10, 8),
+    mat("#f6d2b5", 0.75),
+  );
+  vHead.position.set(0, 1.34, 0);
+  const nonLa = new THREE.Mesh(
+    new THREE.ConeGeometry(0.32, 0.2, 14),
+    mat("#e5cf95", 0.82),
+  );
+  nonLa.position.set(0, 1.54, 0);
+  vendor.add(vHead, nonLa);
+  stall.add(vendor);
+  group.add(stall);
+
   // 4. FLANKING SHADY PARK LAWNS, RED PERGOLA, FLOWER BEDS & HUE TREES
   // Lush green park lawns flanking West (lx: -72..-35.5) and East (lx: +31.5..+68)
   const westLawn = new THREE.Mesh(
@@ -778,10 +872,50 @@ export function createBiaQuocHocPark(world, site, heading) {
   world.scene.add(group);
   world.cameraObstacles.push(plazaFloor);
 
+  const riverAhead = toWorld(stallLx, deckRiverZ(stallLx) - 12);
+  const riverRim = toWorld(stallLx, deckRiverZ(stallLx));
+  const seatHeading = Math.atan2(
+    riverAhead.x - riverRim.x,
+    riverAhead.z - riverRim.z,
+  );
+  const vendorPos = toWorld(stallLx, stallLz);
+  const fishingSpot = {
+    vendorPos: { ...vendorPos, y: deckY },
+    seatY: deckY,
+    seatHeading,
+    deckLandZ,
+    deckRiverZ,
+    seatAtWorld(wx, wz) {
+      const loc = toLocal(wx, wz);
+      const clampedLx = Math.max(-48, Math.min(48, Number.isFinite(loc.lx) ? loc.lx : stallLx));
+      const seatLz = deckRiverZ(clampedLx) + 0.42;
+      const w = toWorld(clampedLx, seatLz);
+      return {
+        x: w.x,
+        y: deckY,
+        z: w.z,
+        heading: seatHeading,
+        lx: clampedLx,
+        lz: seatLz,
+      };
+    },
+    isNearDeckEdge(wx, wz, margin = 4.2) {
+      const loc = toLocal(wx, wz);
+      if (loc.lx < -54 || loc.lx > 54) return false;
+      const rz = deckRiverZ(loc.lx);
+      return loc.lz >= rz - 0.6 && loc.lz <= rz + margin;
+    },
+  };
+
   return {
     group,
     toLocal,
     toWorld,
+    fishingSpot,
+    isWaterBlocked(wx, wz, pad = 2.0) {
+      const { lx, lz } = toLocal(wx, wz);
+      return lx >= -66 && lx <= 66 && lz >= deckRiverZ(lx) - pad && lz <= deckLandZ(lx) + 2;
+    },
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
       if (lx < -74 || lx > 72 || lz < -62 || lz > 41) return null;
@@ -845,6 +979,9 @@ export function createBiaQuocHocPark(world, site, heading) {
       if (Math.abs(lx) < 12.5 && Math.abs(lz) < 5.8) return false;
       // Block Trụ Biểu bases
       if (Math.abs(Math.abs(lx) - 13.2) < 1.4 && Math.abs(lz - 9.2) < 1.4)
+        return false;
+      // Block fishing rental stall counter & rod rack
+      if (Math.abs(lx - stallLx) < 1.55 && Math.abs(lz - stallLz) < 1.1)
         return false;
       // Allow riding onto the cantilevered curved wooden riverside overlook deck!
       if (
