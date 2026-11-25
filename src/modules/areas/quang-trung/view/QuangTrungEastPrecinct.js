@@ -709,8 +709,8 @@ function createFitnessCorner(x, y, z) {
   // Soft EPDM rubber safety mat + granite curb
   g.add(
     box([9.2, 0.08, 6.2], "#d8d5cd", [0, 0.04, 0]),
-    box([8.6, 0.09, 5.6], "#467d6e", [0, 0.05, 0]),
-    box([7.8, 0.095, 4.8], "#c96e54", [0, 0.052, 0]),
+    box([8.6, 0.1, 5.6], "#467d6e", [0, 0.05, 0]),
+    box([7.8, 0.12, 4.8], "#c96e54", [0, 0.06, 0]),
   );
 
   const postHex = "#1e7868";
@@ -890,6 +890,12 @@ export class QuangTrungEastPrecinct {
     this.buildProjectPark();
     this.registerLandmarks();
 
+    if (world?.campusWallSegments && this.fenceSegments.length) {
+      world.campusWallSegments.push(
+        ...this.fenceSegments.map((s) => ({ ...s, schoolId: "benh-vien-da-khoa" })),
+      );
+    }
+
     world.scene.add(this.group);
   }
 
@@ -987,7 +993,7 @@ export class QuangTrungEastPrecinct {
       const safeSpans = filterSegmentsClearOfRoads(
         [worldSpan],
         this.world?.renderRoads,
-        0.65,
+        2.15,
       );
       for (const seg of safeSpans) {
         this.fenceSegments.push(seg);
@@ -1214,28 +1220,35 @@ export class QuangTrungEastPrecinct {
     const darkStone = mat("#4d535a", 0.88);
     // West dark border walkway beside Hẻm nhỏ
     const westStrip = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.02, d - 1.5), darkStone);
-    westStrip.position.set(-w / 2 + 2.4, 0.285, 0);
+    westStrip.position.set(-w / 2 + 2.4, 0.29, 0);
     westStrip.receiveShadow = true;
     // East dark wide strip beside promenade (pulled safely inside side <= 210.8)
     const eastDarkA = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.02, 42.0), darkStone);
-    eastDarkA.position.set(27.0, 0.285, -3.5);
+    eastDarkA.position.set(27.0, 0.29, -3.5);
     eastDarkA.receiveShadow = true;
     const eastDarkB = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.02, 42.0), darkStone);
-    eastDarkB.position.set(40.5, 0.285, -3.5);
+    eastDarkB.position.set(40.5, 0.29, -3.5);
     eastDarkB.receiveShadow = true;
     // Front asphalt street-edge parking bay strip for 3 angled white sedans
     const carBayApron = new THREE.Mesh(new THREE.BoxGeometry(24.0, 0.025, 7.6), mat("#41474e", 0.9));
-    carBayApron.position.set(-34.0, 0.285, d / 2 - 3.8);
+    carBayApron.position.set(-34.0, 0.292, d / 2 - 3.8);
     carBayApron.receiveShadow = true;
     park.add(westStrip, eastDarkA, eastDarkB, carBayApron);
 
     // White angled parking stripes + 3 parked white sedans along front bay (matching image_6212c3e8.png)
+    const bayStripeMat = new THREE.MeshStandardMaterial({
+      color: "#eef2f5",
+      roughness: 0.8,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
     for (let i = 0; i < 4; i++) {
       const stripe = new THREE.Mesh(
         new THREE.BoxGeometry(0.14, 0.015, 5.2),
-        mat("#eef2f5", 0.8),
+        bayStripeMat,
       );
-      stripe.position.set(-41.5 + i * 5.0, 0.298, d / 2 - 3.5);
+      stripe.position.set(-41.5 + i * 5.0, 0.308, d / 2 - 3.5);
       stripe.rotation.y = -0.35;
       park.add(stripe);
     }
@@ -1243,7 +1256,7 @@ export class QuangTrungEastPrecinct {
       const carX = -39.0 + i * 5.0;
       const carZ = d / 2 - 3.6;
       const car = createParkedWhiteSedan(-0.35);
-      car.position.set(carX, 0.29, carZ);
+      car.position.set(carX, 0.305, carZ);
       park.add(car);
       this.obstacles.push({ side: midS + carX, fwd: midF - carZ, radius: 2.2 });
     }
@@ -1262,7 +1275,7 @@ export class QuangTrungEastPrecinct {
         roughness: 0.92,
       }),
     );
-    ovalLawn.position.set(ovalX, 0.29, ovalZ);
+    ovalLawn.position.set(ovalX, 0.295, ovalZ);
     ovalLawn.receiveShadow = true;
     park.add(ovalLawn);
 
@@ -1271,7 +1284,7 @@ export class QuangTrungEastPrecinct {
     curbGeo.rotateX(Math.PI / 2);
     curbGeo.scale(1.12, 1, 0.84);
     const ovalCurb = new THREE.Mesh(curbGeo, mat("#edeae2", 0.78));
-    ovalCurb.position.set(ovalX, 0.31, ovalZ);
+    ovalCurb.position.set(ovalX, 0.315, ovalZ);
     park.add(ovalCurb);
 
     // White concrete outer ring footpath around oval (lighter stone border)
@@ -1279,19 +1292,19 @@ export class QuangTrungEastPrecinct {
     ringGeo.rotateX(-Math.PI / 2);
     ringGeo.scale(1.12, 1, 0.84);
     const ringPath = new THREE.Mesh(ringGeo, mat("#e2dfd8", 0.84));
-    ringPath.position.set(ovalX, 0.284, ovalZ);
+    ringPath.position.set(ovalX, 0.301, ovalZ);
     ringPath.receiveShadow = true;
     park.add(ringPath);
 
     // Connecting warm-granite paths to Front Entrance & East Fountain Plaza
     const pathMat = mat("#e3e0d8", 0.84);
-    const eastBridgePath = new THREE.Mesh(new THREE.BoxGeometry(23.5, 0.015, 5.2), pathMat);
-    eastBridgePath.position.set(19.0, 0.287, -3.5);
-    const fountainApron = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, 0.016, 40), pathMat);
-    fountainApron.position.set(34.5, 0.286, -3.5);
+    const eastBridgePath = new THREE.Mesh(new THREE.BoxGeometry(23.5, 0.02, 5.2), pathMat);
+    eastBridgePath.position.set(19.0, 0.31, -3.5);
+    const fountainApron = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, 0.02, 40), pathMat);
+    fountainApron.position.set(34.5, 0.328, -3.5);
     fountainApron.receiveShadow = true;
-    const frontEntryPath = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.015, 16.5), pathMat);
-    frontEntryPath.position.set(0.0, 0.287, 23.0);
+    const frontEntryPath = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.02, 16.5), pathMat);
+    frontEntryPath.position.set(0.0, 0.31, 23.0);
     park.add(eastBridgePath, fountainApron, frontEntryPath);
 
     // Low black bollard garden lights ringing the central oval curb
@@ -1305,7 +1318,7 @@ export class QuangTrungEastPrecinct {
     // Picnic mat & seated visitors relaxing on the central oval grass
     const picnicGroup = new THREE.Group();
     picnicGroup.name = "cong-vien-picnic-group";
-    picnicGroup.position.set(ovalX - 5.6, 0.33, ovalZ + 1.8);
+    picnicGroup.position.set(ovalX - 5.6, 0.345, ovalZ + 1.8);
     picnicGroup.add(
       box([2.7, 0.02, 2.3], "#f4efe4", [0, 0, 0]),
       box([0.42, 0.24, 0.3], "#c2874c", [0.1, 0.13, -0.05]),
@@ -1328,7 +1341,7 @@ export class QuangTrungEastPrecinct {
     // Second reading/relaxing lawn mat on east side of the central emerald grass
     const readingGroup = new THREE.Group();
     readingGroup.name = "cong-vien-lawn-reading-group";
-    readingGroup.position.set(ovalX + 7.2, 0.33, ovalZ - 3.6);
+    readingGroup.position.set(ovalX + 7.2, 0.345, ovalZ - 3.6);
     readingGroup.add(
       box([2.2, 0.02, 1.8], "#d9e6dc", [0, 0, 0]),
       box([0.36, 0.04, 0.26], "#fff9ee", [0.05, 0.03, 0.08]),
@@ -1401,8 +1414,8 @@ export class QuangTrungEastPrecinct {
     pavVisitorB.position.set(0.55, 0.16, 3.35);
     pavVisitorB.rotation.y = -0.5;
     pav.add(pavVisitorA, pavVisitorB);
-    pav.add(createWhiteBlossomShrubStrip(5.6, 1.6, -5.0, 0.02, 2.8));
-    pav.add(createWhiteBlossomShrubStrip(8.0, 1.6, 7.0, 0.02, 2.8));
+    pav.add(createWhiteBlossomShrubStrip(5.6, 1.6, -5.0, 0.0, 3.85));
+    pav.add(createWhiteBlossomShrubStrip(8.0, 1.6, 7.0, 0.0, 3.85));
 
     park.add(pav);
     this.buildingPolygons.push(this.rectPoly(midS + pavX - 5.1, midS + pavX + 5.1, midF - pavZ - 2.9, midF - pavZ + 2.9));

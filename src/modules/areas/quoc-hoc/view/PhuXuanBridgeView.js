@@ -400,10 +400,10 @@ export function addPhuXuanBridge(world, roads) {
       buildExtrudedProfile(
         segFrames,
         (f) => [
-          [-8.6, 0.0],
+          [-8.6, -0.02],
           [-8.6, -f.y + 0.08],
           [8.6, -f.y + 0.08],
-          [8.6, 0.0],
+          [8.6, -0.02],
         ],
         8,
       ),

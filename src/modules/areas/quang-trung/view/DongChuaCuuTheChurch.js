@@ -14,7 +14,10 @@ import {
   createManicuredLawnMaterial,
 } from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
-import { filterSegmentsClearOfRoads } from "../../../../core/world/streetPlacement.js";
+import {
+  filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
+} from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -464,7 +467,7 @@ export class DongChuaCuuTheChurch {
     this.world = world;
     this.site = site;
     const cfg = quangTrungCampuses["nha-tho-dong-chua-cuu-the"];
-    this.ring = cfg.ring;
+    this.ring = insetRingClearOfRoads(cfg.ring, world?.renderRoads, 2.25);
     this.basilicaId = cfg.basilicaId || 1172894102;
     this.colonialIds = cfg.colonialBuildings || [1174028275, 1174028276, 1174028274];
     this.jesusStatuePos = cfg.jesusStatuePos;
@@ -489,6 +492,12 @@ export class DongChuaCuuTheChurch {
     this.buildGroundsAndFence();
     this.buildColonialTuVien();
     this.buildBasilicaAndStatue();
+
+    if (world?.campusWallSegments && this.fenceSegments.length) {
+      world.campusWallSegments.push(
+        ...this.fenceSegments.map((s) => ({ ...s, schoolId: "dong-chua-cuu-the" })),
+      );
+    }
 
     world.scene.add(this.group);
   }
@@ -534,10 +543,10 @@ export class DongChuaCuuTheChurch {
       [62, 39, 34, 14],
     ]) {
       const curb = new THREE.Mesh(new THREE.BoxGeometry(w + 0.5, 0.16, d + 0.5), curbMat);
-      curb.position.set(lx, 0.24, lz);
+      curb.position.set(lx, 0.252, lz);
       curb.receiveShadow = true;
       const lawn = new THREE.Mesh(new THREE.BoxGeometry(w, 0.17, d), lawnMat);
-      lawn.position.set(lx, 0.255, lz);
+      lawn.position.set(lx, 0.268, lz);
       lawn.receiveShadow = true;
       gWrapper.add(curb, lawn);
     }
@@ -738,7 +747,7 @@ export class DongChuaCuuTheChurch {
         const safeSpans = filterSegmentsClearOfRoads(
           [{ a: lerpPt(a, b, startDist / len), b: lerpPt(a, b, endDist / len) }],
           this.world?.renderRoads,
-          0.65,
+          2.15,
         );
         for (const { a: pA, b: pB } of safeSpans) {
           const spanLen = Math.hypot(pB.x - pA.x, pB.z - pA.z);

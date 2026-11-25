@@ -32,6 +32,7 @@ function box(size, color, position = [0, 0, 0]) {
 }
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { CampusStudents } from "../../../../core/world/CampusStudents.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -730,7 +731,9 @@ export class HaiBaTrungSchoolCampus {
   constructor(world, site, gatePlacement) {
     this.world = world;
     this.site = site;
-    this.campusRings = getRingsOf(site.feature);
+    this.campusRings = getRingsOf(site.feature).map((ring) =>
+      insetRingClearOfRoads(ring, world?.renderRoads, 2.25),
+    );
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
     this.facingGateYaw = gatePlacement.heading;
     this.fwdVec = {
@@ -1192,16 +1195,16 @@ export class HaiBaTrungSchoolCampus {
       yard.add(createCurvedParterreBed(lx, 0.15, -29, 5.2, 2.4));
     }
 
-    // 2. Entry avenue straight from front Tam Quan gate toward Flagpole Plaza (fwd: 1..134)
+    // 2. Entry avenue straight from front Tam Quan gate toward Flagpole Plaza (fwd: 0..126)
     const avenue = new THREE.Mesh(
-      new THREE.BoxGeometry(8.8, 0.06, 134),
+      new THREE.BoxGeometry(8.8, 0.06, 126),
       pavingMat,
     );
-    avenue.position.set(0.5, 0.31, -67);
+    avenue.position.set(0.5, 0.31, -63);
     avenue.receiveShadow = true;
     yard.add(avenue);
     for (const sx of [-4.05, 5.05]) {
-      yard.add(box([0.32, 0.14, 130], "#e3ddd0", [sx, 0.32, -65]));
+      yard.add(box([0.32, 0.14, 126], "#e3ddd0", [sx, 0.32, -63]));
     }
 
     // 3. Central Courtyard manicured lawns + curved hedge parterres between classroom wings (fwd: 58..126)
@@ -1224,26 +1227,26 @@ export class HaiBaTrungSchoolCampus {
       new THREE.BoxGeometry(64, 0.07, 44),
       pavingMat,
     );
-    plaza.position.set(1, 0.3, -148);
+    plaza.position.set(1, 0.305, -148);
     plaza.receiveShadow = true;
     yard.add(plaza);
 
     // Cross-courtyard & wing walkways connecting all front & side colonial blocks
     for (const pz of [-54, -92, -125]) {
       const cross = new THREE.Mesh(
-        new THREE.BoxGeometry(64, 0.07, 4.4),
+        new THREE.BoxGeometry(64, 0.06, 4.4),
         pavingMat,
       );
-      cross.position.set(1, 0.3, pz);
+      cross.position.set(1, 0.29, pz);
       cross.receiveShadow = true;
       yard.add(cross);
     }
     for (const sx of [-30.5, 31.8]) {
       const wingWalk = new THREE.Mesh(
-        new THREE.BoxGeometry(5.6, 0.08, 152),
+        new THREE.BoxGeometry(5.6, 0.06, 110),
         pavingMat,
       );
-      wingWalk.position.set(sx, 0.3, -94);
+      wingWalk.position.set(sx, 0.31, -71);
       wingWalk.receiveShadow = true;
       yard.add(wingWalk);
     }
@@ -1268,7 +1271,7 @@ export class HaiBaTrungSchoolCampus {
       new THREE.BoxGeometry(2.8, 0.22, 22.0),
       terraMat,
     );
-    crossNS.position.set(flagX, 0.35, flagZ);
+    crossNS.position.set(flagX, 0.37, flagZ);
     crossNS.receiveShadow = true;
     const crossEW = new THREE.Mesh(
       new THREE.BoxGeometry(22.0, 0.22, 2.8),

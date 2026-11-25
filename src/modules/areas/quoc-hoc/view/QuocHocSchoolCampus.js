@@ -35,6 +35,7 @@ import {
   createManicuredLawnMaterial,
 } from "../../../../core/world/turfTextures.js";
 import { CampusStudents } from "../../../../core/world/CampusStudents.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 const QUOC_HOC_STATUE_NODE_ID = 13516238185;
 const FALLBACK_STATUE = { x: 585.9926923575766, z: -374.803926445244 };
@@ -853,7 +854,9 @@ export class QuocHocSchoolCampus {
   constructor(world, site, gatePlacement) {
     this.world = world;
     this.site = site;
-    this.campusRings = getRingsOf(site.feature);
+    this.campusRings = getRingsOf(site.feature).map((ring) =>
+      insetRingClearOfRoads(ring, world?.renderRoads, 2.25),
+    );
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
 
     const statueNode = getFeatures().find((f) => f.id === QUOC_HOC_STATUE_NODE_ID);
@@ -1177,7 +1180,7 @@ export class QuocHocSchoolCampus {
       new THREE.CylinderGeometry(13.85, 13.85, 0.09, 40),
       stoneMat,
     );
-    roundabout.position.set(0, 0.31, statueZ);
+    roundabout.position.set(0, 0.315, statueZ);
     roundabout.receiveShadow = true;
     yard.add(roundaboutOuter, roundabout);
 
@@ -1287,10 +1290,10 @@ export class QuocHocSchoolCampus {
     // 9. Cross-courtyard & Classroom Wing Walkways (connecting statue plaza to both long wings)
     for (const pz of [statueZ, -138.5]) {
       const cross = new THREE.Mesh(
-        new THREE.BoxGeometry(72, 0.07, 4.2),
+        new THREE.BoxGeometry(72, 0.06, 4.2),
         stoneMat,
       );
-      cross.position.set(-2, 0.3, pz);
+      cross.position.set(-2, 0.29, pz);
       cross.receiveShadow = true;
       yard.add(cross);
     }

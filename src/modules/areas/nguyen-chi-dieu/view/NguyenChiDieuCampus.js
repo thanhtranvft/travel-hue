@@ -13,6 +13,7 @@ import {
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { CampusStudents } from "../../../../core/world/CampusStudents.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -377,7 +378,7 @@ export class NguyenChiDieuCampus {
     this.world = world;
     this.site = site;
     const cfg = dongDaCampuses["nguyen-chi-dieu"];
-    this.campusRings = [cfg.ring];
+    this.campusRings = [insetRingClearOfRoads(cfg.ring, world?.renderRoads, 2.75)];
     this.buildingIds = cfg.buildings || [732304130, 732304131, 1416873568];
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
     this.facingGateYaw = gatePlacement.heading;
@@ -471,7 +472,7 @@ export class NguyenChiDieuCampus {
       uv.needsUpdate = true;
     }
     const entryDrive = new THREE.Mesh(entryGeo, yardMat);
-    entryDrive.position.set(0, 0.29, -10);
+    entryDrive.position.set(0, 0.295, -10);
     entryDrive.receiveShadow = true;
     yard.add(entryDrive);
 

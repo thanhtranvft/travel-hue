@@ -218,6 +218,15 @@ export function addIntersectionDirectionSigns(world) {
 
   for (const cluster of clusters) {
     if (cluster.roadNames.length < 2) continue;
+    if (
+      world.bounds &&
+      (cluster.center.x < world.bounds.minX - 4 ||
+        cluster.center.x > world.bounds.maxX + 4 ||
+        cluster.center.z < world.bounds.minZ - 4 ||
+        cluster.center.z > world.bounds.maxZ + 4)
+    ) {
+      continue;
+    }
     const hasDirWarning = world.routeSignPlacements.some(
       (s) =>
         s.variant === "direction-warning" &&
@@ -236,38 +245,61 @@ export function addIntersectionDirectionSigns(world) {
     const title = `GIAO LỘ · ${(crossNames.join(" · ") || primaryName).toUpperCase()}`;
     const subtitle = `ĐƯỜNG ${primaryName.toUpperCase()}`;
 
+    const sampleRoad = (road, hit, signedDist) => {
+      let idx = hit.index;
+      const pStart = road.points[idx - 1];
+      const pEnd = road.points[idx];
+      if (!pStart || !pEnd) return null;
+      let along = hit.t * Math.hypot(pEnd.x - pStart.x, pEnd.z - pStart.z) + signedDist;
+      while (along < 0 && idx > 1) {
+        idx--;
+        const p0 = road.points[idx - 1];
+        const p1 = road.points[idx];
+        along += Math.hypot(p1.x - p0.x, p1.z - p0.z);
+      }
+      while (idx < road.points.length - 1) {
+        const p0 = road.points[idx - 1];
+        const p1 = road.points[idx];
+        const curLen = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+        if (along <= curLen) break;
+        along -= curLen;
+        idx++;
+      }
+      const a = road.points[idx - 1];
+      const b = road.points[idx];
+      const segLen = Math.hypot(b.x - a.x, b.z - a.z);
+      if (segLen < 0.5) return null;
+      return {
+        a,
+        b,
+        dAlong: Math.max(0.5, Math.min(segLen - 0.5, along)),
+        dx: (b.x - a.x) / segLen,
+        dz: (b.z - a.z) / segLen,
+      };
+    };
+
     let placed = 0;
-    for (const minSignSpacing of [9.0, 4.5, 2.0]) {
+    for (const minSignSpacing of [9.0, 4.5, 1.5]) {
       if (placed > 0) break;
       for (const road of groundRoads) {
         if (placed >= 2) break;
         const hit = nearestPoint(cluster.center, road.points);
-        const a = road.points[hit.index - 1];
-        const b = road.points[hit.index];
-        if (!a || !b) continue;
-        const segLen = Math.hypot(b.x - a.x, b.z - a.z);
-        if (segLen < 0.5) continue;
-        const dx = (b.x - a.x) / segLen;
-        const dz = (b.z - a.z) / segLen;
-        const hitDistAlong = hit.t * segLen;
-
-        for (const alongOffset of [11, 15, 8, 19, 5, 23]) {
+        for (const alongOffset of [11, 15, 8, 19, 24, 5, 29]) {
           if (placed >= 2) break;
           for (const dir of [-1, 1]) {
             if (placed >= 2) break;
-            const dAlong = Math.max(
-              1.0,
-              Math.min(segLen - 1.0, hitDistAlong + dir * alongOffset),
-            );
+            const seg = sampleRoad(road, hit, dir * alongOffset);
+            if (!seg) continue;
             for (const latOffset of [
               roadWidth(road) / 2 + 1.5,
               roadWidth(road) / 2 + 1.85,
               roadWidth(road) / 2 + 1.25,
+              roadWidth(road) / 2 + 2.2,
             ]) {
-              const cand = roadsidePoint(a, b, dAlong, latOffset, dir);
+              const cand = roadsidePoint(seg.a, seg.b, seg.dAlong, latOffset, dir);
               if (
                 Math.hypot(cand.x - cluster.center.x, cand.z - cluster.center.z) >
-                28
+                32
               ) {
                 continue;
               }
@@ -281,13 +313,13 @@ export function addIntersectionDirectionSigns(world) {
               });
               const gy = world.groundAt(cand.x, cand.z);
               sign.position.set(cand.x, Number.isFinite(gy) ? gy : 0.23, cand.z);
-              // Face approaching cyclists toward the intersection
-              sign.rotation.y = Math.atan2(dx * dir, dz * dir);
+              // Face approaching cyclists on the right shoulder
+              sign.rotation.y = Math.atan2(-seg.dx * dir, -seg.dz * dir);
               scene.add(sign);
               world.routeSignPlacements.push({
                 x: cand.x,
                 z: cand.z,
-                heading: Math.atan2(-dx * dir, -dz * dir),
+                heading: Math.atan2(seg.dx * dir, seg.dz * dir),
                 roadId: road.id,
                 roadName: road.tags.name,
                 direction: dir,

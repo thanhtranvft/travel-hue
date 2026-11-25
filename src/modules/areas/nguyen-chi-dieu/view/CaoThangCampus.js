@@ -12,6 +12,7 @@ import {
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { CampusStudents } from "../../../../core/world/CampusStudents.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -329,7 +330,7 @@ export class CaoThangCampus {
     this.world = world;
     this.site = site;
     const cfg = dongDaCampuses["cao-thang"];
-    this.campusRings = [cfg.ring];
+    this.campusRings = [insetRingClearOfRoads(cfg.ring, world?.renderRoads, 2.75)];
     this.buildingIds = cfg.buildings || [
       732304133, 732304134, 732304135, 732304136, 732304137, 732304138,
     ];

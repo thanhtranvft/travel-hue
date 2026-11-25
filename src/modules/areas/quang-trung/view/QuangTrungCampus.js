@@ -21,6 +21,7 @@ import {
   buildNguyenHueCafeStrip,
 } from "./QuangTrungCafes.js";
 import { createTeachersChatGroup } from "./QuangTrungTeachers.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -725,7 +726,7 @@ function createSchoolParkingLot(gate, facingGateYaw) {
     new THREE.BoxGeometry(lotW, 0.032, lotD),
     mat("#494f57", 0.92),
   );
-  asphalt.position.set(lotCenterX, 0.3, lotCenterZ);
+  asphalt.position.set(lotCenterX, 0.304, lotCenterZ);
   asphalt.receiveShadow = true;
   lot.add(asphalt);
 
@@ -1095,7 +1096,7 @@ export class QuangTrungCampus {
     this.world = world;
     this.site = site;
     const cfg = quangTrungCampuses["quang-trung"];
-    this.campusRings = [cfg.ring];
+    this.campusRings = [insetRingClearOfRoads(cfg.ring, world?.renderRoads, 2.25)];
     this.buildingIds = cfg.buildings || [732320417];
     this.gate = { x: gatePlacement.x, z: gatePlacement.z };
     this.facingGateYaw = gatePlacement.heading;
@@ -1226,13 +1227,13 @@ export class QuangTrungCampus {
       }),
     );
     centralLane.name = "quang-trung-central-lane";
-    centralLane.position.set(0, 0.298, -24.6);
+    centralLane.position.set(0, 0.304, -24.6);
     centralLane.receiveShadow = true;
     yard.add(centralLane);
 
     // Crisp curb borders along both edges of the central avenue
     for (const sx of [-3.28, 3.28]) {
-      yard.add(box([0.16, 0.055, laneLen], "#f3f6f9", [sx, 0.305, -24.6]));
+      yard.add(box([0.16, 0.055, laneLen], "#f3f6f9", [sx, 0.31, -24.6]));
     }
 
     // Ceremonial red carpet runner down center avenue approaching stage
@@ -1240,7 +1241,7 @@ export class QuangTrungCampus {
       new THREE.BoxGeometry(2.6, 0.018, 33.5),
       mat("#a72631", 0.9),
     );
-    carpet.position.set(0, 0.318, -32.2);
+    carpet.position.set(0, 0.331, -32.2);
     carpet.receiveShadow = true;
     yard.add(carpet);
 
@@ -1688,7 +1689,7 @@ export class QuangTrungCampus {
       new THREE.BoxGeometry(3.2, 0.06, 5.4),
       mat("#585f66", 0.88),
     );
-    apron.position.set(0.85, 0.27, 0);
+    apron.position.set(0.85, 0.305, 0);
     apron.receiveShadow = true;
     sideGate.add(apron);
 
@@ -1896,6 +1897,11 @@ export class QuangTrungCampus {
     this.cafePolygons.push(roseGarden.buildingPoly);
     this.cafeLotBounds.push(roseGarden.lotBounds);
     this.outsideObstacles.push(...roseGarden.obstacles);
+    if (roseGarden.fenceSegments?.length && this.world?.campusWallSegments) {
+      this.world.campusWallSegments.push(
+        ...roseGarden.fenceSegments.map((s) => ({ ...s, schoolId: "rose-garden-cafe" })),
+      );
+    }
     if (roseGarden.update) this.cafeUpdaters.push(roseGarden.update);
 
     const cafeStrip = buildNguyenHueCafeStrip({

@@ -702,7 +702,7 @@ export function addTruongTienBridge(world, road) {
           side < 0 ? -balconyOuterAt(f.s) : TRUONG_TIEN_WALK_INNER,
         (f) =>
           side < 0 ? -TRUONG_TIEN_WALK_INNER : balconyOuterAt(f.s),
-        TRUONG_TIEN_WALK_LIFT + 0.004,
+        TRUONG_TIEN_WALK_LIFT + 0.02,
         4.2,
       ),
     );

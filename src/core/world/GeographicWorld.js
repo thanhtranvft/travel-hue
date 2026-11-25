@@ -36,7 +36,7 @@ import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
 import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
 import { addIntersectionDirectionSigns } from "./IntersectionSigns.js";
-import { roadsidePoint } from "./streetPlacement.js";
+import { onOtherCarriageway, roadsidePoint } from "./streetPlacement.js";
 import { isFootway, roadWidth } from "./roadProfile.js";
 import {
   BOARDWALK_Y,
@@ -1016,39 +1016,6 @@ export class GeographicWorld {
       }
     }
     this.routeSignPlacements = [];
-    for (const crossing of activeCorridorCrossings) {
-      const road = activeRoads.find((r) => r.id === crossing.mainId);
-      if (!road) continue;
-      const hit = nearestPoint(crossing.point, road.points),
-        a = road.points[hit.index - 1],
-        b = road.points[hit.index];
-      for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
-        const length = Math.hypot(b.x - a.x, b.z - a.z) || 1,
-          dx = (b.x - a.x) / length,
-          dz = (b.z - a.z) / length,
-          offset = roadWidth(road) / 2 + 1.65,
-          sx = crossing.point.x - dx * 18 * direction - dz * offset * direction,
-          sz = crossing.point.z - dz * 18 * direction + dx * offset * direction,
-          sign = routeTrafficSign({
-            variant: "direction-warning",
-            title: `GIAO LỘ · ${crossing.name.toUpperCase()}`,
-            subtitle: `ĐƯỜNG ${(road.tags?.name || "Lê Lợi").toUpperCase()}`,
-            warning: "junction",
-          });
-        sign.position.set(sx, 0.32, sz);
-        sign.rotation.y = Math.atan2(-dx * direction, -dz * direction);
-        scene.add(sign);
-        this.routeSignPlacements?.push({
-          x: sx,
-          z: sz,
-          heading: Math.atan2(dx * direction, dz * direction),
-          roadId: road.id,
-          roadName: road.tags?.name || "Lê Lợi",
-          direction,
-          variant: "direction-warning",
-        });
-      }
-    }
     this.trafficSignalPositions = [];
     for (const source of activeMappedSignals)
       for (const signal of placeTrafficSignal(source, this.renderRoads)) {
@@ -1148,6 +1115,107 @@ export class GeographicWorld {
         this,
         activeFeatures,
       );
+    }
+    for (const crossing of activeCorridorCrossings) {
+      const road = activeRoads.find((r) => r.id === crossing.mainId);
+      if (!road || road.points.length < 2) continue;
+      const hit = nearestPoint(crossing.point, road.points);
+      const a = road.points[hit.index - 1];
+      const b = road.points[hit.index];
+      if (!a || !b) continue;
+      const segLen = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      const hitAlong = hit.t * segLen;
+      const sampleRoad = (signedOffset) => {
+        let idx = hit.index;
+        let along = hitAlong + signedOffset;
+        while (along < 0 && idx > 1) {
+          idx--;
+          const p0 = road.points[idx - 1];
+          const p1 = road.points[idx];
+          along += Math.hypot(p1.x - p0.x, p1.z - p0.z);
+        }
+        while (idx < road.points.length - 1) {
+          const p0 = road.points[idx - 1];
+          const p1 = road.points[idx];
+          const curLen = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+          if (along <= curLen) break;
+          along -= curLen;
+          idx++;
+        }
+        const p0 = road.points[idx - 1];
+        const p1 = road.points[idx];
+        const curLen = Math.hypot(p1.x - p0.x, p1.z - p0.z) || 1;
+        const clampedAlong = Math.max(0, Math.min(curLen, along));
+        return {
+          a: p0,
+          b: p1,
+          along: clampedAlong,
+          dx: (p1.x - p0.x) / curLen,
+          dz: (p1.z - p0.z) / curLen,
+        };
+      };
+      for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
+        let placed = false;
+        for (const alongDist of [18, 14, 22, 10, 26]) {
+          if (placed) break;
+          const seg = sampleRoad(-alongDist * direction);
+          for (const offset of [
+            roadWidth(road) / 2 + 1.65,
+            roadWidth(road) / 2 + 1.95,
+            roadWidth(road) / 2 + 1.3,
+          ]) {
+            const cand = roadsidePoint(seg.a, seg.b, seg.along, offset, direction);
+            if (
+              cand.x < this.bounds.minX + 2 ||
+              cand.x > this.bounds.maxX - 2 ||
+              cand.z < this.bounds.minZ + 2 ||
+              cand.z > this.bounds.maxZ - 2
+            ) {
+              continue;
+            }
+            if (this.riverRings?.some((r) => inside(cand, r))) continue;
+            if (onOtherCarriageway(cand, { id: null }, this.renderRoads, 1.35)) {
+              continue;
+            }
+            if (
+              this.campusWallSegments?.length &&
+              hitsCampusWall(cand, this.nearbyWalls ? this.nearbyWalls(cand.x, cand.z) : this.campusWallSegments, 1.05)
+            ) {
+              continue;
+            }
+            if (
+              this.trafficSignalPositions?.some(
+                (s) => Math.hypot(s.x - cand.x, s.z - cand.z) < 2.8,
+              ) ||
+              this.routeSignPlacements.some(
+                (s) => Math.hypot(s.x - cand.x, s.z - cand.z) < 5,
+              )
+            ) {
+              continue;
+            }
+            const sign = routeTrafficSign({
+              variant: "direction-warning",
+              title: `GIAO LỘ · ${crossing.name.toUpperCase()}`,
+              subtitle: `ĐƯỜNG ${(road.tags?.name || "Lê Lợi").toUpperCase()}`,
+              warning: "junction",
+            });
+            sign.position.set(cand.x, 0.32, cand.z);
+            sign.rotation.y = Math.atan2(-seg.dx * direction, -seg.dz * direction);
+            scene.add(sign);
+            this.routeSignPlacements.push({
+              x: cand.x,
+              z: cand.z,
+              heading: Math.atan2(seg.dx * direction, seg.dz * direction),
+              roadId: road.id,
+              roadName: road.tags?.name || "Lê Lợi",
+              direction,
+              variant: "direction-warning",
+            });
+            placed = true;
+            break;
+          }
+        }
+      }
     }
     addStreetDetails(this, activeFeatures);
     addIntersectionDirectionSigns(this);

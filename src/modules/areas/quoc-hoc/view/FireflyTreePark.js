@@ -370,10 +370,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // 2. CONTINUOUS GRANITE RIVERSIDE PROMENADE & APPROACH WALKWAY FROM HAI BÀ TRƯNG GATE
   const promenade = new THREE.Mesh(
-    new THREE.BoxGeometry(148, 0.24, 4.6),
+    new THREE.BoxGeometry(148, 0.23, 4.6),
     graniteMat,
   );
-  promenade.position.set(144, 0.12, -13.3);
+  promenade.position.set(144, 0.115, -13.3);
   promenade.receiveShadow = true;
 
   // River-side granite edge parapet along promenade
@@ -385,10 +385,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // Approach walkway from Lê Lợi sidewalk directly opposite Trường Hai Bà Trưng gate
   const gateWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(9.2, 0.24, 21),
+    new THREE.BoxGeometry(9.2, 0.205, 21),
     graniteMat,
   );
-  gateWalk.position.set(treeLx, 0.12, 29.2);
+  gateWalk.position.set(treeLx, 0.1025, 29.2);
   gateWalk.receiveShadow = true;
 
   const approachRamp = new THREE.Mesh(
@@ -400,10 +400,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
   // East garden walkway linking Firefly clearing directly to FountainPark West wing (lx=218, lz=6.5)
   const eastLinkWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(218 - (treeLx + 20), 0.24, 3.4),
+    new THREE.BoxGeometry(218 - (treeLx + 20), 0.205, 3.4),
     graniteMat,
   );
-  eastLinkWalk.position.set((treeLx + 20 + 218) / 2, 0.12, 6.5);
+  eastLinkWalk.position.set((treeLx + 20 + 218) / 2, 0.1025, 6.5);
   eastLinkWalk.receiveShadow = true;
 
   // Neat dark-green trimmed boxwood borders flanking the lawn wings
@@ -430,21 +430,21 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     new THREE.CylinderGeometry(clearingRadius + 0.45, clearingRadius + 0.55, 0.22, 48),
     curbMat,
   );
-  clearingRim.position.set(treeLx, 0.15, treeLz);
+  clearingRim.position.set(treeLx, 0.11, treeLz);
   clearingRim.receiveShadow = true;
 
   const clearingDisk = new THREE.Mesh(
     new THREE.CylinderGeometry(clearingRadius, clearingRadius, 0.24, 48),
     sandyMat,
   );
-  clearingDisk.position.set(treeLx, 0.16, treeLz);
+  clearingDisk.position.set(treeLx, 0.12, treeLz);
   clearingDisk.receiveShadow = true;
   group.add(clearingRim, clearingDisk);
 
   // 4. MASSIVE ANCIENT WISHING TREE (CÂY ĐOM ĐÓM / CÂY ĐA ƯỚC NGUYỆN)
   const wishingTree = new THREE.Group();
   wishingTree.name = "cay-dom-dom-wishing-tree";
-  wishingTree.position.set(treeLx, 0.28, treeLz);
+  wishingTree.position.set(treeLx, 0.24, treeLz);
 
   const barkMat = mat("#4b3b2c", 0.94);
   const rootMat = mat("#594635", 0.92);
@@ -622,14 +622,14 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   group.add(wishingTree);
 
   // 7. CARVED STONE MONOLITH SCULPTURES & DECORATIVE CHECK-IN ARCH
-  group.add(createCarvedMonolith(treeLx - 15.5, 0.28, treeLz + 13.5, 0.35, 1.05));
-  group.add(createCarvedMonolith(treeLx + 17.5, 0.28, treeLz + 10.5, -0.45, 0.82));
+  group.add(createCarvedMonolith(treeLx - 15.5, 0.24, treeLz + 13.5, 0.35, 1.05));
+  group.add(createCarvedMonolith(treeLx + 17.5, 0.24, treeLz + 10.5, -0.45, 0.82));
   group.add(createCarvedMonolith(treeLx - 27, 0.13, -4.5, 0.2, 0.92));
   group.add(createWhitePhotoArch(treeLx + 22, 0.14, -5.5, -0.35));
 
   // 8. BENCHES, HERITAGE LAMPS & FRAMING SHADE TREES (central sightline lx 137..173 kept clear!)
   for (const bx of [86, 106, 126, 178, 198, 212]) {
-    group.add(createParkBench(bx, 0.24, -14.2, Math.PI));
+    group.add(createParkBench(bx, 0.23, -14.2, Math.PI));
   }
   for (const [lx, lz] of [
     [92, -12],
@@ -639,7 +639,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     [186, -12],
     [212, -12],
   ]) {
-    group.add(createParkLamp(lx, 0.24, lz));
+    group.add(createParkLamp(lx, 0.23, lz));
   }
 
   const framingTrees = [
@@ -704,12 +704,12 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
       // Sandy circular clearing
       if (Math.hypot(lx - treeLx, lz - treeLz) <= clearingRadius + 0.4) {
-        return 0.28;
+        return 0.24;
       }
       // Riverside promenade, Hai Bà Trưng approach walk & East garden link to Fountain Park
-      if (lz >= -15.6 && lz <= -11.0) return 0.24;
-      if (Math.abs(lx - treeLx) <= 4.7 && lz >= 18 && lz <= 38.8) return 0.24;
-      if (lx >= treeLx + 20 && lx <= 218 && Math.abs(lz - 6.5) <= 2.0) return 0.24;
+      if (lz >= -15.6 && lz <= -11.0) return 0.23;
+      if (Math.abs(lx - treeLx) <= 4.7 && lz >= 18 && lz <= 38.8) return 0.205;
+      if (lx >= treeLx + 20 && lx <= 218 && Math.abs(lz - 6.5) <= 2.0) return 0.205;
       // Approach ramp at Lê Lợi
       if (Math.abs(lx - treeLx) <= 4.8 && lz > 38.8 && lz <= 40.7) {
         const t = (40.7 - lz) / 1.9;

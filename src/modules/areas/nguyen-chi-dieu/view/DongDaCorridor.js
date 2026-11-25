@@ -1137,19 +1137,18 @@ export class DongDaCorridor {
       uni.add(g);
     };
 
-    // Perimeter fence along Đống Đa with 2 gate openings (122.6..129.4 and 193.6..200.4) & Kiệt 36 alley gap (166.5..174.5)
+    // Perimeter fence along Đống Đa with 2 gate openings (122.6..129.4 and 193.6..200.4) & Kiệt 36 alley gap (164.6..178.6)
     buildWallSpan(77.5, 122.6, 11.4);
-    buildWallSpan(129.4, 166.5, 11.4);
-    buildWallSpan(174.5, 193.6, 11.4);
+    buildWallSpan(129.4, 164.6, 11.4);
+    buildWallSpan(178.6, 193.6, 11.4);
     buildWallSpan(200.4, 216.0, 11.4);
 
-    // Side & rear return fences closing off courtyard wings
-    buildWallSpan(77.5, 77.5, 11.4); // no-op safety
+    // Side & rear return fences closing off courtyard wings cleanly clear of Kiệt 36 Đống Đa
     this.wallSegments.push(
-      { a: dongDaToWorld(77.5, 11.4), b: dongDaToWorld(77.5, 58.0) },
-      { a: dongDaToWorld(166.5, 11.4), b: dongDaToWorld(166.5, 58.0) },
-      { a: dongDaToWorld(174.5, 11.4), b: dongDaToWorld(174.5, 56.0) },
-      { a: dongDaToWorld(216.0, 11.4), b: dongDaToWorld(216.0, 56.0) },
+      { a: dongDaToWorld(77.5, 11.4), b: dongDaToWorld(77.5, 58.0), schoolId: "dhkh-hue-rear" },
+      { a: dongDaToWorld(164.6, 11.4), b: dongDaToWorld(170.4, 58.0), schoolId: "dhkh-hue-rear" },
+      { a: dongDaToWorld(178.6, 11.4), b: dongDaToWorld(184.4, 56.0), schoolId: "dhkh-hue-rear" },
+      { a: dongDaToWorld(216.0, 11.4), b: dongDaToWorld(216.0, 56.0), schoolId: "dhkh-hue-rear" },
     );
 
     buildUniGate(
@@ -1168,8 +1167,8 @@ export class DongDaCorridor {
     // Paved interior university courtyards (rideable through both gates!)
     const yardMat = mat("#c6bfb2", 0.86);
     for (const [fMin, fMax, rMin, rMax] of [
-      [78.0, 166.0, 11.6, 56.0],
-      [175.0, 215.5, 11.6, 54.0],
+      [78.0, 164.4, 11.6, 56.0],
+      [178.8, 215.5, 11.6, 54.0],
     ]) {
       const cy = dongDaToWorld((fMin + fMax) / 2, (rMin + rMax) / 2);
       const yard = new THREE.Mesh(
@@ -1201,7 +1200,7 @@ export class DongDaCorridor {
     const academicBlocks = [
       { name: "dhkh-block-north", fMin: 84, fMax: 152, rMin: 23, rMax: 35, h: 14.2, label: "GIẢNG ĐƯỜNG KHOA HỌC TỰ NHIÊN" },
       { name: "dhkh-block-central", fMin: 92, fMax: 156, rMin: 44, rMax: 58, h: 16.5, label: "TRUNG TÂM NGHIÊN CỨU & THƯ VIỆN" },
-      { name: "dhkh-block-south", fMin: 178, fMax: 213, rMin: 24, rMax: 39, h: 13.8, label: "KHOA CÔNG NGHỆ THÔNG TIN & KÝ TÚC" },
+      { name: "dhkh-block-south", fMin: 183, fMax: 213, rMin: 24, rMax: 39, h: 13.8, label: "KHOA CÔNG NGHỆ THÔNG TIN & KÝ TÚC" },
     ];
     for (const blk of academicBlocks) {
       const fLen = blk.fMax - blk.fMin;
@@ -1247,7 +1246,7 @@ export class DongDaCorridor {
       [112, 16.5],
       [140, 16.5],
       [158, 16.5],
-      [184, 16.5],
+      [185, 16.5],
       [208, 16.5],
     ];
     uniTrees.forEach(([tf, tr], idx) => {
@@ -1270,7 +1269,7 @@ export class DongDaCorridor {
       walkers: [
         { gender: "girl", points: [[15.5, 118], [15.5, 146]], speed: 1.28, offset: 0.2 },
         { gender: "boy", points: [[18.5, 152], [18.5, 102]], speed: 1.35, offset: 0.5 },
-        { gender: "girl", points: [[17.0, 180], [17.0, 210]], speed: 1.22, offset: 0.35 },
+        { gender: "girl", points: [[17.0, 183], [17.0, 210]], speed: 1.22, offset: 0.35 },
       ],
       chatSpots: [
         { side: 19.5, fwd: 132, members: ["boy", "girl", "boy"], radius: 0.85 },
@@ -1312,9 +1311,17 @@ export class DongDaCorridor {
     bay.add(apron);
 
     // Dashed white edge line along Đống Đa asphalt border (z_local = +3.75) + angled stall paint lines
-    const lineMat = mat("#f4f2ec", 0.72);
+    const lineMat = new THREE.MeshStandardMaterial({
+      color: "#f4f2ec",
+      roughness: 0.72,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
     for (let lx = -28.0; lx <= 28.0; lx += 3.6) {
-      bay.add(box([2.0, 0.02, 0.14], "#f4f2ec", [lx, 0.09, 3.75]));
+      const dash = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.02, 0.14), lineMat);
+      dash.position.set(lx, 0.09, 3.75);
+      bay.add(dash);
     }
     const carCentersFwd = [-22.5, -13.8, -5.2, 3.6, 12.4, 21.2];
     for (let sx = -26.8; sx <= 26.8; sx += 8.8) {

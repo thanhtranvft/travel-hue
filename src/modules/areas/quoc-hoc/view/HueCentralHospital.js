@@ -347,10 +347,10 @@ export class HueCentralHospital {
     mainWalk.position.set(413.0, 0.11, 142.0);
     mainWalk.receiveShadow = true;
     const crossWalk = new THREE.Mesh(
-      new THREE.BoxGeometry(62.0, 0.18, 3.8),
+      new THREE.BoxGeometry(62.0, 0.17, 3.8),
       concreteMat,
     );
-    crossWalk.position.set(413.0, 0.11, 144.0);
+    crossWalk.position.set(413.0, 0.1, 144.0);
     crossWalk.receiveShadow = true;
     this.group.add(mainWalk, crossWalk);
 

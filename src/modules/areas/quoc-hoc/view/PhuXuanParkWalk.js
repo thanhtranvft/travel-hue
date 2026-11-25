@@ -67,6 +67,7 @@ function buildWalkRibbonGeometry(points, width, y = 0.24) {
   geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
   geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geo.setIndex(indices);
+  applyWorldPlanarUVs(geo, 6.5);
   geo.computeVertexNormals();
   return geo;
 }
@@ -607,10 +608,31 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   ];
 
   // Flatten walk segments for fast distance queries
+  const walkHeights = [
+    0.24,   // 0: riverfront promenade
+    0.24,   // 1: mid-park axial promenade
+    0.23,   // 2: Lê Lợi roadside walk
+    0.218,  // 3: Bay 1 x=396 N-S
+    0.206,  // 4: Bay 1 curved link
+    0.194,  // 5: Bay 1 diag NW
+    0.182,  // 6: Bay 1 diag SW
+    0.170,  // 7: Bay 1 diag SE
+    0.158,  // 8: Bay 1 diag NE
+    0.218,  // 9: Bay 2 x=439.5 N-S
+    0.194,  // 10: Bay 2 center E-W
+    0.182,  // 11: Bay 2 X-diag A
+    0.170,  // 12: Bay 2 X-diag B
+    0.206,  // 13: Bay 2 x=488 N-S
+    0.218,  // 14: Bay 3 South spoke
+    0.218,  // 15: Bay 3 North spoke
+    0.182,  // 16: Bay 3 West spoke
+    0.206,  // 17: Bay 3 East spoke
+  ];
   const walkSegments = [];
-  for (const path of walkPaths) {
+  walkPaths.forEach((path, idx) => {
+    const ribbonY = walkHeights[idx] ?? (0.17 + (idx % 5) * 0.011);
     const ribbonMesh = new THREE.Mesh(
-      buildWalkRibbonGeometry(path.points, path.width, 0.24),
+      buildWalkRibbonGeometry(path.points, path.width, ribbonY),
       graniteMat,
     );
     ribbonMesh.receiveShadow = true;
@@ -622,7 +644,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
         halfW: path.width / 2,
       });
     }
-  }
+  });
 
   // Circular footpath junction resting nodes
   const walkNodes = [
@@ -637,7 +659,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       new THREE.CylinderGeometry(node.radius, node.radius, 0.22, 28),
       graniteMat,
     );
-    disk.position.set(node.lx, 0.132, node.lz);
+    disk.position.set(node.lx, 0.15, node.lz);
     disk.receiveShadow = true;
     group.add(disk);
   }
@@ -657,7 +679,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   ringGeo.rotateX(-Math.PI / 2);
   applyWorldPlanarUVs(ringGeo, 6.5);
   const circleWalk = new THREE.Mesh(ringGeo, graniteMat);
-  circleWalk.position.set(circleGarden.lx, 0.02, circleGarden.lz);
+  circleWalk.position.set(circleGarden.lx, 0.04, circleGarden.lz);
   circleWalk.receiveShadow = true;
   group.add(circleWalk);
 
@@ -666,7 +688,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     new THREE.CylinderGeometry(7.9, 8.1, 0.24, 36),
     lawnMat,
   );
-  innerLawn.position.set(circleGarden.lx, 0.12, circleGarden.lz);
+  innerLawn.position.set(circleGarden.lx, 0.15, circleGarden.lz);
   innerLawn.receiveShadow = true;
   const innerBoxwood = new THREE.Mesh(
     new THREE.TorusGeometry(6.8, 0.48, 8, 36),
@@ -674,12 +696,12 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   );
   innerBoxwood.rotation.x = Math.PI / 2;
   innerBoxwood.scale.set(1, 1, 0.72);
-  innerBoxwood.position.set(circleGarden.lx, 0.34, circleGarden.lz);
+  innerBoxwood.position.set(circleGarden.lx, 0.37, circleGarden.lz);
   innerBoxwood.castShadow = innerBoxwood.receiveShadow = true;
   group.add(
     innerLawn,
     innerBoxwood,
-    createPhuXuanLotusCenterpiece(circleGarden.lx, 0.24, circleGarden.lz, marigoldMat),
+    createPhuXuanLotusCenterpiece(circleGarden.lx, 0.27, circleGarden.lz, marigoldMat),
   );
 
   // Curb transition ramps at Lê Lợi entry points
@@ -941,7 +963,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 366 && lx <= 537.5 && lz >= sampleShoreZ(lx) - 1 && lz <= parkMaxLz(lx);
+      return lx >= 366 && lx <= 537.5 && lz >= sampleShoreZ(lx) - 1 && lz <= parkMaxLz(lx) + 1.5;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);

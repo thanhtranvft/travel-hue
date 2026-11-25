@@ -334,8 +334,8 @@ function redPergola(startX, endX, zCenter) {
   const len = Math.abs(endX - startX);
   const cx = (startX + endX) / 2;
 
-  // Stone colonnade walkway underneath
-  g.add(box([len + 2.4, 0.06, 3.6], "#cec9bd", [cx, 0.21, zCenter]));
+  // Stone colonnade walkway underneath (top 0.255m clear of plaza 0.24m)
+  g.add(box([len + 2.4, 0.06, 3.6], "#cec9bd", [cx, 0.225, zCenter]));
 
   const cols = 7;
   const redMat = mat("#9e2d25", 0.48, 0.08);

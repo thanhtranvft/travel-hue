@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {

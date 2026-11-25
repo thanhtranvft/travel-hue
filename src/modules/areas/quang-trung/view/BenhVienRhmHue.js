@@ -4,11 +4,14 @@ import {
   getById,
   getPointsOf,
 } from "../../../../core/shared/geography/activeGeography.js";
-import { inside } from "../../../../core/shared/geography/geometry.js";
+import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
-import { filterSegmentsClearOfRoads } from "../../../../core/world/streetPlacement.js";
+import {
+  filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
+} from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -177,8 +180,9 @@ export class BenhVienRhmHue {
     this.world = world;
     this.site = site;
     const cfg = quangTrungCampuses["benh-vien-rhm-hue"];
-    this.ring = cfg.ring;
-    this.entrance = cfg.entrance;
+    this.ring = insetRingClearOfRoads(cfg.ring, world?.renderRoads, 2.25);
+    const snappedEntrance = cfg.entrance ? nearestPoint(cfg.entrance, this.ring) : null;
+    this.entrance = snappedEntrance ? { x: snappedEntrance.x, z: snappedEntrance.z } : cfg.entrance;
     this.buildingIds = cfg.buildings || [732309927];
     this.roadYaw = quangTrungCampuses.gateHeading;
     this.fwdVec = {
@@ -197,6 +201,12 @@ export class BenhVienRhmHue {
     this.buildGrounds();
     this.buildPerimeterAndMainGate();
     this.buildMainHospital();
+
+    if (world?.campusWallSegments && this.fenceSegments.length) {
+      world.campusWallSegments.push(
+        ...this.fenceSegments.map((s) => ({ ...s, schoolId: "benh-vien-rhm-hue" })),
+      );
+    }
 
     world.scene.add(this.group);
   }
@@ -248,10 +258,16 @@ export class BenhVienRhmHue {
     // Drop-off circular turn lane stripe in front of portico (kept completely clear for vehicles/bikes)
     const laneArc = new THREE.Mesh(
       new THREE.RingGeometry(4.5, 4.68, 28),
-      mat("#f5f5ef", 0.9),
+      new THREE.MeshStandardMaterial({
+        color: "#f5f5ef",
+        roughness: 0.9,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      }),
     );
     laneArc.rotation.x = -Math.PI / 2;
-    laneArc.position.set(0, 0.295, -7.2);
+    laneArc.position.set(0, 0.30, -7.2);
     foreGroup.add(laneArc);
 
     // Ornamental shade trees tucked along far inner corners (well away from gate opening and road curbs)
@@ -296,7 +312,7 @@ export class BenhVienRhmHue {
     const safeSpans = filterSegmentsClearOfRoads(
       rawSpans,
       this.world?.renderRoads,
-      0.65,
+      2.15,
     );
     for (const seg of safeSpans) {
       this.fenceSegments.push(seg);

@@ -609,20 +609,23 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     { a: { lx: 345, lz: 37.6 }, b: { lx: 366, lz: 22.0 }, width: 2.8 },
     { a: { lx: 348, lz: -14.2 }, b: { lx: 366, lz: cz }, width: 2.8 },
   ];
-  const buildWingRibbon = (a, b, width) => {
+  const buildWingRibbon = (a, b, width, tierIdx) => {
     const dx = b.lx - a.lx;
     const dz = b.lz - a.lz;
     const len = Math.hypot(dx, dz) || 1;
+    const topY = 0.222 - tierIdx * 0.01;
     const mesh = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.24, len + 0.6),
       graniteMat,
     );
-    mesh.position.set((a.lx + b.lx) / 2, 0.1, (a.lz + b.lz) / 2);
+    mesh.position.set((a.lx + b.lx) / 2, topY - 0.12, (a.lz + b.lz) / 2);
     mesh.rotation.y = Math.atan2(dx, dz);
     mesh.receiveShadow = true;
     return mesh;
   };
-  wingWalkSegments.forEach((seg) => group.add(buildWingRibbon(seg.a, seg.b, seg.width)));
+  wingWalkSegments.forEach((seg, idx) =>
+    group.add(buildWingRibbon(seg.a, seg.b, seg.width, idx < 4 ? idx : idx - 4)),
+  );
 
   // Boxwood-trimmed wing parterres & rounded clipped shrubs on left & right wings
   const buildWingHedgeBed = (pts, withMarigold = false) => {
