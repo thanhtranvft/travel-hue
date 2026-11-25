@@ -725,7 +725,12 @@ export class Room {
         (!other.paused && now - other.activeAt > 2000)
       )
         continue;
+      const pActivity = cleanStance(p.stance, p.speed);
+      const oActivity = cleanStance(other.stance, other.speed);
       if (
+        pActivity === "fish" ||
+        oActivity === "fish" ||
+        (pActivity === "boat") !== (oActivity === "boat") ||
         Math.abs(p.speed) + Math.abs(other.speed) < 0.5 ||
         !sweptContact(old, p, other)
       )

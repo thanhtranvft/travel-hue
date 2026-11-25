@@ -40,6 +40,7 @@
   padding: 12px 14px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(10px);
+  pointer-events: auto;
 }
 
 #river-rental-prompt {
@@ -96,6 +97,7 @@
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.12s ease, opacity 0.12s ease, background 0.15s ease;
 }
 
@@ -236,10 +238,31 @@
   color: #cde0dc;
 }
 
-@media (max-width: 768px) {
+@media (pointer: coarse), (max-width: 768px), (max-height: 500px) {
   #river-rental-prompt,
   #fishing-minigame,
   #boat-controls-bar {
-    bottom: 130px;
+    bottom: max(160px, calc(env(safe-area-inset-bottom) + 152px));
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  #river-rental-prompt,
+  #fishing-minigame,
+  #boat-controls-bar {
+    bottom: max(82px, calc(env(safe-area-inset-bottom) + 74px));
+    width: min(380px, calc(100vw - 290px));
+    padding: 8px 11px;
+  }
+
+  .river-prompt-actions,
+  .boat-bar-actions,
+  .fishing-actions {
+    margin-top: 6px;
+  }
+
+  .fishing-feedback {
+    margin: 4px 0 6px;
+    font-size: 11px;
   }
 }

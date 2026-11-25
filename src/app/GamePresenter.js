@@ -184,7 +184,9 @@ export class GamePresenter {
       }
       if (key === "r") this.reset();
       if (key === "g") this.riverActivities?.handleKeyG?.();
-      if (e.code === "Space" || key === " ") this.riverActivities?.handleSpaceAction?.();
+      if (e.code === "Space" || key === " ") {
+        if (this.riverActivities?.handleSpaceAction?.()) e.preventDefault();
+      }
       if (key === "escape") this.riverActivities?.handleEscape?.();
       if (key === "1") this.useCharm("10");
       if (key === "2") this.useCharm("20");

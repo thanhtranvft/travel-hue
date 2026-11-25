@@ -739,7 +739,7 @@ export function createBiaQuocHocPark(world, site, heading) {
       ctx.font = "bold 22px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("CHO THUÊ CẦN CÂU", w / 2, h / 2);
+      ctx.fillText?.("CHO THUÊ CẦN CÂU", w / 2, h / 2);
     });
     const signBoard = new THREE.Mesh(
       new THREE.PlaneGeometry(1.75, 0.44),

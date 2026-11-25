@@ -990,7 +990,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       ctx.font = "bold 20px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("ĐẠP VỊT SÔNG HƯƠNG", w / 2, h / 2);
+      ctx.fillText?.("ĐẠP VỊT SÔNG HƯƠNG", w / 2, h / 2);
     });
     const signBoard = new THREE.Mesh(
       new THREE.PlaneGeometry(1.72, 0.44),

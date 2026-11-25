@@ -1,4 +1,4 @@
-import { handleRiverRewardAction } from "../../../server/riverActivity.js";
+import { handleRiverRewardAction } from "../../../../server/riverActivity.js";
 
 export const freeRoamMode = {
   id: "free-roam",

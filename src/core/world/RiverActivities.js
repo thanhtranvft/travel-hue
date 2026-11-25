@@ -1,5 +1,6 @@
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { cleanBoatIndex } from "../network/protocol.js";
+import { bindMultiTouchAction } from "../input/TouchControls.js";
 
 export const FISH_SPECIES = [
   {
@@ -337,12 +338,12 @@ export class RiverActivities {
       boatQuickExitBtn: boatEl.querySelector("#boat-quick-exit-btn"),
     };
 
-    this.ui.acceptBtn.addEventListener("click", () => this.acceptPendingPrompt());
-    this.ui.declineBtn.addEventListener("click", () => this.declinePendingPrompt());
-    this.ui.actionBtn.addEventListener("click", () => this.handleSpaceAction());
-    this.ui.exitFishingBtn.addEventListener("click", () => this.exitFishing());
-    this.ui.boatReturnBtn.addEventListener("click", () => this.exitBoat(true));
-    this.ui.boatQuickExitBtn.addEventListener("click", () => this.exitBoat(false));
+    bindMultiTouchAction(this.ui.acceptBtn, () => this.acceptPendingPrompt());
+    bindMultiTouchAction(this.ui.declineBtn, () => this.declinePendingPrompt());
+    bindMultiTouchAction(this.ui.actionBtn, () => this.handleSpaceAction());
+    bindMultiTouchAction(this.ui.exitFishingBtn, () => this.exitFishing());
+    bindMultiTouchAction(this.ui.boatReturnBtn, () => this.exitBoat(true));
+    bindMultiTouchAction(this.ui.boatQuickExitBtn, () => this.exitBoat(false));
   }
 
   getOccupiedBoatSet() {
@@ -536,7 +537,7 @@ export class RiverActivities {
     bike.rotation.y = seat.heading;
     bike.motion.speed = 0;
     bike.motion.lean = 0;
-    bike.setActivityStance("fish", { fishState: "idle" });
+    bike.setActivityStance("fish", { fishState: { phase: this.fishing.phase } });
     this.game.cameraYaw = seat.heading;
     this.game.input?.reset?.();
     this.game.syncMode?.();
@@ -745,12 +746,8 @@ export class RiverActivities {
         bike.rotation.z = 0;
       }
       bike.motion.speed = 0;
-      const fishState =
-        this.fishing.phase === "reeling" || this.fishing.phase === "bite"
-          ? "reel"
-          : this.fishing.phase === "waiting"
-            ? "wait"
-            : "idle";
+      const fishState = { phase: this.fishing.phase };
+      bike.fishState = fishState;
       bike.update(dt, 0, 0, false, {
         stance: "fish",
         poseOnly: true,

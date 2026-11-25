@@ -1179,7 +1179,8 @@ export function animateChibiActor(
   if (char.fishingRod?.group) {
     char.fishingRod.group.visible = isFish;
     if (isFish) {
-      const fPhase = fishState?.phase || "ready";
+      const fPhase =
+        typeof fishState === "string" ? fishState : fishState?.phase || "ready";
       const biteJitter =
         fPhase === "bite"
           ? Math.sin(idleTime * 28) * 0.08
@@ -1233,7 +1234,8 @@ export function animateChibiActor(
 
     if (isFish) {
       const breathe = Math.sin(idleTime * 2.1);
-      const fPhase = fishState?.phase || "ready";
+      const fPhase =
+        typeof fishState === "string" ? fishState : fishState?.phase || "ready";
       const yank =
         fPhase === "reeling"
           ? Math.sin(idleTime * 10) * 0.18
@@ -1392,8 +1394,14 @@ export function animateChibiActor(
   }
 
   if (isFish) {
-    const fPhase = fishState?.phase || "ready";
-    const yank = fPhase === "reeling" ? Math.sin(idleTime * 10) * 0.16 : 0;
+    const fPhase =
+      typeof fishState === "string" ? fishState : fishState?.phase || "ready";
+    const yank =
+      fPhase === "reeling"
+        ? Math.sin(idleTime * 10) * 0.16
+        : fPhase === "caught"
+          ? -0.22
+          : 0;
     char.bodyPivot.position.set(0, 0.34, -0.02);
     char.bodyPivot.rotation.set(0, 0, 0);
     char.spinePivot.rotation.set(-0.82, 0, 0);
