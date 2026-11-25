@@ -14,6 +14,7 @@ import {
   createManicuredLawnMaterial,
 } from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
+import { filterSegmentsClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -593,59 +594,59 @@ export class DongChuaCuuTheChurch {
     const tuVienTarget = this.toWorld(36.0, -24.0);
     const eastPlazaTarget = this.toWorld(168.0, -22.5);
     const gateDefs = [
-      // 1) Main Tu viện front gate along north edge (v10 -> v11/v0)
+      // 1) Main Tu viện front gate along north edge (v12 -> v13/v0)
       {
         name: "cong-chinh-tu-vien",
-        edgeIndex: 11,
-        t: projT(tuVienTarget, r[10], r[11]),
+        edgeIndex: 13,
+        t: projT(tuVienTarget, r[12], r[13]),
         gap: 10.0,
         isMain: true,
       },
       // 2) Cổng phụ quảng trường Basilica / Tượng Chúa (Nguyễn Huệ đông, đối diện Công viên Dự án)
       {
         name: "cong-phu-nguyen-hue-dong",
-        edgeIndex: 11,
-        t: projT(eastPlazaTarget, r[10], r[11]),
+        edgeIndex: 13,
+        t: projT(eastPlazaTarget, r[12], r[13]),
         gap: 8.6,
         isMain: false,
       },
-      // 3) Cổng phụ Ngã 3 Nguyễn Huệ × Nguyễn Khuyến (edge 10: v9 -> v10)
+      // 3) Cổng phụ Ngã 3 Nguyễn Huệ × Nguyễn Khuyến (edge 12: v11 -> v12)
       {
         name: "cong-phu-nga-ba-nguyen-khuyen",
-        edgeIndex: 10,
+        edgeIndex: 12,
         t: 0.5,
         gap: 5.4,
         isMain: false,
       },
-      // 4) Cổng phụ đường Nguyễn Khuyến phía Đông (edge 9: v8 -> v9)
+      // 4) Cổng phụ đường Nguyễn Khuyến phía Đông (edge 11: v10 -> v11)
       {
         name: "cong-phu-nguyen-khuyen-1",
-        edgeIndex: 9,
+        edgeIndex: 11,
         t: 0.72,
         gap: 7.4,
         isMain: false,
       },
-      // 5) Cổng phụ đường Nguyễn Khuyến phía Nam (edge 9: v8 -> v9)
+      // 5) Cổng phụ đường Nguyễn Khuyến phía Nam (edge 11: v10 -> v11)
       {
         name: "cong-phu-nguyen-khuyen-2",
-        edgeIndex: 9,
+        edgeIndex: 11,
         t: 0.32,
         gap: 7.4,
         isMain: false,
       },
-      // 6) Cổng phụ hẻm phía Nam (edge 8: v7 -> v8)
+      // 6) Cổng phụ hẻm phía Nam (edge 10: v9 -> v10)
       {
         name: "cong-phu-hem-nam",
-        edgeIndex: 8,
+        edgeIndex: 10,
         t: 0.5,
         gap: 5.6,
         isMain: false,
       },
-      // 7) Cổng phụ tuyến đường phía Tây (edge 1: v0 -> v1)
+      // 7) Cổng phụ tuyến đường phía Tây (edge 3: v2 -> v3)
       {
         name: "cong-phu-duong-tay",
-        edgeIndex: 1,
-        t: 0.48,
+        edgeIndex: 3,
+        t: 0.5,
         gap: 6.2,
         isMain: false,
       },
@@ -732,34 +733,41 @@ export class DongChuaCuuTheChurch {
       for (let k = 0; k < cuts.length; k += 2) {
         const startDist = cuts[k];
         const endDist = cuts[k + 1];
-        const spanLen = endDist - startDist;
-        if (spanLen < 0.35) continue;
-        const pA = lerpPt(a, b, startDist / len);
-        const pB = lerpPt(a, b, endDist / len);
-        this.fenceSegments.push({ a: pA, b: pB });
-
-        const mx = (pA.x + pB.x) / 2;
-        const mz = (pA.z + pB.z) / 2;
-        const panel = new THREE.Mesh(
-          new THREE.BoxGeometry(spanLen, 2.05, 0.22),
-          fenceMat,
+        const rawSpanLen = endDist - startDist;
+        if (rawSpanLen < 0.35) continue;
+        const safeSpans = filterSegmentsClearOfRoads(
+          [{ a: lerpPt(a, b, startDist / len), b: lerpPt(a, b, endDist / len) }],
+          this.world?.renderRoads,
+          0.65,
         );
-        panel.position.set(mx, 1.2, mz);
-        panel.rotation.y = yaw;
-        panel.castShadow = true;
-        fenceGroup.add(panel);
+        for (const { a: pA, b: pB } of safeSpans) {
+          const spanLen = Math.hypot(pB.x - pA.x, pB.z - pA.z);
+          if (spanLen < 0.35) continue;
+          this.fenceSegments.push({ a: pA, b: pB });
 
-        const posts = Math.max(1, Math.round(spanLen / 7.5));
-        for (let p = 0; p <= posts; p++) {
-          const pp = lerpPt(pA, pB, p / posts);
-          const pier = new THREE.Mesh(new THREE.BoxGeometry(0.46, 2.18, 0.46), stoneMat);
-          pier.position.set(pp.x, 1.25, pp.z);
-          pier.rotation.y = yaw;
-          pier.castShadow = true;
-          const cap = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.24, 4), capMat);
-          cap.position.set(pp.x, 2.46, pp.z);
-          cap.rotation.y = yaw + Math.PI / 4;
-          fenceGroup.add(pier, cap);
+          const mx = (pA.x + pB.x) / 2;
+          const mz = (pA.z + pB.z) / 2;
+          const panel = new THREE.Mesh(
+            new THREE.BoxGeometry(spanLen, 2.05, 0.22),
+            fenceMat,
+          );
+          panel.position.set(mx, 1.2, mz);
+          panel.rotation.y = yaw;
+          panel.castShadow = true;
+          fenceGroup.add(panel);
+
+          const posts = Math.max(1, Math.round(spanLen / 7.5));
+          for (let p = 0; p <= posts; p++) {
+            const pp = lerpPt(pA, pB, p / posts);
+            const pier = new THREE.Mesh(new THREE.BoxGeometry(0.46, 2.18, 0.46), stoneMat);
+            pier.position.set(pp.x, 1.25, pp.z);
+            pier.rotation.y = yaw;
+            pier.castShadow = true;
+            const cap = new THREE.Mesh(new THREE.ConeGeometry(0.36, 0.24, 4), capMat);
+            cap.position.set(pp.x, 2.46, pp.z);
+            cap.rotation.y = yaw + Math.PI / 4;
+            fenceGroup.add(pier, cap);
+          }
         }
       }
     }

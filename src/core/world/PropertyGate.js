@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { box } from "../shared/architecture/shared.js";
-import { postedBoard } from "./TrafficBoard.js";
+import { civicPlaqueBoard } from "./TrafficBoard.js";
 export function propertyGateModel(property, heading) {
   const group = new THREE.Group(),
     width = property.entranceWidth,
@@ -11,8 +11,8 @@ export function propertyGateModel(property, heading) {
       box([0.52, 0.18, 0.52], "#eee9db", [(side * width) / 2, 3.35, 0]),
     );
   group.add(box([width + 0.4, 0.2, 0.3], color, [0, 3.6, 0]));
-  const sign = postedBoard(property.title, "Cổng vào · Lê Lợi", 2.6);
-  sign.position.set(width / 2 + 1.7, 0, 0.15);
+  const sign = civicPlaqueBoard(property.title, "Cổng vào · Lê Lợi", 1.5);
+  sign.position.set(width / 2 + 1.25, 0, 0.15);
   group.add(sign);
   group.position.set(property.gate.x, 0.17, property.gate.z);
   group.rotation.y = heading;

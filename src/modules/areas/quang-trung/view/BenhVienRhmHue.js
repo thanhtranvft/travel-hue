@@ -8,6 +8,7 @@ import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnMaterial } from "../../../../core/world/turfTextures.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
+import { filterSegmentsClearOfRoads } from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -236,9 +237,9 @@ export class BenhVienRhmHue {
 
     // Landscaped medical courtyard lawns inside fence flanking wide clear main driveway
     const lawnMat = createManicuredLawnMaterial(4, 4, { striped: false, rich: true });
-    for (const sx of [-11.5, 11.5]) {
-      const curb = box([6.6, 0.34, 0.38], "#dfe5e6", [sx, 0.35, -1.6]);
-      const planter = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.18, 2.8), lawnMat);
+    for (const sx of [-8.8, 8.8]) {
+      const curb = box([4.8, 0.34, 0.38], "#dfe5e6", [sx, 0.35, -1.6]);
+      const planter = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.18, 2.8), lawnMat);
       planter.position.set(sx, 0.28, -3.2);
       foreGroup.add(curb, planter);
       this.obstacles.push({ side: sx, fwd: 3.0, radius: 1.8 });
@@ -253,12 +254,12 @@ export class BenhVienRhmHue {
     laneArc.position.set(0, 0.295, -7.2);
     foreGroup.add(laneArc);
 
-    // Ornamental shade trees tucked along far inner corners (well away from gate opening)
+    // Ornamental shade trees tucked along far inner corners (well away from gate opening and road curbs)
     for (const [tx, tf] of [
-      [-13.5, 8.2],
-      [13.5, 8.2],
-      [-13.8, 39.5],
-      [12.5, 39.5],
+      [-11.2, 8.2],
+      [10.6, 8.2],
+      [-12.6, 39.5],
+      [10.8, 39.5],
     ]) {
       foreGroup.add(createCompoundTree(tx, 0.28, -tf, 0.95));
       this.obstacles.push({ side: tx, fwd: tf, radius: 1.05 });
@@ -281,18 +282,27 @@ export class BenhVienRhmHue {
     fenceGroup.name = "benh-vien-rhm-hue-fence";
 
     const gateWidth = 11.6;
+    const rawSpans = [];
     for (let i = 1; i < this.ring.length; i++) {
-      const spans = cutRingGateSpans(
-        this.ring[i - 1],
-        this.ring[i],
-        this.entrance,
-        gateWidth,
+      rawSpans.push(
+        ...cutRingGateSpans(
+          this.ring[i - 1],
+          this.ring[i],
+          this.entrance,
+          gateWidth,
+        ),
       );
-      for (const seg of spans) {
-        this.fenceSegments.push(seg);
-        const dx = seg.b.x - seg.a.x;
-        const dz = seg.b.z - seg.a.z;
-        const len = Math.hypot(dx, dz);
+    }
+    const safeSpans = filterSegmentsClearOfRoads(
+      rawSpans,
+      this.world?.renderRoads,
+      0.65,
+    );
+    for (const seg of safeSpans) {
+      this.fenceSegments.push(seg);
+      const dx = seg.b.x - seg.a.x;
+      const dz = seg.b.z - seg.a.z;
+      const len = Math.hypot(dx, dz);
         if (len < 0.25) continue;
         const yaw = Math.atan2(-dz, dx);
         const mx = (seg.a.x + seg.b.x) / 2;
@@ -325,8 +335,7 @@ export class BenhVienRhmHue {
           );
           cap.position.set(px, 0.24 + 2.2, pz);
           cap.rotation.y = yaw;
-          fenceGroup.add(post, cap);
-        }
+        fenceGroup.add(post, cap);
       }
     }
     this.group.add(fenceGroup);

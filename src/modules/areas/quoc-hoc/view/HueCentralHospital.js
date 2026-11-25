@@ -4,6 +4,7 @@ import { inside, nearestPoint } from "../../../../core/shared/geography/geometry
 import { getById, getPointsOf, getRingsOf } from "../../../../core/shared/geography/activeGeography.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
+import { segmentHitsCarriageway } from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -654,7 +655,10 @@ export class HueCentralHospital {
             };
             const mid = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
 
-            if (this.world.buildingPolygons?.some((bp) => inside(mid, bp.points))) {
+            if (
+              segmentHitsCarriageway(a, b, this.world.renderRoads, 0.75, 0.5) ||
+              this.world.buildingPolygons?.some((bp) => inside(mid, bp.points))
+            ) {
               continue;
             }
             this.world.campusWallSegments.push({ a, b, schoolId: "hospital" });

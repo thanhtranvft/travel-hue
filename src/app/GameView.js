@@ -128,9 +128,10 @@ export class GameView {
       }
     }
     const nearKey = near ? near.id || near.title : null;
-    const cultureOnDemand = Boolean(document.body.dataset.tagStage);
+    const cultureOnDemand = Boolean(document.body?.dataset?.tagStage);
     const cultureOpen =
-      cultureOnDemand && document.body.classList.contains("tag-culture-open");
+      cultureOnDemand &&
+      Boolean(document.body?.classList?.contains?.("tag-culture-open"));
     const cultureButton = document.querySelector("#tc-culture-toggle");
     if (cultureButton) {
       cultureButton.disabled = !near;
@@ -146,15 +147,15 @@ export class GameView {
         this.landmarkDismissAt = now + 4200;
         game.hud.card.querySelector("h2").textContent = near.title;
         game.hud.card.querySelector("p").textContent = near.description;
-        game.hud.card.classList.toggle(
-          "visible",
-          !cultureOnDemand || cultureOpen,
-        );
+        game.hud.card.classList[
+          !cultureOnDemand || cultureOpen ? "add" : "remove"
+        ]("visible");
       } else if (now >= this.landmarkDismissAt) {
         game.hud.card.classList.remove("visible");
       }
-      if (cultureOnDemand)
-        game.hud.card.classList.toggle("visible", cultureOpen);
+      if (cultureOnDemand) {
+        game.hud.card.classList[cultureOpen ? "add" : "remove"]("visible");
+      }
     } else {
       this.activeLandmarkKey = null;
       this.lastShownLandmarkKey = null;

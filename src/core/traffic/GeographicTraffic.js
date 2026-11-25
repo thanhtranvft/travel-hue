@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { TrafficSystem } from "./TrafficSystem.js";
 import { getMainRoads, getRoads } from "../shared/geography/activeGeography.js";
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
-import { animateWalker, makePerson } from "../world/People.js";
+import { animateWalker, makeSocietyPerson } from "../world/People.js";
 import { roadWidth } from "../world/roadProfile.js";
 import {
   TRUONG_TIEN_ID,
@@ -133,6 +133,14 @@ export function stitchBridgeRoutes(roads, world) {
 export class GeographicTraffic extends TrafficSystem {
   constructor(scene, world) {
     super(scene, world);
+    const scooterSpecs = [
+      { color: "#65878a", variant: "tay-ga", riderRole: "woman", riderShirt: "#e6a3b5", hasPassenger: false },
+      { color: "#a64d42", variant: "xe-so", riderRole: "man", riderShirt: "#466885", hasPassenger: true, passengerRole: "woman" },
+      { color: "#d5ccb8", variant: "tay-ga", riderRole: "woman", riderShirt: "#7aa899", hasPassenger: true, passengerRole: "girl" },
+      { color: "#3d556b", variant: "shipper", riderRole: "man", riderShirt: "#2c8a56", boxColor: "#228b54" },
+      { color: "#c26c48", variant: "xe-so", riderRole: "man", riderShirt: "#e4dec9", hasPassenger: false },
+      { color: "#5e8378", variant: "tay-ga", riderRole: "woman", riderShirt: "#f0c869", hasPassenger: true, passengerRole: "boy" },
+    ];
     for (let i = 0; i < 12; i++) {
       this.add(
         "car",
@@ -145,7 +153,7 @@ export class GeographicTraffic extends TrafficSystem {
       );
       this.add(
         "scooter",
-        scooter(["#65878a", "#a66f57", "#d0c398"][i % 3]),
+        scooter(scooterSpecs[i % scooterSpecs.length]),
         { x: 0, z: 0 },
         0,
         5.5 + (i % 2),
@@ -160,10 +168,10 @@ export class GeographicTraffic extends TrafficSystem {
     for (let i = 0; i < 38; i++)
       this.add(
         "pedestrian",
-        makePerson(["#b5855c", "#647e9a", "#af7693", "#779958"][i % 4]),
+        makeSocietyPerson(i),
         { x: 0, z: 0 },
         0,
-        0.65 + (i % 4) * 0.15,
+        0.65 + (i % 4) * 0.14,
         "x",
         1,
       );

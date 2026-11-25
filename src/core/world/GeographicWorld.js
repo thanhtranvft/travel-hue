@@ -50,7 +50,7 @@ import {
 import { LivingGrass, riverMaterial } from "./LivingLandscape.js";
 import { placeTrafficSignal } from "./TrafficSignalPlacement.js";
 import { PedestrianLife } from "./PedestrianLife.js";
-import { postedBoard, mountSignPanel } from "./TrafficBoard.js";
+import { routeTrafficSign, civicPlaqueBoard, mountSignPanel } from "./TrafficBoard.js";
 import { createSchoolGate } from "../../modules/areas/quoc-hoc/view/SchoolGates.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
 import {
@@ -155,7 +155,7 @@ function isQuangTrungEastPrecinctBuilding(center) {
   const dz = center.z - gate.z;
   const side = dx * rx + dz * rz;
   const fwd = dx * fx + dz * fz;
-  return side >= 37.5 && side <= 223.5 && fwd >= -2.5 && fwd <= 68.0;
+  return side >= 37.5 && side <= 212.5 && fwd >= -2.5 && fwd <= 68.0;
 }
 
 export function ribbon(points, width, height = 0.23) {
@@ -628,7 +628,12 @@ export class GeographicWorld {
               gap: 5.4,
             });
           }
-          const walls = createCampusWalls(site, gate.placement, extraGates);
+          const walls = createCampusWalls(
+            site,
+            gate.placement,
+            extraGates,
+            this.renderRoads,
+          );
           if (walls) {
             scene.add(walls.object);
             this.cameraObstacles.push(...walls.object.children);
@@ -680,7 +685,7 @@ export class GeographicWorld {
       ) {
         const frontage = buildingFrontage(site.sign, this.renderRoads);
         if (frontage) {
-          const post = postedBoard(site.title, site.address, 2.8);
+          const post = civicPlaqueBoard(site.title, site.address, 1.5);
           post.position.set(
             frontage.x,
             this.groundAt(frontage.x, frontage.z),
@@ -974,19 +979,31 @@ export class GeographicWorld {
       const hit = nearestPoint(crossing.point, road.points),
         a = road.points[hit.index - 1],
         b = road.points[hit.index];
-      for (const direction of [1, -1]) {
-        const length = Math.hypot(b.x - a.x, b.z - a.z),
+      for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
+        const length = Math.hypot(b.x - a.x, b.z - a.z) || 1,
           dx = (b.x - a.x) / length,
           dz = (b.z - a.z) / length,
-          offset = roadWidth(road) / 2 + 3,
-          sign = postedBoard(`${road.tags?.name || "Lê Lợi"} × ${crossing.name}`, "Giao lộ", 3.6);
-        sign.position.set(
-          crossing.point.x - dx * 18 * direction - dz * offset * direction,
-          0.32,
-          crossing.point.z - dz * 18 * direction + dx * offset * direction,
-        );
+          offset = roadWidth(road) / 2 + 1.65,
+          sx = crossing.point.x - dx * 18 * direction - dz * offset * direction,
+          sz = crossing.point.z - dz * 18 * direction + dx * offset * direction,
+          sign = routeTrafficSign({
+            variant: "direction-warning",
+            title: `GIAO LỘ · ${crossing.name.toUpperCase()}`,
+            subtitle: `ĐƯỜNG ${(road.tags?.name || "Lê Lợi").toUpperCase()}`,
+            warning: "junction",
+          });
+        sign.position.set(sx, 0.32, sz);
         sign.rotation.y = Math.atan2(-dx * direction, -dz * direction);
         scene.add(sign);
+        this.routeSignPlacements?.push({
+          x: sx,
+          z: sz,
+          heading: Math.atan2(dx * direction, dz * direction),
+          roadId: road.id,
+          roadName: road.tags?.name || "Lê Lợi",
+          direction,
+          variant: "direction-warning",
+        });
       }
     }
     this.trafficSignalPositions = [];

@@ -4,7 +4,7 @@ import data from "../../data/world/property-enclosures.json" with { type: "json"
 import { project, inside, nearestPoint } from "../shared/geography/geometry.js";
 import { campusWallSegments } from "../shared/architecture/CampusWalls.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
-import { onOtherCarriageway } from "./streetPlacement.js";
+import { segmentHitsCarriageway } from "./streetPlacement.js";
 import {
   CITParking,
   parkingGate,
@@ -102,12 +102,7 @@ export class PropertyEnclosures {
                   g.id !== property.id &&
                   nearestPoint(g.point, [a, b]).distance < g.radius,
               ) ||
-              onOtherCarriageway(
-                middle,
-                { id: null },
-                world.renderRoads,
-                0.65,
-              ) ||
+              segmentHitsCarriageway(a, b, world.renderRoads, 0.75, 0.5) ||
               world.buildingPolygons.some((p) => inside(middle, p.points))
             ) {
               this.stats.omittedAtRoadOrBuilding++;

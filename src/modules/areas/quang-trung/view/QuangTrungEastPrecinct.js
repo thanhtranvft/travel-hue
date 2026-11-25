@@ -3,6 +3,8 @@ import quangTrungCampuses from "../data/campuses.json" with { type: "json" };
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
+import { filterSegmentsClearOfRoads } from "../../../../core/world/streetPlacement.js";
+import { makePerson, animateWalker } from "../../../../core/world/People.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -409,51 +411,40 @@ function createAmbulance(yaw = 0) {
   return g;
 }
 
-function createParkVisitor({ shirt = "#4b6982", pants = "#25292e", seated = false } = {}) {
-  const g = new THREE.Group();
-  const skin = mat("#e3ba98", 0.75);
-  const top = mat(shirt, 0.82);
-  const bot = mat(pants, 0.85);
-  const hair = mat("#231e1c", 0.85);
-
-  if (seated) {
-    for (const sx of [-0.08, 0.08]) {
-      const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.34, 4, 8), bot);
-      leg.rotation.x = Math.PI * 0.45;
-      leg.position.set(sx, 0.08, 0.18);
-      g.add(leg);
-    }
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.135, 0.28, 4, 8), top);
-    torso.position.set(0, 0.28, 0);
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.115, 12, 10), skin);
-    head.position.set(0, 0.55, 0);
-    const cap = new THREE.Mesh(
-      new THREE.SphereGeometry(0.12, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55),
-      hair,
-    );
-    cap.position.set(0, 0.57, -0.01);
-    g.add(torso, head, cap);
-    return g;
-  }
-
-  const legL = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.46, 4, 8), bot);
-  legL.position.set(-0.08, 0.32, 0);
-  const legR = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.46, 4, 8), bot);
-  legR.position.set(0.08, 0.32, 0);
-  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.36, 4, 8), top);
-  torso.position.set(0, 0.92, 0);
-  torso.castShadow = true;
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), skin);
-  head.position.set(0, 1.32, 0);
-  const hCap = new THREE.Mesh(
-    new THREE.SphereGeometry(0.125, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55),
+function createParkVisitor({
+  role = "man",
+  shirt = "#4b6982",
+  pants,
+  hair,
+  hairStyle,
+  hat,
+  accessory,
+  skirt,
+  shorts,
+  seated = false,
+  onMat = false,
+} = {}) {
+  const person = makePerson({
+    role,
+    shirt,
+    pants,
     hair,
-  );
-  hCap.position.set(0, 1.34, -0.01);
-  g.add(legL, legR, torso, head, hCap);
-  g.userData.legL = legL;
-  g.userData.legR = legR;
-  return g;
+    hairStyle,
+    hat,
+    accessory,
+    skirt,
+    shorts,
+    seated,
+    onMat,
+  });
+  if (seated && !onMat) {
+    const wrapper = new THREE.Group();
+    person.position.y = -0.82;
+    wrapper.add(person);
+    wrapper.userData = person.userData;
+    return wrapper;
+  }
+  return person;
 }
 
 function createParkLamp(x, y, z) {
@@ -623,10 +614,22 @@ function createPicnicTableSet(x, y, z, yaw = 0, withVisitors = false) {
     box([0.1, 0.12, 0.1], "#f6f8fa", [0.32, 0.84, -0.14]),
   );
   if (withVisitors) {
-    const vA = createParkVisitor({ shirt: "#3e708e", pants: "#2b3036", seated: true });
+    const vA = createParkVisitor({
+      role: "elder-man",
+      shirt: "#e2dcc8",
+      pants: "#3a4046",
+      hat: "flat-cap",
+      seated: true,
+    });
     vA.position.set(-0.35, 0.46, 0.74);
     vA.rotation.y = Math.PI;
-    const vB = createParkVisitor({ shirt: "#df7f65", pants: "#2b3036", seated: true });
+    const vB = createParkVisitor({
+      role: "woman",
+      shirt: "#df7f65",
+      pants: "#2b3036",
+      hairStyle: "ponytail",
+      seated: true,
+    });
     vB.position.set(0.32, 0.46, -0.74);
     g.add(vA, vB);
   }
@@ -742,11 +745,24 @@ function createFitnessCorner(x, y, z) {
     wheel.position.set(2.5, 1.32, sz);
     g.add(wheel);
   }
-  // Exercising visitor
-  const athlete = createParkVisitor({ shirt: "#f0f4f7", pants: "#2b323b" });
+  // Exercising visitors (elder man + adult woman)
+  const athlete = createParkVisitor({
+    role: "elder-man",
+    shirt: "#f0f4f7",
+    pants: "#2b323b",
+    hat: "cap",
+  });
   athlete.position.set(0.55, 0.12, 0.72);
   athlete.rotation.y = Math.PI;
-  g.add(athlete);
+  const athleteB = createParkVisitor({
+    role: "woman",
+    shirt: "#54a28c",
+    pants: "#272d36",
+    hairStyle: "ponytail",
+  });
+  athleteB.position.set(-2.05, 0.12, 0.95);
+  athleteB.rotation.y = Math.PI * 0.85;
+  g.add(athlete, athleteB);
   return g;
 }
 
@@ -792,13 +808,35 @@ function createFamilyPlayCorner(x, y, z) {
     box([0.1, 0.24, 0.26], "#f2c12e", [2.95, 0.64, 0]),
   );
 
-  // Parent & child relaxing nearby
-  const parent = createParkVisitor({ shirt: "#6a8e7f", pants: "#2b3036" });
-  parent.position.set(0.2, 0.08, 1.5);
-  const child = createParkVisitor({ shirt: "#f5c242", pants: "#385e88" });
-  child.scale.setScalar(0.68);
-  child.position.set(0.75, 0.08, 1.45);
-  g.add(parent, child);
+  // Mother, father & two children playing nearby
+  const mother = createParkVisitor({
+    role: "woman",
+    shirt: "#e07f95",
+    pants: "#2d3540",
+    hairStyle: "bun",
+    accessory: "tote",
+  });
+  mother.position.set(0.1, 0.08, 1.55);
+  mother.rotation.y = 0.35;
+  const girl = createParkVisitor({
+    role: "girl",
+    shirt: "#f7e6ea",
+    pants: "#b84a6e",
+    hairStyle: "pigtails",
+    skirt: true,
+  });
+  girl.position.set(0.68, 0.08, 1.48);
+  girl.rotation.y = -0.35;
+  const boy = createParkVisitor({
+    role: "boy",
+    shirt: "#4c89b8",
+    pants: "#2b323b",
+    shorts: true,
+    hat: "cap",
+  });
+  boy.position.set(2.35, 0.08, 1.28);
+  boy.rotation.y = -0.9;
+  g.add(mother, girl, boy);
   return { group: g, swingPivot };
 }
 
@@ -942,30 +980,45 @@ export class QuangTrungEastPrecinct {
       [-hw, -hd, -hw, hd],
     ];
     for (const [x1, z1, x2, z2] of localSpans) {
-      const dx = x2 - x1;
-      const dz = z2 - z1;
-      const len = Math.hypot(dx, dz);
-      const yaw = Math.atan2(-dz, dx);
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(len, 1.9, 0.24), fenceMat);
-      wall.position.set((x1 + x2) / 2, 1.22, (z1 + z2) / 2);
-      wall.rotation.y = yaw;
-      wall.castShadow = true;
-      hosp.add(wall);
-
-      const posts = Math.max(1, Math.round(len / 6.0));
-      for (let i = 0; i <= posts; i++) {
-        const t = i / posts;
-        const px = x1 + dx * t;
-        const pz = z1 + dz * t;
-        hosp.add(
-          box([0.44, 2.08, 0.44], "#eef4f5", [px, 1.3, pz]),
-          box([0.54, 0.14, 0.54], "#197682", [px, 2.4, pz]),
-        );
-      }
-      this.fenceSegments.push({
+      const worldSpan = {
         a: this.toWorld(midS + x1, midF - z1),
         b: this.toWorld(midS + x2, midF - z2),
-      });
+      };
+      const safeSpans = filterSegmentsClearOfRoads(
+        [worldSpan],
+        this.world?.renderRoads,
+        0.65,
+      );
+      for (const seg of safeSpans) {
+        this.fenceSegments.push(seg);
+        const lA = this.toLocal(seg.a.x, seg.a.z);
+        const lB = this.toLocal(seg.b.x, seg.b.z);
+        const sx1 = lA.side - midS;
+        const sz1 = midF - lA.fwd;
+        const sx2 = lB.side - midS;
+        const sz2 = midF - lB.fwd;
+        const dx = sx2 - sx1;
+        const dz = sz2 - sz1;
+        const len = Math.hypot(dx, dz);
+        if (len < 0.25) continue;
+        const yaw = Math.atan2(-dz, dx);
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(len, 1.9, 0.24), fenceMat);
+        wall.position.set((sx1 + sx2) / 2, 1.22, (sz1 + sz2) / 2);
+        wall.rotation.y = yaw;
+        wall.castShadow = true;
+        hosp.add(wall);
+
+        const posts = Math.max(1, Math.round(len / 6.0));
+        for (let i = 0; i <= posts; i++) {
+          const t = i / posts;
+          const px = sx1 + dx * t;
+          const pz = sz1 + dz * t;
+          hosp.add(
+            box([0.44, 2.08, 0.44], "#eef4f5", [px, 1.3, pz]),
+            box([0.54, 0.14, 0.54], "#197682", [px, 2.4, pz]),
+          );
+        }
+      }
     }
 
     // Grand main hospital gate piers & sign at front center (local z = +hd)
@@ -1126,14 +1179,15 @@ export class QuangTrungEastPrecinct {
 
   buildProjectPark() {
     // New Project Park east of Hẻm nhỏ, directly opposite & parallel to Dòng Chúa Cứu Thế!
-    // side ∈ [115.0 .. 221.0] (w = 106.0), fwd ∈ [0.5 .. 65.0] (d = 64.5)
+    // Reference origin stays centered at midS = 168.0, with east plaza edge pulled inside 211.0 clear of alley 895576840
     const minS = 115.0;
-    const maxS = 221.0;
+    const maxS = 211.0;
+    const midS = 168.0;
     const minF = 0.5;
     const maxF = 65.0;
-    const midS = (minS + maxS) / 2; // 168.0
     const midF = (minF + maxF) / 2; // 32.75
-    const w = maxS - minS; // 106.0
+    const w = 106.0;
+    const plazaW = maxS - minS; // 96.0 (covers local x in [-53 .. +43] -> side [115 .. 211])
     const d = maxF - minF; // 64.5
 
     const park = new THREE.Group();
@@ -1145,14 +1199,14 @@ export class QuangTrungEastPrecinct {
     // 1) Base light-grey stone-tile park plaza (y top = 0.28)
     const tileTex = createParkTileTex();
     const plaza = new THREE.Mesh(
-      new THREE.BoxGeometry(w, 0.14, d),
+      new THREE.BoxGeometry(plazaW, 0.14, d),
       new THREE.MeshStandardMaterial({
         color: tileTex ? "#ffffff" : "#d4d2cb",
         map: tileTex,
         roughness: 0.85,
       }),
     );
-    plaza.position.set(0, 0.21, 0);
+    plaza.position.set(-5.0, 0.21, 0);
     plaza.receiveShadow = true;
     park.add(plaza);
 
@@ -1162,12 +1216,12 @@ export class QuangTrungEastPrecinct {
     const westStrip = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.02, d - 1.5), darkStone);
     westStrip.position.set(-w / 2 + 2.4, 0.285, 0);
     westStrip.receiveShadow = true;
-    // East dark wide strip beside promenade (as in right side of reference render)
+    // East dark wide strip beside promenade (pulled safely inside side <= 210.8)
     const eastDarkA = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.02, 42.0), darkStone);
     eastDarkA.position.set(27.0, 0.285, -3.5);
     eastDarkA.receiveShadow = true;
-    const eastDarkB = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.02, 42.0), darkStone);
-    eastDarkB.position.set(42.0, 0.285, -3.5);
+    const eastDarkB = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.02, 42.0), darkStone);
+    eastDarkB.position.set(40.5, 0.285, -3.5);
     eastDarkB.receiveShadow = true;
     // Front asphalt street-edge parking bay strip for 3 angled white sedans
     const carBayApron = new THREE.Mesh(new THREE.BoxGeometry(24.0, 0.025, 7.6), mat("#41474e", 0.9));
@@ -1233,7 +1287,7 @@ export class QuangTrungEastPrecinct {
     const pathMat = mat("#e3e0d8", 0.84);
     const eastBridgePath = new THREE.Mesh(new THREE.BoxGeometry(23.5, 0.015, 5.2), pathMat);
     eastBridgePath.position.set(19.0, 0.287, -3.5);
-    const fountainApron = new THREE.Mesh(new THREE.CylinderGeometry(7.2, 7.2, 0.016, 40), pathMat);
+    const fountainApron = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, 0.016, 40), pathMat);
     fountainApron.position.set(34.5, 0.286, -3.5);
     fountainApron.receiveShadow = true;
     const frontEntryPath = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.015, 16.5), pathMat);
@@ -1256,15 +1310,14 @@ export class QuangTrungEastPrecinct {
       box([2.7, 0.02, 2.3], "#f4efe4", [0, 0, 0]),
       box([0.42, 0.24, 0.3], "#c2874c", [0.1, 0.13, -0.05]),
     );
-    const picnicColors = ["#f4f6f8", "#3a668a", "#e8b44c", "#d95f76", "#3f7a58"];
     [
-      [-0.7, -0.5, 0.4],
-      [0.7, -0.5, -0.4],
-      [-0.8, 0.55, 2.3],
-      [0.75, 0.6, -2.4],
-      [0.0, 0.8, Math.PI],
-    ].forEach(([vx, vz, vy], idx) => {
-      const v = createParkVisitor({ shirt: picnicColors[idx], seated: true });
+      [-0.7, -0.5, 0.4, { role: "man", shirt: "#f4f6f8" }],
+      [0.7, -0.5, -0.4, { role: "woman", shirt: "#e27d8b", hairStyle: "ponytail" }],
+      [-0.8, 0.55, 2.3, { role: "boy", shirt: "#e8b44c", shorts: true }],
+      [0.75, 0.6, -2.4, { role: "girl", shirt: "#f7d4de", hairStyle: "pigtails", skirt: true }],
+      [0.0, 0.8, Math.PI, { role: "elder-woman", shirt: "#6c9e82", hairStyle: "bun" }],
+    ].forEach(([vx, vz, vy, opts]) => {
+      const v = createParkVisitor({ ...opts, onMat: true });
       v.position.set(vx, 0.02, vz);
       v.rotation.y = vy;
       picnicGroup.add(v);
@@ -1281,11 +1334,11 @@ export class QuangTrungEastPrecinct {
       box([0.36, 0.04, 0.26], "#fff9ee", [0.05, 0.03, 0.08]),
     );
     [
-      [-0.55, -0.35, 0.5, "#f0a060"],
-      [0.55, -0.3, -0.5, "#47789e"],
-      [0.0, 0.5, Math.PI, "#e7ecf0"],
-    ].forEach(([vx, vz, vy, shirt]) => {
-      const v = createParkVisitor({ shirt, seated: true });
+      [-0.55, -0.35, 0.5, { role: "woman", shirt: "#f0a060", hairStyle: "long" }],
+      [0.55, -0.3, -0.5, { role: "man", shirt: "#47789e" }],
+      [0.0, 0.5, Math.PI, { role: "girl", shirt: "#e7ecf0", hairStyle: "pigtails" }],
+    ].forEach(([vx, vz, vy, opts]) => {
+      const v = createParkVisitor({ ...opts, onMat: true });
       v.position.set(vx, 0.02, vz);
       v.rotation.y = vy;
       readingGroup.add(v);
@@ -1331,10 +1384,20 @@ export class QuangTrungEastPrecinct {
       box([10.6, 0.16, 6.2], "#f4f6f8", [0, 3.34, 0]),
     );
 
-    const pavVisitorA = createParkVisitor({ shirt: "#ece7dc", pants: "#28303b" });
+    const pavVisitorA = createParkVisitor({
+      role: "woman",
+      shirt: "#ece7dc",
+      pants: "#28303b",
+      hat: "non-la",
+    });
     pavVisitorA.position.set(-0.6, 0.16, 3.2);
     pavVisitorA.rotation.y = 0.5;
-    const pavVisitorB = createParkVisitor({ shirt: "#314254", pants: "#1f2328" });
+    const pavVisitorB = createParkVisitor({
+      role: "man",
+      shirt: "#314254",
+      pants: "#1f2328",
+      accessory: "bag",
+    });
     pavVisitorB.position.set(0.55, 0.16, 3.35);
     pavVisitorB.rotation.y = -0.5;
     pav.add(pavVisitorA, pavVisitorB);
@@ -1369,7 +1432,12 @@ export class QuangTrungEastPrecinct {
       park.add(createParkBench(bx, 0.28, bz, byaw));
       this.obstacles.push({ side: midS + bx, fwd: midF - bz, radius: 0.95 });
       if (i % 2 === 0) {
-        const sv = createParkVisitor({ shirt: i === 0 ? "#4e7c9e" : "#e5a34b", seated: true });
+        const sv = createParkVisitor({
+          role: i === 0 ? "elder-man" : "elder-woman",
+          shirt: i === 0 ? "#4e7c9e" : "#e5a34b",
+          hairStyle: i === 0 ? "short" : "bun",
+          seated: true,
+        });
         sv.position.set(bx, 0.72, bz);
         sv.rotation.y = byaw;
         park.add(sv);
@@ -1419,12 +1487,12 @@ export class QuangTrungEastPrecinct {
       [15.0, 19.0, null],
       [16.5, 9.0, "#f5cf47"],
       [16.5, -13.0, null],
-      [48.0, 18.0, "#f07c98"],
-      [48.5, 8.0, null],
-      [48.5, -2.0, "#f5cf47"],
-      [48.5, -12.0, null],
-      [48.5, -22.0, null],
-      [38.0, -25.5, null],
+      [41.0, 18.0, "#f07c98"],
+      [41.0, 8.0, null],
+      [41.0, -10.0, "#f5cf47"],
+      [41.0, -18.0, null],
+      [41.0, -24.5, null],
+      [36.0, -25.5, null],
     ];
     treeWells.forEach(([tx, tz, blossom], idx) => {
       park.add(createSquareTreeWell(tx, 0.28, tz, 0.98 + (idx % 3) * 0.09, idx + 1, blossom));
@@ -1433,9 +1501,9 @@ export class QuangTrungEastPrecinct {
 
     // 3 Lush Tropical Palms in SE corner
     for (const [px, pz, s] of [
-      [39.0, 27.5, 0.98],
-      [43.8, 28.0, 1.04],
-      [48.5, 27.2, 0.94],
+      [34.0, 27.5, 0.98],
+      [37.8, 28.0, 1.04],
+      [41.2, 27.2, 0.94],
     ]) {
       park.add(createPalmTree(px, 0.28, pz, s));
       this.obstacles.push({ side: midS + px, fwd: midF - pz, radius: 0.95 });
@@ -1450,14 +1518,16 @@ export class QuangTrungEastPrecinct {
       [-37.5, -6.5, Math.PI * 0.3, false],
       [5.5, -17.5, -Math.PI * 0.72, true],
       [22.0, 3.0, Math.PI / 2, false],
-      [45.5, -3.5, -Math.PI / 2, true],
+      [40.8, 2.5, -Math.PI / 2, true],
     ]) {
       park.add(createParkBench(bx, 0.28, bz, yaw));
       this.obstacles.push({ side: midS + bx, fwd: midF - bz, radius: 0.95 });
       if (hasReader) {
         const reader = createParkVisitor({
-          shirt: bx < 0 ? "#4e7a68" : "#d8a048",
+          role: bx < 0 ? "elder-woman" : "woman",
+          shirt: bx < 0 ? "#88a894" : "#d8a048",
           pants: "#2b3036",
+          hairStyle: bx < 0 ? "bun" : "long",
           seated: true,
         });
         reader.position.set(bx, 0.72, bz);
@@ -1479,7 +1549,7 @@ export class QuangTrungEastPrecinct {
       [-45.5, 1.5, 0.2, true],
       [11.5, -12.5, -0.3, true],
       [25.5, 15.5, 0.0, false],
-      [41.5, -12.5, 0.15, true],
+      [39.8, -12.5, 0.15, true],
     ]) {
       park.add(createPicnicTableSet(tx, 0.28, tz, tyaw, visitors));
       this.obstacles.push({ side: midS + tx, fwd: midF - tz, radius: 1.45 });
@@ -1536,19 +1606,55 @@ export class QuangTrungEastPrecinct {
     park.add(signGroup);
     this.obstacles.push({ side: midS + 14.5, fwd: minF + 1.2, radius: 1.5 });
 
-    // 10) Strolling visitor couples & joggers along the circular & fountain walkways
+    // 10) Strolling visitor couples, families & elderly along circular & fountain walkways
     const paths = [
-      { cx: ovalX, cz: ovalZ, rx: 25.2, rz: 18.9, speed: 0.13, phase: 0.2, shirtA: "#eef2f6", shirtB: "#424a52" },
-      { cx: ovalX, cz: ovalZ, rx: 25.8, rz: 19.3, speed: -0.11, phase: 2.1, shirtA: "#c96472", shirtB: "#34495e" },
-      { cx: ovalX, cz: ovalZ, rx: 24.6, rz: 18.4, speed: 0.10, phase: 4.0, shirtA: "#4a7856", shirtB: "#f2ead8" },
-      { cx: 34.5, cz: -3.5, rx: 4.8, rz: 4.8, speed: 0.22, phase: 1.1, shirtA: "#2f5d8a", shirtB: "#d49b42" },
+      {
+        cx: ovalX,
+        cz: ovalZ,
+        rx: 25.2,
+        rz: 18.9,
+        speed: 0.13,
+        phase: 0.2,
+        personA: { role: "man", shirt: "#eef2f6", pants: "#2b333d", accessory: "bag" },
+        personB: { role: "woman", shirt: "#e27d8b", hairStyle: "ponytail", skirt: true },
+      },
+      {
+        cx: ovalX,
+        cz: ovalZ,
+        rx: 25.8,
+        rz: 19.3,
+        speed: -0.11,
+        phase: 2.1,
+        personA: { role: "elder-woman", shirt: "#8ca894", hat: "non-la", hairStyle: "bun" },
+        personB: { role: "boy", shirt: "#f0b643", shorts: true, hat: "cap" },
+      },
+      {
+        cx: ovalX,
+        cz: ovalZ,
+        rx: 24.6,
+        rz: 18.4,
+        speed: 0.10,
+        phase: 4.0,
+        personA: { role: "elder-man", shirt: "#e4dec9", accessory: "cane", hat: "flat-cap" },
+        personB: { role: "woman", shirt: "#56968a", hairStyle: "long", accessory: "tote" },
+      },
+      {
+        cx: 34.5,
+        cz: -3.5,
+        rx: 4.8,
+        rz: 4.8,
+        speed: 0.22,
+        phase: 1.1,
+        personA: { role: "man", shirt: "#2f5d8a" },
+        personB: { role: "girl", shirt: "#f5d0d8", hairStyle: "pigtails", skirt: true },
+      },
     ];
     for (const p of paths) {
       const pair = new THREE.Group();
-      const v1 = createParkVisitor({ shirt: p.shirtA });
-      v1.position.x = -0.32;
-      const v2 = createParkVisitor({ shirt: p.shirtB });
-      v2.position.x = 0.32;
+      const v1 = createParkVisitor(p.personA);
+      v1.position.x = -0.34;
+      const v2 = createParkVisitor(p.personB);
+      v2.position.x = 0.34;
       pair.add(v1, v2);
       park.add(pair);
       this.strollers.push({ group: pair, v1, v2, ...p });
@@ -1581,7 +1687,7 @@ export class QuangTrungEastPrecinct {
     const { side, fwd } = this.toLocal(wx, wz);
     return (
       side >= 63.0 - pad &&
-      side <= 221.0 + pad &&
+      side <= 211.0 + pad &&
       fwd >= 0.5 - pad &&
       fwd <= 65.5 + pad
     );
@@ -1595,7 +1701,7 @@ export class QuangTrungEastPrecinct {
   blocksOmittedBuilding(wx, wz) {
     // Prevent generic low-detail OSM boxes/floating signage from spawning across Rose Garden, Bệnh viện Đa Khoa, Hẻm nhỏ, and Công viên Dự Án
     const { side, fwd } = this.toLocal(wx, wz);
-    return side >= 37.5 && side <= 223.5 && fwd >= -2.5 && fwd <= 68.0;
+    return side >= 37.5 && side <= 212.5 && fwd >= -2.5 && fwd <= 68.0;
   }
 
   groundAt(wx, wz, referenceY) {
@@ -1653,10 +1759,8 @@ export class QuangTrungEastPrecinct {
       s.group.position.set(nx, 0.29, nz);
       s.group.rotation.y = Math.atan2(dx, dz);
 
-      const swing = Math.sin(time * 4.5 + s.phase) * 0.25;
       for (const v of [s.v1, s.v2]) {
-        if (v.userData.legL) v.userData.legL.rotation.x = swing;
-        if (v.userData.legR) v.userData.legR.rotation.x = -swing;
+        animateWalker(v, time * 4.5 + s.phase);
       }
     }
     if (this.fountainWater && inRange) {

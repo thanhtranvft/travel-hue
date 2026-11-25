@@ -13,12 +13,12 @@ export class MobileCrowd {
       const parts = [];
       person.mesh.traverse((o) => {
         if (!o.isMesh || Array.isArray(o.material)) return;
-        const key = `${o.geometry.type}/${JSON.stringify(o.geometry.parameters)}/${o.material.color.getHexString()}/${o.material.roughness}/${o.material.metalness}`;
+        const key = `${o.geometry.type}/${JSON.stringify(o.geometry.parameters)}/${o.material.color.getHexString()}/${o.material.roughness}/${o.material.metalness}/${o.material.map?.uuid || ""}`;
         if (!this.batches.has(key)) {
           const mesh = new THREE.InstancedMesh(
             o.geometry,
             o.material,
-            this.people.length,
+            Math.max(this.people.length * 4, 64),
           );
           mesh.frustumCulled = false;
           world.scene.add(mesh);

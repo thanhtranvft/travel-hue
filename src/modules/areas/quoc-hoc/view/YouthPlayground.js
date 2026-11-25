@@ -10,7 +10,10 @@ import { schoolGatePlacement } from "./SchoolGates.js";
 import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { beam } from "../../../../core/shared/architecture/architecture.js";
-import { onOtherCarriageway } from "../../../../core/world/streetPlacement.js";
+import {
+  filterSegmentsClearOfRoads,
+  onOtherCarriageway,
+} from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -199,9 +202,9 @@ export function expandedYouthCampusRing(feature = byId(config.campusOSM)) {
     [-69.0, 98.0],
     [-73.5, 114.0],
     [-78.5, 139.0],
-    [42.5, 139.0],
-    [42.5, 12.0],
-    [36.5, 0.2],
+    [35.5, 139.0],
+    [33.2, 12.0],
+    [33.0, 0.2],
     [-33.5, 0.2],
   ];
   return localRing.map(([s, f]) => toWorld(s, f));
@@ -871,10 +874,14 @@ export class YouthPlayground {
       heading: Math.atan2(-this.frame.inAxis.x, -this.frame.inAxis.z),
     };
 
-    this.segments = campusWallSegments(
-      this.expandedRing,
-      this.entrance,
-      config.entranceWidth,
+    this.segments = filterSegmentsClearOfRoads(
+      campusWallSegments(
+        this.expandedRing,
+        this.entrance,
+        config.entranceWidth,
+      ),
+      world?.renderRoads,
+      0.65,
     );
     this.equipment = [];
     this.animatedObjects = [];
@@ -1073,9 +1080,9 @@ export class YouthPlayground {
         [-68.6, 98.0],
         [-73.2, 114.0],
         [-78.0, 138.5],
-        [42.0, 138.5],
-        [42.0, 12.0],
-        [36.2, 0.5],
+        [35.2, 138.5],
+        [32.9, 12.0],
+        [32.7, 0.5],
       ].map(([s, f]) => new THREE.Vector2(s, -f)),
     );
     const turfGeo = new THREE.ExtrudeGeometry(campusShape, {
@@ -1152,9 +1159,9 @@ export class YouthPlayground {
       // West promenade past auditorium wing to Rocking Fish & Carousel
       { s: -42.5, f: 86, w: 6.5, l: 104 },
       // Back main east-west park boulevard connecting all rear attractions
-      { s: -16, f: 99, w: 108, l: 6.5 },
+      { s: -18.5, f: 99, w: 103, l: 6.5 },
       // Outer loop behind Coaster & Slide Tower
-      { s: -18, f: 135, w: 104, l: 4.5 },
+      { s: -19, f: 135, w: 102, l: 4.5 },
     ];
     for (const p of paths) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.08, p.l), walkMat);
@@ -1169,12 +1176,12 @@ export class YouthPlayground {
       [-31.5, 25.0, 1.2],
       [21.5, 11.5, 1.15],
       [25.5, 27.5, 1.1],
-      [35.5, 42.0, 1.05],
+      [30.5, 42.0, 1.05],
       [-48.0, 44.0, 1.1],
       [-64.5, 102.0, 1.15],
-      [38.5, 104.0, 1.1],
+      [31.8, 104.0, 1.1],
       [-36.0, 134.0, 1.05],
-      [38.0, 134.0, 1.05],
+      [32.0, 134.0, 1.05],
     ];
     trees.forEach(([tx, tz, sc], idx) => {
       this.campusGroup.add(createCourtyardTree(tx, tz, sc, idx + 1));
@@ -1447,30 +1454,31 @@ export class YouthPlayground {
   }
 
   buildAmusementZones() {
-    // 1. TÀU LƯỢN SIÊU TỐC MINI (Back-East Amusement Zone: side = +14.5, fwd = 117.5)
+    // 1. TÀU LƯỢN SIÊU TỐC MINI (Back-East Amusement Zone: side = +11.0, fwd = 117.5)
     const coaster = createHeroRollerCoaster();
-    coaster.group.position.set(14.5, 0.2, 117.5);
+    coaster.group.position.set(11.0, 0.2, 117.5);
     this.campusGroup.add(coaster.group);
     this.rollerCoasters.push(coaster);
     this.animatedObjects.push(...coaster.cars);
     this.solidZones.push({
       kind: "box",
-      minS: 32.0,
-      maxS: 36.5,
+      minS: 28.5,
+      maxS: 33.0,
       minF: 112.5,
       maxF: 122.5,
     });
 
-    // 2. KHU LÁI XE Ô TÔ THIẾU NHI (East-Side Driving Circuit: side = +26.5, fwd = 78.0)
+    // 2. KHU LÁI XE Ô TÔ THIẾU NHI (East-Side Driving Circuit: side = +24.2, fwd = 78.0)
     const carTrack = createHeroKiddieCarTrack();
-    carTrack.group.position.set(26.5, 0.2, 78.0);
+    carTrack.group.position.set(24.2, 0.2, 78.0);
+    carTrack.group.scale.set(0.84, 1, 1.0);
     this.campusGroup.add(carTrack.group);
     this.carTracks.push(carTrack);
     this.animatedObjects.push(...carTrack.cars);
     this.solidZones.push({
       kind: "box",
-      minS: 21.5,
-      maxS: 31.5,
+      minS: 19.8,
+      maxS: 28.6,
       minF: 66.5,
       maxF: 89.5,
     });
@@ -1583,12 +1591,12 @@ export class YouthPlayground {
     if (fwd >= 0 && fwd <= 41.5 && side >= -36 && side <= 28) return true;
     if (side >= -33 && side <= 24 && fwd >= 36 && fwd <= 62) return true;
     if (side >= -40 && side <= -13 && fwd >= 57 && fwd <= 98) return true;
-    if (side >= 16 && side <= 37 && fwd >= 58 && fwd <= 98) return true; // kiddie cars
-    if (side >= -10 && side <= 39 && fwd >= 101 && fwd <= 137) return true; // coaster
+    if (side >= 15 && side <= 33.5 && fwd >= 58 && fwd <= 98) return true; // kiddie cars
+    if (side >= -10 && side <= 33.5 && fwd >= 101 && fwd <= 137) return true; // coaster
     if (side >= -33 && side <= -14 && fwd >= 107 && fwd <= 127) return true; // slide tower
     if (Math.hypot(side - -56, fwd - 118) < 6.4) return true; // carousel
     if (Math.hypot(side - -46, fwd - 36) < 4.0) return true; // sandbox
-    if (fwd >= 95 && fwd <= 103 && side >= -72 && side <= 39) return true; // main promenade
+    if (fwd >= 95 && fwd <= 103 && side >= -70 && side <= 33.5) return true; // main promenade
     if (side >= 24 && side <= 31 && fwd >= 20 && fwd <= 132) return true; // east walk
     if (side >= -46 && side <= -39 && fwd >= 32 && fwd <= 137) return true; // west walk
     return false;

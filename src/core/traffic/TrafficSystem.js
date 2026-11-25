@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { box, mat } from "../shared/architecture/shared.js";
-import { makePerson, animateWalker } from "../world/People.js";
+import { makePerson, makeSocietyPerson, animateWalker } from "../world/People.js";
 import { CITY, BRIDGE } from "../world/cityLayout.js";
 import { sweptContact } from "./collision.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
@@ -43,33 +43,102 @@ export function car(color) {
   });
   return g;
 }
-export function scooter(color) {
+export function scooter(colorOrOptions = "#65878a") {
+  const opts =
+    typeof colorOrOptions === "string"
+      ? { color: colorOrOptions }
+      : colorOrOptions || {};
+  const color = opts.color || "#65878a";
+  const variant = opts.variant || "tay-ga";
   const g = new THREE.Group();
+  g.name = `motorbike-${variant}`;
+
+  // Step-through chassis, front apron, side fairings, seat & grab rail
   g.add(
-    box([0.55, 0.5, 1.3], color, [0, 0.6, 0]),
-    box([0.5, 0.16, 0.7], "#333936", [0, 0.95, -0.25]),
-    box([0.48, 0.8, 0.2], color, [0, 0.95, 0.5]),
+    box([0.48, 0.14, 0.92], "#2a2f33", [0, 0.34, 0.04]), // floorboard
+    box([0.52, 0.44, 0.88], color, [0, 0.66, -0.26]), // rear body fairing
+    box([0.46, 0.78, 0.2], color, [0, 0.82, 0.48]), // front apron
+    box([0.36, 0.24, 0.28], color, [0, 1.24, 0.44]), // headlight cowl
+    box([0.46, 0.15, 0.76], "#2a2826", [0, 0.93, -0.22]), // sculpted leather seat
+    box([0.44, 0.05, 0.18], "#bcc4c9", [0, 0.92, -0.68]), // silver rear grab rail
+    // Headlight & amber turn signals
+    box([0.18, 0.12, 0.06], "#fff6c8", [0, 1.24, 0.59]),
+    box([0.07, 0.08, 0.05], "#f09d2c", [-0.17, 1.18, 0.56]),
+    box([0.07, 0.08, 0.05], "#f09d2c", [0.17, 1.18, 0.56]),
+    // Rear taillight & Huế 75 license plate
+    box([0.2, 0.1, 0.05], "#cf2c2c", [0, 0.78, -0.71]),
+    box([0.2, 0.14, 0.03], "#f2f4f6", [0, 0.58, -0.71]),
+    // Chrome exhaust muffler on right side
+    box([0.1, 0.13, 0.68], "#8e969c", [0.28, 0.34, -0.28]),
+    // Front telescopic fork & fender
+    box([0.14, 0.56, 0.14], "#525a60", [0, 0.58, 0.56]),
+    box([0.18, 0.09, 0.32], color, [0, 0.55, 0.62]),
+    // Handlebars & twin rearview mirrors
+    box([0.78, 0.055, 0.08], "#343b3e", [0, 1.32, 0.41]),
+    box([0.03, 0.16, 0.03], "#4a5258", [-0.3, 1.41, 0.41]),
+    box([0.03, 0.16, 0.03], "#4a5258", [0.3, 1.41, 0.41]),
+    box([0.13, 0.08, 0.03], "#242a2e", [-0.33, 1.5, 0.4]),
+    box([0.13, 0.08, 0.03], "#242a2e", [0.33, 1.5, 0.4]),
   );
-  for (const z of [-0.6, 0.6]) {
-    const wheel = new THREE.Mesh(
-      new THREE.TorusGeometry(0.25, 0.065, 8, 16),
-      mat("#252b29"),
+
+  for (const z of [-0.58, 0.62]) {
+    const tire = new THREE.Mesh(
+      new THREE.TorusGeometry(0.24, 0.068, 8, 16),
+      mat("#222729"),
     );
-    wheel.rotation.y = Math.PI / 2;
-    wheel.position.set(0, 0.3, z);
-    g.add(wheel);
+    tire.rotation.y = Math.PI / 2;
+    tire.position.set(0, 0.3, z);
+    const hub = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.14, 0.14, 0.08, 12),
+      mat("#b8c0c6", 0.35, 0.65),
+    );
+    hub.rotation.z = Math.PI / 2;
+    hub.position.set(0, 0.3, z);
+    g.add(tire, hub);
   }
-  g.add(box([0.8, 0.07, 0.1], "#434b45", [0, 1.35, 0.45]));
-  const rider = makePerson("#718c8e", true);
-  rider.position.set(0, 0.38, -0.15);
-  rider.scale.setScalar(0.85);
+
+  if (variant === "shipper") {
+    // Rear insulated delivery box (Vietnamese shipper style)
+    g.add(
+      box([0.48, 0.42, 0.46], opts.boxColor || "#228b54", [0, 1.18, -0.48]),
+      box([0.5, 0.06, 0.48], "#f2f4f6", [0, 1.36, -0.48]),
+    );
+  }
+
+  const rider = makePerson({
+    role: opts.riderRole === "woman" ? "woman" : "man",
+    shirt: opts.riderShirt || (opts.riderRole === "woman" ? "#df96a8" : "#56798f"),
+    pants: opts.riderPants || "#2a323b",
+    hairStyle: opts.riderRole === "woman" ? "ponytail" : "short",
+    hat: "helmet",
+    helmetColor: opts.helmetColor || (opts.riderRole === "woman" ? "#f2d6df" : "#e6d8ad"),
+    seated: true,
+  });
+  rider.position.set(0, 0.35, -0.02);
+  rider.scale.multiplyScalar(0.86);
+  for (const arm of rider.userData.limbs.arms) {
+    arm.rotation.x = -0.88;
+  }
   g.add(rider);
-  const helmet = new THREE.Mesh(
-    new THREE.SphereGeometry(0.16, 12, 8),
-    mat("#e6d0a4"),
-  );
-  helmet.position.set(0, 1.72, -0.15);
-  g.add(helmet);
+
+  if (opts.hasPassenger && variant !== "shipper") {
+    const pRole = opts.passengerRole || "woman";
+    const passenger = makePerson({
+      role: pRole,
+      shirt: opts.passengerShirt || (pRole === "boy" ? "#f0b643" : pRole === "girl" ? "#f5d0d8" : "#6ca898"),
+      pants: "#2d3540",
+      hat: "helmet",
+      helmetColor: opts.passengerHelmet || "#cde4ee",
+      seated: true,
+    });
+    passenger.position.set(0, 0.36, -0.45);
+    passenger.scale.multiplyScalar(0.84);
+    for (const arm of passenger.userData.limbs.arms) {
+      arm.rotation.x = -0.42;
+    }
+    g.add(passenger);
+  }
+
   return g;
 }
 
@@ -117,7 +186,7 @@ export class TrafficSystem {
         direction = i % 4 < 2 ? 1 : -1;
       this.add(
         "pedestrian",
-        makePerson(["#a77856", "#719b9c", "#b3aa76", "#8e7689"][i % 4]),
+        makeSocietyPerson(i),
         { x: -115 + i * 12, z },
         (direction * Math.PI) / 2,
         0.7 + (i % 3) * 0.15,

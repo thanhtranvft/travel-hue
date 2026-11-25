@@ -4,7 +4,7 @@ import { nearestPoint, inside } from "../shared/geography/geometry.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
 import { buildingDetails } from "../shared/data/buildingCatalog.js";
-import { trafficBoard, postedBoard } from "./TrafficBoard.js";
+import { routeTrafficSign, civicPlaqueBoard } from "./TrafficBoard.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
 
 function createSignFactory() {
@@ -51,6 +51,7 @@ export function addStreetDetails(world, features) {
   const sign = createSignFactory();
   world.buildingLabels = [];
   world.streetLampPositions = [];
+  world.routeSignPlacements = [];
   let markers = 0;
   const paint = [];
   const addPaint = (mesh) => {
@@ -74,12 +75,22 @@ export function addStreetDetails(world, features) {
     lampPostGeo = new THREE.BoxGeometry(0.18, 7, 0.18),
     lampArmGeo = new THREE.BoxGeometry(1.4, 0.14, 0.2),
     lampHeadGeo = new THREE.BoxGeometry(0.8, 0.12, 0.4);
+  const routeDestinations = {
+    "Lê Lợi": ["CẦU TRÀNG TIỀN →", "CẦU PHÚ XUÂN →", "GA HUẾ · 800M"],
+    "Nguyễn Huệ": ["ĐH KHOA HỌC →", "NHÀ THỜ DÒNG CHÚA CỨU THẾ", "TRUNG TÂM HUẾ →"],
+    "Đống Đa": ["NGÃ TƯ LÝ THƯỜNG KIỆT →", "VINCOM PLAZA HUẾ →", "HÙNG VƯƠNG →"],
+    "Hùng Vương": ["CẦU TRÀNG TIỀN →", "NGÃ 6 HÙNG VƯƠNG", "ĐỐNG ĐA →"],
+    "Trần Hưng Đạo": ["CẦU TRÀNG TIỀN →", "CẦU PHÚ XUÂN →", "CHỢ ĐÔNG BA →"],
+    "Lý Thường Kiệt": ["ĐỐNG ĐA →", "HÙNG VƯƠNG →", "NGUYỄN HUỆ →"],
+  };
+  let routeSignIndex = 0;
   for (const road of renderRoads.filter(
     (r) => !isFootway(r) && r.tags.name !== "Cầu Phú Xuân" && r.id !== 174759688,
   )) {
     const paintSurface = road.id !== 828329033 && road.id !== 835629406;
     let distance = 0,
-      lastSign = -140;
+      lastLamp = -140,
+      lastSign = -170;
     for (let i = 1; i < road.points.length; i++) {
       const a = road.points[i - 1],
         b = road.points[i],
@@ -143,26 +154,114 @@ export function addStreetDetails(world, features) {
           (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
         ) ||
         world.schoolGates?.some((g) => Math.hypot(p.x - g.x, p.z - g.z) < 14.5);
-      if (road.tags.name && distance - lastSign > 120 && len > 6) {
-        for (const direction of road.tags.oneway === "yes" ? [1] : [1, -1]) {
+      if (road.tags.name && distance - lastSign > 165 && len > 10) {
+        const onewayDirs =
+          road.tags.oneway === "yes"
+            ? [1]
+            : road.tags.oneway === "-1"
+              ? [-1]
+              : len > 28
+                ? [1, -1]
+                : [routeSignIndex % 2 === 0 ? 1 : -1];
+        for (const direction of onewayDirs) {
+          const distAlong =
+            direction > 0
+              ? Math.min(10, len * 0.3)
+              : len > 28
+                ? Math.max(len * 0.72, len - 10)
+                : Math.min(12, len / 2);
           const p = roadsidePoint(
             a,
             b,
-            Math.min(12, len / 2),
-            roadWidth(road) / 2 + 3,
+            distAlong,
+            roadWidth(road) / 2 + 1.55,
             direction,
           );
           if (
-            onOtherCarriageway(p, { id: null }, renderRoads, 2) ||
-            blockedProp(p)
+            onOtherCarriageway(p, { id: null }, renderRoads, 1.5) ||
+            blockedProp(p) ||
+            world.routeSignPlacements.some(
+              (s) => Math.hypot(s.x - p.x, s.z - p.z) < 24,
+            )
           )
             continue;
-          const label = postedBoard(road.tags.name, "", 3.6);
-          label.position.set(p.x, surface(Math.min(12, len / 2)), p.z);
-          label.rotation.y = Math.atan2(-dx * direction, -dz * direction);
-          scene.add(label);
+          const isMajorCorridor = [
+            "primary",
+            "secondary",
+            "trunk",
+            "tertiary",
+          ].includes(road.tags.highway);
+          const destList = routeDestinations[road.tags.name];
+          const nearSchool = world.schoolGates?.some(
+            (g) => Math.hypot(p.x - g.x, p.z - g.z) < 65,
+          );
+          let spec;
+          if (nearSchool) {
+            spec = {
+              variant: "direction-warning",
+              title: `KHU VỰC TRƯỜNG HỌC`,
+              subtitle: `ĐƯỜNG ${road.tags.name.toUpperCase()}`,
+              warning: "school",
+            };
+          } else if (!isMajorCorridor && routeSignIndex % 2 === 0) {
+            spec = {
+              variant: "street-name",
+              title: `ĐƯỜNG ${road.tags.name.toUpperCase()}`,
+            };
+          } else {
+            const cycle = routeSignIndex % 4;
+            if (cycle === 0) {
+              spec = {
+                variant: "no-car-time",
+                timeText: "6:00 - 22:00",
+                distanceText: "1000 m",
+                bannerText: `CẤM Ô TÔ · ${road.tags.name.toUpperCase()}`,
+              };
+            } else if (cycle === 1) {
+              const target = destList
+                ? destList[routeSignIndex % destList.length]
+                : `TUYẾN ${road.tags.name.toUpperCase()}`;
+              spec = {
+                variant: "direction-warning",
+                title: `HƯỚNG ĐI · ${target}`,
+                subtitle: `ĐƯỜNG ${road.tags.name.toUpperCase()}`,
+                warning: "junction",
+              };
+            } else if (cycle === 2) {
+              spec = {
+                variant: "no-parking",
+                timeText: "6:00 - 22:00",
+                distanceText: "THEO TUYẾN",
+              };
+            } else {
+              spec = {
+                variant: "speed-limit",
+                speedText: isMajorCorridor ? "50" : "40",
+                bannerText: "GIẢM TỐC ĐỘ",
+                subBanner: `ĐƯỜNG ${road.tags.name.toUpperCase()}`,
+                distanceText: "500 m",
+              };
+            }
+          }
+          routeSignIndex++;
+          const signObj = routeTrafficSign(spec);
+          signObj.position.set(p.x, surface(distAlong), p.z);
+          signObj.rotation.y = Math.atan2(-dx * direction, -dz * direction);
+          scene.add(signObj);
+          world.routeSignPlacements.push({
+            x: p.x,
+            z: p.z,
+            heading: Math.atan2(dx * direction, dz * direction),
+            roadId: road.id,
+            roadName: road.tags.name,
+            direction,
+            variant: spec.variant,
+          });
         }
         lastSign = distance;
+      }
+      if (road.tags.name && distance - lastLamp > 120 && len > 6) {
+        lastLamp = distance;
         if (road.tags.bridge !== "yes" && road.tags.name !== "Cầu Phú Xuân")
           for (const side of [-1, 1]) {
             const p = roadsidePoint(
@@ -253,10 +352,10 @@ export function addStreetDetails(world, features) {
     if (!details.needsName) {
       const p = buildingFrontage(center, renderRoads);
       if (p) {
-        const post = postedBoard(
+        const post = civicPlaqueBoard(
           details.name,
           details.address || "Chưa có số nhà",
-          2.8,
+          1.45,
         );
         post.position.set(p.x, world.groundAt(p.x, p.z), p.z);
         post.rotation.y = p.heading;

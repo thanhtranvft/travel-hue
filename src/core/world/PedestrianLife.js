@@ -10,7 +10,7 @@ import {
   truongTienHeightAtPoint,
 } from "./roadSurface.js";
 import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
-import { makePerson, animateWalker } from "./People.js";
+import { makePerson, animateWalker, SOCIETY_PRESETS } from "./People.js";
 import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
 import {
   PROMENADE_Y,
@@ -124,7 +124,7 @@ export class PedestrianLife {
     this.world = world;
     this.people = [];
     this.stats = { sidewalkLeft: 0, sidewalkRight: 0, parkPeople: 0, parks: 0 };
-    this.templates = config.colors.map((color) => makePerson(color));
+    this.templates = SOCIETY_PRESETS.map((preset) => makePerson(preset));
     let seed = 1021;
     const random = () => {
       seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -132,14 +132,25 @@ export class PedestrianLife {
     };
     const add = (point, mode, extra = {}) => {
       const index = this.people.length,
-        mesh = this.templates[index % this.templates.length].clone(true); // Rebind limb references after cloning.
+        tpl = this.templates[index % this.templates.length],
+        mesh = tpl.clone(true); // Rebind limb references after cloning.
+      mesh.userData.role = tpl.userData.role;
       mesh.userData.limbs = { legs: [], arms: [] };
-      for (const child of mesh.children)
-        if (child.isGroup) {
+      for (const child of mesh.children) {
+        if (child.name === "leg-pivot") mesh.userData.limbs.legs.push(child);
+        else if (child.name === "arm-pivot") mesh.userData.limbs.arms.push(child);
+        else if (child.isGroup && child.name !== "head-group") {
           if (child.position.y < 1) mesh.userData.limbs.legs.push(child);
           else mesh.userData.limbs.arms.push(child);
         }
-      if (index % 5 === 0) mesh.scale.setScalar(0.76);
+      }
+      const role = mesh.userData.role;
+      const walkSpeed =
+        role === "elder-man" || role === "elder-woman"
+          ? 0.62
+          : role === "boy" || role === "girl"
+            ? 0.92
+            : 0.8;
       mesh.position.set(
         point.x,
         extra.road ? pedestrianGround(world, extra.road, point) : 0.17,
@@ -149,7 +160,8 @@ export class PedestrianLife {
       world.scene.add(mesh);
       this.people.push({
         type: "pedestrian",
-        speed: mode === "walk" ? 0.8 : 0,
+        role,
+        speed: mode === "walk" ? walkSpeed : 0,
         pause: 0,
         mesh,
         mode,

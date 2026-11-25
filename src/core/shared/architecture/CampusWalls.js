@@ -1,10 +1,20 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { nearestPoint } from "../geography/geometry.js";
-import { getRingsOf } from "../geography/activeGeography.js";
+import { getRingsOf, getRoads } from "../geography/activeGeography.js";
+import { filterSegmentsClearOfRoads } from "../../world/streetPlacement.js";
 import config from "../../../modules/areas/quoc-hoc/data/school-gates.json" with { type: "json" };
 import dongDaCampuses from "../../../modules/areas/nguyen-chi-dieu/data/campuses.json" with { type: "json" };
 import quangTrungCampuses from "../../../modules/areas/quang-trung/data/campuses.json" with { type: "json" };
+
+const SUPPRESSED_WALL_ROAD_IDS = new Set([
+  656794242,
+  1473477097,
+  1473477098,
+  1416699224,
+  1572355191,
+  895576841,
+]);
 
 function createQuocHocWallTexture() {
   if (typeof document === "undefined") return null;
@@ -843,7 +853,7 @@ function createQuangTrungWallObject(segments, data) {
   return object;
 }
 
-export function createCampusWalls(site, gate, extraGates = []) {
+export function createCampusWalls(site, gate, extraGates = [], roads = null) {
   const data = config[site.id];
   if (!data) return null;
   const gap =
@@ -861,9 +871,12 @@ export function createCampusWalls(site, gate, extraGates = []) {
   const precomputedRing =
     dongDaCampuses[site.id]?.ring || quangTrungCampuses[site.id]?.ring;
   const rings = precomputedRing ? [precomputedRing] : getRingsOf(site.feature);
-  const segments = rings.flatMap((ring) =>
+  const rawSegments = rings.flatMap((ring) =>
     campusWallSegments(ring, gate, gap, extraGates),
   );
+  const effectiveRoads =
+    roads || getRoads().filter((r) => !SUPPRESSED_WALL_ROAD_IDS.has(r.id));
+  const segments = filterSegmentsClearOfRoads(rawSegments, effectiveRoads, 0.65);
   if (site.id === "quoc-hoc-school") {
     return {
       object: createQuocHocWallObject(segments, data),

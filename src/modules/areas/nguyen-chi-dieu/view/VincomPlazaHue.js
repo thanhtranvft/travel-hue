@@ -148,7 +148,7 @@ export class VincomPlazaHue {
     this.podiumPolygon = scalePolygonAround(pts, center, 1.04);
 
     // Granite entrance apron around Vincom Plaza footprint
-    const plazaGeo = polygonGeometry(scalePolygonAround(pts, center, 1.12), 0.14);
+    const plazaGeo = polygonGeometry(scalePolygonAround(pts, center, 1.07), 0.14);
     const plazaMesh = new THREE.Mesh(
       plazaGeo,
       mat("#cfcac0", 0.78, 0.06),
