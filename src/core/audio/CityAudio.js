@@ -1,6 +1,14 @@
 import { restaurantZones } from "../world/streetVenues.js";
 import { nearestAudibleSource, proximityGain, sourcePan } from "./spatial.js";
-import { backgroundMelody, restaurantMelody, pluck, flute, frequency } from "./music.js";
+import {
+  backgroundMelody,
+  restaurantMelody,
+  countrysideFishingMelody,
+  countrysideFishingBass,
+  pluck,
+  flute,
+  frequency,
+} from "./music.js";
 import { musicTracks, defaultMusicTrack } from "../../app/catalog.js";
 import { CollisionVoice } from "./CollisionVoice.js";
 
@@ -23,6 +31,10 @@ export class CityAudio {
     this.caHueLastSongId = null;
     this.caHueAudioOverrides = new Map();
     this.caHueMediaEl = null;
+    this.fishingMode = false;
+    this.fishingStep = 0;
+    this.fishingStepSeconds = 0.54;
+    this.nextFishingNote = 0;
     this.onStatus = () => {};
     document.addEventListener("visibilitychange", () => {
       if (!this.ctx) return;
@@ -124,9 +136,12 @@ export class CityAudio {
     this.caHueEchoFilter.connect(caHueEchoWet).connect(this.caHuePan);
     this.caHuePan.connect(this.master);
 
+    this.fishingBus = bus();
+    this.fishingBus.gain.value = 0;
     this.timer = setInterval(() => this.schedule(), 100);
     this.nextNote = ctx.currentTime + 0.08;
     this.nextCaHueNote = ctx.currentTime + 0.1;
+    this.nextFishingNote = ctx.currentTime + 0.08;
   }
   registerCaHueAudioUrl(songId, url) {
     if (!songId) return;
@@ -218,11 +233,46 @@ export class CityAudio {
     this.musicEnabled = !!enabled;
     if (this.ctx) {
       const now = this.ctx.currentTime;
-      this.background.gain.setTargetAtTime(enabled ? 0.65 : 0, now, 0.05);
+      this.background.gain.setTargetAtTime(
+        enabled ? (this.fishingMode ? 0.04 : 0.65) : 0,
+        now,
+        0.05,
+      );
+      if (this.fishingBus) {
+        this.fishingBus.gain.setTargetAtTime(
+          enabled && this.fishingMode ? 0.78 : 0,
+          now,
+          0.08,
+        );
+      }
       if (!enabled) this.venue.gain.setTargetAtTime(0, now, 0.05);
       this.nextNote = now + 0.08;
+      this.nextFishingNote = now + 0.08;
     }
     return this.musicEnabled;
+  }
+  setFishingMode(enabled) {
+    const next = Boolean(enabled);
+    if (this.fishingMode === next) return this.fishingMode;
+    this.fishingMode = next;
+    if (next) this.fishingStep = 0;
+    if (this.ctx) {
+      const now = this.ctx.currentTime;
+      this.nextFishingNote = now + 0.06;
+      this.background.gain.setTargetAtTime(
+        !this.musicEnabled ? 0 : next ? 0.04 : 0.65,
+        now,
+        0.25,
+      );
+      if (this.fishingBus) {
+        this.fishingBus.gain.setTargetAtTime(
+          this.musicEnabled && next ? 0.78 : 0,
+          now,
+          0.28,
+        );
+      }
+    }
+    return this.fishingMode;
   }
   setVolume(value) {
     this.volume = Math.max(0, Math.min(1, value));
@@ -240,7 +290,11 @@ export class CityAudio {
       old.gain.cancelScheduledValues(now);
       old.gain.setTargetAtTime(0, now, 0.035);
       this.background = this.ctx.createGain();
-      this.background.gain.value = this.musicEnabled ? 0.65 : 0;
+      this.background.gain.value = this.musicEnabled
+        ? this.fishingMode
+          ? 0.04
+          : 0.65
+        : 0;
       this.background.connect(this.master);
       setTimeout(() => old.disconnect(), 3500);
       this.nextNote = now + 0.08;
@@ -285,6 +339,28 @@ export class CityAudio {
       }
       this.step++;
       this.nextNote += this.track.stepSeconds;
+    }
+
+    if (this.fishingMode && this.fishingBus) {
+      if (this.nextFishingNote < now - 0.35) this.nextFishingNote = now + 0.05;
+      for (let count = 0; this.nextFishingNote < now + 0.25 && count < 4; count++) {
+        const idx = this.fishingStep % countrysideFishingMelody.length;
+        const note = countrysideFishingMelody[idx];
+        const t = this.nextFishingNote;
+        if (note !== null) {
+          pluck(ctx, this.fishingBus, note, t, 0.13, 2.5);
+          if (idx % 2 === 0) {
+            flute(ctx, this.fishingBus, note + 12, t + 0.06, 0.058, 1.9);
+          }
+        }
+        if (idx % 8 === 0) {
+          const bassNote =
+            countrysideFishingBass[Math.floor(idx / 8) % countrysideFishingBass.length];
+          pluck(ctx, this.fishingBus, bassNote, t, 0.09, 3.6);
+        }
+        this.fishingStep++;
+        this.nextFishingNote += this.fishingStepSeconds;
+      }
     }
 
     const boatSong = this.activeCaHueBoat?.song;
@@ -355,13 +431,22 @@ export class CityAudio {
     this.background.gain.setTargetAtTime(
       !this.musicEnabled || !this.track
         ? 0
-        : Math.max(
-            0.16,
-            0.65 - this.venueLevel * 0.4 - this.caHueLevel * 0.24,
-          ),
+        : this.fishingMode
+          ? 0.04
+          : Math.max(
+              0.16,
+              0.65 - this.venueLevel * 0.4 - this.caHueLevel * 0.24,
+            ),
       t,
-      0.7,
+      0.5,
     );
+    if (this.fishingBus) {
+      this.fishingBus.gain.setTargetAtTime(
+        this.musicEnabled && this.fishingMode ? 0.78 : 0,
+        t,
+        0.35,
+      );
+    }
     this.venue.gain.setTargetAtTime(
       !this.musicEnabled ? 0 : this.venueLevel * 0.9,
       t,

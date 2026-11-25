@@ -654,20 +654,44 @@ export class Room {
     p.stamp = now;
     p.seq = m.seq;
     const distance = Math.hypot(m.x - p.x, m.z - p.z);
+    const prevStance = cleanStance(p.stance, p.speed);
+    const nextStance = cleanStance(m.stance, m.speed);
+    const FOUNTAIN_DOCK_CENTER = { x: 678.5, z: -714.0 };
+    const BIA_DECK_CENTER = { x: 480.44, z: -498.06 };
+    const allowBoatBoard =
+      p.region === "quoc-hoc" &&
+      prevStance !== "boat" &&
+      nextStance === "boat" &&
+      Math.hypot(p.x - FOUNTAIN_DOCK_CENTER.x, p.z - FOUNTAIN_DOCK_CENTER.z) <= 45 &&
+      Math.hypot(m.x - FOUNTAIN_DOCK_CENTER.x, m.z - FOUNTAIN_DOCK_CENTER.z) <= 45;
+    const allowBoatExit =
+      p.region === "quoc-hoc" &&
+      prevStance === "boat" &&
+      nextStance !== "boat" &&
+      Math.hypot(m.x - FOUNTAIN_DOCK_CENTER.x, m.z - FOUNTAIN_DOCK_CENTER.z) <= 28;
+    const allowFishTransition =
+      p.region === "quoc-hoc" &&
+      ((prevStance !== "fish" && nextStance === "fish") ||
+        (prevStance === "fish" && nextStance !== "fish")) &&
+      distance <= 16 &&
+      Math.hypot(m.x - BIA_DECK_CENTER.x, m.z - BIA_DECK_CENTER.z) <= 85;
+    const allowActivityTeleport =
+      allowBoatBoard || allowBoatExit || allowFishTransition;
     if (
       now < p.stunnedUntil ||
       Math.abs(m.speed) > 9.1 * activeMult ||
       m.y < -5 ||
       m.y > 40 ||
       Math.abs(m.lean) > 0.5 ||
-      distance > p.credit ||
+      (!allowActivityTeleport && distance > p.credit) ||
       !this.contains(this.areas.get(p.region).region, m.x, m.z)
     ) {
       return this.send(p, { type: "correct", player: this.publicPlayer(p) });
     }
     const old = { x: p.x, z: p.z };
-    p.credit = Math.max(0, p.credit - distance);
-    const nextStance = cleanStance(m.stance, m.speed);
+    p.credit = allowActivityTeleport
+      ? 2 * activeMult
+      : Math.max(0, p.credit - distance);
     let nextBoatIndex = cleanBoatIndex(m.boatIndex, nextStance);
     if (nextStance === "boat") {
       const takenBoats = new Set(

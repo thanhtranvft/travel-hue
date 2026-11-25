@@ -16,6 +16,7 @@ import {
 } from "../../modules/areas/south-bank/view/BoardwalkView.js";
 import { TruongTienSurroundings } from "../../modules/areas/truong-tien/view/TruongTienSurroundings.js";
 import { CaHueBoats } from "./CaHueBoats.js";
+import { AmbientSwanBoats } from "./AmbientSwanBoats.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { SharedModelLoader as GLTFLoader } from "../shared/resources/sceneResources.js";
 import {
@@ -1264,6 +1265,7 @@ export class GeographicWorld {
       this.truongTienBridge
     ) {
       this.caHueBoats = new CaHueBoats(this);
+      this.ambientSwanBoats = new AmbientSwanBoats(this, 10);
     }
     this.buildTreeGrid();
     this.grass = new LivingGrass(this);
@@ -1569,6 +1571,7 @@ export class GeographicWorld {
     }
     if (this.hitsBridgePier(x, z, 2.0)) return false;
     if (this.caHueBoats?.hitsBoat(x, z, 2.8)) return false;
+    if (this.ambientSwanBoats?.hitsBoat(x, z, 1.8)) return false;
     if (
       this.truongTienBridge?.mooredBoats?.some(
         (b) => Math.hypot(x - b.x, z - b.z) < 5.6,
@@ -1755,6 +1758,8 @@ export class GeographicWorld {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
     this.truongTienBridge?.update?.(time);
     this.caHueBoats?.update?.(time);
+    this.ambientSwanBoats?.update?.(time);
+    this.biaPark?.update?.(time);
     this.fireflyPark?.update?.(time);
     this.fountainPark?.update?.(time);
     this.youthPlayground?.update(time);

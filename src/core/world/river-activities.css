@@ -31,7 +31,7 @@
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 28;
+  z-index: 32;
   width: min(440px, calc(100vw - 24px));
   background: rgba(13, 33, 38, 0.92);
   border: 1px solid rgba(242, 203, 109, 0.55);
@@ -44,12 +44,12 @@
 }
 
 #river-rental-prompt {
-  bottom: 112px;
+  bottom: clamp(104px, 15vh, 134px);
 }
 
 #fishing-minigame,
 #boat-controls-bar {
-  bottom: 94px;
+  bottom: clamp(92px, 13vh, 118px);
 }
 
 .river-prompt-head,

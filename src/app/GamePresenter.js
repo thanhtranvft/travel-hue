@@ -183,7 +183,9 @@ export class GamePresenter {
         }
       }
       if (key === "r") this.reset();
-      if (key === "g") this.riverActivities?.handleKeyG?.();
+      if (key === "g" || e.code === "KeyG") {
+        if (this.riverActivities?.handleKeyG?.()) e.preventDefault();
+      }
       if (e.code === "Space" || key === " ") {
         if (this.riverActivities?.handleSpaceAction?.()) e.preventDefault();
       }

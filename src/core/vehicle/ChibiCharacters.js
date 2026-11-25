@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { AVATAR_CATALOG, cleanAvatarId } from "../network/protocol.js";
 import { markSharedResource } from "../shared/resources/sceneResources.js";
+import { createRiverFishMesh } from "../world/RiverFish.js";
 
 const _avatarMap = new Map(AVATAR_CATALOG.map((item) => [item.id, item]));
 const _sharedMatCache = new Map();
@@ -508,8 +509,22 @@ function buildFishingRod() {
   addPart(bobber, new THREE.SphereGeometry(0.036, 8, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), bobberWhiteMat, 0, 0, 0);
   lineAnchor.add(bobber);
 
+  const caughtFishAnchor = new THREE.Group();
+  caughtFishAnchor.name = "fishing-caught-fish-anchor";
+  caughtFishAnchor.position.set(0, -0.92, 0);
+  caughtFishAnchor.visible = false;
+  const caughtFishMeshes = {};
+  for (const speciesId of ["ca-bong", "ca-diec", "ca-ro-phi", "ca-chep", "ca-koi"]) {
+    const fish = createRiverFishMesh(speciesId, { variant: 0 });
+    fish.rotation.x = Math.PI / 2;
+    fish.visible = false;
+    caughtFishAnchor.add(fish);
+    caughtFishMeshes[speciesId] = fish;
+  }
+  lineAnchor.add(caughtFishAnchor);
+
   group.visible = false;
-  return { group, rodPivot, lineAnchor, bobber };
+  return { group, rodPivot, lineAnchor, line, bobber, caughtFishAnchor, caughtFishMeshes };
 }
 
 function buildHumanRig(avatarId) {
@@ -1178,22 +1193,73 @@ export function animateChibiActor(
   }
   if (char.fishingRod?.group) {
     char.fishingRod.group.visible = isFish;
+    const rod = char.fishingRod;
     if (isFish) {
       const fPhase =
         typeof fishState === "string" ? fishState : fishState?.phase || "ready";
+      const fSpeciesId =
+        typeof fishState === "object"
+          ? fishState?.speciesId || fishState?.species?.id || null
+          : null;
+      const fResultTimer =
+        typeof fishState === "object" && Number.isFinite(fishState?.resultTimer)
+          ? fishState.resultTimer
+          : 0;
       const biteJitter =
         fPhase === "bite"
           ? Math.sin(idleTime * 28) * 0.08
           : fPhase === "reeling"
             ? Math.sin(idleTime * 16) * 0.05
             : Math.sin(idleTime * 2.2) * 0.025;
-      char.fishingRod.rodPivot.rotation.x =
-        fPhase === "reeling" || fPhase === "caught"
-          ? -0.35 + Math.sin(idleTime * 9) * 0.14
-          : fPhase === "bite"
-            ? 0.16 + biteJitter
-            : Math.sin(idleTime * 1.4) * 0.04;
-      char.fishingRod.bobber.position.y = -0.92 + biteJitter;
+      rod.rodPivot.rotation.x =
+        fPhase === "caught"
+          ? -0.48 + Math.sin(idleTime * 8) * 0.05
+          : fPhase === "reeling"
+            ? -0.35 + Math.sin(idleTime * 9) * 0.14
+            : fPhase === "bite"
+              ? 0.16 + biteJitter
+              : Math.sin(idleTime * 1.4) * 0.04;
+
+      if (fPhase === "caught" && fSpeciesId && rod.caughtFishMeshes?.[fSpeciesId]) {
+        const lift = Math.max(0.25, Math.min(1, (2.5 - fResultTimer) / 0.85));
+        const lineScale = 1 - lift * 0.56;
+        if (rod.line) {
+          rod.line.scale.y = lineScale;
+          rod.line.position.y = -0.46 * lineScale;
+        }
+        rod.bobber.position.y = -0.92 * lineScale;
+        rod.caughtFishAnchor.visible = true;
+        rod.caughtFishAnchor.position.set(0, rod.bobber.position.y - 0.16, 0);
+        rod.caughtFishAnchor.rotation.set(
+          Math.sin(idleTime * 14) * 0.16,
+          idleTime * 1.8,
+          Math.sin(idleTime * 18) * 0.24,
+        );
+        for (const [id, mesh] of Object.entries(rod.caughtFishMeshes)) {
+          const active = id === fSpeciesId;
+          mesh.visible = active;
+          if (active && mesh.userData.tailPivot) {
+            mesh.userData.tailPivot.rotation.y = Math.sin(idleTime * 24) * 0.45;
+          }
+        }
+      } else {
+        if (rod.line) {
+          rod.line.scale.y = 1;
+          rod.line.position.y = -0.46;
+        }
+        rod.bobber.position.y = -0.92 + biteJitter;
+        if (rod.caughtFishAnchor) {
+          rod.caughtFishAnchor.visible = false;
+          for (const mesh of Object.values(rod.caughtFishMeshes || {})) {
+            mesh.visible = false;
+          }
+        }
+      }
+    } else if (rod.caughtFishAnchor) {
+      rod.caughtFishAnchor.visible = false;
+      for (const mesh of Object.values(rod.caughtFishMeshes || {})) {
+        mesh.visible = false;
+      }
     }
   }
 

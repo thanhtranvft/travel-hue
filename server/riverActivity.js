@@ -2,10 +2,10 @@ const BIA_DECK_CENTER = { x: 480.44, z: -498.06 };
 
 export const RIVER_FISH_REWARDS = {
   "ca-bong": { title: "Cá bống sông Hương", points: 15 },
-  "ca-chep": { title: "Cá chép vàng", points: 25 },
-  "ca-loc": { title: "Cá lóc đồng", points: 35 },
-  "ca-dieu-hong": { title: "Cá điêu hồng", points: 45 },
-  "ca-hoang-de": { title: "Cá tiến vua Ngự Hà", points: 65 },
+  "ca-diec": { title: "Cá diếc đồng", points: 25 },
+  "ca-ro-phi": { title: "Cá rô phi sông Hương", points: 40 },
+  "ca-chep": { title: "Cá chép vàng", points: 65 },
+  "ca-koi": { title: "Cá Koi Hoàng Thành", points: 100 },
 };
 
 export const BOAT_CRUISE_REWARD = {

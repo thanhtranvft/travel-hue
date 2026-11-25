@@ -5,9 +5,19 @@ import {
   createFishingGameState,
   FISH_SPECIES,
 } from "../src/core/world/RiverActivities.js";
-import { CaHueBoats, CA_HUE_SONGS } from "../src/core/world/CaHueBoats.js";
+import {
+  CaHueBoats,
+  CA_HUE_SONGS,
+} from "../src/core/world/CaHueBoats.js";
+import { AmbientSwanBoats } from "../src/core/world/AmbientSwanBoats.js";
+import { RIVER_FISH_VISUALS } from "../src/core/world/RiverFish.js";
+import { CityAudio } from "../src/core/audio/CityAudio.js";
+import {
+  countrysideFishingMelody,
+  countrysideFishingBass,
+} from "../src/core/audio/music.js";
 import { TouringBike } from "../src/core/vehicle/TouringBike.js";
-import { AVATAR_IDS } from "../src/core/network/protocol.js";
+import { AVATAR_IDS, PROTOCOL_VERSION } from "../src/core/network/protocol.js";
 import { river, sites, mainRoads } from "../src/core/shared/geography/map.js";
 import { inside, nearestPoint } from "../src/core/shared/geography/geometry.js";
 import { createBiaQuocHocPark } from "../src/modules/areas/quoc-hoc/view/BiaQuocHocPark.js";
@@ -18,6 +28,26 @@ import {
   BOAT_CRUISE_REWARD,
 } from "../server/riverActivity.js";
 import { Room } from "../server/Room.js";
+
+test("FISH_SPECIES & RIVER_FISH_REWARDS cover bống, diếc, rô phi, chép, koi scaled by size and rarity", () => {
+  const expectedOrder = ["ca-bong", "ca-diec", "ca-ro-phi", "ca-chep", "ca-koi"];
+  assert.deepEqual(
+    FISH_SPECIES.map((s) => s.id),
+    expectedOrder,
+  );
+  for (let i = 1; i < FISH_SPECIES.length; i++) {
+    const prev = FISH_SPECIES[i - 1];
+    const curr = FISH_SPECIES[i];
+    assert.ok(curr.points > prev.points, `${curr.id} should award more points than ${prev.id}`);
+    assert.ok(curr.weight < prev.weight, `${curr.id} should be rarer than ${prev.id}`);
+    assert.ok(
+      RIVER_FISH_VISUALS[curr.id].length > RIVER_FISH_VISUALS[prev.id].length,
+      `${curr.id} 3D model should be larger than ${prev.id}`,
+    );
+    assert.equal(RIVER_FISH_REWARDS[curr.id].points, curr.points);
+  }
+  assert.equal(RIVER_FISH_REWARDS["ca-bong"].points, FISH_SPECIES[0].points);
+});
 
 test("createFishingGameState progresses cast -> waiting -> bite -> reeling -> caught and reset", () => {
   const f = createFishingGameState();
@@ -32,10 +62,9 @@ test("createFishingGameState progresses cast -> waiting -> bite -> reeling -> ca
   assert.equal(earlyRes.action, "early");
   assert.equal(f.phase, "waiting");
 
-  // Advance until bite triggers
   let bitten = false;
   for (let i = 0; i < 40; i++) {
-    const ev = f.step(0.15, () => 0.25);
+    const ev = f.step(0.15, () => 0.96);
     if (ev.bitten) {
       bitten = true;
       break;
@@ -43,13 +72,12 @@ test("createFishingGameState progresses cast -> waiting -> bite -> reeling -> ca
   }
   assert.equal(bitten, true);
   assert.equal(f.phase, "bite");
-  assert.ok(f.species);
+  assert.equal(f.species.id, "ca-koi");
 
   const hooked = f.pullReel(() => 0.5);
   assert.equal(hooked.action, "hooked");
   assert.equal(f.phase, "reeling");
 
-  // Align cursor with targetCenter and reel until caught
   f.cursor = f.targetCenter;
   const hit1 = f.pullReel(() => 0.5);
   assert.equal(hit1.action, "hit");
@@ -57,19 +85,21 @@ test("createFishingGameState progresses cast -> waiting -> bite -> reeling -> ca
   const hit2 = f.pullReel(() => 0.5);
   assert.equal(hit2.action, "caught");
   assert.equal(f.phase, "caught");
-  assert.equal(f.lastCatch.id, f.species.id);
+  assert.equal(f.lastCatch.id, "ca-koi");
 
   f.reset();
   assert.equal(f.phase, "ready");
   assert.equal(f.species, null);
 });
 
-test("all 6 chibi avatars animate 3D fishing rod with { phase } and pedal boats cleanly", () => {
+test("all 6 chibi avatars animate 3D fishing rod, reveal & reel up caught species mesh, and pedal boats", () => {
   for (const id of AVATAR_IDS) {
     const bike = new TouringBike({ avatar: id, mode: "foot" });
     bike.setActivityStance("fish", { fishState: { phase: "bite" } });
     assert.equal(bike.stance, "fish");
-    assert.equal(bike.rig.character.fishingRod.group.visible, true);
+    const rod = bike.rig.character.fishingRod;
+    assert.equal(rod.group.visible, true);
+    assert.equal(rod.caughtFishAnchor.visible, false);
 
     bike.update(0.1, 0, 0, false, {
       stance: "fish",
@@ -77,15 +107,26 @@ test("all 6 chibi avatars animate 3D fishing rod with { phase } and pedal boats 
       fishState: { phase: "reeling" },
     });
     assert.ok(
-      bike.rig.character.fishingRod.rodPivot.rotation.x < -0.1,
+      rod.rodPivot.rotation.x < -0.1,
       `expected reeling rod lift for ${id}`,
     );
+
+    // When caught, only matching real 3D fish appears and rises out of the water
+    bike.update(0.1, 0, 0, false, {
+      stance: "fish",
+      poseOnly: true,
+      fishState: { phase: "caught", speciesId: "ca-koi", resultTimer: 1.5 },
+    });
+    assert.equal(rod.caughtFishAnchor.visible, true);
+    assert.equal(rod.caughtFishMeshes["ca-koi"].visible, true);
+    assert.equal(rod.caughtFishMeshes["ca-bong"].visible, false);
+    assert.ok(rod.bobber.position.y > -0.85);
 
     bike.setActivityStance("boat", { boatIndex: 2 });
     assert.equal(bike.stance, "boat");
     assert.equal(bike.boatIndex, 2);
     assert.equal(bike.boatHull.visible, true);
-    assert.equal(bike.rig.character.fishingRod.group.visible, false);
+    assert.equal(rod.group.visible, false);
 
     bike.setActivityStance(null);
     assert.notEqual(bike.stance, "boat");
@@ -94,7 +135,7 @@ test("all 6 chibi avatars animate 3D fishing rod with { phase } and pedal boats 
   }
 });
 
-test("CaHueBoats cruise inside river rings clear of piers and expose spatial songs", () => {
+test("CaHueBoats (10 dragon boats) & AmbientSwanBoats (10 occupied pedal boats) cruise safely inside Perfume River", () => {
   const piers = [
     { x: 430, z: -610, nx: 0.7, nz: 0.7, tx: -0.7, tz: 0.7, halfLen: 10, halfWidth: 2.5 },
   ];
@@ -106,6 +147,7 @@ test("CaHueBoats cruise inside river rings clear of piers and expose spatial son
     riverSurfaceAt: (_x, _z, t) => 0.03 + Math.sin(t) * 0.02,
   };
   const caHue = new CaHueBoats(world);
+  assert.ok(CA_HUE_SONGS.length >= 10);
   assert.equal(caHue.boats.length, CA_HUE_SONGS.length);
 
   caHue.update(12.5);
@@ -116,146 +158,259 @@ test("CaHueBoats cruise inside river rings clear of piers and expose spatial son
     assert.ok(river.some((ring) => inside({ x: s.x, z: s.z }, ring)));
     assert.equal(caHue.hitsBoat(s.x, s.z, 0), true);
   }
+
+  const ambientSwans = new AmbientSwanBoats(world, 10);
+  assert.equal(ambientSwans.boats.length, 10);
+  const before = ambientSwans.boats.map((b) => ({ x: b.x, z: b.z }));
+  ambientSwans.update(8.0);
+  for (let i = 0; i < ambientSwans.boats.length; i++) {
+    const b = ambientSwans.boats[i];
+    assert.ok(b.rig, "ambient swan boat must carry a seated chibi rider");
+    assert.ok(
+      river.some((ring) => inside({ x: b.x, z: b.z }, ring)),
+      `ambient swan boat ${i} stayed inside river rings`,
+    );
+    assert.ok(
+      Math.hypot(b.x - before[i].x, b.z - before[i].z) > 1.0,
+      `ambient swan boat ${i} should actively pedal forward`,
+    );
+    assert.equal(ambientSwans.hitsBoat(b.x, b.z, 0.5), true);
+  }
 });
 
-test("BiaQuocHoc fishingSpot, FountainPark pedalDock, and server riverActivity rewards & boat slots work end-to-end", () => {
-  const biaSite = sites.find((s) => s.id === "quoc-hoc");
-  const ubndSite = sites.find((s) => s.id === "ubnd");
-  const closest = mainRoads
-    .map((r) => nearestPoint(biaSite.sign, r.points))
-    .sort((a, b) => a.distance - b.distance)[0];
-  const heading = Math.atan2(closest.x - biaSite.sign.x, closest.z - biaSite.sign.z);
+test("BiaQuocHoc carp/koi shoal, unobstructed dock signboard, riverward boat heading, Room online boarding, and countryside music", () => {
+  const origDoc = globalThis.document;
+  if (typeof globalThis.document === "undefined") {
+    const noop = () => {};
+    const createCtx = () => ({
+      fillStyle: "",
+      strokeStyle: "",
+      font: "",
+      textAlign: "left",
+      textBaseline: "alphabetic",
+      lineWidth: 1,
+      beginPath: noop,
+      closePath: noop,
+      moveTo: noop,
+      lineTo: noop,
+      quadraticCurveTo: noop,
+      arc: noop,
+      fill: noop,
+      stroke: noop,
+      fillRect: noop,
+      strokeRect: noop,
+      fillText: noop,
+      measureText: (t = "") => ({ width: String(t).length * 8 }),
+      createLinearGradient: () => ({ addColorStop: noop }),
+    });
+    globalThis.document = {
+      addEventListener: noop,
+      createElement: (tag) =>
+        tag === "canvas"
+          ? { width: 256, height: 256, getContext: createCtx }
+          : { style: {} },
+    };
+  }
 
-  const world = {
-    scene: new THREE.Scene(),
-    riverRings: river,
-    cameraObstacles: [],
-  };
-  const bia = createBiaQuocHocPark(world, biaSite, heading);
-  const fp = createFountainPark(world, biaSite, heading, { ubnd: ubndSite });
+  try {
+    const biaSite = sites.find((s) => s.id === "quoc-hoc");
+    const ubndSite = sites.find((s) => s.id === "ubnd");
+    const closest = mainRoads
+      .map((r) => nearestPoint(biaSite.sign, r.points))
+      .sort((a, b) => a.distance - b.distance)[0];
+    const heading = Math.atan2(closest.x - biaSite.sign.x, closest.z - biaSite.sign.z);
 
-  assert.ok(bia.fishingSpot);
-  const seat = bia.fishingSpot.seatAtWorld(
-    bia.fishingSpot.vendorPos.x,
-    bia.fishingSpot.vendorPos.z,
-  );
-  assert.equal(seat.y, bia.fishingSpot.seatY);
-  assert.equal(bia.fishingSpot.isNearDeckEdge(seat.x, seat.z, 4.2), true);
+    const world = {
+      scene: new THREE.Scene(),
+      riverRings: river,
+      cameraObstacles: [],
+    };
+    const bia = createBiaQuocHocPark(world, biaSite, heading);
+    const fp = createFountainPark(world, biaSite, heading, { ubnd: ubndSite });
 
-  assert.ok(fp.pedalDock);
-  assert.equal(fp.pedalDock.boats.length, 6);
-  const boatMeshes = fp.animatedObjects.slice(2);
-  fp.setOccupiedBoats(new Set([0, 3]));
-  assert.equal(boatMeshes[0].visible, false);
-  assert.equal(boatMeshes[1].visible, true);
-  assert.equal(fp.pedalDock.isDockBlocked(fp.pedalDock.boats[0].x, fp.pedalDock.boats[0].z), false);
-  assert.equal(fp.pedalDock.isDockBlocked(fp.pedalDock.boats[1].x, fp.pedalDock.boats[1].z), true);
+    // Shore carp & koi shoals
+    assert.ok(bia.fishingSpot);
+    assert.ok(bia.fishShoal.length >= 20);
+    assert.ok(bia.fishShoal.some((f) => f.speciesId === "ca-koi"));
+    assert.ok(bia.fishShoal.some((f) => f.speciesId === "ca-chep"));
+    const firstFishBefore = bia.fishShoal[0].mesh.position.clone();
+    bia.fishingSpot.setFishingActive(true, bia.fishingSpot.vendorPos);
+    assert.equal(bia.fishingSpot.isFishingActive(), true);
+    bia.update(3.5);
+    assert.ok(bia.fishShoal[0].mesh.position.distanceTo(firstFishBefore) > 0.2);
 
-  // Server reward validation & Room cross-plane collision check
-  const sent = [];
-  const fakeRoom = {
-    areas: new Map([["quoc-hoc", { region: { path: [[bia.fishingSpot.vendorPos.x, bia.fishingSpot.vendorPos.z]], radius: 220 } }]]),
-    contains: () => true,
-    send: (_p, msg) => sent.push(msg),
-  };
-  const angler = {
-    region: "quoc-hoc",
-    x: bia.fishingSpot.vendorPos.x,
-    z: bia.fishingSpot.vendorPos.z,
-    stance: "fish",
-    riverScore: 0,
-    fishCount: 0,
-  };
-  const okFish = handleRiverRewardAction(
-    angler,
-    { action: "river_reward", kind: "fish_catch", speciesId: "ca-chep" },
-    fakeRoom,
-    10_000,
-  );
-  assert.equal(okFish, true);
-  assert.equal(angler.riverScore, RIVER_FISH_REWARDS["ca-chep"].points);
-  assert.equal(angler.fishCount, 1);
+    // Unobstructed dock signboard: posts sit outside sign width and behind sign z
+    const booth = fp.group.getObjectByName("pedal-dock-booth");
+    const postL = booth.getObjectByName("dock-sign-post-left");
+    const postR = booth.getObjectByName("dock-sign-post-right");
+    const signBoard = booth.getObjectByName("dock-signboard");
+    assert.ok(postL && postR && signBoard);
+    const signHalfW = 2.26 / 2;
+    assert.ok(postL.position.x + 0.04 < signBoard.position.x - signHalfW);
+    assert.ok(postR.position.x - 0.04 > signBoard.position.x + signHalfW);
+    assert.ok(postL.position.z < signBoard.position.z);
 
-  // Cooldown rejects spam within 2.2s
-  const spamFish = handleRiverRewardAction(
-    angler,
-    { action: "river_reward", kind: "fish_catch", speciesId: "ca-chep" },
-    fakeRoom,
-    11_000,
-  );
-  assert.equal(spamFish, false);
+    // Boat launch heading pushes riverward (away from shore block)
+    const launchStep = {
+      x: fp.pedalDock.dockWaterPos.x + Math.sin(fp.pedalDock.dockWaterPos.heading) * 6,
+      z: fp.pedalDock.dockWaterPos.z + Math.cos(fp.pedalDock.dockWaterPos.heading) * 6,
+    };
+    assert.equal(fp.isWaterBlocked(launchStep.x, launchStep.z), false);
+    assert.ok(river.some((r) => inside(launchStep, r)));
 
-  // Boat cruise reward requires boat stance
-  angler.stance = "boat";
-  const okBoat = handleRiverRewardAction(
-    angler,
-    { action: "river_reward", kind: "boat_cruise" },
-    fakeRoom,
-    20_000,
-  );
-  assert.equal(okBoat, true);
-  assert.equal(
-    angler.riverScore,
-    RIVER_FISH_REWARDS["ca-chep"].points + BOAT_CRUISE_REWARD.points,
-  );
-  assert.equal(sent.length, 2);
-
-  // Room skips 2D collision between boat player and land/bridge player
-  const areas = new Map([
-    [
-      "quoc-hoc",
-      {
-        region: {
-          path: [
-            [0, 0],
-            [0, 100],
-          ],
-          radius: 40,
+    // Room accepts valid online boarding jump from dock vendor to moored boat and exit back to pier
+    const realAreas = new Map([
+      [
+        "quoc-hoc",
+        {
+          region: {
+            path: [
+              [480, -498],
+              [678, -714],
+            ],
+            radius: 160,
+          },
+          spawn: { x: fp.pedalDock.vendorPos.x, z: fp.pedalDock.vendorPos.z, heading: 0 },
         },
-        spawn: { x: 0, z: 0, heading: 0 },
+      ],
+    ]);
+    const room = new Room(realAreas);
+    const msgs = [];
+    const joinRes = room.join(
+      {
+        version: PROTOCOL_VERSION,
+        name: "ThuyenVien",
+        region: "quoc-hoc",
+        avatar: "boy",
+        gameMode: "free-roam",
       },
-    ],
-  ]);
-  const room = new Room(areas);
-  const p1Msgs = [];
-  const p2Msgs = [];
-  const p1 = room.join(
-    { name: "Boat", region: "quoc-hoc", avatar: "boy", gameMode: "free-roam" },
-    (m) => p1Msgs.push(m),
-  );
-  const p2 = room.join(
-    { name: "Walker", region: "quoc-hoc", avatar: "girl", gameMode: "free-roam" },
-    (m) => p2Msgs.push(m),
-  );
-  room.state(p1, {
-    region: "quoc-hoc",
-    seq: 1,
-    x: 0,
-    y: 0.03,
-    z: 10,
-    heading: 0,
-    speed: 4,
-    lean: 0,
-    stance: "boat",
-    boatIndex: 0,
-  });
-  p1.immuneUntil = 0;
-  p2.immuneUntil = 0;
-  room.state(p2, {
-    region: "quoc-hoc",
-    seq: 1,
-    x: 0,
-    y: 5,
-    z: 10,
-    heading: 0,
-    speed: 3,
-    lean: 0,
-    stance: "run",
-    boatIndex: -1,
-  });
-  assert.equal(
-    p1Msgs.some((m) => m.type === "collision") ||
-      p2Msgs.some((m) => m.type === "collision"),
-    false,
-  );
+      (m) => msgs.push(m),
+    );
+    const sailor = joinRes.player;
+    assert.ok(sailor, `expected sailor to join, got: ${joinRes.error}`);
+    const boatSpec = fp.pedalDock.boats[0];
+    room.state(sailor, {
+      region: "quoc-hoc",
+      seq: 1,
+      x: boatSpec.x,
+      y: 0.03,
+      z: boatSpec.z,
+      heading: boatSpec.launchHeading,
+      speed: 0,
+      lean: 0,
+      stance: "boat",
+      boatIndex: 0,
+    });
+    assert.equal(sailor.stance, "boat");
+    assert.equal(msgs.some((m) => m.type === "correct"), false);
+
+    // Server river reward action awards 65đ for cá chép, 100đ for cá koi, 15đ for boat cruise, and enforces cooldown
+    assert.equal(
+      handleRiverRewardAction(
+        sailor,
+        { action: "river_reward", kind: "boat_cruise" },
+        room,
+        10_000,
+      ),
+      true,
+    );
+    assert.equal(sailor.riverScore, BOAT_CRUISE_REWARD.points);
+
+    room.state(sailor, {
+      region: "quoc-hoc",
+      seq: 2,
+      x: fp.pedalDock.pierReturnPos.x,
+      y: 0.22,
+      z: fp.pedalDock.pierReturnPos.z,
+      heading: 0,
+      speed: 0,
+      lean: 0,
+      stance: "idle",
+      boatIndex: -1,
+    });
+    assert.equal(sailor.stance, "idle");
+    assert.equal(msgs.some((m) => m.type === "correct"), false);
+
+    // Server fish rewards: move sailor near Bia Quốc Học deck and test ca-chep + cooldown + ca-koi
+    sailor.x = 480.44;
+    sailor.z = -498.06;
+    assert.equal(
+      handleRiverRewardAction(
+        sailor,
+        { action: "river_reward", kind: "fish_catch", speciesId: "ca-chep" },
+        room,
+        20_000,
+      ),
+      true,
+    );
+    assert.equal(
+      handleRiverRewardAction(
+        sailor,
+        { action: "river_reward", kind: "fish_catch", speciesId: "ca-koi" },
+        room,
+        20_500,
+      ),
+      false,
+    );
+    assert.equal(
+      handleRiverRewardAction(
+        sailor,
+        { action: "river_reward", kind: "fish_catch", speciesId: "ca-koi" },
+        room,
+        25_000,
+      ),
+      true,
+    );
+    assert.equal(sailor.fishCount, 2);
+    assert.equal(sailor.riverScore, BOAT_CRUISE_REWARD.points + 65 + 100);
+
+    // Cross-plane Boat vs Walker does not trigger collision
+    let now = 50_000;
+    const collisionRoom = new Room(realAreas, { now: () => now });
+    const boatMsgs = [];
+    const walkMsgs = [];
+    const pBoat = collisionRoom.join(
+      { version: PROTOCOL_VERSION, name: "Boat", region: "quoc-hoc", avatar: "boy", gameMode: "free-roam" },
+      (m) => boatMsgs.push(m),
+    ).player;
+    const pWalk = collisionRoom.join(
+      { version: PROTOCOL_VERSION, name: "Walker", region: "quoc-hoc", avatar: "girl", gameMode: "free-roam" },
+      (m) => walkMsgs.push(m),
+    ).player;
+    Object.assign(pBoat, { x: 480, z: -500, speed: 3, stance: "boat", boatIndex: 0, ready: true, activeAt: 50_000, immuneUntil: 0 });
+    Object.assign(pWalk, { x: 480, z: -500.5, speed: 2, stance: "walk", boatIndex: -1, ready: true, activeAt: 50_000, immuneUntil: 0 });
+    now = 50_100;
+    collisionRoom.state(pBoat, {
+      region: "quoc-hoc",
+      seq: 1,
+      x: 480,
+      y: 0.03,
+      z: -500.6,
+      heading: 0,
+      speed: 3,
+      lean: 0,
+      stance: "boat",
+      boatIndex: 0,
+    });
+    assert.equal(boatMsgs.some((m) => m.type === "collision"), false);
+    assert.equal(walkMsgs.some((m) => m.type === "collision"), false);
+
+    // Fishing countryside music state toggles cleanly
+    assert.ok(countrysideFishingMelody.length >= 16);
+    assert.ok(countrysideFishingBass.length >= 2);
+    const origAddEvt = globalThis.addEventListener;
+    globalThis.addEventListener = () => {};
+    try {
+      const audio = new CityAudio();
+      assert.equal(audio.fishingMode, false);
+      assert.equal(audio.setFishingMode(true), true);
+      assert.equal(audio.fishingMode, true);
+      assert.equal(audio.setFishingMode(false), false);
+    } finally {
+      globalThis.addEventListener = origAddEvt;
+    }
+  } finally {
+    if (origDoc === undefined) delete globalThis.document;
+    else globalThis.document = origDoc;
+  }
 });

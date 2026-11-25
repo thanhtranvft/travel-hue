@@ -937,6 +937,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       x: wPos.x,
       z: wPos.z,
       yaw: heading + spec.yaw,
+      launchHeading: heading + Math.PI - 0.18,
       color: spec.color,
       label: spec.label,
     });
@@ -974,49 +975,147 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     group.add(bollard);
   }
 
-  // Lifebuoy stand + Signboard + Rental Attendant NPC beside riverStair landing
+  // Lifebuoy stand + Redesigned Signboard (unobstructed lettering + swan icon) + Rental Attendant NPC
   const vendorLx = cx - 2.1;
   const vendorLz = stairBotZ + 0.45;
   const dockBooth = new THREE.Group();
+  dockBooth.name = "pedal-dock-booth";
   dockBooth.position.set(vendorLx, 0.18, vendorLz);
+
+  const postLeft = box([0.08, 1.98, 0.08], "#523a23", [-1.96, 0.99, -0.1]);
+  postLeft.name = "dock-sign-post-left";
+  const postRight = box([0.08, 1.98, 0.08], "#523a23", [0.46, 0.99, -0.1]);
+  postRight.name = "dock-sign-post-right";
+  const topRail = box([2.5, 0.08, 0.06], "#523a23", [-0.75, 1.62, -0.05]);
+  const lowerRail = box([2.42, 0.06, 0.05], "#523a23", [-0.75, 1.15, -0.05]);
+  const signBacking = box([2.34, 0.74, 0.045], "#103237", [-0.75, 1.62, 0.0]);
+  const signTrimTop = box([2.38, 0.04, 0.06], "#f2cb6d", [-0.75, 1.99, 0.0]);
+  const signTrimBot = box([2.38, 0.04, 0.06], "#f2cb6d", [-0.75, 1.25, 0.0]);
+  dockBooth.add(
+    postLeft,
+    postRight,
+    topRail,
+    lowerRail,
+    signBacking,
+    signTrimTop,
+    signTrimBot,
+  );
+
   if (typeof document !== "undefined") {
-    const dockSignTex = createCanvasTexture(256, 64, (ctx, w, h) => {
-      ctx.fillStyle = "#18464c";
+    const dockSignTex = createCanvasTexture(512, 160, (ctx, w, h) => {
+      if (typeof ctx.createLinearGradient === "function") {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#123c42");
+        grad.addColorStop(1, "#1c565d");
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = "#144248";
+      }
       ctx.fillRect(0, 0, w, h);
+
       ctx.strokeStyle = "#f2cb6d";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(4, 4, w - 8, h - 8);
-      ctx.fillStyle = "#fff5d8";
-      ctx.font = "bold 20px sans-serif";
+      ctx.lineWidth = 6;
+      ctx.strokeRect(7, 7, w - 14, h - 14);
+      ctx.strokeStyle = "rgba(242, 203, 109, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      // Left emblem badge: Swan pedal-boat icon ("biểu tượng đạp vịt")
+      const cxIcon = 78;
+      const cyIcon = 80;
+      if (typeof ctx.arc === "function") {
+        ctx.fillStyle = "rgba(242, 203, 109, 0.16)";
+        ctx.beginPath();
+        ctx.arc(cxIcon, cyIcon, 50, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#f2cb6d";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Water ripples under swan
+        ctx.strokeStyle = "#8ce0ea";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(cxIcon - 34, cyIcon + 28);
+        ctx.quadraticCurveTo?.(cxIcon - 12, cyIcon + 23, cxIcon, cyIcon + 28);
+        ctx.quadraticCurveTo?.(cxIcon + 14, cyIcon + 33, cxIcon + 34, cyIcon + 27);
+        ctx.stroke();
+
+        // Canopy poles + striped roof
+        ctx.strokeStyle = "#e6eef0";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cxIcon - 18, cyIcon + 8);
+        ctx.lineTo(cxIcon - 18, cyIcon - 18);
+        ctx.moveTo(cxIcon + 2, cyIcon + 8);
+        ctx.lineTo(cxIcon + 2, cyIcon - 18);
+        ctx.stroke();
+        ctx.fillStyle = "#f7e3a8";
+        ctx.fillRect(cxIcon - 25, cyIcon - 23, 34, 7);
+
+        // Swan boat hull + curved neck + orange beak
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(cxIcon - 28, cyIcon + 10);
+        ctx.lineTo(cxIcon + 14, cyIcon + 10);
+        ctx.quadraticCurveTo?.(cxIcon + 26, cyIcon + 10, cxIcon + 24, cyIcon - 6);
+        ctx.quadraticCurveTo?.(cxIcon + 22, cyIcon - 26, cxIcon + 32, cyIcon - 24);
+        ctx.quadraticCurveTo?.(cxIcon + 39, cyIcon - 22, cxIcon + 36, cyIcon - 14);
+        ctx.quadraticCurveTo?.(cxIcon + 29, cyIcon - 15, cxIcon + 30, cyIcon - 2);
+        ctx.quadraticCurveTo?.(cxIcon + 30, cyIcon + 21, cxIcon + 12, cyIcon + 22);
+        ctx.lineTo(cxIcon - 22, cyIcon + 22);
+        ctx.closePath?.();
+        ctx.fill();
+
+        // Swan orange beak + eye + wing accent
+        ctx.fillStyle = "#f07c2b";
+        ctx.beginPath();
+        ctx.moveTo(cxIcon + 36, cyIcon - 21);
+        ctx.lineTo(cxIcon + 46, cyIcon - 17);
+        ctx.lineTo(cxIcon + 35, cyIcon - 14);
+        ctx.closePath?.();
+        ctx.fill();
+        ctx.fillStyle = "#193b42";
+        ctx.beginPath();
+        ctx.arc(cxIcon + 32, cyIcon - 20, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Unobstructed right-hand title + subtitle
+      const textCenterX = 314;
+      ctx.fillStyle = "#ffe9a8";
+      ctx.font = "bold 30px sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText?.("ĐẠP VỊT SÔNG HƯƠNG", w / 2, h / 2);
+      ctx.fillText?.("ĐẠP VỊT SÔNG HƯƠNG", textCenterX, 62);
+
+      ctx.fillStyle = "#d9f0ec";
+      ctx.font = "600 18px sans-serif";
+      ctx.fillText?.("BẾN THUYỀN ĐÀI PHUN NƯỚC · [G]", textCenterX, 106);
     });
     const signBoard = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.72, 0.44),
+      new THREE.PlaneGeometry(2.26, 0.68),
       new THREE.MeshStandardMaterial({
         map: dockSignTex,
-        roughness: 0.7,
+        roughness: 0.65,
         side: THREE.DoubleSide,
       }),
     );
-    signBoard.position.set(-0.75, 1.55, 0);
+    signBoard.name = "dock-signboard";
+    signBoard.position.set(-0.75, 1.62, 0.032);
     dockBooth.add(signBoard);
   }
-  dockBooth.add(
-    box([0.08, 1.7, 0.08], "#523a23", [-1.35, 0.85, 0]),
-    box([0.08, 1.7, 0.08], "#523a23", [-0.15, 0.85, 0]),
-  );
   const ringBuoy = new THREE.Mesh(
     new THREE.TorusGeometry(0.28, 0.08, 8, 16),
     mat("#eb6b38", 0.55),
   );
-  ringBuoy.position.set(-0.75, 0.92, 0.12);
+  ringBuoy.name = "dock-lifebuoy";
+  ringBuoy.position.set(-0.75, 0.82, 0.05);
   dockBooth.add(ringBuoy);
 
   // Rental attendant NPC wearing lifevest + nón lá
   const npc = new THREE.Group();
-  npc.position.set(0.35, 0, 0);
+  npc.position.set(0.75, 0, 0.08);
   npc.rotation.y = Math.PI;
   npc.add(
     box([0.16, 0.55, 0.16], "#243442", [-0.11, 0.275, 0]),
@@ -1079,7 +1178,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   const pedalDock = {
     vendorPos: { ...vendorPos, y: 0.18 },
     pierReturnPos: { ...pierReturnWorld, y: pierY },
-    dockWaterPos: { ...dockLaunchWorld, y: 0.03, heading },
+    dockWaterPos: { ...dockLaunchWorld, y: 0.03, heading: heading + Math.PI },
     boats: boatWorldSpecs,
     isDockBlocked(wx, wz, excludeBoatIndex = -1) {
       const { lx, lz } = toLocal(wx, wz);

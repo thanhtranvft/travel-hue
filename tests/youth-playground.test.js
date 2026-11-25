@@ -59,8 +59,8 @@ test("all playground equipment fits inside expanded youth campus and outside bui
 
 test("YouthPlayground expands grounds cleanly, adds rides and animates train, cars, fish and flag", () => {
   const ring = expandedYouthCampusRing(byId(695775607));
-  // Ensure expanded grounds stay clear of Lê Lợi, Trần Thúc Nhẫn & southern residential road 1572356605
-  for (const roadId of [39413124, 1572356605]) {
+  // Ensure expanded grounds stay clear of Lê Lợi, Trần Thúc Nhẫn, Phan Bội Châu & southern residential road
+  for (const roadId of [39413124, 39411396, 1572356605]) {
     const road = roads.find((r) => r.id === roadId);
     assert.ok(road, `Missing road ${roadId}`);
     for (const v of ring) {

@@ -35,6 +35,54 @@ export const CA_HUE_SONGS = [
     notes: [67, 69, 72, 74, 76, 74, 72, 69, 67, 64, 67, null],
     audioUrl: null,
   },
+  {
+    id: "nam-binh",
+    title: "Nam Bình — Đêm trăng Vĩ Dạ",
+    shortTitle: "Nam Bình",
+    tempo: 0.84,
+    notes: [62, 65, 67, 70, 69, 67, 65, 62, 60, 62, 65, null],
+    audioUrl: null,
+  },
+  {
+    id: "luu-thuy-kim-tien",
+    title: "Lưu Thủy Kim Tiền — Nhã nhạc cung đình",
+    shortTitle: "Lưu Thủy Kim Tiền",
+    tempo: 0.64,
+    notes: [67, 69, 71, 74, 76, 74, 71, 69, 67, 64, 67, null],
+    audioUrl: null,
+  },
+  {
+    id: "co-ban",
+    title: "Cổ Bản — Khúc dạo sông Hương",
+    shortTitle: "Cổ Bản",
+    tempo: 0.76,
+    notes: [60, 64, 67, 69, 72, 69, 67, 64, 62, 60, 64, null],
+    audioUrl: null,
+  },
+  {
+    id: "tu-dai-canh",
+    title: "Tứ Đại Cảnh — Bến Ngự chiều thu",
+    shortTitle: "Tứ Đại Cảnh",
+    tempo: 0.82,
+    notes: [64, 67, 71, 72, 74, 72, 69, 67, 64, 62, 64, null],
+    audioUrl: null,
+  },
+  {
+    id: "long-ngam",
+    title: "Long Ngâm — Vọng cầu Trường Tiền",
+    shortTitle: "Long Ngâm",
+    tempo: 0.88,
+    notes: [62, 67, 70, 72, 74, 72, 70, 67, 65, 62, 67, null],
+    audioUrl: null,
+  },
+  {
+    id: "hanh-van",
+    title: "Hành Vân — Gió lộng bến Phu Văn",
+    shortTitle: "Hành Vân",
+    tempo: 0.72,
+    notes: [65, 67, 69, 72, 74, 72, 69, 67, 65, 62, 65, null],
+    audioUrl: null,
+  },
 ];
 
 const RAW_LOOP_WAYPOINTS = [
@@ -138,11 +186,11 @@ export class CaHueBoats {
     this.group = new THREE.Group();
     this.group.name = "ca-hue-cruising-boats";
 
-    const piers = [
+    this.piers = [
       ...(world.phuXuanBridge?.piers || []),
       ...(world.truongTienBridge?.piers || []),
     ];
-    this.loop = buildClosedLoopSamples(piers, world.riverRings);
+    this.loop = buildClosedLoopSamples(this.piers, world.riverRings);
     this.speed = 3.3;
 
     this.boats = CA_HUE_SONGS.map((song, idx) => {
@@ -183,7 +231,8 @@ export class CaHueBoats {
       }
 
       const startU = idx / CA_HUE_SONGS.length;
-      const pose = sampleLoopAtDistance(this.loop, startU * this.loop.total);
+      const laneOffset = idx % 2 === 0 ? 4.2 : -4.2;
+      const pose = this.sampleSafeBoatPose(startU * this.loop.total, laneOffset);
       mesh.position.set(pose.x, 0.03, pose.z);
       mesh.rotation.y = Math.atan2(pose.tx, pose.tz);
       this.group.add(mesh);
@@ -193,6 +242,7 @@ export class CaHueBoats {
         boatIndex: idx,
         song,
         startU,
+        laneOffset,
         phase: idx * 1.4,
         mesh,
         x: pose.x,
@@ -207,10 +257,32 @@ export class CaHueBoats {
     this.update(0);
   }
 
+  sampleSafeBoatPose(dist, laneOffset = 0) {
+    const base = sampleLoopAtDistance(this.loop, dist);
+    if (!laneOffset) return base;
+    const rx = -base.tz;
+    const rz = base.tx;
+    const shifted = {
+      x: base.x + rx * laneOffset,
+      z: base.z + rz * laneOffset,
+    };
+    const safe = nudgePointClearOfPiers(shifted, this.piers);
+    const inRiver =
+      !this.world.riverRings?.length ||
+      this.world.riverRings.some((r) => inside(safe, r));
+    if (!inRiver) return base;
+    return {
+      x: safe.x,
+      z: safe.z,
+      tx: base.tx,
+      tz: base.tz,
+    };
+  }
+
   update(time = 0) {
     for (const boat of this.boats) {
       const dist = boat.startU * this.loop.total + time * this.speed;
-      const pose = sampleLoopAtDistance(this.loop, dist);
+      const pose = this.sampleSafeBoatPose(dist, boat.laneOffset);
       const y =
         this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
         0.03 + Math.sin(time * 1.5 + boat.phase) * 0.04;

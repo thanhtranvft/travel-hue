@@ -52,6 +52,42 @@ export const restaurantMelody = [
   67,
   null,
 ];
+// Gentle pastoral countryside motif (G major pentatonic: G4 A4 B4 D5 E5 G5)
+export const countrysideFishingMelody = [
+  67,
+  null,
+  69,
+  71,
+  74,
+  null,
+  76,
+  74,
+  71,
+  null,
+  69,
+  67,
+  69,
+  null,
+  67,
+  null,
+  74,
+  null,
+  76,
+  79,
+  76,
+  null,
+  74,
+  71,
+  69,
+  null,
+  71,
+  69,
+  67,
+  null,
+  64,
+  null,
+];
+export const countrysideFishingBass = [43, 47, 45, 50];
 export const frequency = (midi) => 440 * 2 ** ((midi - 69) / 12);
 export function pluck(ctx, output, midi, time, volume = 0.12, duration = 1.8) {
   for (const [harmonic, amplitude] of [

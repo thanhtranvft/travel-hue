@@ -6,52 +6,57 @@ export const FISH_SPECIES = [
   {
     id: "ca-bong",
     title: "Cá bống sông Hương",
+    sizeLabel: "Nhỏ (18cm)",
     rarity: "Thường",
     points: 15,
-    weight: 34,
-    targetWidth: 0.3,
-    cursorSpeed: 1.05,
-    badgeColor: "#8ecae6",
+    weight: 36,
+    targetWidth: 0.31,
+    cursorSpeed: 1.0,
+    badgeColor: "#9cc5d9",
+  },
+  {
+    id: "ca-diec",
+    title: "Cá diếc đồng",
+    sizeLabel: "Vừa (24cm)",
+    rarity: "Khá phổ biến",
+    points: 25,
+    weight: 26,
+    targetWidth: 0.27,
+    cursorSpeed: 1.2,
+    badgeColor: "#a9d6a5",
+  },
+  {
+    id: "ca-ro-phi",
+    title: "Cá rô phi sông Hương",
+    sizeLabel: "Trung bình (32cm)",
+    rarity: "Ít gặp",
+    points: 40,
+    weight: 19,
+    targetWidth: 0.23,
+    cursorSpeed: 1.42,
+    badgeColor: "#7ea8be",
   },
   {
     id: "ca-chep",
     title: "Cá chép vàng",
-    rarity: "Khá",
-    points: 25,
-    weight: 26,
-    targetWidth: 0.26,
-    cursorSpeed: 1.25,
+    sizeLabel: "To (44cm)",
+    rarity: "Hiếm",
+    points: 65,
+    weight: 12,
+    targetWidth: 0.19,
+    cursorSpeed: 1.66,
     badgeColor: "#f6bd60",
   },
   {
-    id: "ca-loc",
-    title: "Cá lóc đồng",
-    rarity: "Ít gặp",
-    points: 35,
-    weight: 18,
-    targetWidth: 0.22,
-    cursorSpeed: 1.45,
-    badgeColor: "#90be6d",
-  },
-  {
-    id: "ca-dieu-hong",
-    title: "Cá điêu hồng",
-    rarity: "Hiếm",
-    points: 45,
-    weight: 14,
-    targetWidth: 0.19,
-    cursorSpeed: 1.68,
-    badgeColor: "#f28482",
-  },
-  {
-    id: "ca-hoang-de",
-    title: "Cá tiến vua Ngự Hà",
+    id: "ca-koi",
+    title: "Cá Koi Hoàng Thành",
+    sizeLabel: "Rất to (58cm)",
     rarity: "Cực hiếm",
-    points: 65,
-    weight: 8,
+    points: 100,
+    weight: 7,
     targetWidth: 0.16,
-    cursorSpeed: 1.92,
-    badgeColor: "#ffd166",
+    cursorSpeed: 1.9,
+    badgeColor: "#f26b4f",
   },
 ];
 
@@ -489,9 +494,9 @@ export class RiverActivities {
         pos.z - dock.pierReturnPos.z,
       );
       const nearAnyBoat = dock.boats?.some(
-        (b) => Math.hypot(pos.x - b.x, pos.z - b.z) <= 6.2,
+        (b) => Math.hypot(pos.x - b.x, pos.z - b.z) <= 6.8,
       );
-      if (distVendor <= 6.0 || distPier <= 4.8 || nearAnyBoat) {
+      if (distVendor <= 7.2 || distPier <= 5.8 || nearAnyBoat) {
         return {
           kind: "boat",
           availableCount: this.getAvailableBoatCount(),
@@ -537,7 +542,11 @@ export class RiverActivities {
     bike.rotation.y = seat.heading;
     bike.motion.speed = 0;
     bike.motion.lean = 0;
-    bike.setActivityStance("fish", { fishState: { phase: this.fishing.phase } });
+    bike.setActivityStance("fish", {
+      fishState: { phase: this.fishing.phase, speciesId: null, resultTimer: 0 },
+    });
+    fishSpot.setFishingActive?.(true, seat);
+    this.game.audio?.setFishingMode?.(true);
     this.game.cameraYaw = seat.heading;
     this.game.input?.reset?.();
     this.game.syncMode?.();
@@ -549,6 +558,8 @@ export class RiverActivities {
     if (this.mode !== "fishing") return false;
     this.mode = null;
     this.fishing.reset();
+    this.game.world?.biaPark?.fishingSpot?.setFishingActive?.(false);
+    this.game.audio?.setFishingMode?.(false);
     const bike = this.game.bike;
     bike.setActivityStance(null);
     if (this.seatPose) {
@@ -581,12 +592,13 @@ export class RiverActivities {
 
   findSafeBoatSpawn(spec, dock, boatIndex) {
     const world = this.game.world;
+    const launchHeading = spec.launchHeading ?? dock.dockWaterPos.heading;
     const candidates = [
-      { x: spec.x, z: spec.z, heading: spec.yaw },
+      { x: spec.x, z: spec.z, heading: launchHeading },
       {
-        x: spec.x - Math.sin(spec.yaw) * 1.4,
-        z: spec.z - Math.cos(spec.yaw) * 1.4,
-        heading: spec.yaw,
+        x: spec.x + Math.sin(launchHeading) * 1.6,
+        z: spec.z + Math.cos(launchHeading) * 1.6,
+        heading: launchHeading,
       },
       {
         x: dock.dockWaterPos.x,
@@ -597,8 +609,8 @@ export class RiverActivities {
     for (let step = 1; step <= 6; step++) {
       const dist = step * 1.4;
       candidates.push({
-        x: dock.dockWaterPos.x - Math.sin(dock.dockWaterPos.heading) * dist,
-        z: dock.dockWaterPos.z - Math.cos(dock.dockWaterPos.heading) * dist,
+        x: dock.dockWaterPos.x + Math.sin(dock.dockWaterPos.heading) * dist,
+        z: dock.dockWaterPos.z + Math.cos(dock.dockWaterPos.heading) * dist,
         heading: dock.dockWaterPos.heading,
       });
     }
@@ -746,7 +758,14 @@ export class RiverActivities {
         bike.rotation.z = 0;
       }
       bike.motion.speed = 0;
-      const fishState = { phase: this.fishing.phase };
+      const fishState = {
+        phase: this.fishing.phase,
+        speciesId:
+          this.fishing.phase === "caught"
+            ? this.fishing.lastCatch?.id || this.fishing.species?.id || null
+            : this.fishing.species?.id || null,
+        resultTimer: this.fishing.resultTimer || 0,
+      };
       bike.fishState = fishState;
       bike.update(dt, 0, 0, false, {
         stance: "fish",
@@ -866,6 +885,9 @@ export class RiverActivities {
     }
 
     const near = this.detectNearbyRental();
+    if (!near && this.declinedKind && elapsed >= this.declinedUntil) {
+      this.declinedKind = null;
+    }
     if (
       near &&
       !(this.declinedKind === near.kind && elapsed < this.declinedUntil)
@@ -918,7 +940,7 @@ export class RiverActivities {
     this.ui.phaseBadge.textContent = phaseMap[f.phase] || f.phase;
     this.ui.phaseBadge.dataset.phase = f.phase;
     this.ui.speciesLabel.textContent = f.species
-      ? `${f.species.title} (+${f.species.points}đ)`
+      ? `${f.species.title} · ${f.species.sizeLabel} (+${f.species.points}đ)`
       : "Thả câu bên Bia Quốc Học";
     this.ui.feedback.textContent = f.lastFeedback;
 
@@ -964,7 +986,7 @@ export class RiverActivities {
         this.ui.promptIcon.textContent = "🎣";
         this.ui.promptTitle.textContent = "Thuê cần câu cá bên sông Hương?";
         this.ui.promptDesc.textContent =
-          "Ngồi dọc sàn gỗ Bia Quốc Học, câu các loài cá sông Hương để tích thêm điểm thưởng.";
+          "Ngồi dọc sàn gỗ Bia Quốc Học, câu cá chép, cá koi, cá rô phi, cá diếc, cá bống để tích điểm.";
       } else {
         const avail = this.pendingPrompt.availableCount ?? 6;
         this.ui.promptIcon.textContent = "🦢";
@@ -993,6 +1015,8 @@ export class RiverActivities {
     this.nearReturnDock = false;
     this.cruiseDistance = 0;
     this.fishing.reset();
+    this.game.world?.biaPark?.fishingSpot?.setFishingActive?.(false);
+    this.game.audio?.setFishingMode?.(false);
     if (wasActive && this.game.bike) {
       this.game.bike.setActivityStance(null);
     }

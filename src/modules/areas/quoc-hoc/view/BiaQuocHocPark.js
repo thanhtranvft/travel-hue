@@ -3,6 +3,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
+import { createRiverFishMesh } from "../../../../core/world/RiverFish.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -869,6 +870,96 @@ export function createBiaQuocHocPark(world, site, heading) {
     group.add(hueParkTree(tx, ty, tz, sc, poinciana, idx + 1));
   });
 
+  // 5. VIBRANT CÁ CHÉP & CÁ KOI SHOAL SWIMMING ALONG BIA QUỐC HỌC RIVERFRONT
+  const fishGroup = new THREE.Group();
+  fishGroup.name = "bia-river-carp-koi-shoal";
+  const riverFishSwimmers = [];
+  const rippleMat = new THREE.MeshBasicMaterial({
+    color: "#d9fbff",
+    transparent: true,
+    opacity: 0.42,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+  });
+  const rippleGeo = new THREE.RingGeometry(0.16, 0.24, 16);
+  rippleGeo.rotateX(-Math.PI / 2);
+
+  for (let i = 0; i < 24; i++) {
+    const isKoi = i % 2 === 0;
+    const speciesId = isKoi ? "ca-koi" : "ca-chep";
+    const mesh = createRiverFishMesh(speciesId, { variant: i });
+    const visualScale = isKoi ? 1.15 + (i % 3) * 0.12 : 1.08 + (i % 3) * 0.1;
+    mesh.scale.setScalar(visualScale);
+
+    const ripple = new THREE.Mesh(rippleGeo, rippleMat);
+    ripple.position.set(0, 0.06, 0);
+    mesh.add(ripple);
+
+    const baseLx = -46 + (i / 23) * 92;
+    const riverOffset = 2.0 + (i % 5) * 1.45;
+    const swimmer = {
+      speciesId,
+      mesh,
+      ripple,
+      baseLx,
+      baseRiverOffset: riverOffset,
+      ampX: 3.4 + (i % 4) * 1.1,
+      ampZ: 1.05 + (i % 3) * 0.45,
+      speed: 0.55 + (i % 5) * 0.13,
+      phase: i * 0.85,
+      prevLx: baseLx,
+      prevLz: deckRiverZ(baseLx) - riverOffset,
+      yaw: 0,
+    };
+    mesh.position.set(swimmer.prevLx, 0.0, swimmer.prevLz);
+    fishGroup.add(mesh);
+    riverFishSwimmers.push(swimmer);
+  }
+  group.add(fishGroup);
+
+  let fishingActive = false;
+  let fishingAnchorLx = stallLx;
+
+  const update = (time = 0) => {
+    const paceMul = fishingActive ? 1.35 : 0.88;
+    const baseY = fishingActive ? 0.01 : -0.025;
+    for (let i = 0; i < riverFishSwimmers.length; i++) {
+      const f = riverFishSwimmers[i];
+      // During fishing mode, pull a dense colorful cluster closer to the player's fishing spot
+      let centerLx = f.baseLx;
+      let offsetFromEdge = f.baseRiverOffset;
+      if (fishingActive && i < 12) {
+        const slot = i - 5.5;
+        centerLx = Math.max(-48, Math.min(48, fishingAnchorLx + slot * 2.1));
+        offsetFromEdge = 1.65 + (i % 4) * 0.95;
+      }
+      const lx = centerLx + Math.sin(time * f.speed * paceMul + f.phase) * f.ampX;
+      const lz =
+        deckRiverZ(lx) -
+        offsetFromEdge -
+        Math.cos(time * f.speed * 1.15 * paceMul + f.phase) * f.ampZ;
+      const dx = lx - f.prevLx;
+      const dz = lz - f.prevLz;
+      if (Math.hypot(dx, dz) > 0.0005) {
+        f.yaw = Math.atan2(dx, dz);
+      }
+      f.prevLx = lx;
+      f.prevLz = lz;
+
+      const bob = Math.sin(time * 2.4 + f.phase) * 0.022;
+      f.mesh.position.set(lx, baseY + bob, lz);
+      f.mesh.rotation.y = f.yaw;
+      if (f.mesh.userData.tailPivot) {
+        f.mesh.userData.tailPivot.rotation.y =
+          Math.sin(time * (fishingActive ? 11.5 : 7.5) + f.phase) * 0.36;
+      }
+      const rScale = 0.8 + ((time * 1.4 + f.phase) % 1) * (fishingActive ? 1.1 : 0.75);
+      f.ripple.scale.set(rScale, 1, rScale);
+      f.ripple.visible = fishingActive || i % 2 === 0;
+    }
+  };
+  update(0);
+
   world.scene.add(group);
   world.cameraObstacles.push(plazaFloor);
 
@@ -885,6 +976,17 @@ export function createBiaQuocHocPark(world, site, heading) {
     seatHeading,
     deckLandZ,
     deckRiverZ,
+    fishShoal: riverFishSwimmers,
+    isFishingActive: () => fishingActive,
+    setFishingActive(active, anchorWorldPos = null) {
+      fishingActive = Boolean(active);
+      if (anchorWorldPos && Number.isFinite(anchorWorldPos.x) && Number.isFinite(anchorWorldPos.z)) {
+        const loc = toLocal(anchorWorldPos.x, anchorWorldPos.z);
+        fishingAnchorLx = Math.max(-46, Math.min(46, loc.lx));
+      } else {
+        fishingAnchorLx = stallLx;
+      }
+    },
     seatAtWorld(wx, wz) {
       const loc = toLocal(wx, wz);
       const clampedLx = Math.max(-48, Math.min(48, Number.isFinite(loc.lx) ? loc.lx : stallLx));
@@ -912,6 +1014,8 @@ export function createBiaQuocHocPark(world, site, heading) {
     toLocal,
     toWorld,
     fishingSpot,
+    fishShoal: riverFishSwimmers,
+    update,
     isWaterBlocked(wx, wz, pad = 2.0) {
       const { lx, lz } = toLocal(wx, wz);
       return lx >= -66 && lx <= 66 && lz >= deckRiverZ(lx) - pad && lz <= deckLandZ(lx) + 2;
