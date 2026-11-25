@@ -509,7 +509,7 @@ export function createBiaQuocHocPark(world, site, heading) {
     new THREE.BoxGeometry(9.6, 0.02, 29.8),
     axisGraniteMat,
   );
-  axisRunner.position.set(0, 0.245, 22.8);
+  axisRunner.position.set(0, 0.25, 22.8);
   axisRunner.receiveShadow = true;
   group.add(axisRunner);
 
@@ -518,25 +518,25 @@ export function createBiaQuocHocPark(world, site, heading) {
     new THREE.CylinderGeometry(4.8, 4.8, 0.024, 32),
     mat("#b8b3a6", 0.82),
   );
-  medOuter.position.set(0, 0.248, 19.5);
+  medOuter.position.set(0, 0.268, 19.5);
   medOuter.receiveShadow = true;
   const medInner = new THREE.Mesh(
     new THREE.CylinderGeometry(2.6, 2.6, 0.026, 28),
     mat("#8d8b82", 0.8),
   );
-  medInner.position.set(0, 0.25, 19.5);
+  medInner.position.set(0, 0.287, 19.5);
   medInner.receiveShadow = true;
   group.add(medOuter, medInner);
 
   // Granite upper riverfront promenade wings extending to West & East parks
   const westWing = new THREE.Mesh(
-    new THREE.BoxGeometry(36.5, 0.24, 4.4),
+    new THREE.BoxGeometry(36.0, 0.24, 4.4),
     graniteMat,
   );
   westWing.position.set(-53.5, 0.12, -13.3);
   westWing.receiveShadow = true;
   const eastWing = new THREE.Mesh(
-    new THREE.BoxGeometry(36.5, 0.24, 4.4),
+    new THREE.BoxGeometry(36.0, 0.24, 4.4),
     graniteMat,
   );
   eastWing.position.set(49.5, 0.12, -13.3);
@@ -710,13 +710,13 @@ export function createBiaQuocHocPark(world, site, heading) {
     new THREE.BoxGeometry(36.5, 0.14, 46),
     grassMat,
   );
-  westLawn.position.set(-53.7, 0.05, 11.5);
+  westLawn.position.set(-53.7, 0.06, 11.5);
   westLawn.receiveShadow = true;
   const eastLawn = new THREE.Mesh(
     new THREE.BoxGeometry(36.5, 0.14, 44),
     grassMat,
   );
-  eastLawn.position.set(49.7, 0.05, 10.5);
+  eastLawn.position.set(49.7, 0.06, 10.5);
   eastLawn.receiveShadow = true;
   group.add(westLawn, eastLawn);
 
@@ -860,7 +860,7 @@ export function createBiaQuocHocPark(world, site, heading) {
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
       // Skip wild grass blades across the entire paved plaza, monument, pergola, terraced lawns & wooden deck
-      return lx >= -68 && lx <= 66 && lz >= -58 && lz <= 39.5;
+      return lx >= -74 && lx <= 72 && lz >= -62 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);

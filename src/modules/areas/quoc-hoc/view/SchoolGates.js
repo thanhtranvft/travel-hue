@@ -3,6 +3,7 @@ import config from "../data/school-gates.json" with { type: "json" };
 import { box, mat, roof } from "../../../../core/shared/architecture/shared.js";
 import { getPointsOf, getRoads } from "../../../../core/shared/geography/activeGeography.js";
 import { nearestPoint } from "../../../../core/shared/geography/geometry.js";
+import { insetRingClearOfRoads } from "../../../../core/world/streetPlacement.js";
 import dongDaCampuses from "../../nguyen-chi-dieu/data/campuses.json" with { type: "json" };
 import quangTrungCampuses from "../../quang-trung/data/campuses.json" with { type: "json" };
 
@@ -347,8 +348,15 @@ function createQuocHocGate(data) {
 export function schoolGatePlacement(site) {
   const precomputed = dongDaCampuses[site.id];
   if (precomputed?.gate) {
+    let gatePt = { ...precomputed.gate };
+    if (precomputed.ring) {
+      const dongDaRoads = getRoads().filter((r) => r.tags?.name === "Đống Đa");
+      const inset = insetRingClearOfRoads(precomputed.ring, dongDaRoads, 2.75);
+      gatePt = nearestPoint(precomputed.gate, inset);
+    }
     return {
-      ...precomputed.gate,
+      x: gatePt.x,
+      z: gatePt.z,
       heading: dongDaCampuses.gateHeading,
       confidence: "mapped",
     };

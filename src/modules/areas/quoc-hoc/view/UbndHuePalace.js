@@ -699,15 +699,15 @@ export class UbndHuePalace {
     this.group.add(baseLawn);
 
     // 2. Ceremonial Granite Driveway & Forecourt Motor Plaza
-    // Central Grand Avenue from Lê Lợi main gate straight to Palace Steps
+    // Central Grand Avenue from Lê Lợi main gate to front edge of Palace Forecourt Apron (lz: 58.5..79.5)
     const centralAvenue = new THREE.Mesh(
-      new THREE.BoxGeometry(16.0, 0.24, 38.0),
+      new THREE.BoxGeometry(16.0, 0.24, 21.0),
       graniteMat,
     );
-    centralAvenue.position.set(cx, 0.12, 77.5);
+    centralAvenue.position.set(cx, 0.12, 69.0);
     centralAvenue.receiveShadow = true;
 
-    // Wide Palace Forecourt Apron across front of building (lz: 79 .. 98)
+    // Wide Palace Forecourt Apron across front of building (lz: 79.5..97.5)
     const palaceApron = new THREE.Mesh(
       new THREE.BoxGeometry(92.0, 0.24, 18.0),
       graniteMat,
@@ -724,13 +724,13 @@ export class UbndHuePalace {
     rearApron.receiveShadow = true;
     this.group.add(centralAvenue, palaceApron, rearApron);
 
-    // Twin Side Entry Drives connecting side gates (lx: cx ± 42.5) to forecourt apron
+    // Twin Side Entry Drives connecting side gates (lx: cx ± 42.5) to front edge of forecourt apron (lz: 58.5..79.5)
     for (const sx of [-1, 1]) {
       const sideDrive = new THREE.Mesh(
-        new THREE.BoxGeometry(7.2, 0.24, 26.0),
+        new THREE.BoxGeometry(7.2, 0.24, 21.0),
         graniteMat,
       );
-      sideDrive.position.set(cx + sx * 42.5, 0.12, 71.5);
+      sideDrive.position.set(cx + sx * 42.5, 0.12, 69.0);
       sideDrive.receiveShadow = true;
       this.group.add(sideDrive);
     }
@@ -825,17 +825,20 @@ export class UbndHuePalace {
   buildPerimeterFenceAndGates() {
     const cx = this.cx;
     const { minLx, maxLx, minLz, maxLz } = this.bounds;
-    const worldRing = [
+    const rawRing = [
       this.toWorld(minLx, minLz),
       this.toWorld(maxLx, minLz),
       this.toWorld(maxLx, maxLz),
       this.toWorld(minLx, maxLz),
       this.toWorld(minLx, minLz),
     ];
+    const worldRing = insetRingClearOfRoads(rawRing, this.world?.renderRoads, 2.25);
+    const frontLocal = this.toLocal(worldRing[0].x, worldRing[0].z);
+    const fenceFrontLz = Math.max(minLz, frontLocal.lz);
 
-    const mainGateWorld = this.toWorld(cx, minLz);
-    const leftDriveGate = { ...this.toWorld(cx - 42.5, minLz), gap: 6.4 };
-    const rightDriveGate = { ...this.toWorld(cx + 42.5, minLz), gap: 6.4 };
+    const mainGateWorld = this.toWorld(cx, fenceFrontLz);
+    const leftDriveGate = { ...this.toWorld(cx - 42.5, fenceFrontLz), gap: 6.4 };
+    const rightDriveGate = { ...this.toWorld(cx + 42.5, fenceFrontLz), gap: 6.4 };
 
     const segments = campusWallSegments(
       worldRing,
@@ -878,7 +881,7 @@ export class UbndHuePalace {
 
       // Classical lit fence piers along Lê Lợi frontage
       const midLocal = this.toLocal((a.x + b.x) / 2, (a.z + b.z) / 2);
-      if (Math.abs(midLocal.lz - minLz) < 1.0) {
+      if (Math.abs(midLocal.lz - fenceFrontLz) < 1.2) {
         const pierCount = Math.max(1, Math.round(len / 7.2));
         for (let k = 0; k <= pierCount; k++) {
           const t = k / pierCount;
@@ -946,12 +949,7 @@ export class UbndHuePalace {
   }
 
   blocksGrass(wx, wz) {
-    if (!this.inCampus(wx, wz)) return false;
-    const { lx, lz } = this.toLocal(wx, wz);
-    if (Math.abs(lx - this.cx) <= 9.0 && lz >= 58.5 && lz <= 97.5) return true;
-    if (Math.abs(lx - this.cx) <= 46.5 && lz >= 79 && lz <= 128) return true;
-    if (Math.abs(lx - this.cx) <= 52.5 && lz >= 99 && lz <= 119) return true;
-    return false;
+    return this.inCampus(wx, wz);
   }
 
   blocksTree(wx, wz) {

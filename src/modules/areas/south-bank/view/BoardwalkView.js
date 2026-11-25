@@ -310,14 +310,14 @@ export function addLimWoodBoardwalk(world, roads) {
     buildExtrudedStrip(
       mainFrames,
       [
-        [-halfW - 0.06, 0.0],
+        [-halfW - 0.06, -0.025],
         [-halfW - 0.06, -0.28],
         [halfW + 0.06, -0.28],
-        [halfW + 0.06, 0.0],
-        [halfW - 0.02, 0.0],
+        [halfW + 0.06, -0.025],
+        [halfW - 0.02, -0.025],
         [halfW - 0.02, -0.2],
         [-halfW + 0.02, -0.2],
-        [-halfW + 0.02, 0.0],
+        [-halfW + 0.02, -0.025],
       ],
       6,
     ),
@@ -338,15 +338,15 @@ export function addLimWoodBoardwalk(world, roads) {
       end.dir < 0 ? [rampPts[1], rampPts[0]] : rampPts,
     );
     rampCorridors.push(rFrames);
-    deckParts.push(buildTopDeck(rFrames, halfW, 0.002, 3.2));
+    deckParts.push(buildTopDeck(rFrames, halfW, 0.004, 3.2));
     beamParts.push(
       buildExtrudedStrip(
         rFrames,
         [
-          [-halfW - 0.04, 0],
+          [-halfW - 0.04, -0.025],
           [-halfW - 0.04, -0.2],
           [halfW + 0.04, -0.2],
-          [halfW + 0.04, 0],
+          [halfW + 0.04, -0.025],
         ],
         4,
       ),
@@ -398,15 +398,21 @@ export function addLimWoodBoardwalk(world, roads) {
     const lHalfW = 1.5;
     lateralCorridors.push({ frames: lFrames, halfW: lHalfW });
 
-    deckParts.push(buildTopDeck(lFrames, lHalfW, 0.003, 2.8));
+    const lLen = lFrames.at(-1).s;
+    const trimDeckStart = Math.min(halfW - 0.04, lLen * 0.25);
+    const trimmedDeckFrames = [
+      frameAtArc(lFrames, trimDeckStart),
+      ...lFrames.filter((lf) => lf.s > trimDeckStart),
+    ].filter(Boolean);
+    deckParts.push(buildTopDeck(trimmedDeckFrames, lHalfW, 0.004, 2.8));
     beamParts.push(
       buildExtrudedStrip(
-        lFrames,
+        trimmedDeckFrames,
         [
-          [-lHalfW - 0.05, 0],
+          [-lHalfW - 0.05, -0.025],
           [-lHalfW - 0.05, -0.24],
           [lHalfW + 0.05, -0.24],
-          [lHalfW + 0.05, 0],
+          [lHalfW + 0.05, -0.025],
         ],
         5,
       ),
@@ -419,7 +425,6 @@ export function addLimWoodBoardwalk(world, roads) {
     }
 
     // Railings along both sides of lateral cross-bridge (trimmed clean at main boardwalk outer edge)
-    const lLen = lFrames.at(-1).s;
     const trimStart = Math.min(2.05, lLen * 0.25);
     const trimmedRailFrames = [
       frameAtArc(lFrames, trimStart),

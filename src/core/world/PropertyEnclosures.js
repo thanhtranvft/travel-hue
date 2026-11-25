@@ -4,7 +4,10 @@ import data from "../../data/world/property-enclosures.json" with { type: "json"
 import { project, inside, nearestPoint } from "../shared/geography/geometry.js";
 import { campusWallSegments } from "../shared/architecture/CampusWalls.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
-import { segmentHitsCarriageway } from "./streetPlacement.js";
+import {
+  insetRingClearOfRoads,
+  segmentHitsCarriageway,
+} from "./streetPlacement.js";
 import {
   CITParking,
   parkingGate,
@@ -66,7 +69,10 @@ export class PropertyEnclosures {
         !property.members.some((code) => activeCodes.has(code))
       )
         continue;
-      const rings = property.rings.map((r) => r.map(project)),
+      const minClear = world.region?.id === "nguyen-chi-dieu" ? 2.7 : 2.2;
+      const rings = property.rings.map((r) =>
+          insetRingClearOfRoads(r.map(project), world.renderRoads, minClear),
+        ),
         frontage = propertyGate(rings[0], world.renderRoads),
         gate = property.frontage?.gate
           ? nearestPoint(project(property.frontage.gate), [
@@ -102,7 +108,13 @@ export class PropertyEnclosures {
                   g.id !== property.id &&
                   nearestPoint(g.point, [a, b]).distance < g.radius,
               ) ||
-              segmentHitsCarriageway(a, b, world.renderRoads, 0.75, 0.5) ||
+              segmentHitsCarriageway(
+                a,
+                b,
+                world.renderRoads,
+                minClear - 0.05,
+                0.5,
+              ) ||
               world.buildingPolygons.some((p) => inside(middle, p.points))
             ) {
               this.stats.omittedAtRoadOrBuilding++;
@@ -159,16 +171,21 @@ export class PropertyEnclosures {
       const record = { ...property, rings, gate, segments };
       this.records.push(record);
       if (property.frontage) {
-        const road = world.renderRoads
-          .filter((r) => r.tags.name === "Lê Lợi")
+        const leLoi = world.renderRoads.filter((r) => r.tags?.name === "Lê Lợi");
+        const candidates = leLoi.length
+          ? leLoi
+          : world.renderRoads.filter((r) => r.tags?.name);
+        const road = candidates
           .map((r) => nearestPoint(gate, r.points))
           .sort((a, b) => a.distance - b.distance)[0];
-        world.scene.add(
-          propertyGateModel(
-            record,
-            Math.atan2(road.x - gate.x, road.z - gate.z),
-          ),
-        );
+        if (road) {
+          world.scene.add(
+            propertyGateModel(
+              record,
+              Math.atan2(road.x - gate.x, road.z - gate.z),
+            ),
+          );
+        }
       }
       this.stats.properties++;
       this.stats.coveredBuildings += property.members.length;

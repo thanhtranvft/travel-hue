@@ -541,15 +541,15 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     new THREE.CylinderGeometry(plazaRadius, plazaRadius, 0.24, 56),
     graniteMat,
   );
-  plazaDisk.position.set(cx, 0.125, cz);
+  plazaDisk.position.set(cx, 0.14, cz);
   plazaDisk.receiveShadow = true;
 
-  // North-South Promenade straight from UBND Lê Lợi entrance to riverfront terrace
+  // North-South Promenade straight from UBND Lê Lợi entrance to riverfront terrace (split clear of riverWalk/plazaDisk/frontWalk)
   const nsWalk = new THREE.Mesh(
-    new THREE.BoxGeometry(11.6, 0.24, 57.5),
+    new THREE.BoxGeometry(11.6, 0.24, 47.8),
     graniteMat,
   );
-  nsWalk.position.set(cx, 0.12, 10.6);
+  nsWalk.position.set(cx, 0.12, 12.1);
   nsWalk.receiveShadow = true;
 
   // Approach ramp at Lê Lợi sidewalk
@@ -560,21 +560,21 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   frontRamp.position.set(cx, 0.13, 39.2);
   frontRamp.rotation.x = 0.035;
 
-  // East-West Promenade through central circle & side semi-circular fountains
+  // East-West Promenade connecting central plaza & side semi-circular fountains (inside plazaDisk + apses)
   const ewWalk = new THREE.Mesh(
     new THREE.BoxGeometry(72, 0.24, 8.6),
     graniteMat,
   );
-  ewWalk.position.set(cx, 0.12, cz);
+  ewWalk.position.set(cx, 0.11, cz);
   ewWalk.receiveShadow = true;
 
-  // Curved semi-circular apse aprons framing side fountains
+  // Curved semi-circular apse aprons framing side fountains (top 0.24m)
   for (const sx of [-1, 1]) {
     const apse = new THREE.Mesh(
       new THREE.CylinderGeometry(11.5, 11.5, 0.24, 32),
       graniteMat,
     );
-    apse.position.set(cx + sx * 27, 0.122, cz);
+    apse.position.set(cx + sx * 27, 0.12, cz);
     apse.receiveShadow = true;
     group.add(apse);
   }
@@ -595,7 +595,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   frontWalk.position.set(292, 0.12, 37.6);
   frontWalk.receiveShadow = true;
 
-  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (lx = 218..254 & 325..366)
+  // Small Diagonal & Branching Wing Footpaths radiating from Fountain Plaza (top 0.22m so zero overlap Z-fighting with main walks/apses)
   const wingWalkSegments = [
     // West wing connecting to FireflyTreePark (lx = 218)
     { a: { lx: cx - 36, lz: cz }, b: { lx: 218, lz: cz }, width: 3.4 },
@@ -617,7 +617,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       new THREE.BoxGeometry(width, 0.24, len + 0.6),
       graniteMat,
     );
-    mesh.position.set((a.lx + b.lx) / 2, 0.12, (a.lz + b.lz) / 2);
+    mesh.position.set((a.lx + b.lx) / 2, 0.1, (a.lz + b.lz) / 2);
     mesh.rotation.y = Math.atan2(dx, dz);
     mesh.receiveShadow = true;
     return mesh;
@@ -1023,7 +1023,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 218 && lx <= 366 && lz >= sampleShoreZ(lx) - 1 && lz <= 40.2;
+      return lx >= 218 && lx <= 366 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);

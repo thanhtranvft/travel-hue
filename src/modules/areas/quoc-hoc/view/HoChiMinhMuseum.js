@@ -1,8 +1,15 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { inside } from "../../../../core/shared/geography/geometry.js";
+import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
+import {
+  campusWallSegments,
+  hitsCampusWall,
+} from "../../../../core/shared/architecture/CampusWalls.js";
+import {
+  filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
+} from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -418,7 +425,7 @@ export class HoChiMinhMuseum {
     this.group.rotation.y = frameHeading;
 
     // Exact campus polygon safely clear of Điện Biên Phủ, Service Road 39417236 & Lê Lợi footway
-    this.campusPoly = [
+    const rawLocalPoly = [
       { x: -268.0, z: 36.8 },
       { x: -188.0, z: 36.8 },
       { x: -179.5, z: -28.0 },
@@ -431,13 +438,26 @@ export class HoChiMinhMuseum {
     this.bWidth = 32.0;
     this.bDepth = 33.0;
 
+    const insetWorldPoly = insetRingClearOfRoads(
+      rawLocalPoly.map((p) => this.toWorld(p.x, p.z)),
+      world?.renderRoads,
+      2.3,
+      { centerHint: this.toWorld(this.cx, this.cz) },
+    );
+    this.campusPoly = insetWorldPoly.map((w) => {
+      const l = this.toLocal(w.x, w.z);
+      return { x: l.lx, z: l.lz };
+    });
+
     // Twin symmetrical driveway gates facing Lê Lợi
-    this.leftGateLocal = { lx: -254.0, lz: 36.8 };
-    this.rightGateLocal = { lx: -196.5, lz: 36.8 };
-    this.entrance = this.toWorld(this.rightGateLocal.lx, this.rightGateLocal.lz);
+    const leftHit = nearestPoint(this.toWorld(-254.0, 36.8), insetWorldPoly);
+    const rightHit = nearestPoint(this.toWorld(-196.5, 36.8), insetWorldPoly);
+    this.leftGateLocal = this.toLocal(leftHit.x, leftHit.z);
+    this.rightGateLocal = this.toLocal(rightHit.x, rightHit.z);
+    this.entrance = { x: rightHit.x, z: rightHit.z };
     this.gates = [
-      this.toWorld(this.leftGateLocal.lx, this.leftGateLocal.lz),
-      this.toWorld(this.rightGateLocal.lx, this.rightGateLocal.lz),
+      { x: leftHit.x, z: leftHit.z },
+      { x: rightHit.x, z: rightHit.z },
     ];
 
     this.buildGrounds();
@@ -886,16 +906,21 @@ export class HoChiMinhMuseum {
     const ringWorld = this.campusPoly.map((p) => this.toWorld(p.x, p.z));
     ringWorld.push(ringWorld[0]);
     const extraGate = { ...this.toWorld(this.leftGateLocal.lx, this.leftGateLocal.lz), gap: 8.2 };
-    const segments = campusWallSegments(ringWorld, this.entrance, 8.2, [extraGate]);
+    const segments = filterSegmentsClearOfRoads(
+      campusWallSegments(ringWorld, this.entrance, 8.2, [extraGate]),
+      this.world?.renderRoads,
+      2.15,
+    );
+    this.wallSegments = segments;
     this.world.campusWallSegments.push(
       ...segments.map((s) => ({ ...s, schoolId: "ho-chi-minh-museum" })),
     );
 
     // Front ornamental stone gate piers at Left Gate & Right Gate
-    for (const gx of [this.leftGateLocal.lx, this.rightGateLocal.lx]) {
+    for (const gLocal of [this.leftGateLocal, this.rightGateLocal]) {
       for (const side of [-4.2, 4.2]) {
-        const pier = box([0.66, 1.85, 0.66], "#7a8086", [gx + side, 0.96, 36.8]);
-        const cap = box([0.78, 0.18, 0.78], "#c9ccd0", [gx + side, 1.94, 36.8]);
+        const pier = box([0.66, 1.85, 0.66], "#7a8086", [gLocal.lx + side, 0.96, gLocal.lz]);
+        const cap = box([0.78, 0.18, 0.78], "#c9ccd0", [gLocal.lx + side, 1.94, gLocal.lz]);
         pier.castShadow = true;
         this.group.add(pier, cap);
       }
@@ -1035,6 +1060,12 @@ export class HoChiMinhMuseum {
 
   blocksTree(wx, wz) {
     if (this.inCampus(wx, wz)) return true;
+    if (
+      this.wallSegments &&
+      hitsCampusWall({ x: wx, z: wz }, this.wallSegments, 2.4)
+    ) {
+      return true;
+    }
     const { lx, lz } = this.toLocal(wx, wz);
     // Protect Lê Lợi gate approaches & front sightline
     if (lz >= 34 && lz <= 43 && lx >= -265 && lx <= -186) return true;

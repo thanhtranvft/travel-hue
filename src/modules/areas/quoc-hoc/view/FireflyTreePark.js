@@ -430,21 +430,21 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     new THREE.CylinderGeometry(clearingRadius + 0.45, clearingRadius + 0.55, 0.22, 48),
     curbMat,
   );
-  clearingRim.position.set(treeLx, 0.12, treeLz);
+  clearingRim.position.set(treeLx, 0.15, treeLz);
   clearingRim.receiveShadow = true;
 
   const clearingDisk = new THREE.Mesh(
     new THREE.CylinderGeometry(clearingRadius, clearingRadius, 0.24, 48),
     sandyMat,
   );
-  clearingDisk.position.set(treeLx, 0.125, treeLz);
+  clearingDisk.position.set(treeLx, 0.16, treeLz);
   clearingDisk.receiveShadow = true;
   group.add(clearingRim, clearingDisk);
 
   // 4. MASSIVE ANCIENT WISHING TREE (CÂY ĐOM ĐÓM / CÂY ĐA ƯỚC NGUYỆN)
   const wishingTree = new THREE.Group();
   wishingTree.name = "cay-dom-dom-wishing-tree";
-  wishingTree.position.set(treeLx, 0.24, treeLz);
+  wishingTree.position.set(treeLx, 0.28, treeLz);
 
   const barkMat = mat("#4b3b2c", 0.94);
   const rootMat = mat("#594635", 0.92);
@@ -622,8 +622,8 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   group.add(wishingTree);
 
   // 7. CARVED STONE MONOLITH SCULPTURES & DECORATIVE CHECK-IN ARCH
-  group.add(createCarvedMonolith(treeLx - 15.5, 0.24, treeLz + 13.5, 0.35, 1.05));
-  group.add(createCarvedMonolith(treeLx + 17.5, 0.24, treeLz + 10.5, -0.45, 0.82));
+  group.add(createCarvedMonolith(treeLx - 15.5, 0.28, treeLz + 13.5, 0.35, 1.05));
+  group.add(createCarvedMonolith(treeLx + 17.5, 0.28, treeLz + 10.5, -0.45, 0.82));
   group.add(createCarvedMonolith(treeLx - 27, 0.13, -4.5, 0.2, 0.92));
   group.add(createWhitePhotoArch(treeLx + 22, 0.14, -5.5, -0.35));
 
@@ -704,7 +704,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
 
       // Sandy circular clearing
       if (Math.hypot(lx - treeLx, lz - treeLz) <= clearingRadius + 0.4) {
-        return 0.24;
+        return 0.28;
       }
       // Riverside promenade, Hai Bà Trưng approach walk & East garden link to Fountain Park
       if (lz >= -15.6 && lz <= -11.0) return 0.24;
@@ -745,7 +745,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 70 && lx <= 218 && lz >= sampleShoreZ(lx) - 1 && lz <= 40.2;
+      return lx >= 70 && lx <= 218 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);

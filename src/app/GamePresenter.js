@@ -37,8 +37,8 @@ export class GamePresenter {
     this.camera = new THREE.PerspectiveCamera(
       57,
       innerWidth / innerHeight,
-      0.1,
-      this.quality.mobile ? 2800 : 5000,
+      0.35,
+      this.quality.mobile ? 2600 : 3200,
     );
     this.renderer = this.createRenderer(canvas);
     this.contextLost = false;

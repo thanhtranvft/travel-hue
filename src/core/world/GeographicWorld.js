@@ -35,6 +35,7 @@ import { intersection } from "../shared/geography/map.js";
 import { inside, nearestPoint, project } from "../shared/geography/geometry.js";
 import { appendTrailPoint, renderAreaMap } from "./minimap.js";
 import { addStreetDetails } from "./StreetDetails.js";
+import { addIntersectionDirectionSigns } from "./IntersectionSigns.js";
 import { roadsidePoint } from "./streetPlacement.js";
 import { isFootway, roadWidth } from "./roadProfile.js";
 import {
@@ -328,6 +329,34 @@ export class GeographicWorld {
       water.position.y = 0.02;
       scene.add(water);
     }
+    const quocHocSite = activeSites.find((s) => s.id === "quoc-hoc");
+    let quocHocClosest = null;
+    if (quocHocSite) {
+      quocHocClosest = activeMainRoads
+        .map((r) => nearestPoint(quocHocSite.sign, r.points))
+        .sort((a, b) => a.distance - b.distance)[0];
+    }
+    const quocHocHeading =
+      quocHocSite && quocHocClosest
+        ? Math.atan2(
+            quocHocClosest.x - quocHocSite.sign.x,
+            quocHocClosest.z - quocHocSite.sign.z,
+          )
+        : 0;
+    const qhCos = Math.cos(quocHocHeading);
+    const qhSin = Math.sin(quocHocHeading);
+    const isInsideBespokePark = (p) => {
+      if (this.region?.id === "quang-trung" && isQuangTrungEastPrecinctBuilding(p)) {
+        return true;
+      }
+      if (!quocHocSite) return false;
+      const dx = p.x - quocHocSite.center.x;
+      const dz = p.z - quocHocSite.center.z;
+      const lx = dx * qhCos - dz * qhSin;
+      const lz = dx * qhSin + dz * qhCos;
+      return lx >= -74 && lx <= 538 && lz >= -62 && lz <= 40.5;
+    };
+
     this.parkPolygons = [];
     const parkGeos = [];
     const parkBorderGeos = [];
@@ -338,6 +367,11 @@ export class GeographicWorld {
         (f.tags?.leisure === "park" || f.tags?.landuse === "grass"),
     )) {
       const pts = getPointsOf(feature);
+      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const cz = pts.reduce((s, p) => s + p.z, 0) / pts.length;
+      if (isInsideBespokePark({ x: cx, z: cz }) || pts.some(isInsideBespokePark)) {
+        continue;
+      }
       this.parkPolygons.push({
         points: pts,
         minX: Math.min(...pts.map((p) => p.x)),
@@ -400,7 +434,15 @@ export class GeographicWorld {
       const width = roadWidth(road),
         foot = ["footway", "path", "pedestrian"].includes(road.tags.highway);
       const height = (i) => this.roadHeight(road, i);
-      if (!customSurfaceIds.has(road.id) && road.tags.name !== "Cầu Phú Xuân") {
+      const insideBespokeFootway =
+        foot &&
+        road.points.length >= 2 &&
+        road.points.filter(isInsideBespokePark).length >= road.points.length / 2;
+      if (
+        !insideBespokeFootway &&
+        !customSurfaceIds.has(road.id) &&
+        road.tags.name !== "Cầu Phú Xuân"
+      ) {
         (foot ? walkways : paved).push(ribbon(road.points, width, height));
       }
       if (
@@ -973,6 +1015,7 @@ export class GeographicWorld {
         this.allGateClearances.push({ x: g.x, z: g.z, radius: 15.0 });
       }
     }
+    this.routeSignPlacements = [];
     for (const crossing of activeCorridorCrossings) {
       const road = activeRoads.find((r) => r.id === crossing.mainId);
       if (!road) continue;
@@ -1077,6 +1120,16 @@ export class GeographicWorld {
           }
         }
       }
+    this.propertyEnclosures = new PropertyEnclosures(this);
+    if (this.dongDaCorridor?.wallSegments?.length) {
+      this.campusWallSegments.push(
+        ...this.dongDaCorridor.wallSegments.map((s) => ({
+          ...s,
+          schoolId: s.schoolId || "dong-da-corridor",
+        })),
+      );
+    }
+    this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     const filterCampusTrees = () => {
       this.treePositions = this.treePositions.filter((p) =>
         this.isTreePositionSafe(p),
@@ -1086,7 +1139,6 @@ export class GeographicWorld {
     this.treePositions = this.treePositions.slice(0, 95);
     this.projectPoint = project;
     this.riverRings = activeRiver;
-    addStreetDetails(this, activeFeatures);
     if (
       this.truongTienRoad ||
       getById(239566031) ||
@@ -1097,6 +1149,8 @@ export class GeographicWorld {
         activeFeatures,
       );
     }
+    addStreetDetails(this, activeFeatures);
+    addIntersectionDirectionSigns(this);
     filterCampusTrees();
     const boardwalkView = addLimWoodBoardwalk(this, activeRoads);
     const lateralJunctions = boardwalkView?.lateralJunctions || [];
@@ -1133,9 +1187,7 @@ export class GeographicWorld {
       );
       this.boardwalkRails.push(...extSegments);
     }
-    this.propertyEnclosures = new PropertyEnclosures(this);
     this.station = getById(175063593) ? new HueStation(this) : null;
-    this.campusWallGrid = campusWallIndex(this.campusWallSegments);
     this.buildTreeGrid();
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
@@ -1154,7 +1206,8 @@ export class GeographicWorld {
       near: 1,
       far: 400,
     });
-    this.sun.shadow.normalBias = 0.04;
+    this.sun.shadow.bias = -0.0004;
+    this.sun.shadow.normalBias = 0.03;
     scene.add(this.sun, this.sun.target);
   }
   roadHeight(road, index) {
@@ -1310,6 +1363,15 @@ export class GeographicWorld {
       this.hueHospital?.blocksTree(p.x, p.z) ||
       this.truongTienSurroundings?.blocksTree(p.x, p.z) ||
       this.dongDaCorridor?.blocksTree(p.x, p.z)
+    )
+      return false;
+    if (
+      this.campusWallSegments?.length &&
+      hitsCampusWall(
+        p,
+        this.nearCampusWalls ? this.nearCampusWalls(p.x, p.z) : this.campusWallSegments,
+        2.25,
+      )
     )
       return false;
     const gx = Math.floor(p.x / 64);

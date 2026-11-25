@@ -7,11 +7,12 @@ import {
   nearestPoint,
 } from "../../../../core/shared/geography/geometry.js";
 import { schoolGatePlacement } from "./SchoolGates.js";
-import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
+import { campusWallSegments, hitsCampusWall } from "../../../../core/shared/architecture/CampusWalls.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { beam } from "../../../../core/shared/architecture/architecture.js";
 import {
   filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
   onOtherCarriageway,
 } from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
@@ -859,18 +860,24 @@ export class YouthPlayground {
     this.world = world;
     const feature = byId(config.campusOSM);
     this.frame = youthCampusFrame(feature);
-    this.expandedRing = expandedYouthCampusRing(feature);
+    this.expandedRing = insetRingClearOfRoads(
+      expandedYouthCampusRing(feature),
+      world?.renderRoads,
+      2.35,
+      { centerHint: this.frame.toWorld(0, 65) },
+    );
 
     // Center main entrance directly along Main Building atrium axis (side = -4.85, fwd = 0.2)
     const placedEntrance = schoolGatePlacement({
       feature,
       anchor: { kind: "area-label" },
     });
-    const gateWorld = this.frame.toWorld(-4.85, 0.2);
+    const gateTarget = this.frame.toWorld(-4.85, 0.2);
+    const gateHit = nearestPoint(gateTarget, this.expandedRing);
     this.entrance = {
       ...placedEntrance,
-      x: gateWorld.x,
-      z: gateWorld.z,
+      x: gateHit.x,
+      z: gateHit.z,
       heading: Math.atan2(-this.frame.inAxis.x, -this.frame.inAxis.z),
     };
 
@@ -881,7 +888,7 @@ export class YouthPlayground {
         config.entranceWidth,
       ),
       world?.renderRoads,
-      0.65,
+      2.2,
     );
     this.equipment = [];
     this.animatedObjects = [];
@@ -1055,7 +1062,6 @@ export class YouthPlayground {
       color: brickTex ? "#ffffff" : "#c99f5e",
       map: brickTex,
       roughness: 0.82,
-      side: THREE.DoubleSide,
     });
     const lawnTex = createManicuredLawnTexture(14, 14, {
       striped: true,
@@ -1065,25 +1071,22 @@ export class YouthPlayground {
       color: lawnTex ? "#ffffff" : "#559646",
       map: lawnTex,
       roughness: 0.9,
-      side: THREE.DoubleSide,
     });
     const walkMat = mat("#d5cab3", 0.84);
 
-    // Full green campus ground pad so internal paths & rides never expose raw asphalt
+    // Full green campus ground pad built from inset perimeter so grounds stay inside the fence
+    const localRingPts = this.expandedRing.map((p) => this.toLocal(p.x, p.z));
+    if (
+      localRingPts.length > 3 &&
+      Math.hypot(
+        localRingPts[0].side - localRingPts.at(-1).side,
+        localRingPts[0].fwd - localRingPts.at(-1).fwd,
+      ) < 0.05
+    ) {
+      localRingPts.pop();
+    }
     const campusShape = new THREE.Shape(
-      [
-        [-33.2, 0.5],
-        [-40.8, 2.0],
-        [-47.2, 6.8],
-        [-50.8, 14.0],
-        [-62.6, 74.0],
-        [-68.6, 98.0],
-        [-73.2, 114.0],
-        [-78.0, 138.5],
-        [35.2, 138.5],
-        [32.9, 12.0],
-        [32.7, 0.5],
-      ].map(([s, f]) => new THREE.Vector2(s, -f)),
+      localRingPts.map((p) => new THREE.Vector2(p.side, -p.fwd)),
     );
     const turfGeo = new THREE.ExtrudeGeometry(campusShape, {
       depth: 0.14,
@@ -1091,7 +1094,7 @@ export class YouthPlayground {
     });
     turfGeo.rotateX(-Math.PI / 2);
     const turfMesh = new THREE.Mesh(turfGeo, lawnMat);
-    turfMesh.position.y = 0.04;
+    turfMesh.position.y = 0.02;
     turfMesh.receiveShadow = true;
     this.campusGroup.add(turfMesh);
 
@@ -1164,8 +1167,8 @@ export class YouthPlayground {
       { s: -19, f: 135, w: 102, l: 4.5 },
     ];
     for (const p of paths) {
-      const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.08, p.l), walkMat);
-      m.position.set(p.s, 0.18, p.f);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(p.w, 0.06, p.l), walkMat);
+      m.position.set(p.s, 0.17, p.f);
       m.receiveShadow = true;
       this.campusGroup.add(m);
     }
@@ -1585,26 +1588,13 @@ export class YouthPlayground {
   }
 
   blocksGrass(wx, wz) {
-    if (!this.inCampus(wx, wz)) return false;
-    const { side, fwd } = this.toLocal(wx, wz);
-    // Block wild grass on brick plaza, building footprint, paths, coaster/car track decks & slide safety pads
-    if (fwd >= 0 && fwd <= 41.5 && side >= -36 && side <= 28) return true;
-    if (side >= -33 && side <= 24 && fwd >= 36 && fwd <= 62) return true;
-    if (side >= -40 && side <= -13 && fwd >= 57 && fwd <= 98) return true;
-    if (side >= 15 && side <= 33.5 && fwd >= 58 && fwd <= 98) return true; // kiddie cars
-    if (side >= -10 && side <= 33.5 && fwd >= 101 && fwd <= 137) return true; // coaster
-    if (side >= -33 && side <= -14 && fwd >= 107 && fwd <= 127) return true; // slide tower
-    if (Math.hypot(side - -56, fwd - 118) < 6.4) return true; // carousel
-    if (Math.hypot(side - -46, fwd - 36) < 4.0) return true; // sandbox
-    if (fwd >= 95 && fwd <= 103 && side >= -70 && side <= 33.5) return true; // main promenade
-    if (side >= 24 && side <= 31 && fwd >= 20 && fwd <= 132) return true; // east walk
-    if (side >= -46 && side <= -39 && fwd >= 32 && fwd <= 137) return true; // west walk
-    return false;
+    return this.inCampus(wx, wz);
   }
 
   blocksTree(wx, wz) {
     if (this.inCampus(wx, wz)) return true;
-    return Math.hypot(wx - this.entrance.x, wz - this.entrance.z) < 16.5;
+    if (Math.hypot(wx - this.entrance.x, wz - this.entrance.z) < 16.5) return true;
+    return hitsCampusWall({ x: wx, z: wz }, this.segments, 2.6);
   }
 
   update(time) {

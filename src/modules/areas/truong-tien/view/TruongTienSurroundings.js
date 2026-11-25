@@ -762,11 +762,11 @@ export class TruongTienSurroundings {
     // Connector walkway linking riverside promenade seamlessly into right-side café terrace
     const cafeConnGeo = buildPromenadeRibbon(
       [
-        { x: 1307.0, z: -1291.0 },
-        { x: 1315.5, z: -1279.0 },
+        { x: 1309.6, z: -1287.4 },
+        { x: 1314.8, z: -1280.0 },
       ],
       2.2,
-      PROMENADE_Y + 0.004,
+      PROMENADE_Y + 0.022,
     );
     const cafeConn = new THREE.Mesh(cafeConnGeo, promMat);
     cafeConn.receiveShadow = true;

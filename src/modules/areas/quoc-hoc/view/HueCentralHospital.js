@@ -3,8 +3,14 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { getById, getPointsOf, getRingsOf } from "../../../../core/shared/geography/activeGeography.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
-import { segmentHitsCarriageway } from "../../../../core/world/streetPlacement.js";
+import {
+  campusWallSegments,
+  hitsCampusWall,
+} from "../../../../core/shared/architecture/CampusWalls.js";
+import {
+  insetRingClearOfRoads,
+  segmentHitsCarriageway,
+} from "../../../../core/world/streetPlacement.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -242,6 +248,7 @@ export class HueCentralHospital {
     this.beacons = [];
     this.animatedObjects = [];
     this.gates = [];
+    this.wallSegments = [];
 
     if (world.biaPark) {
       this.toWorld = world.biaPark.toWorld;
@@ -328,7 +335,7 @@ export class HueCentralHospital {
       new THREE.BoxGeometry(62.0, 0.14, 48.0),
       lawnMat,
     );
-    gardenLawn.position.set(413.0, 0.08, 144.0);
+    gardenLawn.position.set(413.0, 0.04, 144.0);
     gardenLawn.receiveShadow = true;
     this.group.add(gardenLawn);
 
@@ -403,7 +410,7 @@ export class HueCentralHospital {
         new THREE.BoxGeometry(gw, 0.14, 4.2),
         lawnMat,
       );
-      strip.position.set(gx, 0.08, 62.6);
+      strip.position.set(gx, 0.04, 62.6);
       strip.receiveShadow = true;
       this.group.add(strip);
     }
@@ -619,9 +626,10 @@ export class HueCentralHospital {
     };
 
     if (rings.length) {
-      for (const ring of rings) {
-        const ringLocal = ring.map((p) => this.toLocal(p.x, p.z));
+      for (const rawRing of rings) {
+        const ringLocal = rawRing.map((p) => this.toLocal(p.x, p.z));
         const isSouthRing = ringLocal.some((p) => p.lz > 360);
+        const ring = insetRingClearOfRoads(rawRing, this.world.renderRoads, 2.3);
 
         const segs = isSouthRing
           ? campusWallSegments(
@@ -656,12 +664,14 @@ export class HueCentralHospital {
             const mid = { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 };
 
             if (
-              segmentHitsCarriageway(a, b, this.world.renderRoads, 0.75, 0.5) ||
+              segmentHitsCarriageway(a, b, this.world.renderRoads, 2.15, 0.5) ||
               this.world.buildingPolygons?.some((bp) => inside(mid, bp.points))
             ) {
               continue;
             }
-            this.world.campusWallSegments.push({ a, b, schoolId: "hospital" });
+            const segObj = { a, b, schoolId: "hospital" };
+            this.world.campusWallSegments.push(segObj);
+            this.wallSegments.push(segObj);
 
             const segLen = Math.hypot(b.x - a.x, b.z - a.z);
             if (segLen < 0.2) continue;
@@ -804,6 +814,12 @@ export class HueCentralHospital {
 
   blocksTree(wx, wz) {
     if (this.inRearZone(wx, wz)) return true;
+    if (
+      this.wallSegments?.length &&
+      hitsCampusWall({ x: wx, z: wz }, this.wallSegments, 2.4)
+    ) {
+      return true;
+    }
     const { lx, lz } = this.toLocal(wx, wz);
     // Keep Lê Lợi hospital front gates clear
     if (lx >= 362 && lx <= 565 && lz >= 50 && lz <= 62) return true;

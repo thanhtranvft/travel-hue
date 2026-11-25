@@ -6,6 +6,7 @@ import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
 import { buildingDetails } from "../shared/data/buildingCatalog.js";
 import { routeTrafficSign, civicPlaqueBoard } from "./TrafficBoard.js";
 import { buildingFrontage } from "./BuildingFrontage.js";
+import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
 
 function createSignFactory() {
   const matCache = new Map();
@@ -51,7 +52,7 @@ export function addStreetDetails(world, features) {
   const sign = createSignFactory();
   world.buildingLabels = [];
   world.streetLampPositions = [];
-  world.routeSignPlacements = [];
+  world.routeSignPlacements ??= [];
   let markers = 0;
   const paint = [];
   const addPaint = (mesh) => {
@@ -60,8 +61,18 @@ export function addStreetDetails(world, features) {
     paint.push(geometry);
     mesh.geometry.dispose();
   };
-  const material = new THREE.MeshStandardMaterial({ color: "#eadfac" }),
-    white = new THREE.MeshStandardMaterial({ color: "#eee9da" });
+  const material = new THREE.MeshStandardMaterial({
+      color: "#eadfac",
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    }),
+    white = new THREE.MeshStandardMaterial({
+      color: "#eee9da",
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
+    });
   const lampPoleMat = new THREE.MeshStandardMaterial({
       color: "#455755",
       roughness: 0.75,
@@ -150,6 +161,12 @@ export function addStreetDetails(world, features) {
         world.hueHospital?.blocksTree(p.x, p.z) ||
         world.truongTienSurroundings?.blocksTree(p.x, p.z) ||
         world.dongDaCorridor?.blocksTree(p.x, p.z) ||
+        (world.campusWallSegments?.length &&
+          hitsCampusWall(
+            p,
+            world.nearCampusWalls ? world.nearCampusWalls(p.x, p.z) : world.campusWallSegments,
+            1.35,
+          )) ||
         world.allGateClearances?.some(
           (g) => Math.hypot(p.x - g.x, p.z - g.z) < (g.radius || 14.5),
         ) ||

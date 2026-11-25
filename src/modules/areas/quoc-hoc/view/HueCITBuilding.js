@@ -1,8 +1,15 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { inside } from "../../../../core/shared/geography/geometry.js";
+import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
-import { campusWallSegments } from "../../../../core/shared/architecture/CampusWalls.js";
+import {
+  campusWallSegments,
+  hitsCampusWall,
+} from "../../../../core/shared/architecture/CampusWalls.js";
+import {
+  filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
+} from "../../../../core/world/streetPlacement.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -236,7 +243,7 @@ export class HueCITBuilding {
     this.group.rotation.y = this.biaHeading;
 
     // Campus perimeter cleanly tucked between Khoa Quốc Tế (-236.5), Trần Thúc Nhẫn (-191..-208) and Lê Lợi (56.6)
-    this.campusPoly = [
+    const rawLocalPoly = [
       { x: -236.5, z: 56.6 },
       { x: -191.5, z: 56.6 },
       { x: -208.5, z: 134.0 },
@@ -252,9 +259,21 @@ export class HueCITBuilding {
     this.bWidth = 23.8;
     this.bDepth = 33.3;
 
+    const insetWorldPoly = insetRingClearOfRoads(
+      rawLocalPoly.map((p) => this.toWorld(p.x, p.z)),
+      world?.renderRoads,
+      2.3,
+      { centerHint: this.toWorld(this.bCenter.lx, this.bCenter.lz) },
+    );
+    this.campusPoly = insetWorldPoly.map((w) => {
+      const l = this.toLocal(w.x, w.z);
+      return { x: l.lx, z: l.lz };
+    });
+
     // Wide entrance gate along Lê Lợi cobblestone plaza
-    this.gateLocal = { lx: -215.5, lz: 56.6 };
-    this.entrance = this.toWorld(this.gateLocal.lx, this.gateLocal.lz);
+    const gateHit = nearestPoint(this.toWorld(-215.5, 56.6), insetWorldPoly);
+    this.entrance = { x: gateHit.x, z: gateHit.z };
+    this.gateLocal = this.toLocal(this.entrance.x, this.entrance.z);
 
     this.buildCourtyardGrounds();
     this.buildMainPavilion();
@@ -316,7 +335,7 @@ export class HueCITBuilding {
       new THREE.BoxGeometry(10.8, 0.16, 3.6),
       cobbleMat,
     );
-    apron.position.set(this.gateLocal.lx, 0.14, 55.2);
+    apron.position.set(this.gateLocal.lx, 0.14, this.gateLocal.lz - 1.4);
     apron.receiveShadow = true;
     this.group.add(apron);
   }
@@ -567,7 +586,12 @@ export class HueCITBuilding {
   buildPerimeterBlueFenceAndProps() {
     const ringWorld = this.campusPoly.map((p) => this.toWorld(p.x, p.z));
     ringWorld.push(ringWorld[0]);
-    const segments = campusWallSegments(ringWorld, this.entrance, 9.6);
+    const segments = filterSegmentsClearOfRoads(
+      campusWallSegments(ringWorld, this.entrance, 9.6),
+      this.world?.renderRoads,
+      2.15,
+    );
+    this.wallSegments = segments;
     this.world.campusWallSegments.push(
       ...segments.map((s) => ({ ...s, schoolId: "hue-cit" })),
     );
@@ -631,8 +655,8 @@ export class HueCITBuilding {
     // Gate Piers & HueCIT Signboard at Lê Lợi Entrance
     for (const gx of [this.gateLocal.lx - 4.9, this.gateLocal.lx + 4.9]) {
       this.group.add(
-        box([0.65, 2.4, 0.65], "#eef1f4", [gx, 1.2, 56.6]),
-        box([0.78, 0.22, 0.78], "#227bc7", [gx, 2.45, 56.6]),
+        box([0.65, 2.4, 0.65], "#eef1f4", [gx, 1.2, this.gateLocal.lz]),
+        box([0.78, 0.22, 0.78], "#227bc7", [gx, 2.45, this.gateLocal.lz]),
       );
     }
     const signTex = createPortalSignTexture();
@@ -643,7 +667,7 @@ export class HueCITBuilding {
         : mat("#195c9e"),
     );
     portalSign.name = "hue-cit-entrance-sign";
-    portalSign.position.set(this.gateLocal.lx + 7.4, 1.65, 56.3);
+    portalSign.position.set(this.gateLocal.lx + 7.4, 1.65, this.gateLocal.lz - 0.3);
     this.group.add(portalSign);
 
     // Sculpted Natural Boulder Stone ("Đá phong thủy") & Bench on left lawn edge
@@ -731,6 +755,12 @@ export class HueCITBuilding {
 
   blocksTree(wx, wz) {
     if (this.inCampus(wx, wz)) return true;
+    if (
+      this.wallSegments &&
+      hitsCampusWall({ x: wx, z: wz }, this.wallSegments, 2.4)
+    ) {
+      return true;
+    }
     const { lx, lz } = this.toLocal(wx, wz);
     return lx >= -236 && lx <= -196 && lz >= 50 && lz <= 60;
   }

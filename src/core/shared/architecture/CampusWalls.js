@@ -2,7 +2,10 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { nearestPoint } from "../geography/geometry.js";
 import { getRingsOf, getRoads } from "../geography/activeGeography.js";
-import { filterSegmentsClearOfRoads } from "../../world/streetPlacement.js";
+import {
+  filterSegmentsClearOfRoads,
+  insetRingClearOfRoads,
+} from "../../world/streetPlacement.js";
 import config from "../../../modules/areas/quoc-hoc/data/school-gates.json" with { type: "json" };
 import dongDaCampuses from "../../../modules/areas/nguyen-chi-dieu/data/campuses.json" with { type: "json" };
 import quangTrungCampuses from "../../../modules/areas/quang-trung/data/campuses.json" with { type: "json" };
@@ -871,12 +874,22 @@ export function createCampusWalls(site, gate, extraGates = [], roads = null) {
   const precomputedRing =
     dongDaCampuses[site.id]?.ring || quangTrungCampuses[site.id]?.ring;
   const rings = precomputedRing ? [precomputedRing] : getRingsOf(site.feature);
-  const rawSegments = rings.flatMap((ring) =>
-    campusWallSegments(ring, gate, gap, extraGates),
-  );
   const effectiveRoads =
     roads || getRoads().filter((r) => !SUPPRESSED_WALL_ROAD_IDS.has(r.id));
-  const segments = filterSegmentsClearOfRoads(rawSegments, effectiveRoads, 0.65);
+  const minClearance = ["nguyen-chi-dieu", "cao-thang"].includes(site.id)
+    ? 2.75
+    : 2.25;
+  const insetRings = rings.map((ring) =>
+    insetRingClearOfRoads(ring, effectiveRoads, minClearance),
+  );
+  const rawSegments = insetRings.flatMap((ring) =>
+    campusWallSegments(ring, gate, gap, extraGates),
+  );
+  const segments = filterSegmentsClearOfRoads(
+    rawSegments,
+    effectiveRoads,
+    minClearance - 0.1,
+  );
   if (site.id === "quoc-hoc-school") {
     return {
       object: createQuocHocWallObject(segments, data),
