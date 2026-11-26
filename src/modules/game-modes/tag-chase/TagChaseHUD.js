@@ -51,9 +51,16 @@ export class TagChaseHUD {
         <strong class="tc-timer" id="tc-timer">Chờ bạn (1/2)</strong>
         <span class="tc-score" id="tc-score">0đ</span>
       </div>
-      <div class="tc-sub-row" id="tc-hotspot-row" hidden></div>
-      <div class="tc-coop-row" id="tc-coop-row" hidden></div>
-      <button type="button" id="tc-culture-toggle" aria-expanded="false">📖 Đọc về địa danh</button>
+      <div class="tc-meta-row" id="tc-meta-row">
+        <div class="tc-sub-row" id="tc-hotspot-row" hidden></div>
+        <div class="tc-coop-row" id="tc-coop-row" hidden></div>
+        <div class="tc-icon-actions" id="tc-icon-actions">
+          <button type="button" id="tc-culture-toggle" aria-expanded="false" aria-label="Đọc về địa danh" title="Đọc về địa danh">
+            <span class="tc-culture-icon" aria-hidden="true">📖</span>
+            <span class="tc-culture-label">Đọc về địa danh</span>
+          </button>
+        </div>
+      </div>
     `;
 
     this.board = document.createElement("aside");
@@ -129,6 +136,11 @@ export class TagChaseHUD {
     this.scoreEl = this.topbar.querySelector("#tc-score");
     this.hotspotEl = this.topbar.querySelector("#tc-hotspot-row");
     this.coopEl = this.topbar.querySelector("#tc-coop-row");
+    this.iconActionsEl = this.topbar.querySelector("#tc-icon-actions");
+    const existingRiverBadge = document.querySelector("#river-score-badge");
+    if (existingRiverBadge && this.iconActionsEl) {
+      this.iconActionsEl.append(existingRiverBadge);
+    }
     this.cultureToggle = this.topbar.querySelector("#tc-culture-toggle");
     this.cultureToggle.addEventListener("click", () => {
       const open = document.body.classList.toggle("tag-culture-open");
@@ -449,6 +461,10 @@ export class TagChaseHUD {
     if (!this.mounted) return;
     delete document.body.dataset.tagStage;
     document.body.classList.remove("tag-culture-open");
+    const topHost =
+      document.querySelector("#hud-top-center") || document.querySelector("#app");
+    const riverBadge = this.topbar.querySelector("#river-score-badge");
+    if (riverBadge && topHost) topHost.append(riverBadge);
     this.radarLayer.remove();
     this.topbar.remove();
     this.board.remove();

@@ -960,7 +960,7 @@ export class GeographicWorld {
         position: this.museumParkingCafe.cafeEntrance,
         radius: 36,
         description:
-          "Quán cà phê sân vườn Huế nép mình dưới gốc cây si cổ thụ rễ buông và những tán phượng vĩ đỏ rực ngay cạnh bãi đỗ xe Bảo tàng Hồ Chí Minh.",
+          "Quán cà phê sân vườn Huế nằm gần bờ sông Hương, cạnh bên Bến Trăng Café, nép mình dưới gốc cây si cổ thụ rễ buông và những tán phượng vĩ đỏ rực.",
       });
     }
     const citSite = activeSites.find((s) => s.id === "hue-cit");

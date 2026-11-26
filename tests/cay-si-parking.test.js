@@ -117,13 +117,13 @@ test("MuseumParkingAndCaySiCafe builds car & motorbike parking lot, Cafe Cay Si,
     const bikeShedSpot = precinct.toWorld(-139.2, 30.8);
     assert.equal(precinct.canRide(bikeShedSpot.x, bikeShedSpot.z), false);
 
-    const cafeWalk = precinct.toWorld(-106.5, 11.5);
+    const cafeWalk = precinct.toWorld(-129.0, -47.0);
     assert.equal(precinct.canRide(cafeWalk.x, cafeWalk.z), true);
 
-    const caySiTrunk = precinct.toWorld(-99.0, 11.5);
+    const caySiTrunk = precinct.toWorld(-120.5, -46.5);
     assert.equal(precinct.canRide(caySiTrunk.x, caySiTrunk.z), false);
 
-    const pavilionDeck = precinct.toWorld(-85.5, 15.0);
+    const pavilionDeck = precinct.toWorld(-107.0, -40.5);
     assert.equal(precinct.groundAt(pavilionDeck.x, pavilionDeck.z, 0.3), 0.36);
     assert.equal(precinct.canRide(pavilionDeck.x, pavilionDeck.z), false);
 
@@ -196,9 +196,22 @@ test("GeographicWorld (quoc-hoc) integrates parking lot, Cafe Cay Si, and flambo
     assert.equal(world.groundAt(parkingAisle.x, parkingAisle.z, 0.2), 0.23);
     assert.equal(world.canRide(parkingAisle.x, parkingAisle.z, 0.23), true);
 
-    const cafeYard = world.museumParkingCafe.toWorld(-106.5, 11.5);
+    const cafeYard = world.museumParkingCafe.toWorld(-129.0, -47.0);
     assert.equal(world.groundAt(cafeYard.x, cafeYard.z, 0.2), 0.22);
     assert.equal(world.canRide(cafeYard.x, cafeYard.z, 0.22), true);
+
+    // Cafe Cay Si sits near the Perfume River & beside Ben Trang (not on Le Loi roadside)
+    const minRiverDist = Math.min(
+      ...world.riverRings.map((ring) => nearestPoint(world.museumParkingCafe.cafeEntrance, ring).distance),
+    );
+    assert.ok(minRiverDist < 40, `Cafe Cay Si should sit near the Perfume River (${minRiverDist.toFixed(1)}m)`);
+    assert.ok(
+      Math.hypot(
+        world.museumParkingCafe.cafeEntrance.x - world.benTrangCafe.entrance.x,
+        world.museumParkingCafe.cafeEntrance.z - world.benTrangCafe.entrance.z,
+      ) < 70,
+      "Cafe Cay Si should sit near Ben Trang Cafe",
+    );
 
     world.update(1.1, new THREE.Vector3(cafeYard.x, 0.22, cafeYard.z));
   });

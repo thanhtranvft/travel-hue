@@ -1,17 +1,98 @@
 #river-score-badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgba(15, 42, 46, 0.88);
+  background: rgba(15, 42, 46, 0.9);
   border: 1px solid rgba(244, 213, 141, 0.45);
   color: #fff6dc;
+  font: inherit;
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.01em;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(8px);
+  pointer-events: auto;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.14s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+#river-score-badge .river-badge-count {
+  display: none;
+}
+
+@media (pointer: coarse), (max-width: 900px), (max-height: 500px) {
+  #river-score-badge {
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 15px;
+    line-height: 1;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
+  }
+
+  #river-score-badge::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+  }
+
+  #river-score-badge #river-score-text {
+    display: none;
+  }
+
+  #river-score-badge .river-badge-count {
+    position: absolute;
+    top: -4px;
+    right: -5px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #102520;
+    border: 1.5px solid rgba(244, 213, 141, 0.65);
+    color: #fff6dc;
+    font-size: 9.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+    pointer-events: none;
+  }
+
+  #river-score-badge.has-score {
+    border-color: #ffd66b;
+    box-shadow: 0 0 10px rgba(255, 214, 107, 0.35), 0 4px 12px rgba(0, 0, 0, 0.32);
+  }
+
+  #river-score-badge.has-score .river-badge-count {
+    border-color: #ffd66b;
+    color: #ffe28a;
+  }
+
+  #river-score-badge.is-expanded {
+    width: auto;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 999px;
+    gap: 5px;
+  }
+
+  #river-score-badge.is-expanded .river-badge-count {
+    display: none;
+  }
+
+  #river-score-badge.is-expanded #river-score-text {
+    display: inline;
+    font-size: 10.5px;
+  }
 }
 
 #river-reward-toast {

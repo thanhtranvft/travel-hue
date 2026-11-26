@@ -127,7 +127,7 @@ function createParkingSignTexture() {
   });
 }
 
-function createCaySiSignTexture(subtitle = "CÀ PHÊ SÂN VƯỜN · BÊN BẢO TÀNG HCM") {
+function createCaySiSignTexture(subtitle = "CÀ PHÊ BỜ SÔNG · CẠNH BẾN TRĂNG") {
   return createCanvasTex(640, 192, (ctx, w, h) => {
     ctx.fillStyle = "#2b1e14";
     ctx.fillRect(0, 0, w, h);
@@ -701,19 +701,19 @@ export class MuseumParkingAndCaySiCafe {
     ];
     this.parkingEntrance = this.toWorld(-150.5, 36.4);
 
-    // 2. Quán Café Cây Si ngay cạnh bãi đỗ xe (clear of footways 1167513737 & 1167513738)
+    // 2. Quán Café Cây Si bên bờ sông Hương, cạnh bên Bến Trăng (clear of footway 1167513736 & Perfume River)
     this.cafePoly = [
-      { x: -117.5, z: 6.0 },
-      { x: -109.5, z: 19.5 },
-      { x: -95.5, z: 25.5 },
-      { x: -77.5, z: 26.5 },
-      { x: -77.5, z: -2.5 },
-      { x: -97.5, z: -4.5 },
-      { x: -112.5, z: 0.5 },
+      { x: -138.0, z: -58.5 },
+      { x: -122.0, z: -64.5 },
+      { x: -101.0, z: -56.0 },
+      { x: -97.0, z: -31.0 },
+      { x: -125.0, z: -26.5 },
+      { x: -132.5, z: -41.0 },
     ];
-    this.cafeEntrance = this.toWorld(-111.5, 13.0);
-    this.caySiPos = { lx: -99.0, lz: 11.5 };
-    this.pavilionPos = { lx: -85.5, lz: 15.0 };
+    this.cafeEntrance = this.toWorld(-134.5, -48.0);
+    this.caySiPos = { lx: -120.5, lz: -46.5 };
+    this.pavilionPos = { lx: -107.0, lz: -40.5 };
+    this.pavilionYaw = Math.PI - 0.35;
 
     this.buildParkingLot();
     this.buildCaySiCafe();
@@ -732,7 +732,7 @@ export class MuseumParkingAndCaySiCafe {
 
   inCafeParcel(wx, wz) {
     const { lx, lz } = this.toLocal(wx, wz);
-    if (lx < -118.0 || lx > -77.0 || lz < -5.0 || lz > 27.0) return false;
+    if (lx < -139.0 || lx > -96.0 || lz < -65.0 || lz > -26.0) return false;
     return inside({ x: lx, z: lz }, this.cafePoly);
   }
 
@@ -1055,30 +1055,31 @@ export class MuseumParkingAndCaySiCafe {
 
     // 2. Warm flagstone & timber terrace patio centered around the Cây Si & Café Pavilion
     const patio = new THREE.Mesh(
-      new THREE.BoxGeometry(23.5, 0.14, 18.0),
+      new THREE.BoxGeometry(22.0, 0.14, 17.0),
       flagstoneMat,
     );
     patio.name = "cay-si-cafe-patio";
-    patio.position.set(-93.0, 0.21, 10.5);
+    patio.position.set(-116.5, 0.21, -45.5);
     patio.receiveShadow = true;
     g.add(patio);
 
-    // Stepped stone entrance walkway linking West edge (facing parking lot & footpath) to patio
+    // Stepped stone entrance walkway linking West edge (facing Bến Trăng & riverside footway) to patio
     const entryWalk = new THREE.Mesh(
-      new THREE.BoxGeometry(11.5, 0.14, 3.6),
+      new THREE.BoxGeometry(10.0, 0.14, 3.4),
       flagstoneMat,
     );
-    entryWalk.position.set(-110.2, 0.195, 11.8);
-    entryWalk.rotation.y = 0.22;
+    entryWalk.position.set(-131.5, 0.195, -48.0);
+    entryWalk.rotation.y = -0.18;
     entryWalk.receiveShadow = true;
     g.add(entryWalk);
 
-    // East garden walk toward Bia Quốc Học Park
+    // River-view garden walk toward Perfume River & Bia Quốc Học Park
     const eastWalk = new THREE.Mesh(
-      new THREE.BoxGeometry(6.5, 0.14, 3.2),
+      new THREE.BoxGeometry(6.0, 0.14, 3.2),
       flagstoneMat,
     );
-    eastWalk.position.set(-80.2, 0.195, 8.5);
+    eastWalk.position.set(-104.0, 0.195, -49.5);
+    eastWalk.rotation.y = 0.25;
     eastWalk.receiveShadow = true;
     g.add(eastWalk);
 
@@ -1108,7 +1109,7 @@ export class MuseumParkingAndCaySiCafe {
     const pav = new THREE.Group();
     pav.name = "cay-si-cafe-pavilion";
     pav.position.set(this.pavilionPos.lx, 0.28, this.pavilionPos.lz);
-    pav.rotation.y = -0.35; // Angled warmly toward the Cây Si terrace & parking entrance
+    pav.rotation.y = this.pavilionYaw; // Open front faces Perfume River, Cây Si terrace & Bến Trăng
     g.add(pav);
 
     // Timber deck floor
@@ -1224,11 +1225,11 @@ export class MuseumParkingAndCaySiCafe {
       hd: 3.6,
     });
 
-    // 5. Entrance Welcome Sign & Chalk Menu Board at the West Entrance (facing Parking Lot)
+    // 5. Entrance Welcome Sign & Chalk Menu Board at the Riverside West Entrance (facing Bến Trăng)
     const welcomeBoard = new THREE.Group();
     welcomeBoard.name = "cay-si-welcome-board";
-    welcomeBoard.position.set(-111.2, 0.22, 14.8);
-    welcomeBoard.rotation.y = -0.62;
+    welcomeBoard.position.set(-133.5, 0.22, -45.0);
+    welcomeBoard.rotation.y = 1.25;
     welcomeBoard.add(
       box([0.1, 2.2, 0.1], "#4a3322", [-1.15, 1.1, 0]),
       box([0.1, 2.2, 0.1], "#4a3322", [1.15, 1.1, 0]),
@@ -1250,22 +1251,22 @@ export class MuseumParkingAndCaySiCafe {
         ? new THREE.MeshStandardMaterial({ map: menuTex, roughness: 0.6 })
         : mat("#232a24"),
     );
-    menuAFrame.position.set(-93.8, 0.95, 17.4);
-    menuAFrame.rotation.y = -0.35;
+    menuAFrame.position.set(-115.0, 0.95, -39.2);
+    menuAFrame.rotation.y = this.pavilionYaw;
     g.add(menuAFrame);
 
-    // 6. Outdoor Garden Café Table Sets, Market Parasols & Patrons beneath Cây Si
+    // 6. Outdoor Garden Café Table Sets, Market Parasols & Patrons beneath Cây Si overlooking Sông Hương
     const tableConfigs = [
-      [-103.5, 7.2, "#c8b393", true, 1],
-      [-103.5, 15.2, "#b55d45", false, 2],
-      [-99.5, 17.5, null, true, 3],
-      [-98.2, 4.5, "#677d56", true, 4],
-      [-93.2, 5.2, null, false, 5],
-      [-92.5, 11.2, "#c8b393", true, 6],
-      [-87.5, 6.2, "#b55d45", true, 7],
-      [-83.0, 4.8, null, false, 8],
-      [-82.0, 10.2, "#677d56", true, 9],
-      [-107.2, 9.2, "#c8b393", false, 10],
+      [-125.0, -51.5, "#c8b393", true, 1],
+      [-120.0, -52.2, "#b55d45", false, 2],
+      [-115.0, -52.5, null, true, 3],
+      [-110.5, -51.5, "#677d56", true, 4],
+      [-108.5, -47.8, null, false, 5],
+      [-114.5, -47.5, "#c8b393", true, 6],
+      [-115.0, -42.5, "#b55d45", true, 7],
+      [-119.5, -39.5, null, false, 8],
+      [-125.0, -39.5, "#677d56", true, 9],
+      [-126.5, -43.5, "#c8b393", false, 10],
     ];
     for (const [tx, tz, parasol, patron, seed] of tableConfigs) {
       g.add(createCafeTableSet(tx, 0.28, tz, parasol, patron, seed));
@@ -1274,7 +1275,7 @@ export class MuseumParkingAndCaySiCafe {
 
     // 7. Decorative Stone Lotus Basin & Terracotta Planters
     const lotusBasin = new THREE.Group();
-    lotusBasin.position.set(-101.8, 0.28, 11.8);
+    lotusBasin.position.set(-124.0, 0.28, -46.0);
     lotusBasin.add(
       new THREE.Mesh(
         new THREE.CylinderGeometry(1.15, 0.95, 0.44, 16),
@@ -1300,7 +1301,7 @@ export class MuseumParkingAndCaySiCafe {
       lotusBasin.add(pad);
     }
     g.add(lotusBasin);
-    this.obstacles.push({ type: "circle", cx: -101.8, cz: 11.8, r: 1.35 });
+    this.obstacles.push({ type: "circle", cx: -124.0, cz: -46.0, r: 1.35 });
   }
 
   buildFlamboyantGrove() {
@@ -1309,7 +1310,7 @@ export class MuseumParkingAndCaySiCafe {
     this.group.add(g);
 
     // 24 Large Red-Blossoming Flamboyant Trees (Cây Phượng Vĩ lớn)
-    // Carefully verified to clear every carriageway (>=2.6m) & footway (>=1.0m)
+    // Carefully verified to clear every carriageway (>=2.0m), footway (>=0.8m), and river
     const treeSpecs = [
       // Shading the Parking Lot perimeter (right next to Bảo tàng Hồ Chí Minh)
       [-165.0, 29.0, 1.24],
@@ -1319,26 +1320,25 @@ export class MuseumParkingAndCaySiCafe {
       [-126.0, 26.0, 1.32],
       [-121.0, 33.0, 1.22],
       [-140.0, 34.8, 1.18],
-      // Framing Quán Café Cây Si
-      [-115.0, 7.0, 1.26],
-      [-108.0, 17.5, 1.22],
-      [-95.0, 24.0, 1.35],
-      [-79.0, 23.0, 1.28],
-      [-79.0, 2.0, 1.3],
-      [-96.0, -3.0, 1.25],
-      // Mid-park shade belt between Parking Lot and Perfume River
+      // Shady Phượng Vĩ park belt between Parking Lot, Lê Lợi & Bia Quốc Học
+      [-115.0, 15.0, 1.3],
+      [-103.0, 22.0, 1.34],
+      [-86.0, 20.0, 1.3],
+      [-82.0, 6.0, 1.28],
+      [-98.0, 3.0, 1.32],
+      [-118.0, -10.5, 1.26],
       [-155.0, -3.0, 1.32],
       [-143.0, -5.0, 1.28],
       [-131.0, -8.0, 1.24],
-      // Riverside Flamboyant Grove toward Perfume River & Bia Quốc Học
-      [-123.0, -24.0, 1.38],
-      [-108.0, -26.0, 1.42],
-      [-92.0, -24.0, 1.34],
-      [-80.0, -28.0, 1.3],
-      [-126.0, -40.0, 1.44],
-      [-110.0, -43.0, 1.36],
-      [-93.0, -41.0, 1.4],
-      [-80.0, -45.0, 1.32],
+      // Framing Riverfront Café Cây Si & Riverside Promenade near Bến Trăng
+      [-136.0, -54.0, 1.26],
+      [-122.0, -61.5, 1.34],
+      [-104.0, -54.0, 1.32],
+      [-99.0, -34.0, 1.28],
+      [-123.0, -28.0, 1.3],
+      [-90.0, -26.0, 1.38],
+      [-90.0, -45.0, 1.36],
+      [-108.0, -22.0, 1.35],
     ];
 
     treeSpecs.forEach(([lx, lz, sc], idx) => {
@@ -1349,10 +1349,10 @@ export class MuseumParkingAndCaySiCafe {
       this.treeTrunks.push({ lx, lz, r: 0.9 * sc });
     });
 
-    // A couple of park benches under the riverside phượng trees
+    // Park benches under the riverside phượng trees near Café Cây Si
     for (const [bx, bz, yaw] of [
-      [-116.0, -22.5, Math.PI],
-      [-87.0, -22.5, Math.PI],
+      [-116.0, -23.0, Math.PI],
+      [-91.0, -35.0, -Math.PI / 2],
     ]) {
       g.add(createParkBench(bx, 0.08, bz, yaw));
     }
@@ -1384,13 +1384,15 @@ export class MuseumParkingAndCaySiCafe {
       // Cafe pavilion wooden deck
       const dx = lx - this.pavilionPos.lx;
       const dz = lz - this.pavilionPos.lz;
-      const rx = dx * Math.cos(0.35) - dz * Math.sin(0.35);
-      const rz = dx * Math.sin(0.35) + dz * Math.cos(0.35);
+      const cosA = Math.cos(-this.pavilionYaw);
+      const sinA = Math.sin(-this.pavilionYaw);
+      const rx = dx * cosA - dz * sinA;
+      const rz = dx * sinA + dz * cosA;
       if (Math.abs(rx) <= 4.8 && Math.abs(rz) <= 3.3) {
         return 0.36;
       }
       // Flagstone café courtyard & entry walk
-      if (lx >= -104.8 && lx <= -81.2 && lz >= 1.5 && lz <= 19.5) {
+      if (lx >= -127.5 && lx <= -105.5 && lz >= -54.0 && lz <= -37.0) {
         return 0.28;
       }
       return 0.22;

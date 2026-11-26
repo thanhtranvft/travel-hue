@@ -252,12 +252,18 @@ export class RiverActivities {
     if (!host) return;
     const toastHost = document.querySelector("#hud-top-center") || host;
 
-    const scoreBadge = document.createElement("div");
+    const iconHost = document.querySelector("#tc-icon-actions") || toastHost;
+
+    const scoreBadge = document.createElement("button");
+    scoreBadge.type = "button";
     scoreBadge.id = "river-score-badge";
     scoreBadge.hidden = true;
+    scoreBadge.setAttribute("aria-expanded", "false");
+    scoreBadge.setAttribute("aria-label", "Điểm câu cá sông Hương: 0 cá · 0đ sông");
+    scoreBadge.title = "0 cá · 0đ sông";
     scoreBadge.innerHTML =
-      '<span class="river-badge-icon" aria-hidden="true">🎣</span><span id="river-score-text">0 cá · 0đ</span>';
-    toastHost.append(scoreBadge);
+      '<span class="river-badge-icon" aria-hidden="true">🎣</span><span class="river-badge-count" id="river-fish-count">0</span><span id="river-score-text">0 cá · 0đ sông</span>';
+    iconHost.append(scoreBadge);
 
     const rewardToast = document.createElement("aside");
     rewardToast.id = "river-reward-toast";
@@ -334,6 +340,7 @@ export class RiverActivities {
 
     this.ui = {
       scoreBadge,
+      fishCountEl: scoreBadge.querySelector("#river-fish-count"),
       scoreText: scoreBadge.querySelector("#river-score-text"),
       rewardToast,
       promptEl,
@@ -357,6 +364,19 @@ export class RiverActivities {
       boatReturnBtn: boatEl.querySelector("#boat-return-dock-btn"),
       boatQuickExitBtn: boatEl.querySelector("#boat-quick-exit-btn"),
     };
+
+    let collapseTimer = null;
+    scoreBadge.addEventListener("click", () => {
+      const expanded = scoreBadge.classList.toggle("is-expanded");
+      scoreBadge.setAttribute("aria-expanded", String(expanded));
+      if (collapseTimer) clearTimeout(collapseTimer);
+      if (expanded) {
+        collapseTimer = setTimeout(() => {
+          scoreBadge.classList.remove("is-expanded");
+          scoreBadge.setAttribute("aria-expanded", "false");
+        }, 3200);
+      }
+    });
 
     bindMultiTouchAction(this.ui.acceptBtn, () => this.acceptPendingPrompt());
     bindMultiTouchAction(this.ui.declineBtn, () => this.declinePendingPrompt());
@@ -946,9 +966,19 @@ export class RiverActivities {
     if (!this.ui?.scoreBadge) return;
     const inQuocHoc = this.game.world?.region?.id === "quoc-hoc";
     this.ui.scoreBadge.hidden = !(inQuocHoc || this.riverScore > 0);
+    const summary = `${this.fishCount} cá · ${this.riverScore}đ sông`;
     if (this.ui.scoreText) {
-      this.ui.scoreText.textContent = `${this.fishCount} cá · ${this.riverScore}đ sông`;
+      this.ui.scoreText.textContent = summary;
     }
+    if (this.ui.fishCountEl) {
+      this.ui.fishCountEl.textContent = String(this.fishCount);
+    }
+    this.ui.scoreBadge.title = summary;
+    this.ui.scoreBadge.setAttribute("aria-label", `Điểm sông Hương: ${summary}`);
+    this.ui.scoreBadge.classList.toggle(
+      "has-score",
+      this.fishCount > 0 || this.riverScore > 0,
+    );
   }
 
   refreshFishingUi() {
