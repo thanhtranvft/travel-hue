@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { createManicuredLawnTexture } from "../../../../core/world/turfTextures.js";
+import { createSeatedBenchCouple } from "../../../../core/world/RiversideParkLife.js";
 
 function createCanvasTex(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -1349,13 +1350,25 @@ export class MuseumParkingAndCaySiCafe {
       this.treeTrunks.push({ lx, lz, r: 0.9 * sc });
     });
 
-    // Park benches under the riverside phượng trees near Café Cây Si
-    for (const [bx, bz, yaw] of [
+    // Park benches under the riverside phượng trees near Café Cây Si + talking couples
+    this.benchCouples ||= [];
+    [
       [-116.0, -23.0, Math.PI],
       [-91.0, -35.0, -Math.PI / 2],
-    ]) {
+    ].forEach(([bx, bz, yaw], idx) => {
       g.add(createParkBench(bx, 0.08, bz, yaw));
-    }
+      const couple = createSeatedBenchCouple({
+        x: bx,
+        benchBaseY: 0.08,
+        z: bz,
+        yaw,
+        manIndex: idx + 2,
+        womanIndex: idx + 3,
+        phase: idx * 1.2,
+      });
+      g.add(couple.group);
+      this.benchCouples.push(couple.update);
+    });
   }
 
   groundAt(wx, wz, referenceY) {
@@ -1445,6 +1458,11 @@ export class MuseumParkingAndCaySiCafe {
       const phase = light.userData.phase || 0;
       light.material.emissiveIntensity =
         0.72 + Math.sin(time * 2.1 + phase) * 0.24;
+    }
+    if (this.benchCouples) {
+      for (let i = 0; i < this.benchCouples.length; i++) {
+        this.benchCouples[i](time);
+      }
     }
   }
 }

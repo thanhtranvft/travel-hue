@@ -1828,6 +1828,7 @@ export class GeographicWorld {
     this.biaPark?.update?.(time);
     this.fireflyPark?.update?.(time);
     this.fountainPark?.update?.(time);
+    this.phuXuanParkWalk?.update?.(time);
     this.youthPlayground?.update(time);
     this.ubndPalace?.update(time);
     this.hoChiMinhMuseum?.update(time);

@@ -4,6 +4,7 @@ import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import { inside, nearestPoint } from "../../../../core/shared/geography/geometry.js";
 import { getPointsOf } from "../../../../core/shared/geography/activeGeography.js";
 import { createSeatedCafePatron } from "../../quang-trung/view/QuangTrungCafes.js";
+import { createSeatedBenchCouple } from "../../../../core/world/RiversideParkLife.js";
 
 export const NGA4_MORIN_CENTER = { x: 1338.2, z: -1210.6 };
 
@@ -729,12 +730,25 @@ export class TruongTienSurroundings {
       { x: 1303.5, z: -1289.5, yaw: -2.32 },
       { x: 1322.5, z: -1306.5, yaw: -2.32 },
     ];
-    for (const bc of benchCoords) {
+    benchCoords.forEach((bc, idx) => {
       const bench = buildParkBench();
       bench.position.set(bc.x, PROMENADE_Y, bc.z);
       bench.rotation.y = bc.yaw;
       this.group.add(bench);
-    }
+      if (idx !== 1) {
+        const couple = createSeatedBenchCouple({
+          x: bc.x,
+          benchBaseY: PROMENADE_Y,
+          z: bc.z,
+          yaw: bc.yaw,
+          manIndex: idx + 1,
+          womanIndex: idx + 2,
+          phase: idx * 1.15,
+        });
+        this.group.add(couple.group);
+        this.animated.push(couple.update);
+      }
+    });
     const lampCoords = [
       { x: 1254.0, z: -1236.5 },
       { x: 1272.0, z: -1253.0 },

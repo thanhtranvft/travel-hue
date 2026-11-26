@@ -8,6 +8,14 @@ import {
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
 import { createRiverFishMesh } from "../../../../core/world/RiverFish.js";
+import {
+  createBadmintonGroup,
+  createDaCauGroup,
+  createFishingAnglerRow,
+  createGuitarCircleGroup,
+  createKiteFlyingGroup,
+  createSeatedBenchCouple,
+} from "../../../../core/world/RiversideParkLife.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -928,6 +936,58 @@ export function createBiaQuocHocPark(world, site, heading) {
   }
   group.add(fishGroup);
 
+  // 6. ROW OF 10 ANIMATED ANGLERS, BENCH COUPLES & YOUTH RIVERFRONT ACTIVITIES
+  const parkLifeAnimators = [];
+
+  // 10 NPC anglers along the curved overlook deck rim (leaving stallLx = -18 area open for player)
+  const anglerSlots = [-44, -38, -32, -26, -10, -3, 4, 11, 18, 25].map((lx, idx) => ({
+    lx,
+    deckY,
+    lz: deckRiverZ(lx) + 0.56,
+    yaw: Math.PI,
+    waterOffset: 2.55 + (idx % 3) * 0.25,
+    phase: idx * 0.92,
+  }));
+  const anglerRow = createFishingAnglerRow(anglerSlots);
+  group.add(anglerRow.group);
+  parkLifeAnimators.push(anglerRow.update);
+
+  // Talking male-female couples seated on overlook & promenade benches
+  for (const [idx, [bx, by, bz]] of [
+    [-28, deckY, deckLandZ(-28) - 0.85],
+    [10, deckY, deckLandZ(10) - 0.85],
+    [28, deckY, deckLandZ(28) - 0.85],
+    [-26, 0.24, -14.2],
+    [10, 0.24, -14.2],
+    [40, 0.256, -14.2],
+    [54, 0.256, -14.2],
+  ].entries()) {
+    const couple = createSeatedBenchCouple({
+      x: bx,
+      benchBaseY: by,
+      z: bz,
+      yaw: Math.PI,
+      manIndex: idx,
+      womanIndex: idx + 1,
+      phase: idx * 1.1,
+    });
+    group.add(couple.group);
+    parkLifeAnimators.push(couple.update);
+  }
+
+  // Youth activity groups across flanking shaded lawns
+  const biaGuitar = createGuitarCircleGroup({ x: -55, y: 0.13, z: -1.5, phase: 0.4 });
+  const biaBadminton = createBadmintonGroup({ x: -42, y: 0.13, z: 24, yaw: 0.3, phase: 0.8 });
+  const biaKites = createKiteFlyingGroup({ x: 49, y: 0.13, z: 15.5, yaw: 0.15, phase: 0.2 });
+  const biaDaCau = createDaCauGroup({ x: 47, y: 0.13, z: 22.5, phase: 1.1 });
+  group.add(biaGuitar.group, biaBadminton.group, biaKites.group, biaDaCau.group);
+  parkLifeAnimators.push(
+    biaGuitar.update,
+    biaBadminton.update,
+    biaKites.update,
+    biaDaCau.update,
+  );
+
   let fishingActive = false;
   let fishingAnchorLx = stallLx;
 
@@ -967,6 +1027,9 @@ export function createBiaQuocHocPark(world, site, heading) {
       const rScale = 0.8 + ((time * 1.4 + f.phase) % 1) * (fishingActive ? 1.1 : 0.75);
       f.ripple.scale.set(rScale, 1, rScale);
       f.ripple.visible = fishingActive || i % 2 === 0;
+    }
+    for (let i = 0; i < parkLifeAnimators.length; i++) {
+      parkLifeAnimators[i](time);
     }
   };
   update(0);

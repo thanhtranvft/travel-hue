@@ -7,6 +7,13 @@ import {
   createIronwoodWalkMaterial,
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
+import {
+  createBadmintonGroup,
+  createDaCauGroup,
+  createGuitarCircleGroup,
+  createKiteFlyingGroup,
+  createSeatedBenchCouple,
+} from "../../../../core/world/RiversideParkLife.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -671,6 +678,57 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     group.add(createShadeTree(tx, 0.13, tz, sc, idx + 1));
   });
 
+  const lifeAnimators = [];
+  // Talking couples on promenade benches & circular Wishing Tree bench ring
+  [86, 126, 178, 212].forEach((bx, idx) => {
+    const couple = createSeatedBenchCouple({
+      x: bx,
+      benchBaseY: 0.256,
+      z: -14.2,
+      yaw: Math.PI,
+      manIndex: idx + 1,
+      womanIndex: idx + 2,
+      phase: idx * 0.9,
+    });
+    group.add(couple.group);
+    lifeAnimators.push(couple.update);
+  });
+  [0.65, 2.75, 4.75].forEach((a, idx) => {
+    const couple = createSeatedBenchCouple({
+      x: Math.cos(a) * benchRadius,
+      benchBaseY: 0,
+      seatDeltaY: 0.07,
+      z: Math.sin(a) * benchRadius,
+      yaw: Math.PI / 2 - a,
+      manIndex: idx + 3,
+      womanIndex: idx,
+      phase: idx * 1.4,
+    });
+    wishingTree.add(couple.group);
+    lifeAnimators.push(couple.update);
+  });
+
+  // Youth & community activity groups on sunlit lawns
+  const ffKiteWest = createKiteFlyingGroup({ x: 84, y: 0.13, z: 2, yaw: 0.1, phase: 0.5 });
+  const ffKiteEast = createKiteFlyingGroup({ x: 204, y: 0.13, z: 16, yaw: -0.15, phase: 1.3 });
+  const ffBadminton = createBadmintonGroup({ x: 106, y: 0.13, z: 21, yaw: 0.4, phase: 0.6 });
+  const ffGuitar = createGuitarCircleGroup({ x: 124, y: 0.13, z: 18, phase: 0.9 });
+  const ffDaCau = createDaCauGroup({ x: 186, y: 0.13, z: 20, phase: 0.4 });
+  group.add(
+    ffKiteWest.group,
+    ffKiteEast.group,
+    ffBadminton.group,
+    ffGuitar.group,
+    ffDaCau.group,
+  );
+  lifeAnimators.push(
+    ffKiteWest.update,
+    ffKiteEast.update,
+    ffBadminton.update,
+    ffGuitar.update,
+    ffDaCau.update,
+  );
+
   world.scene.add(group);
   world.cameraObstacles.push(mainTrunk);
 
@@ -700,6 +758,9 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
       fireflies.setMatrixAt(i, dummy.matrix);
     }
     fireflies.instanceMatrix.needsUpdate = true;
+    for (let i = 0; i < lifeAnimators.length; i++) {
+      lifeAnimators[i](time);
+    }
   };
 
   return {

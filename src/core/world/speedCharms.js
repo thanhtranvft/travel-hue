@@ -168,11 +168,23 @@ export function generateRegionCharms(
     canPlace = () => true,
     groundAt = () => 0.25,
     rng = Math.random,
-    minSpacing = 11,
+    minSpacing,
+    countMultiplier,
   } = {},
 ) {
   const anchors = collectCandidateAnchors(region, extraRoads);
   if (!anchors.length) return [];
+
+  const multiplier = Number.isFinite(countMultiplier)
+    ? Math.max(1, countMultiplier)
+    : region?.id === "quoc-hoc"
+      ? 3
+      : 1;
+  const spacingFloor = Number.isFinite(minSpacing)
+    ? minSpacing
+    : multiplier > 1
+      ? 7.5
+      : 11;
 
   const spawned = [];
   let seq = 0;
@@ -182,8 +194,9 @@ export function generateRegionCharms(
   for (const tier of tiers) {
     let placed = 0;
     let attempts = 0;
-    const maxAttempts = tier.count * 90;
-    while (placed < tier.count && attempts < maxAttempts) {
+    const targetCount = Math.max(1, Math.round(tier.count * multiplier));
+    const maxAttempts = targetCount * 120;
+    while (placed < targetCount && attempts < maxAttempts) {
       attempts++;
       const anchor = anchors[Math.floor(rng() * anchors.length)];
       const spread = attempts > maxAttempts * 0.45 ? 0.35 : 0.72;
@@ -195,7 +208,7 @@ export function generateRegionCharms(
       const z = Number((anchor.z + anchor.nz * lateral + tz * jitterAlong).toFixed(2));
       if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
       if (!canPlace(x, z)) continue;
-      const spacing = attempts > maxAttempts * 0.65 ? minSpacing * 0.45 : minSpacing;
+      const spacing = attempts > maxAttempts * 0.65 ? spacingFloor * 0.45 : spacingFloor;
       if (spawned.some((other) => Math.hypot(other.x - x, other.z - z) < spacing)) {
         continue;
       }

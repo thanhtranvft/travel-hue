@@ -8,6 +8,13 @@ import {
   createManicuredLawnMaterial,
   createParkGraniteTexture,
 } from "../../../../core/world/turfTextures.js";
+import {
+  createBadmintonGroup,
+  createDaCauGroup,
+  createGuitarCircleGroup,
+  createKiteFlyingGroup,
+  createSeatedBenchCouple,
+} from "../../../../core/world/RiversideParkLife.js";
 
 function createMarigoldAccentTexture() {
   return createCanvasTexture(
@@ -1019,8 +1026,47 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     group.add(createHeritageLamp(lx, lz <= -10.0 ? 0.256 : 0.24, lz));
   }
 
+  const lifeAnimators = [];
+  // Seated talking couples on PhuXuan riverfront & circular garden benches
+  [
+    [378, 0.256, -15.4, Math.PI],
+    [412, 0.256, -15.4, Math.PI],
+    [454, 0.256, -15.0, Math.PI],
+    [498, 0.256, -14.4, Math.PI],
+    [524, 0.256, -13.4, Math.PI],
+    [396 - 3.2, 0.24, 17.5, Math.PI / 2],
+    [464, 0.24, 18.0 - 3.2, 0],
+    [511.5 - 9.8, 0.24, 17.1, Math.PI / 2],
+  ].forEach(([bx, by, bz, yaw], idx) => {
+    const couple = createSeatedBenchCouple({
+      x: bx,
+      benchBaseY: by,
+      z: bz,
+      yaw,
+      manIndex: idx + 4,
+      womanIndex: idx + 3,
+      phase: idx * 0.95,
+    });
+    group.add(couple.group);
+    lifeAnimators.push(couple.update);
+  });
+
+  // Youth activity groups across open PhuXuan Park lawns
+  const pxBadminton = createBadmintonGroup({ x: 383, y: 0.13, z: 6.0, yaw: 0.2, phase: 0.5 });
+  const pxKite = createKiteFlyingGroup({ x: 500, y: 0.13, z: -6.5, yaw: 0.1, phase: 1.0 });
+  const pxGuitar = createGuitarCircleGroup({ x: 520, y: 0.13, z: -6.0, phase: 0.3 });
+  const pxDaCau = createDaCauGroup({ x: 524, y: 0.13, z: 7.5, phase: 0.8 });
+  group.add(pxBadminton.group, pxKite.group, pxGuitar.group, pxDaCau.group);
+  lifeAnimators.push(pxBadminton.update, pxKite.update, pxGuitar.update, pxDaCau.update);
+
   world.scene.add(group);
   world.cameraObstacles.push(lawnMesh);
+
+  const update = (time = 0) => {
+    for (let i = 0; i < lifeAnimators.length; i++) {
+      lifeAnimators[i](time);
+    }
+  };
 
   const isOnWalkway = (lx, lz) => {
     if (Math.hypot(lx - circleGarden.lx, lz - circleGarden.lz) >= circleGarden.rMin &&
@@ -1039,6 +1085,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     group,
     walkSegments,
     circleCenterLocal: { lx: circleGarden.lx, lz: circleGarden.lz },
+    update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
       if (lx < 366 || lx > 537.5 || lz < sampleShoreZ(lx) - 1 || lz > parkMaxLz(lx) + 1.5)

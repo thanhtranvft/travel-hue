@@ -55,7 +55,7 @@ test("generateRegionCharms spawns fewer charms for higher boosts and honors canP
   const realCharms = generateRegionCharms(quocHocModel.region, {
     idPrefix: "quoc-hoc-test",
   });
-  assert.equal(realCharms.length, 28);
+  assert.equal(realCharms.length, 84);
 
   for (let i = 0; i < 20; i++) {
     const ms = randomCharmRefreshMs();
@@ -301,7 +301,8 @@ test("Speed charms stay strictly on roads or bridge decks and never spawn on Per
         canPlace: (x, z) => world.canPlaceCharm(x, z),
         groundAt: (x, z) => world.groundAt(x, z),
       });
-      assert.equal(charms.length, 28, `${areaId} spawns full 28 charms`);
+      const expectedCount = areaId === "quoc-hoc" ? 84 : 28;
+      assert.equal(charms.length, expectedCount, `${areaId} spawns full ${expectedCount} charms`);
       for (const c of charms) {
         const inRiver = world.riverRings.some((r) => inside({ x: c.x, z: c.z }, r));
         if (inRiver) {
@@ -336,7 +337,7 @@ test("Speed charms stay strictly on roads or bridge decks and never spawn on Per
       ]);
       const room = new Room(areas);
       const entry = room.ensureRegionCharms(areaId);
-      assert.equal(entry.charms.length, 28, `server Room ${areaId} spawns 28 charms`);
+      assert.equal(entry.charms.length, expectedCount, `server Room ${areaId} spawns ${expectedCount} charms`);
       for (const c of entry.charms) {
         const inRiver = activeRiver.some((r) => inside({ x: c.x, z: c.z }, r));
         if (inRiver) {

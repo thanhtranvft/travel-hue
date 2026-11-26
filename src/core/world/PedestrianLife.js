@@ -329,26 +329,66 @@ export class PedestrianLife {
     }
     if (world.boardwalkView?.mainPoints?.length > 4) {
       const bwPts = world.boardwalkView.mainPoints;
-      for (let i = 1; i < Math.min(bwPts.length, 9); i += 2) {
+      const bwStep = Math.max(2, Math.floor(bwPts.length / 18));
+      for (let i = 1; i < bwPts.length; i += bwStep) {
         const a = bwPts[i - 1];
-        const b = bwPts[i];
+        const b = bwPts[Math.min(bwPts.length - 1, i + 1)];
         const dx = b.x - a.x;
         const dz = b.z - a.z;
         const len = Math.hypot(dx, dz) || 1;
         const nx = -dz / len;
         const nz = dx / len;
-        const sideOffset = (i % 4 === 1 ? 1 : -1) * 0.9;
+        const sideOffset = (i % 2 === 1 ? 1 : -1) * 0.85;
         const start = { x: a.x + nx * sideOffset, z: a.z + nz * sideOffset };
         const end = { x: b.x + nx * sideOffset, z: b.z + nz * sideOffset };
         add(start, "walk", {
           start,
           end,
-          side: i % 4 === 1 ? 1 : -1,
+          side: i % 2 === 1 ? 1 : -1,
           fixedY: BOARDWALK_Y + 0.008,
           underBridgePromenade: true,
         });
         this.people.at(-1).mesh.position.y = BOARDWALK_Y + 0.008;
       }
+    }
+
+    // Strollers along the continuous south-bank riverfront ironwood promenade & park plazas
+    if (world.biaPark?.toWorld) {
+      const parkPromenadeSegments = [
+        [-66, -13.3, -38, -13.3, 0.256],
+        [36, -13.3, 66, -13.3, 0.256],
+        [76, -13.3, 114, -13.3, 0.256],
+        [120, -13.3, 152, -13.3, 0.256],
+        [158, -13.3, 198, -13.3, 0.256],
+        [204, -13.4, 248, -13.2, 0.256],
+        [254, -13.2, 282, -13.2, 0.256],
+        [297, -13.2, 334, -13.2, 0.256],
+        [340, -13.4, 368, -14.1, 0.256],
+        [374, -14.1, 412, -14.1, 0.256],
+        [418, -14.1, 456, -13.8, 0.256],
+        [462, -13.8, 504, -13.4, 0.256],
+        [508, -13.3, 530, -12.6, 0.256],
+        // Grand plaza & clearing strollers
+        [-24, 24, -6, 24, 0.24],
+        [6, 24, 24, 24, 0.24],
+        [142, 16, 168, 16, 0.24],
+        [264, 6.5, 276.5, 6.5, 0.24],
+        [302, 6.5, 315, 6.5, 0.24],
+        [439.5, 2.0, 439.5, 26.0, 0.24],
+        [488.7, 2.0, 488.7, 24.0, 0.24],
+      ];
+      parkPromenadeSegments.forEach(([ax, az, bx, bz, yVal], idx) => {
+        const wA = world.biaPark.toWorld(ax, az);
+        const wB = world.biaPark.toWorld(bx, bz);
+        add(wA, "walk", {
+          start: wA,
+          end: wB,
+          side: idx % 2 === 0 ? 1 : -1,
+          fixedY: yVal,
+          underBridgePromenade: true,
+        });
+        this.people.at(-1).mesh.position.y = yVal;
+      });
     }
   }
   update(time, bike) {

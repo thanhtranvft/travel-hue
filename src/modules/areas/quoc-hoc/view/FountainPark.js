@@ -6,6 +6,14 @@ import {
   createIronwoodWalkMaterial,
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
+import {
+  createBadmintonGroup,
+  createDaCauGroup,
+  createGuitarCircleGroup,
+  createKiteFlyingGroup,
+  createPedalDockCrowd,
+  createSeatedBenchCouple,
+} from "../../../../core/world/RiversideParkLife.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -1163,6 +1171,82 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   dockBooth.add(npc);
   group.add(dockBooth);
 
+  // 9. PARK BENCHES WITH TALKING COUPLES, PEDAL-DOCK CROWD & YOUTH LAWN ACTIVITIES
+  const createFountainBench = (bx, by, bz, yaw) => {
+    const g = new THREE.Group();
+    g.position.set(bx, by, bz);
+    g.rotation.y = yaw;
+    g.add(
+      box([1.75, 0.07, 0.5], "#8a5a32", [0, 0.45, 0.02]),
+      box([1.75, 0.36, 0.07], "#8a5a32", [0, 0.72, -0.22]),
+      box([0.1, 0.45, 0.44], "#363c38", [-0.68, 0.225, 0.02]),
+      box([0.1, 0.45, 0.44], "#363c38", [0.68, 0.225, 0.02]),
+    );
+    return g;
+  };
+
+  const lifeAnimators = [];
+  const riverBenches = [cx - 24, cx - 14, cx + 14, cx + 24].map((bx) => [bx, 0.256, -15.6, Math.PI]);
+  const plazaBenches = [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ].map(([sx, sz]) => {
+    const bx = cx + sx * 10.8;
+    const bz = cz + sz * 10.4;
+    return [bx, 0.24, bz, Math.atan2(cx - bx, cz - bz)];
+  });
+  const allBenches = [...riverBenches, ...plazaBenches];
+  allBenches.forEach(([bx, by, bz, yaw], idx) => {
+    group.add(createFountainBench(bx, by, bz, yaw));
+    if (idx !== 1 && idx !== 6) {
+      const couple = createSeatedBenchCouple({
+        x: bx,
+        benchBaseY: by,
+        z: bz,
+        yaw,
+        manIndex: idx + 2,
+        womanIndex: idx + 1,
+        phase: idx * 0.85,
+      });
+      group.add(couple.group);
+      lifeAnimators.push(couple.update);
+    }
+  });
+
+  // Lively crowd gathered around the swan pedal-boat dock & overlooking riverwalk
+  const dockCrowd = createPedalDockCrowd([
+    // Left & right stair flanks looking down at moored swan boats
+    { lx: cx - 3.4, y: 0.22, lz: -17.3, yaw: Math.PI - 0.15, presetIdx: 1, wave: true },
+    { lx: cx - 3.6, y: 0.2, lz: -18.4, yaw: Math.PI - 0.2, presetIdx: 4 },
+    { lx: cx - 3.5, y: 0.18, lz: -19.5, yaw: Math.PI - 0.1, presetIdx: 5, camera: true },
+    { lx: cx + 3.4, y: 0.22, lz: -17.3, yaw: Math.PI + 0.15, presetIdx: 0 },
+    { lx: cx + 3.6, y: 0.2, lz: -18.4, yaw: Math.PI + 0.2, presetIdx: 9, wave: true },
+    { lx: cx + 3.5, y: 0.18, lz: -19.5, yaw: Math.PI + 0.1, presetIdx: 12 },
+    // Overlooking wooden promenade spectators, couples & families
+    { lx: cx - 9.2, y: 0.256, lz: -15.3, yaw: Math.PI + 0.15, presetIdx: 7, camera: true },
+    { lx: cx - 8.2, y: 0.256, lz: -15.4, yaw: Math.PI - 0.1, presetIdx: 6 },
+    { lx: cx - 6.0, y: 0.256, lz: -15.5, yaw: Math.PI + 0.08, presetIdx: 13, wave: true },
+    { lx: cx - 5.2, y: 0.256, lz: -15.2, yaw: Math.PI - 0.12, presetIdx: 3 },
+    { lx: cx + 5.8, y: 0.256, lz: -15.5, yaw: Math.PI - 0.1, presetIdx: 14, wave: true },
+    { lx: cx + 6.7, y: 0.256, lz: -15.3, yaw: Math.PI + 0.1, presetIdx: 8 },
+    { lx: cx + 9.2, y: 0.256, lz: -15.2, yaw: Math.PI - 0.15, presetIdx: 2 },
+    { lx: cx + 10.1, y: 0.256, lz: -15.4, yaw: Math.PI + 0.12, presetIdx: 11 },
+    { lx: cx + 12.2, y: 0.256, lz: -14.8, yaw: Math.PI - 0.2, presetIdx: 15, camera: true },
+    { lx: cx - 12.0, y: 0.256, lz: -14.6, yaw: Math.PI + 0.2, presetIdx: 10 },
+  ]);
+  group.add(dockCrowd.group);
+  lifeAnimators.push(dockCrowd.update);
+
+  // Youth activity groups across FountainPark wing lawns
+  const ftBadminton = createBadmintonGroup({ x: 263, y: 0.13, z: 27, yaw: 0.25, phase: 0.3 });
+  const ftKite = createKiteFlyingGroup({ x: 316, y: 0.13, z: 27, yaw: -0.2, phase: 0.7 });
+  const ftGuitar = createGuitarCircleGroup({ x: 265, y: 0.13, z: -7, phase: 1.2 });
+  const ftDaCau = createDaCauGroup({ x: 314, y: 0.13, z: -7, phase: 0.5 });
+  group.add(ftBadminton.group, ftKite.group, ftGuitar.group, ftDaCau.group);
+  lifeAnimators.push(ftBadminton.update, ftKite.update, ftGuitar.update, ftDaCau.update);
+
   let occupiedBoatSet = new Set();
   const setOccupiedBoats = (occupiedSet) => {
     occupiedBoatSet = new Set(occupiedSet || []);
@@ -1194,6 +1278,9 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       if (!boat.visible) continue;
       boat.position.y = 0.03 + Math.sin(time * 1.6 + boat.userData.phase) * 0.045;
       boat.rotation.z = Math.sin(time * 1.3 + boat.userData.phase) * 0.035;
+    }
+    for (let i = 0; i < lifeAnimators.length; i++) {
+      lifeAnimators[i](time);
     }
   };
 
