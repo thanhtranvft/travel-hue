@@ -21,6 +21,7 @@ export function optimizeMobileStaticScene(world) {
       ...(world.ubndPalace?.animatedObjects || []),
       ...(world.hoChiMinhMuseum?.animatedObjects || []),
       ...(world.benTrangCafe?.animatedObjects || []),
+      ...(world.museumParkingCafe?.animatedObjects || []),
       ...(world.hueCit?.animatedObjects || []),
       ...(world.hueHospital?.animatedObjects || []),
     ]),

@@ -44,9 +44,14 @@ test("Le Loi starts at Khoa Quoc Te, Dai hoc Hue; pre-start bloat removed; ten o
     "Tour start vertex should be directly beside Khoa Quoc Te",
   );
 
-  // Ten non-overlapping online spawn slots stay along the starting Lê Lợi road
+  // Ten non-overlapping online spawn slots stay along the starting Lê Lợi road right in front of HueCIT
   assert.deepEqual(area.spawn, area.spawnSlots[0]);
   assert.equal(area.spawnSlots.length, 10);
+  const hueCitGate = { x: 357.15, z: -312.47 };
+  assert.ok(
+    Math.hypot(area.spawn.x - hueCitGate.x, area.spawn.z - hueCitGate.z) < 15,
+    "Primary player spawn should sit right in front of HueCIT on Le Loi",
+  );
   for (const slot of area.spawnSlots) {
     const hit = nearestPoint(slot, leLoiRoad);
     assert.ok(hit.distance < 5 && hit.t > 0 && hit.t < 1);

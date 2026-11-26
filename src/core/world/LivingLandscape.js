@@ -131,6 +131,7 @@ export class LivingGrass {
       world.ubndPalace,
       world.hoChiMinhMuseum,
       world.benTrangCafe,
+      world.museumParkingCafe,
       world.hueCit,
       world.hueHospital,
       world.truongTienSurroundings,

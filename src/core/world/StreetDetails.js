@@ -157,6 +157,7 @@ export function addStreetDetails(world, features) {
         world.ubndPalace?.blocksTree(p.x, p.z) ||
         world.hoChiMinhMuseum?.blocksTree(p.x, p.z) ||
         world.benTrangCafe?.blocksTree(p.x, p.z) ||
+        world.museumParkingCafe?.blocksTree(p.x, p.z) ||
         world.hueCit?.blocksTree(p.x, p.z) ||
         world.hueHospital?.blocksTree(p.x, p.z) ||
         world.truongTienSurroundings?.blocksTree(p.x, p.z) ||

@@ -64,6 +64,7 @@ import { YouthPlayground } from "../../modules/areas/quoc-hoc/view/YouthPlaygrou
 import { UbndHuePalace } from "../../modules/areas/quoc-hoc/view/UbndHuePalace.js";
 import { HoChiMinhMuseum } from "../../modules/areas/quoc-hoc/view/HoChiMinhMuseum.js";
 import { BenTrangCafe } from "../../modules/areas/quoc-hoc/view/BenTrangCafe.js";
+import { MuseumParkingAndCaySiCafe } from "../../modules/areas/quoc-hoc/view/MuseumParkingAndCaySiCafe.js";
 import { HueCITBuilding } from "../../modules/areas/quoc-hoc/view/HueCITBuilding.js";
 import { HueCentralHospital } from "../../modules/areas/quoc-hoc/view/HueCentralHospital.js";
 import { HueStation } from "../../modules/areas/quoc-hoc/view/HueStation.js";
@@ -940,6 +941,28 @@ export class GeographicWorld {
           "5 Lê Lợi · Quán cà phê & nghệ thuật bờ tường đá rêu phong, cầu thang xoắn trắng và vườn sân thượng bên bờ sông Hương.",
       });
     }
+    this.museumParkingCafe =
+      this.biaPark || this.region?.id === "quoc-hoc"
+        ? new MuseumParkingAndCaySiCafe(this)
+        : null;
+    if (this.museumParkingCafe) {
+      this.landmarks.set("museum-parking", {
+        id: "museum-parking",
+        title: "Bãi đỗ xe Bảo tàng Hồ Chí Minh",
+        position: this.museumParkingCafe.parkingEntrance,
+        radius: 32,
+        description:
+          "Khu vực bãi đỗ xe máy có mái che và bãi đỗ ô tô rộng rãi ngay cạnh Bảo tàng Hồ Chí Minh, rợp bóng hàng phượng vĩ bên đường Lê Lợi.",
+      });
+      this.landmarks.set("cay-si-cafe", {
+        id: "cay-si-cafe",
+        title: "Quán Café Cây Si",
+        position: this.museumParkingCafe.cafeEntrance,
+        radius: 36,
+        description:
+          "Quán cà phê sân vườn Huế nép mình dưới gốc cây si cổ thụ rễ buông và những tán phượng vĩ đỏ rực ngay cạnh bãi đỗ xe Bảo tàng Hồ Chí Minh.",
+      });
+    }
     const citSite = activeSites.find((s) => s.id === "hue-cit");
     this.hueCit = citSite ? new HueCITBuilding(this, citSite) : null;
     const hospSite = activeSites.find((s) => s.id === "hospital");
@@ -1004,6 +1027,20 @@ export class GeographicWorld {
         z: this.benTrangCafe.entrance.z,
         radius: 14.0,
       });
+    }
+    if (this.museumParkingCafe?.parkingEntrance) {
+      this.allGateClearances.push(
+        {
+          x: this.museumParkingCafe.parkingEntrance.x,
+          z: this.museumParkingCafe.parkingEntrance.z,
+          radius: 14.0,
+        },
+        {
+          x: this.museumParkingCafe.cafeEntrance.x,
+          z: this.museumParkingCafe.cafeEntrance.z,
+          radius: 13.5,
+        },
+      );
     }
     if (this.hueCit?.entrance) {
       this.allGateClearances.push({
@@ -1345,6 +1382,7 @@ export class GeographicWorld {
       this.ubndPalace?.groundAt(x, z, referenceY) ??
       this.hoChiMinhMuseum?.groundAt(x, z, referenceY) ??
       this.benTrangCafe?.groundAt(x, z, referenceY) ??
+      this.museumParkingCafe?.groundAt(x, z, referenceY) ??
       this.hueCit?.groundAt(x, z, referenceY) ??
       this.hueHospital?.groundAt(x, z, referenceY) ??
       this.dongDaCorridor?.groundAt(x, z, referenceY);
@@ -1462,6 +1500,7 @@ export class GeographicWorld {
       this.ubndPalace?.blocksTree(p.x, p.z) ||
       this.hoChiMinhMuseum?.blocksTree(p.x, p.z) ||
       this.benTrangCafe?.blocksTree(p.x, p.z) ||
+      this.museumParkingCafe?.blocksTree(p.x, p.z) ||
       this.hueCit?.blocksTree(p.x, p.z) ||
       this.hueHospital?.blocksTree(p.x, p.z) ||
       this.truongTienSurroundings?.blocksTree(p.x, p.z) ||
@@ -1643,6 +1682,8 @@ export class GeographicWorld {
     if (museumRide === false) return false;
     const benTrangRide = this.benTrangCafe?.canRide(x, z);
     if (benTrangRide === false) return false;
+    const parkingCafeRide = this.museumParkingCafe?.canRide(x, z);
+    if (parkingCafeRide === false) return false;
     const hueCitRide = this.hueCit?.canRide(x, z);
     if (hueCitRide === false) return false;
     const hueHospitalRide = this.hueHospital?.canRide(x, z);
@@ -1677,6 +1718,7 @@ export class GeographicWorld {
       ubndRide === true ||
       museumRide === true ||
       benTrangRide === true ||
+      parkingCafeRide === true ||
       hueCitRide === true ||
       hueHospitalRide === true
     ) {
@@ -1790,6 +1832,7 @@ export class GeographicWorld {
     this.ubndPalace?.update(time);
     this.hoChiMinhMuseum?.update(time);
     this.benTrangCafe?.update(time);
+    this.museumParkingCafe?.update(time);
     this.hueCit?.update(time);
     this.hueHospital?.update(time);
     this.propertyEnclosures?.update(time);
