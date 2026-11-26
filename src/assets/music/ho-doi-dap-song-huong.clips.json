@@ -1,0 +1,61 @@
+{
+  "source": "Hò Đối Đáp Trên Sông Hương.mp3",
+  "source_duration_seconds": 227.484,
+  "notes": "Trích đoạn gợi ý theo năng lượng/cấu trúc lặp, chưa xác nhận cao trào hoặc điệp khúc bằng nghe/lời. Không có reverb cố định; xử lý không gian khi phát trong game. Chưa nối vào gameplay.",
+  "clips": [
+    {
+      "start": 5.0,
+      "end": 40.95,
+      "selection": "sustained acoustic energy; lyrical climax unverified",
+      "id": "ho-doi-dap-01",
+      "file": "ho-doi-dap-song-huong-01.mp3",
+      "duration_seconds": 35.95,
+      "bytes": 699408,
+      "peak_dbfs": -1.51,
+      "fade_in_seconds": 0.6,
+      "fade_out_seconds": 1.2,
+      "review_status": "acoustic_candidate_needs_listening"
+    },
+    {
+      "start": 43.1,
+      "end": 66.05,
+      "selection": "repeating chroma phrase; not a verified lyrical chorus",
+      "similar_phrase_start": 132.0,
+      "similarity": 0.424,
+      "id": "ho-doi-dap-02",
+      "file": "ho-doi-dap-song-huong-02.mp3",
+      "duration_seconds": 22.95,
+      "bytes": 447072,
+      "peak_dbfs": -4.74,
+      "fade_in_seconds": 0.6,
+      "fade_out_seconds": 1.2,
+      "review_status": "acoustic_candidate_needs_listening"
+    },
+    {
+      "start": 107.3,
+      "end": 139.7,
+      "selection": "sustained acoustic energy; lyrical climax unverified",
+      "id": "ho-doi-dap-03",
+      "file": "ho-doi-dap-song-huong-03.mp3",
+      "duration_seconds": 32.4,
+      "bytes": 636768,
+      "peak_dbfs": -1.76,
+      "fade_in_seconds": 0.6,
+      "fade_out_seconds": 1.2,
+      "review_status": "acoustic_candidate_needs_listening"
+    },
+    {
+      "start": 169.3,
+      "end": 203.15,
+      "selection": "sustained acoustic energy; lyrical climax unverified",
+      "id": "ho-doi-dap-04",
+      "file": "ho-doi-dap-song-huong-04.mp3",
+      "duration_seconds": 33.85,
+      "bytes": 657216,
+      "peak_dbfs": -2.71,
+      "fade_in_seconds": 0.6,
+      "fade_out_seconds": 1.2,
+      "review_status": "acoustic_candidate_needs_listening"
+    }
+  ]
+}

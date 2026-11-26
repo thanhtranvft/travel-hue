@@ -1,0 +1,73 @@
+{
+  "source": "D:\\01.TranThanh\\19.Tools\\ideas_creativity\\Music\\Hò Đối Đáp Trên Sông Hương.mp3",
+  "source_duration_seconds": 227.484,
+  "sample_rate": 48000,
+  "channels": 2,
+  "method": "Acoustic energy and chroma repetition; no direct listening or lyrical chorus verification.",
+  "top_repeating_phrases": [
+    [
+      0.42423632740974426,
+      94.0,
+      156.0
+    ],
+    [
+      0.4235192537307739,
+      44.0,
+      132.0
+    ],
+    [
+      0.38624370098114014,
+      84.0,
+      134.0
+    ],
+    [
+      0.3862418234348297,
+      82.0,
+      132.0
+    ],
+    [
+      0.3828340768814087,
+      22.0,
+      156.0
+    ],
+    [
+      0.38129642605781555,
+      96.0,
+      158.0
+    ],
+    [
+      0.3777611553668976,
+      46.0,
+      134.0
+    ],
+    [
+      0.36662137508392334,
+      12.0,
+      60.0
+    ]
+  ],
+  "proposed_clips": [
+    {
+      "start": 5.0,
+      "end": 40.95,
+      "selection": "sustained acoustic energy; lyrical climax unverified"
+    },
+    {
+      "start": 43.1,
+      "end": 66.05,
+      "selection": "repeating chroma phrase; not a verified lyrical chorus",
+      "similar_phrase_start": 132.0,
+      "similarity": 0.424
+    },
+    {
+      "start": 107.3,
+      "end": 139.7,
+      "selection": "sustained acoustic energy; lyrical climax unverified"
+    },
+    {
+      "start": 169.3,
+      "end": 203.15,
+      "selection": "sustained acoustic energy; lyrical climax unverified"
+    }
+  ]
+}
