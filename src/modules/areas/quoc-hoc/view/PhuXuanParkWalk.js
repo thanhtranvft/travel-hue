@@ -3,6 +3,7 @@ import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import {
   applyWorldPlanarUVs,
+  createBrickCementWalkMaterial,
   createCanvasTexture,
   createIronwoodWalkMaterial,
   createManicuredLawnMaterial,
@@ -464,6 +465,24 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     return val;
   };
 
+  const shoreDeckLandZ = (lx) => {
+    const base = sampleShoreZ(lx) + 3.3;
+    if (lx <= 430.4) return base;
+    const u = Math.max(0, Math.min(1, (lx - 430.4) / (437.38 - 430.4)));
+    return base * (1 - u) + -18.3 * u;
+  };
+  const shoreDeckRiverZ = (lx) => {
+    const base = sampleShoreZ(lx) - 0.8;
+    if (lx <= 430.4) return base;
+    const u = Math.max(0, Math.min(1, (lx - 430.4) / (437.38 - 430.4)));
+    return base * (1 - u) + -22.5 * u;
+  };
+  const shoreDeckY = (lx) => {
+    if (lx <= 430.4) return 0.36;
+    const u = Math.max(0, Math.min(1, (lx - 430.4) / (437.38 - 430.4)));
+    return 0.36 + (0.684 - 0.36) * u;
+  };
+
   const group = new THREE.Group();
   group.name = "phu-xuan-park-walk";
   group.position.set(biaSite.center.x, 0, biaSite.center.z);
@@ -532,9 +551,9 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   bankMesh.receiveShadow = true;
   group.add(bankMesh);
 
-  // 2. RIVERFRONT IRONWOOD PROMENADE (Đường đi bộ lát gỗ dọc bờ sông tới Cầu Gỗ Lim) + GARDEN GRANITE FOOTPATHS
+  // 2. RIVERFRONT BRICK-CEMENT UPPER PROMENADE (Đường xi măng gạch) + SHORELINE WOODEN BOARDWALK TO CẦU GỖ LIM
   const walkPaths = [
-    // Continuous Riverfront Ironwood Promenade extending from Fountain Park to Cầu Gỗ Lim & Cầu Phú Xuân
+    // Continuous Riverfront Brick-Cement Upper Promenade extending from Fountain Park to Cầu Phú Xuân
     {
       width: 4.6,
       points: [
@@ -713,22 +732,24 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     0.182,  // 16: Bay 3 West spoke
     0.206,  // 17: Bay 3 East spoke
   ];
+  const brickCementWalkMat = createBrickCementWalkMaterial(1, 1);
+  const cementCurbMat = mat("#b8b4aa", 0.84);
   const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
-  const ironwoodTrimMat = mat("#4c2d17", 0.8);
+  const timberTrimMat = mat("#4c2d17", 0.84);
   const walkSegments = [];
-  const woodSegments = [];
+  const upperPromSegments = [];
   walkPaths.forEach((path, idx) => {
-    const isIronwood = idx === 0;
+    const isUpperProm = idx === 0;
     const ribbonY = walkHeights[idx] ?? (0.17 + (idx % 5) * 0.011);
     const ribbonMesh = new THREE.Mesh(
-      isIronwood
-        ? buildIronwoodRibbonGeometry(path.points, path.width, ribbonY, 3.2)
+      isUpperProm
+        ? buildIronwoodRibbonGeometry(path.points, path.width, ribbonY, 4.2)
         : buildWalkRibbonGeometry(path.points, path.width, ribbonY),
-      isIronwood ? ironwoodWalkMat : graniteMat,
+      isUpperProm ? brickCementWalkMat : graniteMat,
     );
     ribbonMesh.receiveShadow = true;
     group.add(ribbonMesh);
-    if (isIronwood) {
+    if (isUpperProm) {
       const riverCurbChunks = [
         path.points.slice(0, 3), // 366.0 .. 437.3 (opens cleanly at Cầu Gỗ Lim west ramp)
         path.points.slice(4),    // 441.7 .. 536.5
@@ -737,14 +758,14 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
         if (chunk.length < 2) continue;
         const riverCurb = new THREE.Mesh(
           buildRibbonSideCurbGeometry(chunk, -(path.width / 2 + 0.09), 0.18, 0.285, 0.08),
-          ironwoodTrimMat,
+          cementCurbMat,
         );
         riverCurb.castShadow = riverCurb.receiveShadow = true;
         group.add(riverCurb);
       }
       const innerCurb = new THREE.Mesh(
         buildRibbonSideCurbGeometry(path.points, path.width / 2 + 0.09, 0.18, 0.285, 0.08),
-        ironwoodTrimMat,
+        cementCurbMat,
       );
       innerCurb.castShadow = innerCurb.receiveShadow = true;
       group.add(innerCurb);
@@ -756,9 +777,102 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
         halfW: path.width / 2,
       };
       walkSegments.push(seg);
-      if (isIronwood) woodSegments.push(seg);
+      if (isUpperProm) upperPromSegments.push(seg);
     }
   });
+
+  // Continuous 0.36m shoreline wooden boardwalk connecting FountainPark (366) -> Cầu Gỗ Lim (437.38, y = 0.684m)
+  const shoreSamples = [];
+  for (let lx = 366.02; lx <= 437.38; lx = Math.min(437.38, lx + 2.0)) {
+    shoreSamples.push({
+      lx,
+      y: shoreDeckY(lx),
+      zLand: shoreDeckLandZ(lx),
+      zRiver: shoreDeckRiverZ(lx),
+    });
+    if (lx >= 437.38) break;
+  }
+  const sPos = [];
+  const sUvs = [];
+  const sIdx = [];
+  const fPos = [];
+  const fUvs = [];
+  const fIdx = [];
+  const lPos = [];
+  const lUvs = [];
+  const lIdx = [];
+  shoreSamples.forEach((s, i) => {
+    const u = (s.lx - 366.02) / 3.2;
+    sPos.push(s.lx, s.y, s.zLand, s.lx, s.y, s.zRiver);
+    sUvs.push(u, 0, u, 1);
+    fPos.push(s.lx, s.y, s.zRiver, s.lx, s.y - 0.24, s.zRiver);
+    fUvs.push(u, 0, u, 1);
+    lPos.push(s.lx, s.y, s.zLand, s.lx, s.y - 0.2, s.zLand);
+    lUvs.push(u, 0, u, 1);
+    if (i > 0) {
+      const a = (i - 1) * 2;
+      sIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      fIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      lIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  });
+  const shoreDeckGeo = new THREE.BufferGeometry();
+  shoreDeckGeo.setAttribute("position", new THREE.Float32BufferAttribute(sPos, 3));
+  shoreDeckGeo.setAttribute("uv", new THREE.Float32BufferAttribute(sUvs, 2));
+  shoreDeckGeo.setIndex(sIdx);
+  shoreDeckGeo.computeVertexNormals();
+  const shoreDeckMesh = new THREE.Mesh(shoreDeckGeo, ironwoodWalkMat);
+  shoreDeckMesh.receiveShadow = true;
+  group.add(shoreDeckMesh);
+
+  for (const [posArr, uvArr, idxArr] of [
+    [fPos, fUvs, fIdx],
+    [lPos, lUvs, lIdx],
+  ]) {
+    const tGeo = new THREE.BufferGeometry();
+    tGeo.setAttribute("position", new THREE.Float32BufferAttribute(posArr, 3));
+    tGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvArr, 2));
+    tGeo.setIndex(idxArr);
+    tGeo.computeVertexNormals();
+    const tMesh = new THREE.Mesh(tGeo, timberTrimMat);
+    tMesh.castShadow = tMesh.receiveShadow = true;
+    group.add(tMesh);
+  }
+
+  // Concrete support piles beneath shoreline wooden boardwalk + granite link from upper walk at lx = 396
+  const shorePileCoords = [];
+  for (let lx = 370; lx <= 435; lx += 6.5) {
+    shorePileCoords.push([lx, shoreDeckRiverZ(lx) + 0.65]);
+  }
+  const shorePiles = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.19, 0.21, 0.9, 8),
+    mat("#6a6c64", 0.9),
+    shorePileCoords.length,
+  );
+  const pileDummy = new THREE.Object3D();
+  shorePileCoords.forEach(([px, pz], i) => {
+    pileDummy.position.set(px, -0.1, pz);
+    pileDummy.updateMatrix();
+    shorePiles.setMatrixAt(i, pileDummy.matrix);
+  });
+  shorePiles.instanceMatrix.needsUpdate = true;
+  shorePiles.computeBoundingSphere();
+  group.add(shorePiles);
+
+  {
+    const zStart = -16.6;
+    const zEnd = shoreDeckLandZ(396) + 0.02;
+    const cLen = Math.max(2, Math.abs(zStart - zEnd));
+    const midZ = (zStart + zEnd) / 2;
+    const shoreLink = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 0.14, cLen),
+      graniteMat,
+    );
+    shoreLink.position.set(396, 0.23, midZ);
+    shoreLink.rotation.x = -Math.atan2(0.11, cLen);
+    shoreLink.receiveShadow = true;
+    group.add(shoreLink);
+  }
 
   // Circular footpath junction resting nodes
   const walkNodes = [
@@ -858,7 +972,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     {
       // Bay 1 Lower-Mid triangle
       pts: [
-        [371, -10.5],
+        [371, -9.0],
         [391, -4],
         [371, 3],
       ],
@@ -888,8 +1002,8 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       pts: [
         [402, -4.5],
         [434, -4.5],
-        [434, -10.8],
-        [402, -10.8],
+        [434, -9.0],
+        [402, -9.0],
       ],
       flowers: false,
     },
@@ -935,8 +1049,8 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       pts: [
         [445, -4.5],
         [483, -3.5],
-        [483, -10.5],
-        [445, -10.8],
+        [483, -9.0],
+        [445, -9.0],
       ],
       flowers: true,
     },
@@ -970,12 +1084,30 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     );
   });
 
-  // 4. RIVERSIDE TROPICAL FAN PALMS, HUE SHADE TREES, BENCHES & HERITAGE LAMPS
+  // 4. RIVERSIDE TROPICAL FAN PALMS, 2 TREE ROWS FLANKING BRICK-CEMENT WALK, BENCHES & HERITAGE LAMPS
+  const treeColliders = [];
+  const registerTree = (tx, tz, r = 0.85) => {
+    const wp = toWorld(tx, tz);
+    treeColliders.push({ x: wp.x, z: wp.z, r, lx: tx, lz: tz });
+  };
+  const upperPromCenterZ = (lx) => {
+    if (lx <= 402) return -14.2;
+    if (lx <= 441.7) return -14.2 + ((lx - 402) / (441.7 - 402)) * (-13.97 - -14.2);
+    if (lx <= 488) return -13.97 + ((lx - 441.7) / (488 - 441.7)) * (-13.3 - -13.97);
+    if (lx <= 512) return -13.3 + ((lx - 488) / (512 - 488)) * (-12.6 - -13.3);
+    return -12.6 + ((lx - 512) / (536.5 - 512)) * (-11.4 - -12.6);
+  };
   const palmPositions = [374, 386, 404, 416, 428, 452, 464, 476, 496, 508, 522];
   palmPositions.forEach((px, idx) => {
     group.add(createFanPalm(px, 0.16, -17.6, 0.96 + (idx % 2) * 0.08, idx + 1));
+    registerTree(px, -17.6, 0.72);
   });
 
+  const southRowTrees = [386, 404, 416, 428, 452, 464, 476, 496, 506, 522].map((tx, idx) => [
+    tx,
+    upperPromCenterZ(tx) + 3.5,
+    1.02 + (idx % 2) * 0.06,
+  ]);
   const shadeTrees = [
     [378, 28.5, 1.05],
     [422, 30.5, 1.12],
@@ -984,9 +1116,11 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     [422, 7.5, 1.04],
     [474, 7.5, 1.06],
     [496, 28.5, 1.02],
+    ...southRowTrees,
   ];
   shadeTrees.forEach(([tx, tz, sc], idx) => {
     group.add(createGardenTree(tx, 0.14, tz, sc, idx + 2));
+    registerTree(tx, tz, 0.85);
   });
 
   for (const [bx, bz] of [
@@ -1008,6 +1142,12 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     [511.5 + 9.8, 17.1, -Math.PI / 2],
   ]) {
     group.add(createParkBench(bx, 0.24, bz, yaw));
+  }
+  for (const bx of [380, 412]) {
+    group.add(
+      createParkBench(bx, shoreDeckY(bx), shoreDeckLandZ(bx) - 0.72, Math.PI),
+      createHeritageLamp(bx + 4.2, shoreDeckY(bx), shoreDeckLandZ(bx) - 0.52),
+    );
   }
 
   for (const [lx, lz] of [
@@ -1085,16 +1225,51 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     group,
     walkSegments,
     circleCenterLocal: { lx: circleGarden.lx, lz: circleGarden.lz },
+    treeColliders,
+    hitsTree(wx, wz) {
+      for (let i = 0; i < treeColliders.length; i++) {
+        const t = treeColliders[i];
+        const dx = wx - t.x;
+        const dz = wz - t.z;
+        if (dx * dx + dz * dz < t.r * t.r) return true;
+      }
+      return false;
+    },
+    isWaterBlocked(wx, wz, pad = 2.0) {
+      const { lx, lz } = toLocal(wx, wz);
+      if (lx >= 366 && lx <= 437.38) {
+        return lz >= shoreDeckRiverZ(lx) - pad && lz <= parkMaxLz(lx) + 2;
+      }
+      return false;
+    },
     update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 366 || lx > 537.5 || lz < sampleShoreZ(lx) - 1 || lz > parkMaxLz(lx) + 1.5)
-        return null;
+      if (lx < 366 || lx > 537.5 || lz > parkMaxLz(lx) + 1.5) return null;
+      const minZ = lx <= 437.38 ? shoreDeckRiverZ(lx) - 0.5 : sampleShoreZ(lx) - 1;
+      if (lz < minZ) return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Yield cleanly where Cầu Gỗ Lim shore ramps rise riverward of the ironwood promenade
+      // Continuous shoreline wooden boardwalk ramping smoothly into Cầu Gỗ Lim (lx = 366..437.38)
+      if (
+        lx >= 366 &&
+        lx <= 437.38 &&
+        lz <= shoreDeckLandZ(lx) &&
+        lz >= shoreDeckRiverZ(lx)
+      ) {
+        return shoreDeckY(lx);
+      }
+
+      // Yield cleanly where Cầu Gỗ Lim shore ramps rise riverward of the upper brick-cement promenade
       if (Math.abs(lx - 439.5) < 2.35 && lz < -16.1 && lz > -18.5) return null;
       if (Math.abs(lx - 535.0) < 1.9 && lz < -13.2 && lz > -22.5) return null;
+
+      // Granite connecting path at lx = 396 linking upper brick-cement walk to shoreline boardwalk
+      if (Math.abs(lx - 396) <= 1.55 && lz < -16.5 && lz >= shoreDeckLandZ(396)) {
+        const zEnd = shoreDeckLandZ(396);
+        const t = (-16.5 - lz) / Math.max(1, -16.5 - zEnd);
+        return 0.256 + t * (shoreDeckY(lx) - 0.256);
+      }
 
       // Curb ramps along Lê Lợi
       for (const r of curbEntries) {
@@ -1107,7 +1282,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
       if (lz > parkMaxLz(lx)) return null;
 
       if (
-        woodSegments.some(
+        upperPromSegments.some(
           (s) => distPointToSegment(lx, lz, s.a, s.b) <= s.halfW + 0.35,
         )
       ) {
@@ -1125,20 +1300,37 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     },
     canRide(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 366 || lx > 537.2 || lz < sampleShoreZ(lx) || lz > parkMaxLz(lx))
+      const minRideZ = lx <= 437.38 ? shoreDeckRiverZ(lx) : sampleShoreZ(lx);
+      if (lx < 366 || lx > 537.2 || lz < minRideZ || lz > parkMaxLz(lx))
         return null;
+      if (
+        treeColliders.some(
+          (t) => (wx - t.x) ** 2 + (wz - t.z) ** 2 < t.r * t.r,
+        )
+      ) {
+        return false;
+      }
       // Block riding straight through the Phú Xuân Lotus stone lantern plinth
       if (Math.hypot(lx - circleGarden.lx, lz - circleGarden.lz) < 2.6) return false;
+      if (
+        lx >= 366 &&
+        lx <= 437.38 &&
+        lz <= shoreDeckLandZ(lx) &&
+        lz >= shoreDeckRiverZ(lx) + 0.45
+      ) {
+        return true;
+      }
       if (lz >= sampleShoreZ(lx) + 0.8 && lz <= parkMaxLz(lx)) return true;
       return null;
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 366 && lx <= 537.5 && lz >= sampleShoreZ(lx) - 1 && lz <= parkMaxLz(lx) + 1.5;
+      const minZ = lx <= 437.38 ? shoreDeckRiverZ(lx) - 0.5 : sampleShoreZ(lx) - 1;
+      return lx >= 366 && lx <= 537.5 && lz >= minZ && lz <= parkMaxLz(lx) + 1.5;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 366 || lx > 537.5 || lz < sampleShoreZ(lx) - 2 || lz > parkMaxLz(lx) + 2)
+      if (lx < 366 || lx > 537.5 || lz < shoreDeckRiverZ(lx) - 2 || lz > parkMaxLz(lx) + 2)
         return false;
       // Keep riverfront palm corridor, walkways, and circular garden completely clear of random OSM trees
       if (lz <= -9.5) return true;

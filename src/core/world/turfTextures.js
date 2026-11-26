@@ -211,13 +211,15 @@ export function createIronwoodPlankTexture(
 
 export function createIronwoodWalkMaterial(repeatX = 1, repeatY = 1, options = {}) {
   const map = createIronwoodPlankTexture(repeatX, repeatY, options);
-  return new THREE.MeshStandardMaterial({
+  const m = new THREE.MeshStandardMaterial({
     color: map ? "#ffffff" : "#784c2b",
     map,
     roughness: 0.64,
     metalness: 0.06,
     side: THREE.DoubleSide,
   });
+  m.userData.surfaceKind = "ironwood";
+  return m;
 }
 
 export function createIronwoodPromenadeGeometry(
@@ -242,5 +244,112 @@ export function createIronwoodPromenadeGeometry(
   }
   return geo;
 }
+
+/**
+ * Hue riverside brick-and-cement walkway texture ("đường xi măng gạch"):
+ * interlocking grey cement pavers edged with warm terracotta/buff brick bands
+ * and crisp mortar joints so the upper inland promenade clearly contrasts
+ * against the waterfront ironwood boardwalk.
+ */
+export function createBrickCementWalkTexture(
+  repeatX = 1,
+  repeatY = 1,
+  { mobile = false } = {},
+) {
+  return createCanvasTexture(
+    mobile ? 256 : 512,
+    mobile ? 256 : 512,
+    (ctx, w, h) => {
+      // Base cement mortar bed
+      ctx.fillStyle = "#b5b0a6";
+      ctx.fillRect(0, 0, w, h);
+
+      let seed = 883;
+      const rand = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 4294967296;
+      };
+
+      const borderW = Math.round(w * 0.14);
+      const innerStart = borderW;
+      const innerW = w - borderW * 2;
+      const rows = 12;
+      const rowH = h / rows;
+      const cols = 4;
+      const cellW = innerW / cols;
+      const gap = mobile ? 2 : 3;
+
+      // Running-bond interlocking cement/stone blocks in the main path
+      for (let r = 0; r < rows; r++) {
+        const y0 = r * rowH;
+        const offset = (r % 2) * (cellW * 0.5);
+        for (let c = -1; c <= cols; c++) {
+          const rawX = innerStart + c * cellW + offset;
+          const x0 = Math.max(innerStart, rawX);
+          const x1 = Math.min(innerStart + innerW, rawX + cellW);
+          if (x1 - x0 <= gap * 2) continue;
+          const v = Math.floor((rand() - 0.5) * 16);
+          const redAccent = (r + c) % 5 === 0 && (r % 3 === 1);
+          if (redAccent) {
+            ctx.fillStyle = `rgb(${168 + v}, ${126 + Math.floor(v * 0.7)}, ${110 + Math.floor(v * 0.6)})`;
+          } else {
+            ctx.fillStyle = `rgb(${198 + v}, ${194 + v}, ${186 + v})`;
+          }
+          ctx.fillRect(x0 + gap * 0.5, y0 + gap * 0.5, x1 - x0 - gap, rowH - gap);
+        }
+      }
+
+      // Paired brick-cement edge header courses along both sides of the walk
+      const borderRows = 16;
+      const brH = h / borderRows;
+      for (let r = 0; r < borderRows; r++) {
+        const y0 = r * brH;
+        const shade = r % 2 === 0 ? "#a96e57" : "#b97c64";
+        ctx.fillStyle = shade;
+        ctx.fillRect(2, y0 + 1.5, borderW - 4, brH - 3);
+        ctx.fillRect(w - borderW + 2, y0 + 1.5, borderW - 4, brH - 3);
+      }
+
+      // Subtle mineral cement aggregate speckle
+      const dots = mobile ? 220 : 650;
+      for (let i = 0; i < dots; i++) {
+        const x = (i * 151 + 19) % w;
+        const y = (i * 277 + 37) % h;
+        ctx.fillStyle =
+          i % 3 === 0 ? "rgba(86, 84, 78, 0.16)" : "rgba(250, 248, 242, 0.18)";
+        ctx.fillRect(x, y, 2, 2);
+      }
+    },
+    repeatX,
+    repeatY,
+  );
+}
+
+export function createBrickCementWalkMaterial(
+  repeatX = 1,
+  repeatY = 1,
+  options = {},
+) {
+  const map = createBrickCementWalkTexture(repeatX, repeatY, options);
+  const m = new THREE.MeshStandardMaterial({
+    color: map ? "#ffffff" : "#c4bfb5",
+    map,
+    roughness: 0.86,
+    metalness: 0.02,
+    side: THREE.DoubleSide,
+  });
+  m.userData.surfaceKind = "brick-cement";
+  return m;
+}
+
+export function createBrickCementPromenadeGeometry(
+  lenX,
+  height,
+  widthZ,
+  tileRepeatLength = 4.2,
+) {
+  return createIronwoodPromenadeGeometry(lenX, height, widthZ, tileRepeatLength);
+}
+
 
 

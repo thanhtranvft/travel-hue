@@ -31,6 +31,9 @@ export class CityAudio {
     this.caHueLastSongId = null;
     this.caHueAudioOverrides = new Map();
     this.caHueMediaEl = null;
+    this.caHueMediaGain = null;
+    this.caHueMediaSrc = null;
+    this.caHueFadeTimer = null;
     this.fishingMode = false;
     this.fishingStep = 0;
     this.fishingStepSeconds = 0.54;
@@ -115,22 +118,22 @@ export class CityAudio {
     rolling.connect(wheelFilter).connect(this.wheelGain).connect(this.master);
     rolling.start();
 
-    // Spatial echoing Ca Huế traditional horn bus over the Perfume River
+    // Spatial echoing Ca Huế river boat bus over the Perfume River
     this.caHueBus = ctx.createGain();
     this.caHueBus.gain.value = 0;
     this.caHueLowpass = ctx.createBiquadFilter();
     this.caHueLowpass.type = "lowpass";
-    this.caHueLowpass.frequency.value = 2400;
+    this.caHueLowpass.frequency.value = 3200;
     this.caHuePan = ctx.createStereoPanner();
     this.caHueEchoDelay = ctx.createDelay(1.0);
-    this.caHueEchoDelay.delayTime.value = 0.36;
+    this.caHueEchoDelay.delayTime.value = 0.34;
     this.caHueEchoFilter = ctx.createBiquadFilter();
     this.caHueEchoFilter.type = "lowpass";
-    this.caHueEchoFilter.frequency.value = 1150;
+    this.caHueEchoFilter.frequency.value = 1650;
     this.caHueEchoFeedback = ctx.createGain();
-    this.caHueEchoFeedback.gain.value = 0.34;
+    this.caHueEchoFeedback.gain.value = 0.32;
     const caHueEchoWet = ctx.createGain();
-    caHueEchoWet.gain.value = 0.58;
+    caHueEchoWet.gain.value = 0.45;
     this.caHueBus.connect(this.caHueLowpass);
     this.caHueLowpass.connect(this.caHuePan);
     this.caHueLowpass.connect(this.caHueEchoDelay);
@@ -150,6 +153,43 @@ export class CityAudio {
     if (!songId) return;
     if (url) this.caHueAudioOverrides.set(songId, url);
     else this.caHueAudioOverrides.delete(songId);
+  }
+  stopCaHueMedia(immediate = false) {
+    const oldEl = this.caHueMediaEl;
+    const oldGain = this.caHueMediaGain;
+    const oldSrc = this.caHueMediaSrc;
+    this.caHueMediaEl = null;
+    this.caHueMediaGain = null;
+    this.caHueMediaSrc = null;
+    this.caHueLastSongId = null;
+    if (this.caHueFadeTimer) {
+      clearTimeout(this.caHueFadeTimer);
+      this.caHueFadeTimer = null;
+    }
+    if (!oldEl) return;
+    const cleanup = () => {
+      try {
+        oldEl.pause();
+      } catch {}
+      try {
+        oldSrc?.disconnect?.();
+        oldGain?.disconnect?.();
+      } catch {}
+    };
+    if (!immediate && this.ctx && oldGain?.gain?.linearRampToValueAtTime) {
+      const now = this.ctx.currentTime;
+      try {
+        oldGain.gain.cancelScheduledValues?.(now);
+        oldGain.gain.setValueAtTime?.(oldGain.gain.value ?? 1, now);
+        oldGain.gain.linearRampToValueAtTime(0.0001, now + 0.9);
+      } catch {}
+      this.caHueFadeTimer = setTimeout(() => {
+        this.caHueFadeTimer = null;
+        cleanup();
+      }, 950);
+    } else {
+      cleanup();
+    }
   }
   playCaHueHornNote(ctx, output, midi, time, volume = 0.13, duration = 0.72) {
     const hz = frequency(midi);
@@ -403,22 +443,36 @@ export class CityAudio {
       const overrideUrl =
         boatSong.audioUrl || this.caHueAudioOverrides.get(boatSong.id);
       if (boatSong.id !== this.caHueLastSongId) {
+        this.stopCaHueMedia(true);
         this.caHueLastSongId = boatSong.id;
         this.caHueStep = 0;
         this.nextCaHueNote = now + 0.05;
-        if (this.caHueMediaEl) {
-          this.caHueMediaEl.pause();
-          this.caHueMediaEl = null;
-        }
         if (overrideUrl && typeof Audio !== "undefined") {
           try {
             const el = new Audio(overrideUrl);
             el.loop = true;
+            el.preload = "auto";
             el.crossOrigin = "anonymous";
             const src = ctx.createMediaElementSource(el);
-            src.connect(this.caHueBus);
-            void el.play().catch(() => {});
+            const mediaGain = ctx.createGain();
+            if (mediaGain.gain?.setValueAtTime) {
+              mediaGain.gain.setValueAtTime(0.0001, now);
+              mediaGain.gain.linearRampToValueAtTime?.(1.0, now + 0.6);
+            } else {
+              mediaGain.gain.value = 1.0;
+            }
+            src.connect(mediaGain).connect(this.caHueBus);
             this.caHueMediaEl = el;
+            this.caHueMediaGain = mediaGain;
+            this.caHueMediaSrc = src;
+            const playRes = el.play();
+            if (playRes && typeof playRes.catch === "function") {
+              playRes.catch(() => {
+                if (this.caHueMediaEl === el) {
+                  this.stopCaHueMedia(true);
+                }
+              });
+            }
           } catch {}
         }
       }
@@ -441,10 +495,8 @@ export class CityAudio {
           this.nextCaHueNote += tempo;
         }
       }
-    } else if (this.caHueMediaEl) {
-      this.caHueMediaEl.pause();
-      this.caHueMediaEl = null;
-      this.caHueLastSongId = null;
+    } else if (this.caHueMediaEl || this.caHueLastSongId) {
+      this.stopCaHueMedia(false);
     }
   }
   update(bike, actors, cameraHeading, caHueBoats = this.caHueBoats) {
@@ -456,7 +508,7 @@ export class CityAudio {
     this.nearbyVenue = nearby?.source || null;
     this.venueLevel = nearby?.gain || 0;
     const caHueSources = Array.isArray(caHueBoats) ? caHueBoats : [];
-    const caHueHit = nearestAudibleSource(bike.position, caHueSources, 175);
+    const caHueHit = nearestAudibleSource(bike.position, caHueSources, 230);
     this.activeCaHueBoat = caHueHit?.source || null;
     this.caHueLevel = caHueHit?.gain || 0;
     if (!this.enabled || !this.ctx || this.ctx.state !== "running") return;
@@ -469,15 +521,17 @@ export class CityAudio {
         : this.fishingMode
           ? 0.04
           : Math.max(
-              0.16,
-              0.65 - this.venueLevel * 0.4 - this.caHueLevel * 0.24,
+              0.14,
+              0.65 - this.venueLevel * 0.4 - this.caHueLevel * 0.34,
             ),
       t,
       0.5,
     );
     if (this.fishingBus) {
       this.fishingBus.gain.setTargetAtTime(
-        this.musicEnabled && this.fishingMode ? 0.78 : 0,
+        this.musicEnabled && this.fishingMode
+          ? Math.max(0.28, 0.78 - this.caHueLevel * 0.44)
+          : 0,
         t,
         0.35,
       );
@@ -499,13 +553,13 @@ export class CityAudio {
       0.2,
     );
     if (this.caHueBus) {
-      this.caHueBus.gain.setTargetAtTime(
-        !this.musicEnabled ? 0 : this.caHueLevel * 0.44,
-        t,
-        0.4,
-      );
+      const riverGain =
+        !this.musicEnabled || this.caHueLevel <= 0
+          ? 0
+          : Math.min(0.75, Math.pow(this.caHueLevel, 0.72) * 0.72);
+      this.caHueBus.gain.setTargetAtTime(riverGain, t, 0.35);
       this.caHueLowpass.frequency.setTargetAtTime(
-        680 + this.caHueLevel * 2350,
+        850 + this.caHueLevel * 4400,
         t,
         0.35,
       );
@@ -983,10 +1037,7 @@ export class CityAudio {
   }
   dispose() {
     clearInterval(this.timer);
-    if (this.caHueMediaEl) {
-      this.caHueMediaEl.pause();
-      this.caHueMediaEl = null;
-    }
+    this.stopCaHueMedia(true);
     if (this.preloadIdleId != null && typeof cancelIdleCallback === "function") {
       cancelIdleCallback(this.preloadIdleId);
       this.preloadIdleId = null;

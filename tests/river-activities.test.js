@@ -182,8 +182,17 @@ test("CaHueBoats (10 dragon boats) & AmbientSwanBoats (10 occupied pedal boats) 
   assert.equal(sources.length, CA_HUE_SONGS.length);
   for (const s of sources) {
     assert.ok(s.song?.title);
+    assert.match(s.song?.audioUrl || "", /ho-doi-dap-song-huong-0[1-4]\.mp3/);
     assert.ok(river.some((ring) => inside({ x: s.x, z: s.z }, ring)));
     assert.equal(caHue.hitsBoat(s.x, s.z, 0), true);
+  }
+  for (const file of [
+    "ho-doi-dap-song-huong-01.mp3",
+    "ho-doi-dap-song-huong-02.mp3",
+    "ho-doi-dap-song-huong-03.mp3",
+    "ho-doi-dap-song-huong-04.mp3",
+  ]) {
+    assert.equal(fs.existsSync(path.resolve("src/assets/music", file)), true, `Missing ${file}`);
   }
 
   const ambientSwans = new AmbientSwanBoats(world, 10);

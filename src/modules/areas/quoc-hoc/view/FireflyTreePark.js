@@ -3,7 +3,8 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import {
-  createIronwoodPromenadeGeometry,
+  createBrickCementPromenadeGeometry,
+  createBrickCementWalkMaterial,
   createIronwoodWalkMaterial,
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
@@ -310,6 +311,16 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     return val;
   };
 
+  const shoreDeckLandZ = (lx) => {
+    const blend = Math.max(0, Math.min(1, (lx - 64) / 10));
+    return sampleShoreZ(lx) + 4.8 * (1 - blend) + 3.8 * blend;
+  };
+  const shoreDeckRiverZ = (lx) => {
+    const blend = Math.max(0, Math.min(1, (lx - 64) / 10));
+    return sampleShoreZ(lx) - (1.2 * (1 - blend) + 0.8 * blend);
+  };
+  const shoreDeckY = 0.36;
+
   const group = new THREE.Group();
   group.name = "firefly-tree-park";
   group.position.set(biaSite.center.x, 0, biaSite.center.z);
@@ -379,27 +390,123 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   bankMesh.receiveShadow = true;
   group.add(bankMesh);
 
-  // 2. CONTINUOUS IRONWOOD (GỖ LIM) RIVERSIDE PROMENADE & APPROACH WALKWAY FROM HAI BÀ TRƯNG GATE
+  // 2. CONTINUOUS BRICK-CEMENT (XI MĂNG GẠCH) UPPER PROMENADE & SHORELINE WOODEN BOARDWALK
+  const brickCementWalkMat = createBrickCementWalkMaterial(1, 1);
   const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const promenade = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(149.96, 0.256, 4.4, 3.2),
-    ironwoodWalkMat,
+    createBrickCementPromenadeGeometry(149.96, 0.256, 4.4, 4.2),
+    brickCementWalkMat,
   );
   promenade.position.set(143.0, 0.128, -13.3);
   promenade.receiveShadow = true;
 
-  // River-side & inner dark timber edge curbs framing the ironwood promenade
+  // River-side & inner light cement curbs framing the upper brick-cement promenade
   const riverWall = new THREE.Mesh(
     new THREE.BoxGeometry(149.96, 0.29, 0.28),
-    mat("#4c2d17", 0.8),
+    mat("#b8b4aa", 0.84),
   );
   riverWall.position.set(143.0, 0.145, -15.65);
   const innerCurb = new THREE.Mesh(
     new THREE.BoxGeometry(149.96, 0.28, 0.16),
-    mat("#4c2d17", 0.8),
+    mat("#b8b4aa", 0.84),
   );
   innerCurb.position.set(143.0, 0.14, -11.0);
   group.add(innerCurb);
+
+  // Continuous 0.36m shoreline wooden boardwalk connecting BiaQuocHocPark (lx=64) -> FountainPark (lx=218)
+  const shoreSamples = [];
+  for (let lx = 64.02; lx <= 217.98; lx = Math.min(217.98, lx + 2.5)) {
+    shoreSamples.push({
+      lx,
+      zLand: shoreDeckLandZ(lx),
+      zRiver: shoreDeckRiverZ(lx),
+    });
+    if (lx >= 217.98) break;
+  }
+  const sPos = [];
+  const sUvs = [];
+  const sIdx = [];
+  const fPos = [];
+  const fUvs = [];
+  const fIdx = [];
+  const lPos = [];
+  const lUvs = [];
+  const lIdx = [];
+  shoreSamples.forEach((s, i) => {
+    const u = (s.lx - 64.02) / 3.2;
+    sPos.push(s.lx, shoreDeckY, s.zLand, s.lx, shoreDeckY, s.zRiver);
+    sUvs.push(u, 0, u, 1);
+    fPos.push(s.lx, shoreDeckY, s.zRiver, s.lx, shoreDeckY - 0.24, s.zRiver);
+    fUvs.push(u, 0, u, 1);
+    lPos.push(s.lx, shoreDeckY, s.zLand, s.lx, shoreDeckY - 0.2, s.zLand);
+    lUvs.push(u, 0, u, 1);
+    if (i > 0) {
+      const a = (i - 1) * 2;
+      sIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      fIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      lIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+    }
+  });
+  const shoreDeckGeo = new THREE.BufferGeometry();
+  shoreDeckGeo.setAttribute("position", new THREE.Float32BufferAttribute(sPos, 3));
+  shoreDeckGeo.setAttribute("uv", new THREE.Float32BufferAttribute(sUvs, 2));
+  shoreDeckGeo.setIndex(sIdx);
+  shoreDeckGeo.computeVertexNormals();
+  const shoreDeckMesh = new THREE.Mesh(shoreDeckGeo, ironwoodWalkMat);
+  shoreDeckMesh.receiveShadow = true;
+  group.add(shoreDeckMesh);
+
+  const timberTrimMat = mat("#4c2d17", 0.84);
+  for (const [posArr, uvArr, idxArr] of [
+    [fPos, fUvs, fIdx],
+    [lPos, lUvs, lIdx],
+  ]) {
+    const tGeo = new THREE.BufferGeometry();
+    tGeo.setAttribute("position", new THREE.Float32BufferAttribute(posArr, 3));
+    tGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvArr, 2));
+    tGeo.setIndex(idxArr);
+    tGeo.computeVertexNormals();
+    const tMesh = new THREE.Mesh(tGeo, timberTrimMat);
+    tMesh.castShadow = tMesh.receiveShadow = true;
+    group.add(tMesh);
+  }
+
+  // Submerged concrete support piles beneath the shoreline boardwalk
+  const shorePileCoords = [];
+  for (let lx = 68; lx <= 214; lx += 6.5) {
+    shorePileCoords.push([lx, shoreDeckRiverZ(lx) + 0.65]);
+  }
+  const shorePiles = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.19, 0.21, 0.85, 8),
+    mat("#6a6c64", 0.9),
+    shorePileCoords.length,
+  );
+  const pileDummy = new THREE.Object3D();
+  shorePileCoords.forEach(([px, pz], i) => {
+    pileDummy.position.set(px, -0.1, pz);
+    pileDummy.updateMatrix();
+    shorePiles.setMatrixAt(i, pileDummy.matrix);
+  });
+  shorePiles.instanceMatrix.needsUpdate = true;
+  shorePiles.computeBoundingSphere();
+  group.add(shorePiles);
+
+  // Granite connecting footpaths linking upper brick-cement walk down to shoreline boardwalk
+  const shoreConnectors = [98, 155, 198];
+  for (const cxLink of shoreConnectors) {
+    const zStart = -15.8;
+    const zEnd = shoreDeckLandZ(cxLink) + 0.02;
+    const cLen = Math.max(2, Math.abs(zStart - zEnd));
+    const midZ = (zStart + zEnd) / 2;
+    const linkMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 0.14, cLen),
+      graniteMat,
+    );
+    linkMesh.position.set(cxLink, 0.23, midZ);
+    linkMesh.rotation.x = -Math.atan2(0.11, cLen);
+    linkMesh.receiveShadow = true;
+    group.add(linkMesh);
+  }
 
   // Approach walkway from Lê Lợi sidewalk directly opposite Trường Hai Bà Trưng gate
   const gateWalk = new THREE.Mesh(
@@ -424,12 +531,12 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   eastLinkWalk.position.set((treeLx + 20 + 218) / 2, 0.1025, 6.5);
   eastLinkWalk.receiveShadow = true;
 
-  // Neat dark-green trimmed boxwood borders flanking the lawn wings
+  // Neat dark-green trimmed boxwood borders flanking the lawn wings (kept clear of south tree row at lz = -9.6)
   for (const [bx, bw, bz, bd] of [
     [98, 42, 34.5, 0.5],
-    [98, 42, -9.2, 0.5],
+    [98, 42, -7.6, 0.5],
     [200, 26, 34.5, 0.5],
-    [200, 26, -9.2, 0.5],
+    [200, 26, -7.6, 0.5],
   ]) {
     const hedge = new THREE.Mesh(
       new THREE.BoxGeometry(bw, 0.26, bd),
@@ -645,9 +752,15 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   group.add(createCarvedMonolith(treeLx - 27, 0.13, -4.5, 0.2, 0.92));
   group.add(createWhitePhotoArch(treeLx + 22, 0.14, -5.5, -0.35));
 
-  // 8. BENCHES, HERITAGE LAMPS & FRAMING SHADE TREES (central sightline lx 137..173 kept clear!)
+  // 8. BENCHES, HERITAGE LAMPS & FRAMING SHADE TREES (2 symmetrical rows along upper brick-cement walk + shoreline lamps/benches)
   for (const bx of [86, 106, 126, 178, 198, 212]) {
     group.add(createParkBench(bx, 0.256, -14.2, Math.PI));
+  }
+  for (const bx of [86, 126, 178, 208]) {
+    group.add(
+      createParkBench(bx, shoreDeckY, shoreDeckLandZ(bx) - 0.75, Math.PI),
+      createParkLamp(bx + 4.5, shoreDeckY, shoreDeckLandZ(bx) - 0.55),
+    );
   }
   for (const [lx, lz] of [
     [92, -12],
@@ -660,6 +773,16 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     group.add(createParkLamp(lx, lz <= -11 ? 0.256 : 0.23, lz));
   }
 
+  const promenadeRowLxs = [75, 88, 105, 118, 130, 180, 190, 204, 213];
+  const promenadeRowTrees = promenadeRowLxs.flatMap((lx, i) => {
+    const northScale = 1.06 + (i % 3) * 0.05;
+    const southScale = 1.05 + ((i + 1) % 3) * 0.05;
+    return [
+      [lx, -16.9, northScale],
+      [lx, -9.6, southScale],
+    ];
+  });
+
   const framingTrees = [
     [82, 26, 1.18],
     [96, 14, 1.28],
@@ -670,12 +793,15 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     [196, 10, 1.26],
     [208, 26, 1.18],
     [212, 2, 1.22],
-    [88, -21, 1.05],
-    [115, -21, 1.08],
-    [194, -20, 1.06],
+    ...promenadeRowTrees,
   ];
+  const treeColliders = [];
+  const wishingTreeWorld = toWorld(treeLx, treeLz);
+  treeColliders.push({ x: wishingTreeWorld.x, z: wishingTreeWorld.z, r: 2.35, lx: treeLx, lz: treeLz });
   framingTrees.forEach(([tx, tz, sc], idx) => {
-    group.add(createShadeTree(tx, 0.13, tz, sc, idx + 1));
+    group.add(createShadeTree(tx, tz < -15 ? 0.18 : 0.13, tz, sc, idx + 1));
+    const wp = toWorld(tx, tz);
+    treeColliders.push({ x: wp.x, z: wp.z, r: 0.85, lx: tx, lz: tz });
   });
 
   const lifeAnimators = [];
@@ -766,15 +892,46 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   return {
     group,
     treeCenterLocal: { lx: treeLx, lz: treeLz },
+    treeColliders,
+    hitsTree(wx, wz) {
+      for (let i = 0; i < treeColliders.length; i++) {
+        const t = treeColliders[i];
+        const dx = wx - t.x;
+        const dz = wz - t.z;
+        if (dx * dx + dz * dz < t.r * t.r) return true;
+      }
+      return false;
+    },
+    isWaterBlocked(wx, wz, pad = 2.0) {
+      const { lx, lz } = toLocal(wx, wz);
+      return lx >= 64 && lx <= 218 && lz >= shoreDeckRiverZ(lx) - pad && lz <= 41;
+    },
     animatedObjects,
     update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 68 || lx > 218 || lz < sampleShoreZ(lx) - 1 || lz > 41)
+      if (lx < 64 || lx > 218 || lz < shoreDeckRiverZ(lx) - 0.5 || lz > 41)
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Continuous riverside ironwood promenade
+      // Continuous shoreline wooden boardwalk (y = 0.36m)
+      if (lx >= 64 && lx <= 218 && lz <= shoreDeckLandZ(lx) && lz >= shoreDeckRiverZ(lx)) {
+        return shoreDeckY;
+      }
+      if (lx < 68) return null;
+
+      // Granite connecting paths from upper brick-cement walk down to shoreline boardwalk
+      if (
+        shoreConnectors.some((cxLink) => Math.abs(lx - cxLink) <= 1.55) &&
+        lz < -15.5 &&
+        lz >= shoreDeckLandZ(lx)
+      ) {
+        const zEnd = shoreDeckLandZ(lx);
+        const t = (-15.5 - lz) / Math.max(1, -15.5 - zEnd);
+        return 0.256 + t * (shoreDeckY - 0.256);
+      }
+
+      // Continuous upper brick-cement promenade
       if (lz >= -15.6 && lz <= -11.0) return 0.256;
       // Sandy circular clearing
       if (Math.hypot(lx - treeLx, lz - treeLz) <= clearingRadius + 0.4) {
@@ -797,8 +954,15 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     canRide(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      if (lx < 68 || lx > 218 || lz < sampleShoreZ(lx) || lz > 40.5)
+      if (lx < 64 || lx > 218 || lz < shoreDeckRiverZ(lx) || lz > 40.5)
         return null;
+      if (
+        treeColliders.some(
+          (t) => (wx - t.x) ** 2 + (wz - t.z) ** 2 < t.r * t.r,
+        )
+      ) {
+        return false;
+      }
       // Solid trunk + circular wrap-around bench ring
       if (Math.hypot(lx - treeLx, lz - treeLz) < benchRadius + 0.6) {
         return false;
@@ -812,18 +976,23 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
       ) {
         return false;
       }
-      // Park grounds & riverside promenade are smoothly rideable
+      // Shoreline wooden boardwalk
+      if (lx >= 64 && lx <= 218 && lz <= shoreDeckLandZ(lx) && lz >= shoreDeckRiverZ(lx) + 0.45) {
+        return true;
+      }
+      if (lx < 68) return null;
+      // Park grounds & upper brick-cement promenade are smoothly rideable
       if (lz >= sampleShoreZ(lx) + 0.8 && lz <= 40.2) return true;
       return null;
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 68 && lx <= 218 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
+      return lx >= 64 && lx <= 218 && lz >= shoreDeckRiverZ(lx) - 0.5 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
       // Keep the entire Cây Đom Đóm clearing, approach from Hai Bà Trưng, and promenade clear of generic OSM trees
-      if (lx >= 68 && lx <= 218 && lz >= -28 && lz <= -10) return true;
+      if (lx >= 64 && lx <= 218 && lz >= shoreDeckRiverZ(lx) - 2 && lz <= -10) return true;
       if (Math.hypot(lx - treeLx, lz - treeLz) < clearingRadius + 6) return true;
       if (Math.abs(lx - treeLx) < 14 && lz >= 0 && lz <= 42) return true;
       return false;

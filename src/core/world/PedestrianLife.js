@@ -110,6 +110,8 @@ export function pedestrianSafe(world, p, park, walkwayRoad) {
     }
   }
   if (world.dongDaCorridor?.blocksPedestrian?.(p.x, p.z)) return false;
+  if (world.hitsTree?.(p.x, p.z, bridge ? bridgeY : 0)) return false;
+  if (world.hoChiMinhMuseum?.canRide?.(p.x, p.z) === false) return false;
   return !world.buildingPolygons.some(
     (b) =>
       p.x > b.minX &&
@@ -377,9 +379,19 @@ export class PedestrianLife {
         [439.5, 2.0, 439.5, 26.0, 0.24],
         [488.7, 2.0, 488.7, 24.0, 0.24],
       ];
+      const safeWalkSeg = (wA, wB, yVal) => {
+        for (let t = 0; t <= 1.0001; t += 0.1) {
+          const x = wA.x + (wB.x - wA.x) * t;
+          const z = wA.z + (wB.z - wA.z) * t;
+          if (world.hitsTree?.(x, z, yVal)) return false;
+          if (world.quocHocPark?.canRide?.(x, z) === false) return false;
+        }
+        return true;
+      };
       parkPromenadeSegments.forEach(([ax, az, bx, bz, yVal], idx) => {
         const wA = world.biaPark.toWorld(ax, az);
         const wB = world.biaPark.toWorld(bx, bz);
+        if (!safeWalkSeg(wA, wB, yVal)) return;
         add(wA, "walk", {
           start: wA,
           end: wB,
@@ -388,6 +400,41 @@ export class PedestrianLife {
           underBridgePromenade: true,
         });
         this.people.at(-1).mesh.position.y = yVal;
+      });
+      const shoreCenterAtLx = (lx) => {
+        const hits = [];
+        for (let lz = -54; lz <= -16; lz += 0.5) {
+          const wp = world.biaPark.toWorld(lx, lz);
+          const gy = world.quocHocPark?.groundAt?.(wp.x, wp.z, 0.36);
+          if (gy !== null && gy !== undefined && Math.abs(gy - 0.36) < 0.02) {
+            hits.push(lz);
+          }
+        }
+        if (!hits.length) return null;
+        return world.biaPark.toWorld(lx, (hits[0] + hits[hits.length - 1]) / 2);
+      };
+      [
+        [72, 110],
+        [114, 152],
+        [158, 210],
+        [224, 254],
+        [258, 282],
+        [301, 330],
+        [334, 362],
+        [370, 396],
+        [400, 428],
+      ].forEach(([lxA, lxB], idx) => {
+        const wA = shoreCenterAtLx(lxA);
+        const wB = shoreCenterAtLx(lxB);
+        if (!wA || !wB || !safeWalkSeg(wA, wB, 0.36)) return;
+        add(wA, "walk", {
+          start: wA,
+          end: wB,
+          side: idx % 2 === 0 ? 1 : -1,
+          fixedY: 0.36,
+          underBridgePromenade: true,
+        });
+        this.people.at(-1).mesh.position.y = 0.36;
       });
     }
   }

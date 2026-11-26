@@ -2,6 +2,13 @@ import * as THREE from "three";
 import { createDragonBoat } from "../../modules/areas/truong-tien/view/BridgeView.js";
 import { inside } from "../shared/geography/geometry.js";
 
+const CA_HUE_AUDIO_URLS = [
+  new URL("../../assets/music/ho-doi-dap-song-huong-01.mp3", import.meta.url).href,
+  new URL("../../assets/music/ho-doi-dap-song-huong-02.mp3", import.meta.url).href,
+  new URL("../../assets/music/ho-doi-dap-song-huong-03.mp3", import.meta.url).href,
+  new URL("../../assets/music/ho-doi-dap-song-huong-04.mp3", import.meta.url).href,
+];
+
 export const CA_HUE_SONGS = [
   {
     id: "ho-mai-nhi",
@@ -9,7 +16,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Hò Mái Nhì",
     tempo: 0.78,
     notes: [62, 67, 69, 72, 69, 67, 64, 62, 60, 62, 67, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[0],
   },
   {
     id: "nam-ai",
@@ -17,7 +24,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Nam Ai",
     tempo: 0.92,
     notes: [60, 63, 67, 70, 67, 63, 62, 60, 58, 60, 63, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[1],
   },
   {
     id: "ly-muoi-thuong",
@@ -25,7 +32,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Lý Mười Thương",
     tempo: 0.68,
     notes: [64, 67, 69, 71, 74, 71, 69, 67, 64, 62, 64, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[2],
   },
   {
     id: "phu-luc",
@@ -33,7 +40,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Phú Lục",
     tempo: 0.74,
     notes: [67, 69, 72, 74, 76, 74, 72, 69, 67, 64, 67, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[3],
   },
   {
     id: "nam-binh",
@@ -41,7 +48,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Nam Bình",
     tempo: 0.84,
     notes: [62, 65, 67, 70, 69, 67, 65, 62, 60, 62, 65, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[0],
   },
   {
     id: "luu-thuy-kim-tien",
@@ -49,7 +56,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Lưu Thủy Kim Tiền",
     tempo: 0.64,
     notes: [67, 69, 71, 74, 76, 74, 71, 69, 67, 64, 67, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[1],
   },
   {
     id: "co-ban",
@@ -57,7 +64,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Cổ Bản",
     tempo: 0.76,
     notes: [60, 64, 67, 69, 72, 69, 67, 64, 62, 60, 64, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[2],
   },
   {
     id: "tu-dai-canh",
@@ -65,7 +72,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Tứ Đại Cảnh",
     tempo: 0.82,
     notes: [64, 67, 71, 72, 74, 72, 69, 67, 64, 62, 64, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[3],
   },
   {
     id: "long-ngam",
@@ -73,7 +80,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Long Ngâm",
     tempo: 0.88,
     notes: [62, 67, 70, 72, 74, 72, 70, 67, 65, 62, 67, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[0],
   },
   {
     id: "hanh-van",
@@ -81,7 +88,7 @@ export const CA_HUE_SONGS = [
     shortTitle: "Hành Vân",
     tempo: 0.72,
     notes: [65, 67, 69, 72, 74, 72, 69, 67, 65, 62, 65, null],
-    audioUrl: null,
+    audioUrl: CA_HUE_AUDIO_URLS[2],
   },
 ];
 

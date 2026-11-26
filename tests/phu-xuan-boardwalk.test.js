@@ -277,6 +277,23 @@ test("Phu Xuan bridge, boardwalk structure, bridge traffic elevation, and canRid
     assert.ok(eastLandingY >= 0.22 && eastLandingY <= 0.26, `East ramp lands cleanly at ${eastLandingY}`);
     assert.equal(world.canRide(eastLanding.x, eastLanding.z, eastLandingY), true, "East ramp landing on dry land is rideable");
     assert.equal(world.canRide(1344.8, -1350.6, BOARDWALK_Y), true, "East ramp mouth is open (not blocked by boardwalk rail)");
+
+    // 10. Continuous shoreline wooden boardwalk ramps up cleanly into Cầu Gỗ Lim west mouth (lx ≈ 437.43, lz = -20.4)
+    if (world.biaPark?.toWorld) {
+      let prevShoreY = null;
+      for (const lx of [432.0, 434.5, 436.5, 437.3, 437.5, 438.4, 439.5]) {
+        const pt = world.biaPark.toWorld(lx, -20.4);
+        const y = world.groundAt(pt.x, pt.z, prevShoreY ?? 0.5);
+        assert.equal(world.canRide(pt.x, pt.z, y), true, `Shoreline -> Cau Go Lim join lx=${lx} must be open & rideable`);
+        if (prevShoreY !== null) {
+          assert.ok(Math.abs(y - prevShoreY) <= 0.14, `Smooth ramp height jump at lx=${lx}: ${prevShoreY} -> ${y}`);
+        }
+        prevShoreY = y;
+      }
+      // Opposite (river) side railing stays solid
+      const riverRailPt = world.biaPark.toWorld(441.55, -20.4);
+      assert.equal(world.canRide(riverRailPt.x, riverRailPt.z, BOARDWALK_Y), false, "River-side Cau Go Lim railing stays solid");
+    }
   } finally {
     restoreDoc();
   }

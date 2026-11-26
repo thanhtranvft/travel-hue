@@ -3,8 +3,8 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import {
-  createIronwoodPromenadeGeometry,
-  createIronwoodWalkMaterial,
+  createBrickCementPromenadeGeometry,
+  createBrickCementWalkMaterial,
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
 import { createRiverFishMesh } from "../../../../core/world/RiverFish.js";
@@ -538,17 +538,17 @@ export function createBiaQuocHocPark(world, site, heading) {
   medInner.receiveShadow = true;
   group.add(medOuter, medInner);
 
-  // Ironwood (gỗ lim) upper riverfront promenade wings extending to West & East parks (y = 0.256m)
-  const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
+  // Brick-and-cement (xi măng gạch) upper riverfront promenade wings extending to West & East parks (y = 0.256m)
+  const brickCementWalkMat = createBrickCementWalkMaterial(1, 1);
   const westWing = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(35.9, 0.256, 4.4, 3.2),
-    ironwoodWalkMat,
+    createBrickCementPromenadeGeometry(35.9, 0.256, 4.4, 4.2),
+    brickCementWalkMat,
   );
   westWing.position.set(-53.55, 0.128, -13.3);
   westWing.receiveShadow = true;
   const eastWing = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(36.38, 0.256, 4.4, 3.2),
-    ironwoodWalkMat,
+    createBrickCementPromenadeGeometry(36.38, 0.256, 4.4, 4.2),
+    brickCementWalkMat,
   );
   eastWing.position.set(49.79, 0.128, -13.3);
   eastWing.receiveShadow = true;
@@ -558,7 +558,7 @@ export function createBiaQuocHocPark(world, site, heading) {
     [49.79, 36.38],
   ]) {
     for (const edgeZ of [-15.58, -11.02]) {
-      group.add(box([wLen, 0.285, 0.14], "#4c2d17", [cxW, 0.1425, edgeZ]));
+      group.add(box([wLen, 0.285, 0.14], "#b8b4aa", [cxW, 0.1425, edgeZ]));
     }
   }
 
@@ -865,7 +865,25 @@ export function createBiaQuocHocPark(world, site, heading) {
     group.add(heritageLamp(lx, baseY, lz, tall));
   }
 
-  // Lush layered Hue trees framing the West & East park wings and outer Le Loi edges
+  // Lush layered Hue trees framing the West & East park wings + 2 symmetrical rows flanking the brick-cement walk
+  const promenadeRowTrees = [
+    [-66, -16.9, 1.06, false],
+    [-66, -9.6, 1.08, true],
+    [-54, -16.9, 1.12, true],
+    [-54, -9.6, 1.08, false],
+    [-42, -16.9, 1.08, false],
+    [-42, -9.6, 1.12, true],
+    [-26, -17.2, 1.06, false],
+    [-26, -9.6, 1.06, true],
+    [26, -17.2, 1.06, true],
+    [26, -9.6, 1.06, false],
+    [39, -16.9, 1.1, false],
+    [39, -9.6, 1.12, true],
+    [51, -16.9, 1.12, true],
+    [51, -9.6, 1.08, false],
+    [62, -16.9, 1.08, false],
+    [62, -9.6, 1.1, true],
+  ];
   const parkTrees = [
     [-38, 33, 1.05, true],
     [-46, 30, 1.25, false],
@@ -874,7 +892,7 @@ export function createBiaQuocHocPark(world, site, heading) {
     [-53, 8, 1.18, true],
     [-64, 14, 1.35, false],
     [-65, -4, 1.22, false],
-    [-47, -22, 1.15, false],
+    [-47, -23, 1.15, false],
     [35, 32, 1.12, true],
     [44, 30, 1.28, false],
     [56, 31, 1.2, false],
@@ -882,11 +900,15 @@ export function createBiaQuocHocPark(world, site, heading) {
     [48, 2, 1.15, true],
     [59, 12, 1.32, false],
     [60, -4, 1.18, false],
-    [46, -21, 1.1, false],
+    [46, -22, 1.1, false],
+    ...promenadeRowTrees,
   ];
+  const treeColliders = [];
   parkTrees.forEach(([tx, tz, sc, poinciana], idx) => {
-    const ty = Math.abs(tz + 13.3) < 2.2 ? 0.24 : 0.12;
+    const ty = Math.abs(tz + 13.3) < 2.2 ? 0.24 : tz < -15 ? 0.19 : 0.12;
     group.add(hueParkTree(tx, ty, tz, sc, poinciana, idx + 1));
+    const wp = toWorld(tx, tz);
+    treeColliders.push({ x: wp.x, z: wp.z, r: 0.85, lx: tx, lz: tz });
   });
 
   // 5. VIBRANT CÁ CHÉP & CÁ KOI SHOAL SWIMMING ALONG BIA QUỐC HỌC RIVERFRONT
@@ -1089,6 +1111,16 @@ export function createBiaQuocHocPark(world, site, heading) {
     toWorld,
     fishingSpot,
     fishShoal: riverFishSwimmers,
+    treeColliders,
+    hitsTree(wx, wz) {
+      for (let i = 0; i < treeColliders.length; i++) {
+        const t = treeColliders[i];
+        const dx = wx - t.x;
+        const dz = wz - t.z;
+        if (dx * dx + dz * dz < t.r * t.r) return true;
+      }
+      return false;
+    },
     update,
     isWaterBlocked(wx, wz, pad = 2.0) {
       const { lx, lz } = toLocal(wx, wz);
@@ -1165,7 +1197,16 @@ export function createBiaQuocHocPark(world, site, heading) {
       // Block fishing rental stall counter & rod rack
       if (Math.abs(lx - stallLx) < 1.55 && Math.abs(lz - stallLz) < 1.1)
         return false;
-      // Allow riding along the ironwood riverside promenade wings
+      // Block riding through any park tree trunk
+      const wxPt = toWorld(lx, lz);
+      if (
+        treeColliders.some(
+          (t) => (wxPt.x - t.x) ** 2 + (wxPt.z - t.z) ** 2 < t.r * t.r,
+        )
+      ) {
+        return false;
+      }
+      // Allow riding along the brick-cement riverside promenade wings
       if (
         ((lx >= -72 && lx < -35.5) || (lx > 31.5 && lx <= 68)) &&
         lz >= -15.5 &&

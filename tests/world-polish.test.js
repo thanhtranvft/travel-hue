@@ -126,6 +126,57 @@ test("All enabled regions build cleanly with zero road encroachment, complete in
         world.landmarks?.has?.("cau-go-lim"),
         "quoc-hoc must register cau-go-lim landmark",
       );
+      const museum = world.hoChiMinhMuseum;
+      assert.ok(museum, "quoc-hoc must include hoChiMinhMuseum");
+      const museumIsland = world.scene.getObjectByName("museum-fountain-island");
+      assert.ok(museumIsland, "quoc-hoc must render museum-fountain-island");
+      const islandCheckPts = [museum.toWorld(museum.cx, 35.85)];
+      for (let i = 0; i <= 8; i++) {
+        const a = (i / 8) * Math.PI;
+        islandCheckPts.push(
+          museum.toWorld(
+            museum.cx + Math.cos(a) * 6.4,
+            35.85 - Math.sin(a) * 6.4,
+          ),
+        );
+      }
+      for (const gate of [museum.leftGateLocal, museum.rightGateLocal]) {
+        islandCheckPts.push(museum.toWorld(gate.lx, gate.lz + 1.6));
+      }
+      for (const pt of islandCheckPts) {
+        assert.equal(
+          onOtherCarriageway(pt, { id: null }, world.renderRoads, 0.1),
+          false,
+          `museum-fountain-island & gate aprons must never spill onto carriageway (${pt.x.toFixed(1)}, ${pt.z.toFixed(1)})`,
+        );
+      }
+      const people = world.pedestrianLife?.people || [];
+      assert.ok(people.length > 0, "quoc-hoc must spawn pedestrianLife people");
+      assert.ok(
+        people.some((p) => p.fixedY === 0.36),
+        "quoc-hoc must spawn strollers along continuous 0.36m shoreline wooden boardwalk",
+      );
+      const pedViolations = [];
+      for (const person of people) {
+        if (person.mode === "walk" && person.start && person.end) {
+          for (let t = 0; t <= 1.0001; t += 0.2) {
+            const px = person.start.x + (person.end.x - person.start.x) * t;
+            const pz = person.start.z + (person.end.z - person.start.z) * t;
+            if (world.hitsTree(px, pz, person.mesh.position.y)) {
+              pedViolations.push({ x: Number(px.toFixed(1)), z: Number(pz.toFixed(1)) });
+            }
+          }
+        } else if (person.origin) {
+          if (world.hitsTree(person.origin.x, person.origin.z, person.mesh.position.y)) {
+            pedViolations.push({ x: Number(person.origin.x.toFixed(1)), z: Number(person.origin.z.toFixed(1)) });
+          }
+        }
+      }
+      assert.deepEqual(
+        pedViolations,
+        [],
+        `No pedestrians may walk through tree trunks: ${JSON.stringify(pedViolations.slice(0, 8))}`,
+      );
     }
     const carriageways = world.renderRoads.filter((r) => !isFootway(r));
     const minMargin = regionId === "nguyen-chi-dieu" ? 2.4 : 1.9;

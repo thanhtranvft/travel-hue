@@ -2,7 +2,8 @@ import * as THREE from "three";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
 import {
-  createIronwoodPromenadeGeometry,
+  createBrickCementPromenadeGeometry,
+  createBrickCementWalkMaterial,
   createIronwoodWalkMaterial,
   createManicuredLawnTexture,
 } from "../../../../core/world/turfTextures.js";
@@ -378,6 +379,38 @@ function createTropicalFanPalm(x, y, z, scale = 1, seed = 1) {
   return g;
 }
 
+function createFountainShadeTree(x, y, z, scale = 1, seed = 1) {
+  const g = new THREE.Group();
+  g.position.set(x, y, z);
+  g.rotation.y = seed * 1.37;
+  const trunkH = 2.7 * scale;
+  const trunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.16 * scale, 0.25 * scale, trunkH, 7),
+    mat("#695541", 0.9),
+  );
+  trunk.position.y = trunkH / 2;
+  trunk.castShadow = trunk.receiveShadow = true;
+  g.add(trunk);
+
+  const colors = ["#3f7436", "#4f873f", "#5b9445"];
+  const crowns = [
+    [0, trunkH + 1.45 * scale, 0, 1.85 * scale, 0.72],
+    [0.95 * scale, trunkH + 1.05 * scale, 0.55 * scale, 1.3 * scale, 0.74],
+    [-0.95 * scale, trunkH + 1.1 * scale, -0.5 * scale, 1.35 * scale, 0.72],
+  ];
+  crowns.forEach(([cx, cy, cz, r, sy], i) => {
+    const c = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(r, 1),
+      mat(colors[i % colors.length], 0.85),
+    );
+    c.position.set(cx, cy, cz);
+    c.scale.set(1.12, sy, 1.08);
+    c.castShadow = c.receiveShadow = true;
+    g.add(c);
+  });
+  return g;
+}
+
 export const PEDAL_BOAT_SPECS = [
   { index: 0, dx: 10.0, yaw: -0.25, color: "#f5f7fa", label: "Thiên Nga Trắng 01" },
   { index: 1, dx: 12.6, yaw: -0.18, color: "#6ab8dc", label: "Vịt Xanh Biển 02" },
@@ -492,6 +525,26 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     return val;
   };
 
+  const shoreDeckLandZ = (lx) => {
+    const blend = Math.max(0, Math.min(1, (lx - 350) / 16));
+    return sampleShoreZ(lx) + 3.8 * (1 - blend) + 3.3 * blend;
+  };
+  const shoreDeckRiverZ = (lx) => sampleShoreZ(lx) - 0.8;
+  const shoreDeckY = (lx) => {
+    const gapL = cx - 4.35;
+    const gapR = cx + 4.55;
+    const rampSpan = 4.0;
+    if (lx > gapL - rampSpan && lx <= gapL) {
+      const t = Math.max(0, Math.min(1, (gapL - lx) / rampSpan));
+      return 0.2 + 0.16 * t;
+    }
+    if (lx >= gapR && lx < gapR + rampSpan) {
+      const t = Math.max(0, Math.min(1, (lx - gapR) / rampSpan));
+      return 0.2 + 0.16 * t;
+    }
+    return 0.36;
+  };
+
   const group = new THREE.Group();
   group.name = "fountain-park";
   group.position.set(biaSite.center.x, 0, biaSite.center.z);
@@ -602,25 +655,126 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     group.add(apse);
   }
 
-  // Continuous Ironwood (Gỗ Lim) Riverfront Promenade connecting FireflyTreePark (lx=218) -> East (lx=366)
+  // Continuous Brick-Cement (Xi Măng Gạch) Upper Riverfront Promenade connecting FireflyTreePark (lx=218) -> East (lx=366)
+  const brickCementWalkMat = createBrickCementWalkMaterial(1, 1);
   const ironwoodWalkMat = createIronwoodWalkMaterial(1, 1);
   const riverWalk = new THREE.Mesh(
-    createIronwoodPromenadeGeometry(147.96, 0.256, 4.8, 3.2),
-    ironwoodWalkMat,
+    createBrickCementPromenadeGeometry(147.96, 0.256, 4.8, 4.2),
+    brickCementWalkMat,
   );
   riverWalk.position.set(292, 0.128, -14.2);
   riverWalk.receiveShadow = true;
 
-  // Dark ironwood outer edge curbs flanking riverWalk (open at central river stair)
+  // Light cement outer edge curbs flanking riverWalk (open at central river stair)
   const leftCurbW = cx - 4.4 - 218.02;
   if (leftCurbW > 1) {
-    group.add(box([leftCurbW, 0.29, 0.22], "#4c2d17", [218.02 + leftCurbW / 2, 0.145, -16.72]));
+    group.add(box([leftCurbW, 0.29, 0.22], "#b8b4aa", [218.02 + leftCurbW / 2, 0.145, -16.72]));
   }
   const rightCurbW = 365.98 - (cx + 4.4);
   if (rightCurbW > 1) {
-    group.add(box([rightCurbW, 0.29, 0.22], "#4c2d17", [cx + 4.4 + rightCurbW / 2, 0.145, -16.72]));
+    group.add(box([rightCurbW, 0.29, 0.22], "#b8b4aa", [cx + 4.4 + rightCurbW / 2, 0.145, -16.72]));
   }
-  group.add(box([147.96, 0.28, 0.16], "#4c2d17", [292, 0.14, -11.72]));
+  group.add(box([147.96, 0.28, 0.16], "#b8b4aa", [292, 0.14, -11.72]));
+
+  // Continuous 0.36m shoreline wooden boardwalk (west & east wings flanking central riverStair / pedalDock)
+  const shoreSections = [
+    [218.02, cx - 4.35],
+    [cx + 4.55, 365.98],
+  ];
+  const timberTrimMat = mat("#4c2d17", 0.84);
+  const shorePileCoords = [];
+  for (const [xStart, xEnd] of shoreSections) {
+    const secSamples = [];
+    for (let lx = xStart; lx <= xEnd; lx = Math.min(xEnd, lx + 2.2)) {
+      secSamples.push({
+        lx,
+        y: shoreDeckY(lx),
+        zLand: shoreDeckLandZ(lx),
+        zRiver: shoreDeckRiverZ(lx),
+      });
+      if (lx >= xEnd) break;
+    }
+    const dPos = [];
+    const dUvs = [];
+    const dIdx = [];
+    const fPos = [];
+    const fUvs = [];
+    const fIdx = [];
+    const lPos = [];
+    const lUvs = [];
+    const lIdx = [];
+    secSamples.forEach((s, i) => {
+      const u = (s.lx - xStart) / 3.2;
+      dPos.push(s.lx, s.y, s.zLand, s.lx, s.y, s.zRiver);
+      dUvs.push(u, 0, u, 1);
+      fPos.push(s.lx, s.y, s.zRiver, s.lx, s.y - 0.22, s.zRiver);
+      fUvs.push(u, 0, u, 1);
+      lPos.push(s.lx, s.y, s.zLand, s.lx, s.y - 0.18, s.zLand);
+      lUvs.push(u, 0, u, 1);
+      if (i > 0) {
+        const a = (i - 1) * 2;
+        dIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        fIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        lIdx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+    });
+    const dGeo = new THREE.BufferGeometry();
+    dGeo.setAttribute("position", new THREE.Float32BufferAttribute(dPos, 3));
+    dGeo.setAttribute("uv", new THREE.Float32BufferAttribute(dUvs, 2));
+    dGeo.setIndex(dIdx);
+    dGeo.computeVertexNormals();
+    const dMesh = new THREE.Mesh(dGeo, ironwoodWalkMat);
+    dMesh.receiveShadow = true;
+    group.add(dMesh);
+
+    for (const [posArr, uvArr, idxArr] of [
+      [fPos, fUvs, fIdx],
+      [lPos, lUvs, lIdx],
+    ]) {
+      const tGeo = new THREE.BufferGeometry();
+      tGeo.setAttribute("position", new THREE.Float32BufferAttribute(posArr, 3));
+      tGeo.setAttribute("uv", new THREE.Float32BufferAttribute(uvArr, 2));
+      tGeo.setIndex(idxArr);
+      tGeo.computeVertexNormals();
+      const tMesh = new THREE.Mesh(tGeo, timberTrimMat);
+      tMesh.castShadow = tMesh.receiveShadow = true;
+      group.add(tMesh);
+    }
+    for (let lx = xStart + 3; lx <= xEnd - 2; lx += 6.5) {
+      shorePileCoords.push([lx, shoreDeckRiverZ(lx) + 0.65]);
+    }
+  }
+  const shorePiles = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.19, 0.21, 0.85, 8),
+    mat("#6a6c64", 0.9),
+    shorePileCoords.length,
+  );
+  const pileDummy = new THREE.Object3D();
+  shorePileCoords.forEach(([px, pz], i) => {
+    pileDummy.position.set(px, -0.1, pz);
+    pileDummy.updateMatrix();
+    shorePiles.setMatrixAt(i, pileDummy.matrix);
+  });
+  shorePiles.instanceMatrix.needsUpdate = true;
+  shorePiles.computeBoundingSphere();
+  group.add(shorePiles);
+
+  // Granite connecting footpaths linking upper brick-cement walk down to shoreline wooden boardwalk
+  const shoreConnectors = [248, 330];
+  for (const cxLink of shoreConnectors) {
+    const zStart = -16.85;
+    const zEnd = shoreDeckLandZ(cxLink) + 0.02;
+    const cLen = Math.max(2, Math.abs(zStart - zEnd));
+    const midZ = (zStart + zEnd) / 2;
+    const linkMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2.8, 0.14, cLen),
+      graniteMat,
+    );
+    linkMesh.position.set(cxLink, 0.23, midZ);
+    linkMesh.rotation.x = -Math.atan2(0.11, cLen);
+    linkMesh.receiveShadow = true;
+    group.add(linkMesh);
+  }
 
   // Lê Lợi South Perimeter Walk linking wing footpaths along Lê Lợi curb
   const frontWalk = new THREE.Mesh(
@@ -907,7 +1061,12 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   // 6. GOLDEN DRAGON & FLORAL SCULPTURAL CENTERPIECE (on riverward side of circle)
   group.add(createGoldenFloralCenterpiece(cx, 0.24, -10.8, marigoldMat));
 
-  // 7. ROW OF TROPICAL FAN PALMS ALONG THE RIVERFRONT TERRACE + HERITAGE LAMPS
+  // 7. ROW OF TROPICAL FAN PALMS + 2 SYMMETRICAL SHADE TREE ROWS FLANKING BRICK-CEMENT WALK + LAMPS
+  const treeColliders = [];
+  const registerTree = (tx, tz, r = 0.85) => {
+    const wp = toWorld(tx, tz);
+    treeColliders.push({ x: wp.x, z: wp.z, r, lx: tx, lz: tz });
+  };
   for (const [idx, px] of [
     cx - 25.5,
     cx - 19.5,
@@ -919,7 +1078,25 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     cx + 25.5,
   ].entries()) {
     group.add(createTropicalFanPalm(px, 0.22, -18.6, 1.0 + (idx % 2) * 0.08, idx + 1));
+    registerTree(px, -18.6, 0.72);
   }
+  const promenadeRowTrees = [
+    // Wing pairs flanking upper brick-cement walk (clear of diagonal wingWalks & corner parterres)
+    [224, -18.2, 1.08],
+    [224, -10.2, 1.06],
+    [238, -18.2, 1.06],
+    [256, -18.2, 1.1],
+    [256, -10.2, 1.08],
+    [322, -18.2, 1.08],
+    [322, -10.2, 1.06],
+    [339, -18.2, 1.1],
+    [358, -18.2, 1.06],
+    [358, -10.2, 1.08],
+  ];
+  promenadeRowTrees.forEach(([tx, tz, sc], idx) => {
+    group.add(createFountainShadeTree(tx, tz < -16 ? 0.19 : 0.14, tz, sc, idx + 1));
+    registerTree(tx, tz, 0.85);
+  });
   for (const [lx, lz] of [
     [cx - 22, 22],
     [cx + 22, 22],
@@ -929,6 +1106,9 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     [346, -12.5],
   ]) {
     group.add(createHeritageLamp(lx, lz <= -11.8 ? 0.256 : 0.244, lz));
+  }
+  for (const lx of [240, 268, 310, 342]) {
+    group.add(createHeritageLamp(lx, shoreDeckY(lx), shoreDeckLandZ(lx) - 0.55));
   }
 
   // Warm golden walkway border bollards framing the 4 quadrant beds
@@ -1316,10 +1496,20 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     fountainCenterLocal: { lx: cx, lz: cz },
     animatedObjects,
     pedalDock,
+    treeColliders,
+    hitsTree(wx, wz) {
+      for (let i = 0; i < treeColliders.length; i++) {
+        const t = treeColliders[i];
+        const dx = wx - t.x;
+        const dz = wz - t.z;
+        if (dx * dx + dz * dz < t.r * t.r) return true;
+      }
+      return false;
+    },
     setOccupiedBoats,
     isWaterBlocked(wx, wz, pad = 2.0) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 218 && lx <= 366 && lz >= sampleShoreZ(lx) - pad && lz <= 41;
+      return lx >= 218 && lx <= 366 && lz >= shoreDeckRiverZ(lx) - pad && lz <= 41;
     },
     update,
     groundAt(wx, wz, referenceY) {
@@ -1332,11 +1522,31 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       ) {
         if (!Number.isFinite(referenceY) || referenceY < 1.8) return pierY;
       }
-      if (lx < 218 || lx > 366 || lz < sampleShoreZ(lx) - 1 || lz > 41)
+      if (lx < 218 || lx > 366 || lz < shoreDeckRiverZ(lx) - 0.5 || lz > 41)
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
 
-      // Continuous Ironwood Riverfront Promenade + Central circular plaza & cross-axial granite promenades
+      // Continuous shoreline wooden boardwalk (west & east wings flanking central riverStair / pedalDock)
+      if (
+        ((lx >= 218 && lx <= cx - 4.35) || (lx >= cx + 4.55 && lx <= 366)) &&
+        lz <= shoreDeckLandZ(lx) &&
+        lz >= shoreDeckRiverZ(lx)
+      ) {
+        return shoreDeckY(lx);
+      }
+
+      // Granite connecting paths from upper brick-cement walk down to shoreline wooden boardwalk
+      if (
+        shoreConnectors.some((cxLink) => Math.abs(lx - cxLink) <= 1.55) &&
+        lz < -16.6 &&
+        lz >= shoreDeckLandZ(lx)
+      ) {
+        const zEnd = shoreDeckLandZ(lx);
+        const t = (-16.6 - lz) / Math.max(1, -16.6 - zEnd);
+        return 0.256 + t * (shoreDeckY(lx) - 0.256);
+      }
+
+      // Continuous upper brick-cement promenade + Central circular plaza & cross-axial granite promenades
       if (lz >= -16.6 && lz <= -11.8) return 0.256;
       if (Math.hypot(lx - cx, lz - cz) <= plazaRadius + 0.5) return 0.24;
       if (Math.abs(lx - cx) <= 5.8 && lz >= -16.6 && lz <= 38.8) return 0.24;
@@ -1388,8 +1598,15 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       ) {
         return true;
       }
-      if (lx < 218 || lx > 366 || lz < sampleShoreZ(lx) || lz > 40.5)
+      if (lx < 218 || lx > 366 || lz < shoreDeckRiverZ(lx) || lz > 40.5)
         return null;
+      if (
+        treeColliders.some(
+          (t) => (wx - t.x) ** 2 + (wz - t.z) ** 2 < t.r * t.r,
+        )
+      ) {
+        return false;
+      }
 
       // Block riding into the central scalloped fountain pool
       if (Math.hypot(lx - cx, lz - cz) < basinRadius + 0.8) return false;
@@ -1403,18 +1620,27 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
       // Block pedal rental stall & NPC hitbox
       if (Math.hypot(lx - vendorLx, lz - vendorLz) < 0.95) return false;
 
+      // Shoreline wooden boardwalk
+      if (
+        ((lx >= 218 && lx <= cx - 4.35) || (lx >= cx + 4.55 && lx <= 366)) &&
+        lz <= shoreDeckLandZ(lx) &&
+        lz >= shoreDeckRiverZ(lx) + 0.45
+      ) {
+        return true;
+      }
+
       if (lz >= sampleShoreZ(lx) + 0.8 && lz <= 40.2) return true;
       return null;
     },
     blocksGrass(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 218 && lx <= 366 && lz >= sampleShoreZ(lx) - 1 && lz <= 41;
+      return lx >= 218 && lx <= 366 && lz >= shoreDeckRiverZ(lx) - 0.5 && lz <= 41;
     },
     blocksTree(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
       // Keep the entire Fountain Plaza, cross-axial promenades, and riverfront fan palm row clear of random OSM trees
       if (Math.hypot(lx - cx, lz - cz) < 38) return true;
-      if (lx >= 218 && lx <= 366 && lz >= -28 && lz <= -10) return true;
+      if (lx >= 218 && lx <= 366 && lz >= shoreDeckRiverZ(lx) - 2 && lz <= -10) return true;
       if (Math.abs(lx - cx) < 16 && lz >= -20 && lz <= 42) return true;
       return false;
     },

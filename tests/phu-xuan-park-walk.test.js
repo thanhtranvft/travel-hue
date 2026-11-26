@@ -149,6 +149,53 @@ test("FountainPark wings and PhuXuanParkWalk form unbroken footpaths to Cầu Ph
       assert.equal(phuXuanWalk.groundAt(roadPt.x, roadPt.z, 0.32), null);
       assert.equal(phuXuanWalk.canRide(roadPt.x, roadPt.z), null);
     }
+
+    // Upper riverfront promenade uses brick-cement material & shoreline boardwalk uses ironwood
+    for (const parkGrp of [biaPark.group, fireflyPark.group, fountainPark.group, phuXuanWalk.group]) {
+      let hasBrickCement = false;
+      let hasIronwood = false;
+      parkGrp.traverse((obj) => {
+        if (!obj.isMesh) return;
+        const m = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+        if (m?.userData?.surfaceKind === "brick-cement") hasBrickCement = true;
+        if (m?.userData?.surfaceKind === "ironwood") hasIronwood = true;
+      });
+      assert.equal(hasBrickCement, true, `${parkGrp.name} must render upper promenade with brick-cement material`);
+      if (parkGrp !== biaPark.group) {
+        assert.equal(hasIronwood, true, `${parkGrp.name} must render shoreline boardwalk with ironwood material`);
+      }
+    }
+
+    // Two symmetrical flanking tree rows block walking/riding through trunks across all 4 parks
+    for (const [park, sampleLx, northLz, southLz] of [
+      [biaPark, 51, -16.9, -9.6],
+      [fireflyPark, 105, -16.9, -9.6],
+      [fountainPark, 256, -18.2, -10.2],
+      [phuXuanWalk, 386, -17.6, -10.7],
+    ]) {
+      assert.ok(park.treeColliders.length >= 4, "Park exposes treeColliders");
+      const nPt = biaPark.toWorld(sampleLx, northLz);
+      const sPt = biaPark.toWorld(sampleLx, southLz);
+      assert.equal(park.hitsTree(nPt.x, nPt.z), true, `${park.group.name} north row tree (${sampleLx}, ${northLz}) blocks`);
+      assert.equal(park.canRide(nPt.x, nPt.z), false);
+      assert.equal(park.hitsTree(sPt.x, sPt.z), true, `${park.group.name} south row tree (${sampleLx}, ${southLz}) blocks`);
+      assert.equal(park.canRide(sPt.x, sPt.z), false);
+    }
+
+    // Continuous 0.36m shoreline wooden boardwalk from BiaQuocHocPark -> Firefly -> Fountain -> PhuXuan ramping to 0.684m at Cầu Gỗ Lim
+    for (const [park, lx, lz, expectedY] of [
+      [fireflyPark, 110, -38.0, 0.36],
+      [fountainPark, 250, -28.5, 0.36],
+      [fountainPark, 330, -24.5, 0.36],
+      [phuXuanWalk, 396, -22.0, 0.36],
+      [phuXuanWalk, 437.35, -20.4, 0.684],
+    ]) {
+      const p = biaPark.toWorld(lx, lz);
+      const gy = park.groundAt(p.x, p.z, 0.36);
+      assert.ok(Math.abs(gy - expectedY) <= 0.02, `Shoreline wooden boardwalk (${lx}, ${lz}) expected ~${expectedY}m, got ${gy}`);
+      assert.equal(park.canRide(p.x, p.z), true, `Shoreline wooden boardwalk (${lx}, ${lz}) must be rideable`);
+      assert.equal(park.isWaterBlocked(p.x, p.z), true, `Boats blocked under shoreline wooden boardwalk (${lx}, ${lz})`);
+    }
   });
 });
 

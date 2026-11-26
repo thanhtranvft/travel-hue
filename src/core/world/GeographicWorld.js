@@ -869,6 +869,8 @@ export class GeographicWorld {
               this.riversideParks.some((park) => park.blocksGrass(wx, wz)),
             blocksTree: (wx, wz) =>
               this.riversideParks.some((park) => park.blocksTree(wx, wz)),
+            hitsTree: (wx, wz) =>
+              this.riversideParks.some((park) => park.hitsTree?.(wx, wz)),
           };
           if (haiBaTrungSite && this.fireflyPark?.treeCenterLocal) {
             const c = this.biaPark.toWorld(
@@ -1549,6 +1551,12 @@ export class GeographicWorld {
   }
   hitsTree(x, z, referenceY) {
     if (Number.isFinite(referenceY) && referenceY >= 2.2) return false;
+    if (
+      (!Number.isFinite(referenceY) || referenceY < 1.8) &&
+      this.quocHocPark?.hitsTree?.(x, z)
+    ) {
+      return true;
+    }
     const list = this.treeGrid
       ? this.treeGrid.get(`${Math.floor(x / 32)},${Math.floor(z / 32)}`)
       : this.treePositions;
@@ -1623,6 +1631,8 @@ export class GeographicWorld {
       if (!activeRiver.some((r) => inside(pt, r))) return false;
     }
     if (this.biaPark?.isWaterBlocked?.(x, z, 2.0)) return false;
+    if (this.fireflyPark?.isWaterBlocked?.(x, z, 2.0)) return false;
+    if (this.phuXuanParkWalk?.isWaterBlocked?.(x, z, 2.0)) return false;
     if (this.fountainPark?.pedalDock?.isDockBlocked?.(x, z, activeBoatIndex)) {
       return false;
     }
@@ -1697,7 +1707,8 @@ export class GeographicWorld {
         if (inRiver) return false;
       }
     }
-    if (surrRide === true && !this.hitsTree(x, z, referenceY)) return true;
+    if (this.hitsTree(x, z, referenceY)) return false;
+    if (surrRide === true) return true;
     const parkRide =
       Number.isFinite(referenceY) && referenceY >= 1.8
         ? null

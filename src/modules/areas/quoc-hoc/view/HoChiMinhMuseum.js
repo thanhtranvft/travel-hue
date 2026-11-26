@@ -510,13 +510,13 @@ export class HoChiMinhMuseum {
     this.group.add(courtyard);
     this.world.cameraObstacles.push(courtyard);
 
-    // Smooth entry aprons bridging gates to Lê Lợi footway
-    for (const gx of [this.leftGateLocal.lx, this.rightGateLocal.lx]) {
+    // Smooth entry aprons bridging gates cleanly to Lê Lợi sidewalk (strictly clear of asphalt)
+    for (const gate of [this.leftGateLocal, this.rightGateLocal]) {
       const apron = new THREE.Mesh(
-        new THREE.BoxGeometry(8.6, 0.16, 3.6),
+        new THREE.BoxGeometry(8.6, 0.16, 1.9),
         concreteMat,
       );
-      apron.position.set(gx, 0.14, 38.4);
+      apron.position.set(gate.lx, 0.14, gate.lz + 0.65);
       apron.receiveShadow = true;
       this.group.add(apron);
     }
@@ -755,16 +755,15 @@ export class HoChiMinhMuseum {
   buildForecourtAndFountain() {
     const cx = this.cx;
 
-    // 1. Central Semi-Circular Garden Island & Dark Bronze Fountain (near front hedge)
+    // 1. Central Semi-Circular Garden Island & Dark Bronze Fountain (strictly inside front hedge)
     const island = new THREE.Group();
     island.name = "museum-fountain-island";
-    island.position.set(cx, 0.23, 36.2);
+    island.position.set(cx, 0.23, 35.85);
 
     const islandGrass = new THREE.Mesh(
       new THREE.CylinderGeometry(6.2, 6.4, 0.26, 20, 1, false, Math.PI * 0.5, Math.PI),
       mat("#4d8c37", 0.88),
     );
-    islandGrass.rotation.y = Math.PI * 0.5;
     islandGrass.position.y = 0.13;
     island.add(islandGrass);
 
@@ -1048,7 +1047,7 @@ export class HoChiMinhMuseum {
       return false;
     }
     // Block Central Semi-Circular Fountain Island
-    if (Math.hypot(lx - this.cx, lz - 36.2) < 6.4 && lz <= 36.6) return false;
+    if (Math.hypot(lx - this.cx, lz - 35.85) < 6.4 && lz <= 36.25) return false;
     // Block Entrance Pylon & Shed Pillars
     if (Math.hypot(lx + 189.6, lz - 35.6) < 1.8) return false;
     return true;

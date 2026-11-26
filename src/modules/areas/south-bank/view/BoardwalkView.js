@@ -371,7 +371,7 @@ export function addLimWoodBoardwalk(world, roads) {
   );
   rampMouthOpenings.push({ x: eastEnd.x, z: eastEnd.z, halfOpening: 2.35 });
 
-  // West ramp: meets PhuXuanParkWalk riverfront ironwood promenade edge cleanly at 0.256m (y=0.252 + 0.004)
+  // West ramp: meets PhuXuanParkWalk upper brick-cement promenade edge cleanly at 0.256m (y=0.252 + 0.004)
   const westEnd = mainFrames.at(-1);
   const westRampPts = buildLinearRampPoints(
     [
@@ -381,6 +381,20 @@ export function addLimWoodBoardwalk(world, roads) {
     BOARDWALK_Y,
     0.252,
   );
+  // Open west side railing where continuous shoreline wooden boardwalk meets Cầu Gỗ Lim (lx ≈ 437.43, lz ≈ -20.4)
+  if (world.biaPark?.toWorld) {
+    const shoreJoinPt = world.biaPark.toWorld(437.43, -20.4);
+    rampMouthOpenings.push({ x: shoreJoinPt.x, z: shoreJoinPt.z, halfOpening: 2.35 });
+  } else {
+    const westJoinFrame = frameAtArc(mainFrames, Math.max(2, totalMainLen - 2.65));
+    if (westJoinFrame) {
+      rampMouthOpenings.push({
+        x: westJoinFrame.x + westJoinFrame.nx * (halfW - 0.1),
+        z: westJoinFrame.z + westJoinFrame.nz * (halfW - 0.1),
+        halfOpening: 2.35,
+      });
+    }
+  }
 
   const rampHandrailParts = [];
   const eastRampPiles = [];
