@@ -4,6 +4,7 @@ import "./touch-layout.css";
 import "./ui/session.css";
 import "./modules/game-modes/tag-chase/tag-chase.css";
 import "./core/world/river-activities.css";
+import "./ui/capture-share.css";
 import {
   chooseSession,
   createSessionPanel,
@@ -32,6 +33,7 @@ import {
   initializeLandscapeMode,
   isMobileViewport,
 } from "./ui/MobileUI.js";
+import { initializeCaptureShareUI } from "./ui/CaptureShareUI.js";
 import { bindMultiTouchAction } from "./core/input/TouchControls.js";
 import { loadGeography } from "./modules/areas/AreaModel.js";
 import { areaIsEnabled, defaultArea } from "./app/catalog.js";
@@ -366,6 +368,7 @@ if (game) {
   });
   initializeMobileUI();
   initializeAudioUI(game.audio);
+  initializeCaptureShareUI(game, game.audio);
 } else {
   document.querySelector("#scene-loading").textContent =
     "Hiện chưa có khu vực tham quan được mở.";

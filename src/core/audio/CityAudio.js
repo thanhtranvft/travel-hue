@@ -35,10 +35,13 @@ export class CityAudio {
     this.fishingStep = 0;
     this.fishingStepSeconds = 0.54;
     this.nextFishingNote = 0;
+    this.captureDestination = null;
+    this.keepAliveInBackground = false;
     this.onStatus = () => {};
     document.addEventListener("visibilitychange", () => {
       if (!this.ctx) return;
-      if (document.hidden) this.ctx.suspend().catch(() => {});
+      if (document.hidden && !this.keepAliveInBackground)
+        this.ctx.suspend().catch(() => {});
       else if (this.enabled)
         this.ctx
           .resume()
@@ -229,6 +232,38 @@ export class CityAudio {
     }
     return this.enabled;
   }
+  setKeepAliveInBackground(enabled) {
+    this.keepAliveInBackground = Boolean(enabled);
+    if (
+      this.keepAliveInBackground &&
+      this.enabled &&
+      this.ctx?.state === "suspended"
+    ) {
+      this.ctx.resume().catch(() => {});
+    }
+    return this.keepAliveInBackground;
+  }
+  getCaptureAudioStream() {
+    if (
+      !this.ctx ||
+      !this.meter ||
+      typeof this.ctx.createMediaStreamDestination !== "function"
+    ) {
+      return null;
+    }
+    const existingTracks = this.captureDestination?.stream?.getAudioTracks?.() || [];
+    const hasEndedTrack = existingTracks.some((t) => t.readyState === "ended");
+    if (!this.captureDestination || hasEndedTrack) {
+      if (this.captureDestination) {
+        try {
+          this.meter.disconnect(this.captureDestination);
+        } catch {}
+      }
+      this.captureDestination = this.ctx.createMediaStreamDestination();
+      this.meter.connect(this.captureDestination);
+    }
+    return this.captureDestination.stream || null;
+  }
   setMusicEnabled(enabled) {
     this.musicEnabled = !!enabled;
     if (this.ctx) {
@@ -307,7 +342,7 @@ export class CityAudio {
       !this.musicEnabled ||
       !this.track ||
       this.ctx.state !== "running" ||
-      document.hidden
+      (document.hidden && !this.keepAliveInBackground)
     )
       return;
     const ctx = this.ctx,
@@ -564,7 +599,9 @@ export class CityAudio {
     if (
       !this.enabled ||
       this.ctx?.state !== "running" ||
-      (typeof document !== "undefined" && document.hidden)
+      (typeof document !== "undefined" &&
+        document.hidden &&
+        !this.keepAliveInBackground)
     )
       return false;
     const now = this.ctx.currentTime;
@@ -581,7 +618,9 @@ export class CityAudio {
     if (
       !this.enabled ||
       this.ctx?.state !== "running" ||
-      (typeof document !== "undefined" && document.hidden)
+      (typeof document !== "undefined" &&
+        document.hidden &&
+        !this.keepAliveInBackground)
     )
       return false;
     const now = this.ctx.currentTime;
@@ -682,7 +721,9 @@ export class CityAudio {
       !this.enabled ||
       !this.ctx ||
       this.ctx.state !== "running" ||
-      (typeof document !== "undefined" && document.hidden)
+      (typeof document !== "undefined" &&
+        document.hidden &&
+        !this.keepAliveInBackground)
     )
       return false;
 
@@ -955,6 +996,12 @@ export class CityAudio {
       this.preloadTimerId = null;
     }
     this.collisionVoice?.stop();
+    if (this.captureDestination) {
+      try {
+        this.meter?.disconnect(this.captureDestination);
+      } catch {}
+      this.captureDestination = null;
+    }
     return this.ctx?.close();
   }
 }

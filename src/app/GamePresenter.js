@@ -166,6 +166,7 @@ export class GamePresenter {
     addEventListener("keydown", (e) => {
       if (
         this.sessionActive === false ||
+        document.querySelector("#capture-modal:not([hidden])") ||
         e.target.closest?.('input,select,textarea,[contenteditable="true"]')
       )
         return;
@@ -251,8 +252,23 @@ export class GamePresenter {
         if (loading) loading.hidden = true;
         this.start();
       }
+      window.dispatchEvent(
+        new CustomEvent("hue-webgl-recovered", { detail: { canvas: newCanvas } }),
+      );
     } catch {
       this.contextLost = true;
+    }
+  }
+  getCaptureCanvas() {
+    return this.renderer?.domElement || document.querySelector("#game") || null;
+  }
+  renderSnapshotFrame() {
+    if (!this.renderer || this.contextLost) return false;
+    try {
+      this.renderer.render(this.scene, this.camera);
+      return true;
+    } catch {
+      return false;
     }
   }
   travelTo(id) {
@@ -565,6 +581,7 @@ export class GamePresenter {
     if (this.contextLost) return;
     if (this.renderer.getContext?.()?.isContextLost?.()) {
       this.onContextLost?.({ preventDefault() {} });
+      window.dispatchEvent(new CustomEvent("hue-webgl-lost"));
       return;
     }
     const dt = Number.isFinite(rawDt) ? Math.min(Math.max(rawDt, 0), 0.1) : 0.016;
