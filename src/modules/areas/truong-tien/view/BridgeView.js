@@ -1245,7 +1245,13 @@ export function addTruongTienBridge(world, road) {
     pierCount: TRUONG_TIEN_PIER_COUNT,
     balconyCount: TRUONG_TIEN_PIER_COUNT * 2,
     boatCount: boats.length,
-    mooredBoats: boats.map((b) => ({ x: b.baseX, z: b.baseZ })),
+    mooredBoats: boats.map((b) => ({
+      x: b.baseX,
+      z: b.baseZ,
+      yaw: b.baseYaw,
+      tx: Math.sin(b.baseYaw),
+      tz: Math.cos(b.baseYaw),
+    })),
     piers: metrics.pierStations.map((ps) => {
       const f = frameAt(frames, ps);
       return {

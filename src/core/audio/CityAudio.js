@@ -55,7 +55,7 @@ export class CityAudio {
             this.onStatus("");
             this.onStateChange?.();
           })
-          .catch(() => this.onStatus("Chạm nút âm thanh để phát tiếp."));
+          .catch(() => this.onStatus("Chạm màn hình để phát tiếp âm thanh."));
       }
     });
     globalThis.addEventListener?.("pagehide", () => this.ctx?.suspend().catch(() => {}));

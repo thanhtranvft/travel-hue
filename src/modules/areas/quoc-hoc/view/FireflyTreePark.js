@@ -1054,6 +1054,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     hat: "cap",
   });
   group.add(crewHost.npc, crewHostess.npc, crewCaptain.npc);
+  for (const crew of [crewHost.npc, crewHostess.npc, crewCaptain.npc]) {
+    crew.userData.dynamicAnimated = true;
+    crew.userData.noLeafMerge = true;
+  }
   lifeAnimators.push((t) => {
     crewHost.armR.rotation.x = -0.55 + Math.sin(t * 2.4) * 0.28;
     crewHostess.armR.rotation.x = -0.35 + Math.cos(t * 2.1) * 0.22;
@@ -1077,7 +1081,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   world.cameraObstacles.push(mainTrunk);
 
   const parkCenter = toWorld(138, 0);
-  const animatedObjects = [ribbons, fireflies];
+  const animatedObjects = [ribbons, fireflies, mooredCruiseBoat.group];
   const update = (time, position = null) => {
     if (
       position &&

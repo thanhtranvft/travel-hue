@@ -517,9 +517,9 @@ export class RiverActivities {
     this.activeBoatIndex = -1;
     this.returnLandPose = dock?.pierReturnPos
       ? { ...dock.pierReturnPos, heading: this.game.bike.motion.heading }
-      : { x: 580, z: -606, y: 0.24, heading: 0 };
-    const px = Number.isFinite(player.x) ? player.x : dock?.dockWaterPos?.x || 580;
-    const pz = Number.isFinite(player.z) ? player.z : dock?.dockWaterPos?.z || -606;
+      : { x: 570.96, z: -629.48, y: 0.24, heading: 0 };
+    const px = Number.isFinite(player.x) ? player.x : dock?.dockWaterPos?.x || 568.91;
+    const pz = Number.isFinite(player.z) ? player.z : dock?.dockWaterPos?.z || -635.53;
     const h = Number.isFinite(player.heading)
       ? player.heading
       : dock?.dockWaterPos?.heading || 0;
@@ -864,6 +864,7 @@ export class RiverActivities {
     });
     this.game.cameraYaw = spawn.heading;
     this.game.input?.reset?.();
+    void this.game.audio?.tryUnlock?.();
     this.game.audio?.playBoatBell?.();
     this.game.audio?.setDragonCruiseMode?.(true, this.getCruiseAudioSource());
     this.game.syncMode?.();
@@ -1112,7 +1113,7 @@ export class RiverActivities {
         targetPose = caHue.sampleLoop(this.cruiseLoopDist + 18);
       }
 
-      // Check all ambient dragon boats to steer clear or slow down so zero collisions happen
+      // Avoid all ambient dragon boats, moored bridge boats, bridge piers, and swan boats
       let avoidOffset = 0;
       let speedScale = 1.0;
       if (caHue?.boats?.length) {
@@ -1120,24 +1121,67 @@ export class RiverActivities {
           const dx = other.x - oldX;
           const dz = other.z - oldZ;
           const dist = Math.hypot(dx, dz);
-          if (dist > 30) continue;
+          if (dist > 34) continue;
           const fwd = dx * hx + dz * hz;
           const lat = -dx * hz + dz * hx;
-          if (fwd > -6 && fwd < 22 && Math.abs(lat) < 7.5) {
+          if (fwd > -6 && fwd < 26 && Math.abs(lat) < 9.0) {
             const awaySign = lat >= 0 ? -1 : 1;
-            const urgency = Math.max(0, 1 - dist / 26);
-            avoidOffset += awaySign * (5.5 + urgency * 3.5);
-            if (fwd > 0 && Math.abs(lat) < 5.6) {
-              speedScale = Math.min(speedScale, dist < 13.5 ? 0.12 : 0.58);
+            const urgency = Math.max(0, 1 - dist / 28);
+            avoidOffset += awaySign * (6.2 + urgency * 4.2);
+            if (fwd > 0 && Math.abs(lat) < 6.4) {
+              speedScale = Math.min(speedScale, dist < 15.0 ? 0.16 : 0.62);
             }
-          } else if (dist < 14.0) {
+          } else if (dist < 16.0) {
             const awaySign = lat >= 0 ? -1 : 1;
-            avoidOffset += awaySign * 6.5;
-            speedScale = Math.min(speedScale, 0.35);
+            avoidOffset += awaySign * 7.2;
+            speedScale = Math.min(speedScale, 0.4);
           }
         }
       }
-      avoidOffset = Math.max(-7.5, Math.min(7.5, avoidOffset));
+      for (const moored of world?.truongTienBridge?.mooredBoats || []) {
+        const dx = moored.x - oldX;
+        const dz = moored.z - oldZ;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 28) continue;
+        const fwd = dx * hx + dz * hz;
+        const lat = -dx * hz + dz * hx;
+        if (fwd > -4 && fwd < 24 && Math.abs(lat) < 11.5) {
+          const awaySign = lat >= 0 ? -1 : 1;
+          avoidOffset += awaySign * (8.0 + Math.max(0, 1 - dist / 26) * 4.0);
+        } else if (dist < 15.5) {
+          const awaySign = lat >= 0 ? -1 : 1;
+          avoidOffset += awaySign * 8.5;
+        }
+      }
+      for (const pier of [
+        ...(world?.phuXuanBridge?.piers || []),
+        ...(world?.truongTienBridge?.piers || []),
+      ]) {
+        const dx = pier.x - oldX;
+        const dz = pier.z - oldZ;
+        const dist = Math.hypot(dx, dz);
+        if (dist > 32) continue;
+        const fwd = dx * hx + dz * hz;
+        const lat = -dx * hz + dz * hx;
+        const alongT = (oldX - pier.x) * pier.tx + (oldZ - pier.z) * pier.tz;
+        if (fwd > -6 && fwd < 28 && Math.abs(lat) < 11.5) {
+          const awaySign = lat >= 0 ? -1 : 1;
+          avoidOffset += awaySign * 9.5;
+        } else if (dist < (pier.halfLen || 10) + 10.5 && Math.abs(alongT) < (pier.halfWidth || 2.5) + 8.5) {
+          const awaySign = lat >= 0 ? -1 : 1;
+          avoidOffset += awaySign * 9.5;
+        }
+      }
+      for (const sb of world?.ambientSwanBoats?.boats || []) {
+        const dx = sb.x - oldX;
+        const dz = sb.z - oldZ;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 16) {
+          const lat = -dx * hz + dz * hx;
+          avoidOffset += (lat >= 0 ? -1 : 1) * 5.5;
+        }
+      }
+      avoidOffset = Math.max(-12.5, Math.min(12.5, avoidOffset));
 
       let steerX = targetPose.x + -targetPose.tz * avoidOffset;
       let steerZ = targetPose.z + targetPose.tx * avoidOffset;
@@ -1152,7 +1196,7 @@ export class RiverActivities {
 
       const desiredHeading = Math.atan2(steerX - oldX, steerZ - oldZ);
       const angleDiff = wrapAngle(desiredHeading - heading);
-      const maxTurn = 1.15 * dt;
+      const maxTurn = 1.25 * dt;
       heading = wrapAngle(
         heading + Math.max(-maxTurn, Math.min(maxTurn, angleDiff)),
       );
@@ -1166,28 +1210,39 @@ export class RiverActivities {
       const speed =
         curSpeed + (targetSpeed - curSpeed) * (1 - Math.exp(-3.2 * dt));
 
-      const nextX = oldX + hx * speed * dt;
-      const nextZ = oldZ + hz * speed * dt;
-      const canStep =
-        world?.canCruiseAt?.(nextX, nextZ) ??
-        world?.canBoat?.(nextX, nextZ, -2) ??
-        true;
-      if (canStep) {
-        bike.position.x = nextX;
-        bike.position.z = nextZ;
-      } else if (
-        world?.canCruiseAt?.(nextX, oldZ) ??
-        world?.canBoat?.(nextX, oldZ, -2)
-      ) {
-        bike.position.x = nextX;
-        bike.position.z = oldZ;
-      } else if (
-        world?.canCruiseAt?.(oldX, nextZ) ??
-        world?.canBoat?.(oldX, nextZ, -2)
-      ) {
-        bike.position.x = oldX;
-        bike.position.z = nextZ;
+      const canAt = (px, pz) =>
+        world?.canCruiseAt?.(px, pz) ?? world?.canBoat?.(px, pz, -2) ?? true;
+      let chosenX = oldX + hx * speed * dt;
+      let chosenZ = oldZ + hz * speed * dt;
+      if (!canAt(chosenX, chosenZ)) {
+        let found = false;
+        for (const offsetRad of [0.28, -0.28, 0.56, -0.56, 0.9, -0.9, 1.3, -1.3]) {
+          const testH = wrapAngle(heading + offsetRad);
+          const tx = oldX + Math.sin(testH) * speed * dt;
+          const tz = oldZ + Math.cos(testH) * speed * dt;
+          if (canAt(tx, tz)) {
+            heading = testH;
+            hx = Math.sin(heading);
+            hz = Math.cos(heading);
+            chosenX = tx;
+            chosenZ = tz;
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          if (canAt(chosenX, oldZ)) {
+            chosenZ = oldZ;
+          } else if (canAt(oldX, chosenZ)) {
+            chosenX = oldX;
+          } else {
+            chosenX = oldX;
+            chosenZ = oldZ;
+          }
+        }
       }
+      bike.position.x = chosenX;
+      bike.position.z = chosenZ;
 
       const tNow = this.game.elapsed || 0;
       bike.position.y =

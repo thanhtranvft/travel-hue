@@ -657,7 +657,7 @@ export class Room {
     const prevStance = cleanStance(p.stance, p.speed);
     const nextStance = cleanStance(m.stance, m.speed);
     const FOUNTAIN_DOCK_CENTER = { x: 678.5, z: -714.0 };
-    const DRAGON_DOCK_CENTER = { x: 580.0, z: -606.0 };
+    const DRAGON_DOCK_CENTER = { x: 570.96, z: -629.48 };
     const BIA_DECK_CENTER = { x: 480.44, z: -498.06 };
     const allowBoatBoard =
       p.region === "quoc-hoc" &&

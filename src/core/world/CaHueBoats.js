@@ -179,21 +179,42 @@ function nudgePointClearOfPiers(pt, piers) {
     const dz = z - pier.z;
     const alongN = dx * pier.nx + dz * pier.nz;
     const alongT = dx * pier.tx + dz * pier.tz;
-    const clearN = (pier.halfLen || 10) + 12.5;
-    const clearT = (pier.halfWidth || 2.5) + 8.0;
+    const clearN = (pier.halfLen || 10) + 10.5;
+    const clearT = (pier.halfWidth || 2.5) + 7.5;
     if (Math.abs(alongN) < clearN && Math.abs(alongT) < clearT) {
-      const sign = alongN >= 0 ? 1 : -1;
-      const shift = clearN - Math.abs(alongN) + 2.5;
-      x += pier.nx * sign * shift;
-      z += pier.nz * sign * shift;
+      const signT = alongT >= 0 ? 1 : -1;
+      const shiftT = clearT - Math.abs(alongT) + 2.0;
+      x += pier.tx * signT * shiftT;
+      z += pier.tz * signT * shiftT;
     }
   }
   return { x, z };
 }
 
-function buildClosedLoopSamples(piers, riverRings) {
+function nudgePointClearOfMoored(pt, mooredBoats = [], minClear = 13.8) {
+  let x = pt.x;
+  let z = pt.z;
+  for (const m of mooredBoats) {
+    const dx = x - m.x;
+    const dz = z - m.z;
+    const d = Math.hypot(dx, dz);
+    if (d < minClear) {
+      const nx = d > 0.01 ? dx / d : 0;
+      const nz = d > 0.01 ? dz / d : 1;
+      x = m.x + nx * (minClear + 0.6);
+      z = m.z + nz * (minClear + 0.6);
+    }
+  }
+  return { x, z };
+}
+
+function nudgePointClearOfObstacles(pt, piers, mooredBoats = []) {
+  return nudgePointClearOfMoored(nudgePointClearOfPiers(pt, piers), mooredBoats);
+}
+
+function buildClosedLoopSamples(piers, riverRings, mooredBoats = []) {
   const controlPts = RAW_LOOP_WAYPOINTS.map((p) => {
-    const nudged = nudgePointClearOfPiers(p, piers);
+    const nudged = nudgePointClearOfObstacles(p, piers, mooredBoats);
     if (!riverRings?.length || riverRings.some((r) => inside(nudged, r))) {
       return nudged;
     }
@@ -206,7 +227,7 @@ function buildClosedLoopSamples(piers, riverRings) {
   const pts = [];
   for (let i = 0; i < sampleCount; i++) {
     const v = curve.getPointAt(i / sampleCount);
-    const nudged = nudgePointClearOfPiers({ x: v.x, z: v.z }, piers);
+    const nudged = nudgePointClearOfObstacles({ x: v.x, z: v.z }, piers, mooredBoats);
     if (!riverRings?.length || riverRings.some((r) => inside(nudged, r))) {
       pts.push(nudged);
     } else {
@@ -254,13 +275,31 @@ function sampleLoopAtDistance(loop, s) {
 function boatsOverlap(a, b, pad = 1.6) {
   const dx = b.x - a.x;
   const dz = b.z - a.z;
-  const distSq = dx * dx + dz * dz;
-  if (distSq > (15.5 + pad) * (15.5 + pad)) return false;
-  const aAlong = Math.abs(dx * a.tx + dz * a.tz);
-  const aLat = Math.abs(-dx * a.tz + dz * a.tx);
-  const bAlong = Math.abs(dx * b.tx + dz * b.tz);
-  const bLat = Math.abs(-dx * b.tz + dz * b.tx);
-  return (aAlong < 14.2 + pad && aLat < 4.0 + pad) || (bAlong < 14.2 + pad && bLat < 4.0 + pad);
+  const halfL = 7.2 + pad * 0.5;
+  const halfW = 2.0 + pad * 0.45;
+  const maxR = halfL * 2 + 1.0;
+  if (dx * dx + dz * dz > maxR * maxR) return false;
+  const arx = a.tz;
+  const arz = -a.tx;
+  const brx = b.tz;
+  const brz = -b.tx;
+  const axes = [
+    [a.tx, a.tz],
+    [arx, arz],
+    [b.tx, b.tz],
+    [brx, brz],
+  ];
+  for (const [ax, az] of axes) {
+    const dist = Math.abs(dx * ax + dz * az);
+    const rA =
+      halfL * Math.abs(a.tx * ax + a.tz * az) +
+      halfW * Math.abs(arx * ax + arz * az);
+    const rB =
+      halfL * Math.abs(b.tx * ax + b.tz * az) +
+      halfW * Math.abs(brx * ax + brz * az);
+    if (dist > rA + rB) return false;
+  }
+  return true;
 }
 
 export class CaHueBoats {
@@ -273,17 +312,18 @@ export class CaHueBoats {
       ...(world.phuXuanBridge?.piers || []),
       ...(world.truongTienBridge?.piers || []),
     ];
-    this.loop = buildClosedLoopSamples(this.piers, world.riverRings);
+    this.mooredBoats = world.truongTienBridge?.mooredBoats || [];
+    this.loop = buildClosedLoopSamples(this.piers, world.riverRings, this.mooredBoats);
     this.speed = 3.3;
     this.externalCruisePose = null;
 
     // Strictly directional lanes with wide lateral separation so boats never meet head-on,
-    // and uniform speed per lane + equal slot spacing so boats never overtake each other.
+    // and uniform speed per direction + equal slot spacing so boats never overtake each other.
     const laneSpecs = [
-      { laneOffset: -16.0, dir: -1, speed: 3.1 },
-      { laneOffset: -8.5, dir: -1, speed: 3.35 },
-      { laneOffset: 8.5, dir: 1, speed: 3.35 },
-      { laneOffset: 16.0, dir: 1, speed: 3.1 },
+      { laneOffset: -20.0, dir: -1, speed: 3.15 },
+      { laneOffset: -10.5, dir: -1, speed: 3.15 },
+      { laneOffset: 10.5, dir: 1, speed: 3.4 },
+      { laneOffset: 20.0, dir: 1, speed: 3.4 },
     ];
     const laneBuckets = laneSpecs.map(() => []);
     CA_HUE_SONGS.forEach((song, idx) => {
@@ -294,7 +334,7 @@ export class CaHueBoats {
     laneBuckets.forEach((items, laneIdx) => {
       const lane = laneSpecs[laneIdx];
       const count = items.length || 1;
-      const phaseStagger = (laneIdx * 0.23) / count;
+      const phaseStagger = (laneIdx * 0.21) / count;
       items.forEach(({ song, idx }, slotIdx) => {
         const mesh = createDragonBoat(idx);
         const stageGlow = new THREE.Mesh(
@@ -369,12 +409,12 @@ export class CaHueBoats {
     if (!laneOffset) return base;
     const rx = -base.tz;
     const rz = base.tx;
-    for (const scale of [1, 0.75, 0.5]) {
+    for (const scale of [1, 0.9, 0.8]) {
       const shifted = {
         x: base.x + rx * laneOffset * scale,
         z: base.z + rz * laneOffset * scale,
       };
-      const safe = nudgePointClearOfPiers(shifted, this.piers);
+      const safe = nudgePointClearOfObstacles(shifted, this.piers, this.mooredBoats);
       const inRiver =
         !this.world.riverRings?.length ||
         this.world.riverRings.some((r) => inside(safe, r));
@@ -396,19 +436,35 @@ export class CaHueBoats {
     const isSafePos = (x, z) =>
       !rings?.length || rings.some((r) => inside({ x, z }, r));
 
-    // Keep all ambient dragon boats clear of the player's cruise dragon boat and each other
-    for (let pass = 0; pass < 3; pass++) {
+    // Keep all ambient dragon boats clear of moored boats, the player's cruise boat, and each other
+    for (let pass = 0; pass < 8; pass++) {
+      for (const b of this.boats) {
+        const cleared = nudgePointClearOfObstacles(
+          { x: b.x, z: b.z },
+          this.piers,
+          this.mooredBoats,
+        );
+        if ((cleared.x !== b.x || cleared.z !== b.z) && isSafePos(cleared.x, cleared.z)) {
+          b.x = cleared.x;
+          b.z = cleared.z;
+        }
+      }
+
       if (ext) {
         for (const b of this.boats) {
-          if (!boatsOverlap(ext, b, 2.2)) continue;
+          if (!boatsOverlap(ext, b, 2.8)) continue;
           const dx = b.x - ext.x;
           const dz = b.z - ext.z;
           const lat = -dx * ext.tz + dz * ext.tx;
           const sign = lat >= 0 ? 1 : -1;
-          const push = Math.max(1.5, 6.2 - Math.abs(lat));
+          const push = Math.max(2.2, 7.2 - Math.abs(lat));
           const candX = b.x + -ext.tz * sign * push;
           const candZ = b.z + ext.tx * sign * push;
-          const nudged = nudgePointClearOfPiers({ x: candX, z: candZ }, this.piers);
+          const nudged = nudgePointClearOfObstacles(
+            { x: candX, z: candZ },
+            this.piers,
+            this.mooredBoats,
+          );
           if (isSafePos(nudged.x, nudged.z)) {
             b.x = nudged.x;
             b.z = nudged.z;
@@ -420,7 +476,7 @@ export class CaHueBoats {
         const a = this.boats[i];
         for (let j = i + 1; j < this.boats.length; j++) {
           const b = this.boats[j];
-          if (!boatsOverlap(a, b, 1.8)) continue;
+          if (!boatsOverlap(a, b, 2.2)) continue;
           let dx = b.x - a.x;
           let dz = b.z - a.z;
           let d = Math.hypot(dx, dz);
@@ -431,18 +487,20 @@ export class CaHueBoats {
           }
           const nx = dx / d;
           const nz = dz / d;
-          const shift = 2.6;
-          const bCand = nudgePointClearOfPiers(
+          const shift = 3.2;
+          const bCand = nudgePointClearOfObstacles(
             { x: b.x + nx * shift, z: b.z + nz * shift },
             this.piers,
+            this.mooredBoats,
           );
           if (isSafePos(bCand.x, bCand.z)) {
             b.x = bCand.x;
             b.z = bCand.z;
           }
-          const aCand = nudgePointClearOfPiers(
+          const aCand = nudgePointClearOfObstacles(
             { x: a.x - nx * shift, z: a.z - nz * shift },
             this.piers,
+            this.mooredBoats,
           );
           if (isSafePos(aCand.x, aCand.z)) {
             a.x = aCand.x;
