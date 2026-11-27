@@ -135,4 +135,22 @@ test("Quoc Hoc riverside parks include 10 pulling anglers, pedal-dock crowd, ben
     `Expected >= 25 strollers across Cau Go Lim & riverfront park promenades, got ${promWalkers.length}`,
   );
   assert.doesNotThrow(() => pedLife.update(2.4, world.biaPark.toWorld(0, 0)));
+
+  // 7. Seated youth & family circles behind Bia Quoc Hoc + across-river North Bank Vista
+  const biaCircles =
+    countNamed(world.biaPark.group, "youth-sitting-circle") +
+    countNamed(world.biaPark.group, "family-sitting-circle");
+  assert.ok(biaCircles >= 6, `Expected >= 6 seated circles behind Bia Quoc Hoc, got ${biaCircles}`);
+
+  assert.ok(world.northBankVista, "quoc-hoc world must mount northBankVista across Perfume River");
+  assert.ok(
+    world.northBankVista.treeCount >= 100,
+    `Expected lush opposite-bank treeline (>=100 trees), got ${world.northBankVista.treeCount}`,
+  );
+  assert.ok(world.northBankVista.group.getObjectByName("nghenh-luong-dinh"), "Nghênh Lương Đình must render on north bank");
+  assert.ok(world.northBankVista.group.getObjectByName("phu-van-lau"), "Phu Văn Lâu must render on north bank");
+  assert.ok(world.northBankVista.group.getObjectByName("ky-dai-hue"), "Kỳ Đài Huế must render on north bank");
+  assert.ok(world.northBankVista.group.getObjectByName("ky-dai-flag"), "Kỳ Đài Huế flag must render on flagpole");
+  assert.ok(world.landmarks.has("phu-van-lau"), "Phu Văn Lâu landmark must be registered");
+  assert.ok(world.landmarks.has("ky-dai"), "Kỳ Đài Huế landmark must be registered");
 });

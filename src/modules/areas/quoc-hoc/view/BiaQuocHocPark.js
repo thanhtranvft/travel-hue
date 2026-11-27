@@ -15,6 +15,7 @@ import {
   createGuitarCircleGroup,
   createKiteFlyingGroup,
   createSeatedBenchCouple,
+  createSittingCircleGroup,
 } from "../../../../core/world/RiversideParkLife.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
@@ -493,18 +494,105 @@ export function createBiaQuocHocPark(world, site, heading) {
   });
   const woodTrimMat = mat("#63452c", 0.85);
 
-  // 1. GRAND CEREMONIAL GRANITE PLAZA (lx: -35.5 to +31.5, lz: -15.5 to +36.8)
+  const CREST_Y = 1.56;
+  const deckY = 0.36;
+
+  const upperTerraceY = (lx) => {
+    if (lx >= -35.5 && lx <= 31.5) return CREST_Y;
+    if (lx > 31.5) {
+      if (lx <= 44.0) {
+        const u = (lx - 31.5) / 12.5;
+        return CREST_Y + (0.256 - CREST_Y) * u;
+      }
+      return 0.256;
+    }
+    if (lx >= -46.0) {
+      const u = (-35.5 - lx) / 10.5;
+      return CREST_Y + (0.256 - CREST_Y) * u;
+    }
+    return 0.256;
+  };
+
+  const zTopAt = (lx) => -15.4 - Math.max(0, Math.abs(lx) - 34) * 0.42;
+  const amphitheaterY = (lx, lz) => {
+    const zTop = zTopAt(lx);
+    const zBot = deckLandZ(lx);
+    const t = Math.max(0, Math.min(1, (zTop - lz) / Math.max(1, zTop - zBot)));
+    let yTop = upperTerraceY(lx);
+    if (lx > 48.0) {
+      const u = Math.min(1, (lx - 48.0) / 12.0);
+      yTop = 0.256 + (0.2 - 0.256) * u;
+    }
+    return yTop + (deckY - yTop) * t;
+  };
+
+  // 1. GRAND CEREMONIAL GRANITE PLAZA: FRONT APRON (y = 0.24m) + ELEVATED MONUMENT & REAR CREST (y = 1.56m)
   const plazaW = 67;
-  const plazaD = 52.3;
   const plazaCx = -2.0;
-  const plazaCz = 10.65;
+
+  // Front plaza apron facing Lê Lợi (lz: +13.5 to +36.8, top at y = 0.24m)
+  const frontD = 23.3;
+  const frontCz = 25.15;
   const plazaFloor = new THREE.Mesh(
-    new THREE.BoxGeometry(plazaW, 0.24, plazaD),
+    new THREE.BoxGeometry(plazaW, 0.24, frontD),
     graniteMat,
   );
-  plazaFloor.position.set(plazaCx, 0.12, plazaCz);
+  plazaFloor.position.set(plazaCx, 0.12, frontCz);
   plazaFloor.receiveShadow = true;
   group.add(plazaFloor);
+
+  // Elevated monument & rear riverfront balcony terrace (lz: -15.5 to +10.2, top at CREST_Y = 1.56m)
+  const upperD = 25.7;
+  const upperCz = -2.65;
+  const upperTerrace = new THREE.Mesh(
+    new THREE.BoxGeometry(plazaW, CREST_Y, upperD),
+    graniteMat,
+  );
+  upperTerrace.position.set(plazaCx, CREST_Y / 2, upperCz);
+  upperTerrace.receiveShadow = true;
+  group.add(upperTerrace);
+
+  // Side granite retaining cheek walls along elevated podium (lx = -35.5 and +31.5)
+  for (const wallX of [-35.55, 31.55]) {
+    group.add(
+      box([0.28, CREST_Y, 26.2], "#c5bfb2", [wallX, CREST_Y / 2, -2.4]),
+    );
+  }
+
+  // Front approach accessible side ramps (lx: -35.5..-12 & +12..+31.5) & grand central stairway (lx: -12..+12)
+  for (const rampRange of [
+    [{ lx: -35.5 }, { lx: -12.0 }],
+    [{ lx: 12.0 }, { lx: 31.5 }],
+  ]) {
+    group.add(
+      buildStripMesh(
+        rampRange,
+        [
+          (s) => ({ x: s.lx, y: CREST_Y, z: 10.2, v: 0 }),
+          (s) => ({ x: s.lx, y: 0.24, z: 13.5, v: 1 }),
+        ],
+        graniteMat,
+      ),
+    );
+  }
+  // Sloped backing under central steps so stairs look solid from every angle without Z-fighting
+  group.add(
+    buildStripMesh(
+      [{ lx: -12.0 }, { lx: 12.0 }],
+      [
+        (s) => ({ x: s.lx, y: CREST_Y - 0.16, z: 10.2, v: 0 }),
+        (s) => ({ x: s.lx, y: 0.16, z: 13.5, v: 1 }),
+      ],
+      curbMat,
+    ),
+  );
+  const frontSteps = 7;
+  for (let s = 0; s < frontSteps; s++) {
+    const f = (s + 0.5) / frontSteps;
+    const stepY = 0.24 + (CREST_Y - 0.24) * f;
+    const stepZ = 13.5 - f * 3.3;
+    group.add(box([24.0, 0.22, 0.52], "#d4cec2", [0, stepY - 0.1, stepZ]));
+  }
 
   // Gentle granite approach ramp from Le Loi sidewalk (lz: 36.8 -> 39.6)
   const rampGeo = new THREE.BoxGeometry(plazaW, 0.14, 3.0);
@@ -516,46 +604,78 @@ export function createBiaQuocHocPark(world, site, heading) {
 
   // Axial ceremonial granite runner (Trục Thần Đạo facing Trường Quốc Học)
   const axisRunner = new THREE.Mesh(
-    new THREE.BoxGeometry(9.6, 0.02, 29.8),
+    new THREE.BoxGeometry(9.6, 0.02, 23.0),
     axisGraniteMat,
   );
-  axisRunner.position.set(0, 0.25, 22.8);
+  axisRunner.position.set(0, 0.25, 25.2);
   axisRunner.receiveShadow = true;
   group.add(axisRunner);
 
-  // Concentric granite medallion in front of Bia Quốc Học (lz = 19.5)
+  // Concentric granite medallion on front plaza (lz = 22.8)
   const medOuter = new THREE.Mesh(
     new THREE.CylinderGeometry(4.8, 4.8, 0.024, 32),
     mat("#b8b3a6", 0.82),
   );
-  medOuter.position.set(0, 0.268, 19.5);
+  medOuter.position.set(0, 0.268, 22.8);
   medOuter.receiveShadow = true;
   const medInner = new THREE.Mesh(
     new THREE.CylinderGeometry(2.6, 2.6, 0.026, 28),
     mat("#8d8b82", 0.8),
   );
-  medInner.position.set(0, 0.287, 19.5);
+  medInner.position.set(0, 0.287, 22.8);
   medInner.receiveShadow = true;
   group.add(medOuter, medInner);
 
-  // Brick-and-cement (xi măng gạch) upper riverfront promenade wings extending to West & East parks (y = 0.256m)
+  // Brick-and-cement (xi măng gạch) upper riverfront promenade wings sloping cleanly down to y = 0.256m
   const brickCementWalkMat = createBrickCementWalkMaterial(1, 1);
   const westWing = new THREE.Mesh(
-    createBrickCementPromenadeGeometry(35.9, 0.256, 4.4, 4.2),
+    createBrickCementPromenadeGeometry(26.0, 0.256, 4.4, 4.2),
     brickCementWalkMat,
   );
-  westWing.position.set(-53.55, 0.128, -13.3);
+  westWing.position.set(-59.0, 0.128, -13.3);
   westWing.receiveShadow = true;
   const eastWing = new THREE.Mesh(
-    createBrickCementPromenadeGeometry(36.38, 0.256, 4.4, 4.2),
+    createBrickCementPromenadeGeometry(24.0, 0.256, 4.4, 4.2),
     brickCementWalkMat,
   );
-  eastWing.position.set(49.79, 0.128, -13.3);
+  eastWing.position.set(56.0, 0.128, -13.3);
   eastWing.receiveShadow = true;
   group.add(westWing, eastWing);
+
+  // Sloped brick-cement transition ramps connecting elevated rear crest (1.56m) to flat wings (0.256m)
+  const westWingSamples = [{ lx: -46.0 }, { lx: -35.5 }];
+  const eastWingSamples = [{ lx: 31.5 }, { lx: 44.0 }];
+  for (const rampPts of [westWingSamples, eastWingSamples]) {
+    group.add(
+      buildStripMesh(
+        rampPts,
+        [
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx), z: -15.5, v: 0 }),
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx), z: -11.1, v: 1 }),
+        ],
+        brickCementWalkMat,
+      ),
+      buildStripMesh(
+        rampPts,
+        [
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx) + 0.04, z: -15.65, v: 0 }),
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx) + 0.04, z: -15.5, v: 1 }),
+        ],
+        curbMat,
+      ),
+      buildStripMesh(
+        rampPts,
+        [
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx) + 0.04, z: -11.1, v: 0 }),
+          (s) => ({ x: s.lx, y: upperTerraceY(s.lx) + 0.04, z: -10.95, v: 1 }),
+        ],
+        curbMat,
+      ),
+    );
+  }
   for (const [cxW, wLen] of [
-    [-53.55, 35.9],
-    [49.79, 36.38],
+    [-59.0, 26.0],
+    [56.0, 24.0],
   ]) {
     for (const edgeZ of [-15.58, -11.02]) {
       group.add(box([wLen, 0.285, 0.14], "#b8b4aa", [cxW, 0.1425, edgeZ]));
@@ -598,65 +718,93 @@ export function createBiaQuocHocPark(world, site, heading) {
     group.add(flowerIsland(fx, 0.24, 31.8, 2.35, "#d84654"));
   }
 
-  // 2. THREE-TIERED EMERALD GRASS AMPHITHEATER (lz: -15.5 down to riverfront deck)
+  // 2. DOWNWARD-SLOPING THREE-TIER EMERALD GRASS AMPHITHEATER (lz: -15.4 down to riverfront deck)
   const samples = [];
   for (let lx = -60; lx <= 60; lx += 3) {
-    const flare = Math.max(0, Math.abs(lx) - 34) * 0.42;
-    const zTop = -15.4 - flare;
+    const zTop = zTopAt(lx);
     const zBot = deckLandZ(lx) + 0.15;
     samples.push({ lx, zTop, zBot });
   }
-  const tierHeights = [0.24, 0.19, 0.14];
   for (let t = 0; t < 3; t++) {
     const f0 = t / 3;
     const f1 = (t + 1) / 3;
-    const y = tierHeights[t];
     group.add(
       buildStripMesh(
         samples,
         [
-          (s) => ({ x: s.lx, y, z: s.zTop + (s.zBot - s.zTop) * f0, v: 0 }),
-          (s) => ({ x: s.lx, y, z: s.zTop + (s.zBot - s.zTop) * f1, v: 1 }),
+          (s) => {
+            const z = s.zTop + (s.zBot - s.zTop) * f0;
+            return { x: s.lx, y: amphitheaterY(s.lx, z), z, v: 0 };
+          },
+          (s) => {
+            const z = s.zTop + (s.zBot - s.zTop) * f1;
+            return { x: s.lx, y: amphitheaterY(s.lx, z), z, v: 1 };
+          },
         ],
         grassMat,
       ),
     );
     if (t > 0) {
+      // Crisp horizontal granite divider path across the sloped lawn (matching reference photo)
       group.add(
-        buildCurbLine(samples, 0.28, 0.09, curbMat, (s) => ({
-          x: s.lx,
-          y: y + 0.025,
-          z: s.zTop + (s.zBot - s.zTop) * f0,
-        })),
+        buildStripMesh(
+          samples,
+          [
+            (s) => {
+              const z = s.zTop + (s.zBot - s.zTop) * f0 + 0.45;
+              return { x: s.lx, y: amphitheaterY(s.lx, z) + 0.025, z, v: 0 };
+            },
+            (s) => {
+              const z = s.zTop + (s.zBot - s.zTop) * f0 - 0.45;
+              return { x: s.lx, y: amphitheaterY(s.lx, z) + 0.025, z, v: 1 };
+            },
+          ],
+          graniteMat,
+        ),
       );
     }
   }
-  // Bottom granite toe-wall between 3rd grass tier and wooden overlook deck
+  // Bottom granite toe-curb meeting the wooden riverfront overlook deck
   group.add(
-    buildCurbLine(samples, 0.34, 0.28, curbMat, (s) => ({
+    buildCurbLine(samples, 0.36, 0.24, curbMat, (s) => ({
       x: s.lx,
-      y: 0.24,
+      y: deckY - 0.04,
       z: s.zBot,
     })),
   );
 
-  // Twin straight granite stair/ramp walkways cutting through the grass terraces
+  // Twin straight downward-sloping granite walkways cutting through the grass terraces
   for (const sx of [-14.5, 14.5]) {
-    const zStart = -15.2;
+    const zStart = -15.4;
     const zEnd = deckLandZ(sx);
-    const len = Math.abs(zStart - zEnd);
-    const midZ = (zStart + zEnd) / 2;
-    const path = new THREE.Mesh(
-      new THREE.BoxGeometry(3.2, 0.14, len + 0.6),
-      graniteMat,
+    const walkSamples = [
+      { lx: sx - 1.6 },
+      { lx: sx + 1.6 },
+    ];
+    group.add(
+      buildStripMesh(
+        walkSamples,
+        [
+          (s) => ({ x: s.lx, y: amphitheaterY(sx, zStart) + 0.032, z: zStart, v: 0 }),
+          (s) => ({ x: s.lx, y: deckY + 0.02, z: zEnd, v: 1 }),
+        ],
+        graniteMat,
+      ),
     );
-    path.position.set(sx, 0.23, midZ);
-    path.rotation.x = -Math.atan2(0.12, len);
-    path.receiveShadow = true;
-    group.add(path);
-    // Low stone border curbs along stair walkways
+    // Low sloped stone border curbs along walkways
     for (const side of [-1.72, 1.72]) {
-      group.add(box([0.22, 0.18, len], "#cbc6ba", [sx + side, 0.27, midZ]));
+      const len = Math.abs(zStart - zEnd);
+      const yTopW = amphitheaterY(sx, zStart);
+      const dyW = yTopW - deckY;
+      const slopeAng = Math.atan2(dyW, len);
+      const curbMesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, 0.18, Math.hypot(len, dyW) + 0.2),
+        curbMat,
+      );
+      curbMesh.position.set(sx + side, (yTopW + deckY) / 2 + 0.05, (zStart + zEnd) / 2);
+      curbMesh.rotation.x = slopeAng;
+      curbMesh.receiveShadow = true;
+      group.add(curbMesh);
     }
   }
 
@@ -669,7 +817,6 @@ export function createBiaQuocHocPark(world, site, heading) {
       zRiver: deckRiverZ(lx),
     });
   }
-  const deckY = 0.36;
   // Timber top deck
   group.add(
     buildStripMesh(
@@ -818,50 +965,70 @@ export function createBiaQuocHocPark(world, site, heading) {
   group.add(stall);
 
   // 4. FLANKING SHADY PARK LAWNS, RED PERGOLA, FLOWER BEDS & HUE TREES
-  // Lush green park lawns flanking West (lx: -72..-35.5) and East (lx: +31.5..+68)
+  // Lush green park lawns flanking West (lx: -72..-46) and East (lx: +44..+68) plus sloped side berms meeting the elevated terrace
   const westLawn = new THREE.Mesh(
-    new THREE.BoxGeometry(36.5, 0.14, 46),
+    new THREE.BoxGeometry(26.0, 0.14, 46),
     grassMat,
   );
-  westLawn.position.set(-53.7, 0.06, 11.5);
+  westLawn.position.set(-59.0, 0.06, 11.5);
   westLawn.receiveShadow = true;
   const eastLawn = new THREE.Mesh(
-    new THREE.BoxGeometry(36.5, 0.14, 44),
+    new THREE.BoxGeometry(24.0, 0.14, 44),
     grassMat,
   );
-  eastLawn.position.set(49.7, 0.06, 10.5);
+  eastLawn.position.set(56.0, 0.06, 10.5);
   eastLawn.receiveShadow = true;
   group.add(westLawn, eastLawn);
 
-  // Red-columned Hue Pergola on West riverside promenade (as seen in aerial photo)
-  group.add(redPergola(-62, -40, -13.3));
+  // Sloped grassy berms connecting elevated side retaining edges (1.56m) gently down to outer side lawns (0.13m)
+  group.add(
+    buildStripMesh(
+      [{ lz: -11.1 }, { lz: 10.2 }],
+      [
+        (s) => ({ x: -46.0, y: 0.13, z: s.lz, v: 0 }),
+        (s) => ({ x: -35.5, y: CREST_Y - 0.04, z: s.lz, v: 1 }),
+      ],
+      grassMat,
+    ),
+    buildStripMesh(
+      [{ lz: -11.1 }, { lz: 10.2 }],
+      [
+        (s) => ({ x: 31.5, y: CREST_Y - 0.04, z: s.lz, v: 0 }),
+        (s) => ({ x: 44.0, y: 0.13, z: s.lz, v: 1 }),
+      ],
+      grassMat,
+    ),
+  );
+
+  // Red-columned Hue Pergola on West riverside promenade (flat y = 0.256m segment)
+  group.add(redPergola(-69, -49, -13.3));
 
   // Flanking floral islands & park benches along upper promenade
-  for (const bx of [-26, -10, 10, 24, 40, 54]) {
-    group.add(heritageBench(bx, bx > 31.5 ? 0.256 : 0.24, -14.2, Math.PI));
+  for (const bx of [-26, -10, 10, 24, 46, 56]) {
+    group.add(heritageBench(bx, upperTerraceY(bx), -14.2, Math.PI));
   }
   for (const [fx, fz, col] of [
-    [-44, 16, "#e3a634"],
-    [-56, 26, "#9e5cb8"],
-    [42, 16, "#d94d5b"],
-    [54, 24, "#e3a634"],
+    [-48, 16, "#e3a634"],
+    [-58, 26, "#9e5cb8"],
+    [46, 16, "#d94d5b"],
+    [56, 24, "#e3a634"],
   ]) {
     group.add(flowerIsland(fx, 0.12, fz, 2.2, col));
   }
 
   // Classic Hue Heritage Lamps lining plaza & riverside promenade
   for (const [lx, lz, tall] of [
-    [-19, 12, true],
-    [19, 12, true],
+    [-19, 8.5, true],
+    [19, 8.5, true],
     [-19, -9.5, true],
     [19, -9.5, true],
     [-28, 34, false],
     [26, 34, false],
     [-33, -12, false],
-    [33, -12, false],
+    [31, -12, false],
     [48, -12, false],
   ]) {
-    const baseY = lx > 31.5 && lz >= -15.5 && lz <= -11.1 ? 0.256 : 0.24;
+    const baseY = lz > 13.5 ? 0.24 : upperTerraceY(lx);
     group.add(heritageLamp(lx, baseY, lz, tall));
   }
 
@@ -888,24 +1055,35 @@ export function createBiaQuocHocPark(world, site, heading) {
     [-38, 33, 1.05, true],
     [-46, 30, 1.25, false],
     [-58, 32, 1.15, false],
-    [-42, 4, 1.3, false],
-    [-53, 8, 1.18, true],
+    [-49, 4, 1.3, false],
+    [-55, 8, 1.18, true],
     [-64, 14, 1.35, false],
     [-65, -4, 1.22, false],
-    [-47, -23, 1.15, false],
+    [-49, -23, 1.15, false],
     [35, 32, 1.12, true],
-    [44, 30, 1.28, false],
+    [46, 30, 1.28, false],
     [56, 31, 1.2, false],
-    [38, 6, 1.26, false],
-    [48, 2, 1.15, true],
+    [46, 6, 1.26, false],
+    [51, 2, 1.15, true],
     [59, 12, 1.32, false],
     [60, -4, 1.18, false],
-    [46, -22, 1.1, false],
+    [48, -22, 1.1, false],
     ...promenadeRowTrees,
   ];
   const treeColliders = [];
   parkTrees.forEach(([tx, tz, sc, poinciana], idx) => {
-    const ty = Math.abs(tz + 13.3) < 2.2 ? 0.24 : tz < -15 ? 0.19 : 0.12;
+    let ty = 0.12;
+    if (tz < -15.4) {
+      ty = amphitheaterY(tx, tz) - 0.04;
+    } else if (tz <= -9.0) {
+      ty = upperTerraceY(tx) - 0.03;
+    } else if (tx >= -35.5 && tx <= 31.5 && tz <= 10.2) {
+      ty = CREST_Y - 0.02;
+    } else if (tx > 31.5 && tx < 44.0 && tz <= 10.2) {
+      ty = 0.13 + ((44.0 - tx) / 12.5) * (CREST_Y - 0.17);
+    } else if (tx < -35.5 && tx > -46.0 && tz <= 10.2) {
+      ty = 0.13 + ((tx + 46.0) / 10.5) * (CREST_Y - 0.17);
+    }
     group.add(hueParkTree(tx, ty, tz, sc, poinciana, idx + 1));
     const wp = toWorld(tx, tz);
     treeColliders.push({ x: wp.x, z: wp.z, r: 0.85, lx: tx, lz: tz });
@@ -979,10 +1157,10 @@ export function createBiaQuocHocPark(world, site, heading) {
     [-28, deckY, deckLandZ(-28) - 0.85],
     [10, deckY, deckLandZ(10) - 0.85],
     [28, deckY, deckLandZ(28) - 0.85],
-    [-26, 0.24, -14.2],
-    [10, 0.24, -14.2],
-    [40, 0.256, -14.2],
-    [54, 0.256, -14.2],
+    [-26, CREST_Y, -14.2],
+    [10, CREST_Y, -14.2],
+    [46, 0.256, -14.2],
+    [56, 0.256, -14.2],
   ].entries()) {
     const couple = createSeatedBenchCouple({
       x: bx,
@@ -997,13 +1175,67 @@ export function createBiaQuocHocPark(world, site, heading) {
     parkLifeAnimators.push(couple.update);
   }
 
-  // Youth activity groups across flanking shaded lawns
-  const biaGuitar = createGuitarCircleGroup({ x: -55, y: 0.13, z: -1.5, phase: 0.4 });
-  const biaBadminton = createBadmintonGroup({ x: -42, y: 0.13, z: 24, yaw: 0.3, phase: 0.8 });
-  const biaKites = createKiteFlyingGroup({ x: 49, y: 0.13, z: 15.5, yaw: 0.15, phase: 0.2 });
-  const biaDaCau = createDaCauGroup({ x: 47, y: 0.13, z: 22.5, phase: 1.1 });
-  group.add(biaGuitar.group, biaBadminton.group, biaKites.group, biaDaCau.group);
+  // Small seated youth & family circles ("nhiều nhóm thanh niên, gia đình ngồi chơi thành vòng tròn nhỏ")
+  // placed across the sloped grass amphitheater behind Bia Quốc Học and on the wooden overlook deck
+  const slopePitchAt = (lx) => {
+    const dz = Math.max(4, Math.abs(zTopAt(lx) - deckLandZ(lx)));
+    const dy = upperTerraceY(lx) - deckY;
+    return -Math.atan2(dy, dz);
+  };
+  const rearCircleSpecs = [
+    { lx: -24, lz: -22.5, kind: "family", count: 4, matColor: null, phase: 0.3 },
+    { lx: -5.5, lz: -24.5, kind: "youth", count: 4, matColor: "#d99d5c", phase: 0.9 },
+    { lx: 5.5, lz: -34.0, kind: "family", count: 4, matColor: null, phase: 1.5 },
+    { lx: 24, lz: -23.5, kind: "youth", count: 3, matColor: null, phase: 2.1 },
+    { lx: -23, lz: -36.5, kind: "youth", count: 4, matColor: "#c88652", phase: 2.7 },
+    { lx: 22.5, lz: -36.5, kind: "family", count: 4, matColor: null, phase: 3.2 },
+    { lx: 2.0, lz: deckLandZ(2.0) - 2.4, y: deckY, kind: "youth", count: 3, matColor: null, pitchX: 0, phase: 3.8 },
+  ];
+  for (const spec of rearCircleSpecs) {
+    const circle = createSittingCircleGroup({
+      x: spec.lx,
+      y: spec.y ?? amphitheaterY(spec.lx, spec.lz),
+      z: spec.lz,
+      pitchX: spec.pitchX ?? slopePitchAt(spec.lx),
+      kind: spec.kind,
+      count: spec.count,
+      matColor: spec.matColor,
+      phase: spec.phase,
+    });
+    group.add(circle.group);
+    parkLifeAnimators.push(circle.update);
+  }
+
+  // Kite-flying groups right behind Bia Quốc Học on the open riverfront grass slopes + side lawns
+  const biaRearKitesWest = createKiteFlyingGroup({
+    x: -31,
+    y: amphitheaterY(-31, -28.5),
+    z: -28.5,
+    yaw: 0.12,
+    phase: 0.35,
+  });
+  const biaRearKitesEast = createKiteFlyingGroup({
+    x: 29,
+    y: amphitheaterY(29, -29.5),
+    z: -29.5,
+    yaw: -0.1,
+    phase: 1.45,
+  });
+  const biaGuitar = createGuitarCircleGroup({ x: -57, y: 0.13, z: -1.5, phase: 0.4 });
+  const biaBadminton = createBadmintonGroup({ x: -50, y: 0.13, z: 24, yaw: 0.3, phase: 0.8 });
+  const biaKites = createKiteFlyingGroup({ x: 52, y: 0.13, z: 15.5, yaw: 0.15, phase: 0.2 });
+  const biaDaCau = createDaCauGroup({ x: 52, y: 0.13, z: 23.5, phase: 1.1 });
+  group.add(
+    biaRearKitesWest.group,
+    biaRearKitesEast.group,
+    biaGuitar.group,
+    biaBadminton.group,
+    biaKites.group,
+    biaDaCau.group,
+  );
   parkLifeAnimators.push(
+    biaRearKitesWest.update,
+    biaRearKitesEast.update,
     biaGuitar.update,
     biaBadminton.update,
     biaKites.update,
@@ -1134,20 +1366,30 @@ export function createBiaQuocHocPark(world, site, heading) {
       if (Math.abs(lx) <= 12.6 && Math.abs(lz) <= 8.2) {
         if (Math.abs(lx) < 2.7 && Math.abs(lz) > 5.6 && Math.abs(lz) <= 7.9) {
           const t = (7.9 - Math.abs(lz)) / 2.3;
-          return 0.24 + t * 0.96;
+          return CREST_Y + t * 0.96;
         }
-        return 0.24;
+        return CREST_Y;
       }
 
-      // Continuous Ironwood Riverfront Promenade Wings & Grand Granite Plaza
+      // Continuous Brick-Cement Riverfront Promenade Wings (ramping smoothly from CREST_Y to 0.256m)
       if (
         ((lx >= -72 && lx < -35.5) || (lx > 31.5 && lx <= 68)) &&
         lz >= -15.5 &&
         lz <= -11.1
       ) {
-        return 0.256;
+        return upperTerraceY(lx);
       }
-      if (lx >= -35.5 && lx <= 31.5 && lz >= -15.5 && lz <= 36.8) {
+      // Elevated Bia Quốc Học terrace & rear balcony promenade (lz: -15.5 to +10.2)
+      if (lx >= -35.5 && lx <= 31.5 && lz >= -15.5 && lz <= 10.2) {
+        return CREST_Y;
+      }
+      // Front ceremonial steps & ramps (lz: +10.2 to +13.5) ascending 0.24m -> 1.56m
+      if (lx >= -35.5 && lx <= 31.5 && lz > 10.2 && lz < 13.5) {
+        const t = (13.5 - lz) / 3.3;
+        return 0.24 + (CREST_Y - 0.24) * t;
+      }
+      // Front granite plaza facing Lê Lợi (lz: +13.5 to +36.8)
+      if (lx >= -35.5 && lx <= 31.5 && lz >= 13.5 && lz <= 36.8) {
         return 0.24;
       }
 
@@ -1162,24 +1404,31 @@ export function createBiaQuocHocPark(world, site, heading) {
         if (!Number.isFinite(referenceY) || referenceY < 1.2) return deckY;
       }
 
-      // Twin granite stairways through terraced grass
+      // Twin sloped granite walkways through terraced grass
       if (
         (Math.abs(lx + 14.5) <= 1.7 || Math.abs(lx - 14.5) <= 1.7) &&
-        lz < -15.2 &&
+        lz < -15.4 &&
         lz >= deckLandZ(lx)
       ) {
-        const t = (-15.2 - lz) / Math.max(1, -15.2 - deckLandZ(lx));
-        return 0.24 + t * (deckY - 0.24);
+        return amphitheaterY(lx, lz) + 0.025;
       }
 
-      // Terraced green grass amphitheater
+      // Sloped flanking grassy berms beside the elevated terrace
+      if (lx > 31.5 && lx <= 44.0 && lz > -11.1 && lz <= 10.2) {
+        const u = (44.0 - lx) / 12.5;
+        return 0.13 + (CREST_Y - 0.17) * u;
+      }
+      if (lx < -35.5 && lx >= -46.0 && lz > -11.1 && lz <= 10.2) {
+        const u = (lx + 46.0) / 10.5;
+        return 0.13 + (CREST_Y - 0.17) * u;
+      }
+
+      // Continuous downward-sloping three-tier emerald grass amphitheater
       if (lx >= -60 && lx <= 60) {
-        const flare = Math.max(0, Math.abs(lx) - 34) * 0.42;
-        const zTop = -15.4 - flare;
+        const zTop = zTopAt(lx);
         const zBot = deckLandZ(lx);
         if (lz <= zTop && lz >= zBot) {
-          const t = (zTop - lz) / Math.max(1, zTop - zBot);
-          return t < 0.333 ? 0.24 : t < 0.666 ? 0.19 : 0.14;
+          return amphitheaterY(lx, lz);
         }
       }
 
@@ -1205,6 +1454,22 @@ export function createBiaQuocHocPark(world, site, heading) {
         )
       ) {
         return false;
+      }
+      // Allow riding along the rear upper promenade & twin sloped walkways down to the riverfront deck
+      if (
+        lx >= -35.5 &&
+        lx <= 31.5 &&
+        lz >= -15.5 &&
+        lz <= -8.5
+      ) {
+        return true;
+      }
+      if (
+        (Math.abs(lx + 14.5) <= 1.7 || Math.abs(lx - 14.5) <= 1.7) &&
+        lz < -15.4 &&
+        lz >= deckLandZ(lx)
+      ) {
+        return true;
       }
       // Allow riding along the brick-cement riverside promenade wings
       if (

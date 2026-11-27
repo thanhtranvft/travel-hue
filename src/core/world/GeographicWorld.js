@@ -78,6 +78,7 @@ import { createBiaQuocHocPark } from "../../modules/areas/quoc-hoc/view/BiaQuocH
 import { createFireflyTreePark } from "../../modules/areas/quoc-hoc/view/FireflyTreePark.js";
 import { createFountainPark } from "../../modules/areas/quoc-hoc/view/FountainPark.js";
 import { createPhuXuanParkWalk } from "../../modules/areas/quoc-hoc/view/PhuXuanParkWalk.js";
+import { createNorthBankVista } from "../../modules/areas/quoc-hoc/view/NorthBankVista.js";
 import { QuocHocSchoolCampus } from "../../modules/areas/quoc-hoc/view/QuocHocSchoolCampus.js";
 import { HaiBaTrungSchoolCampus } from "../../modules/areas/quoc-hoc/view/HaiBaTrungSchoolCampus.js";
 import { NguyenChiDieuCampus } from "../../modules/areas/nguyen-chi-dieu/view/NguyenChiDieuCampus.js";
@@ -823,7 +824,11 @@ export class GeographicWorld {
       });
       if (module && site.id !== "truong-tien") {
         const object = module.create();
-        object.position.set(site.center.x, 0.23, site.center.z);
+        object.position.set(
+          site.center.x,
+          site.id === "quoc-hoc" ? 1.55 : 0.23,
+          site.center.z,
+        );
         object.rotation.y = sign.rotation.y;
         scene.add(object);
         if (site.id === "quoc-hoc") {
@@ -844,6 +849,41 @@ export class GeographicWorld {
             ubnd: ubndSite,
           });
           this.phuXuanParkWalk = createPhuXuanParkWalk(this, site, sign.rotation.y);
+          if (!activeSites.some((s) => s.id === "ky-dai")) {
+            this.northBankVista = createNorthBankVista(this, this.biaPark);
+            if (this.northBankVista) {
+              if (!this.landmarks.has("nghenh-luong-dinh")) {
+                this.landmarks.set("nghenh-luong-dinh", {
+                  id: "nghenh-luong-dinh",
+                  title: "Nghênh Lương Đình",
+                  position: this.northBankVista.nghenhLuongDinhPos,
+                  radius: 45,
+                  description:
+                    "Đình hóng mát của triều Nguyễn ngay bờ Bắc sông Hương đối diện Bia Quốc Học, gắn với bến thuyền ngự và trục thần đạo Kinh thành Huế.",
+                });
+              }
+              if (!this.landmarks.has("phu-van-lau")) {
+                this.landmarks.set("phu-van-lau", {
+                  id: "phu-van-lau",
+                  title: "Phu Văn Lâu",
+                  position: this.northBankVista.phuVanLauPos,
+                  radius: 48,
+                  description:
+                    "Lầu hai tầng mái ngói hoàng lưu ly bờ Bắc sông Hương, nơi niêm yết chiếu chỉ và bảng vàng triều Nguyễn.",
+                });
+              }
+              if (!this.landmarks.has("ky-dai")) {
+                this.landmarks.set("ky-dai", {
+                  id: "ky-dai",
+                  title: "Kỳ Đài Huế",
+                  position: this.northBankVista.kyDaiPos,
+                  radius: 65,
+                  description:
+                    "Kỳ Đài ba tầng uy nghi cùng cột cờ Tổ quốc tung bay trên trục thần đạo bờ Bắc sông Hương, nhìn rõ từ công viên Bia Quốc Học.",
+                });
+              }
+            }
+          }
           this.riversideParks = [
             this.biaPark,
             this.fireflyPark,
@@ -1840,6 +1880,7 @@ export class GeographicWorld {
     this.fireflyPark?.update?.(time);
     this.fountainPark?.update?.(time);
     this.phuXuanParkWalk?.update?.(time);
+    this.northBankVista?.update?.(time);
     this.youthPlayground?.update(time);
     this.ubndPalace?.update(time);
     this.hoChiMinhMuseum?.update(time);

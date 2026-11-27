@@ -903,3 +903,127 @@ export function createPedalDockCrowd(specs = []) {
 
   return { group, visitors, update };
 }
+
+/**
+ * Small seated circle (3-5 youths or family members with children) sitting directly
+ * on the sloped grass, terrace mat, or wooden deck chatting and picnicking.
+ */
+export function createSittingCircleGroup({
+  x = 0,
+  y = 0,
+  z = 0,
+  yaw = 0,
+  pitchX = 0,
+  kind = "youth",
+  count = 4,
+  matColor = null,
+  borderColor = "#a64438",
+  radius = 0.92,
+  phase = 0,
+} = {}) {
+  const group = new THREE.Group();
+  group.name = kind === "family" ? "family-sitting-circle" : "youth-sitting-circle";
+  group.position.set(x, y, z);
+  group.rotation.y = yaw;
+
+  const pitchPivot = new THREE.Group();
+  pitchPivot.rotation.x = pitchX;
+  group.add(pitchPivot);
+
+  const seatY = matColor ? 0.036 : 0.015;
+  if (matColor) {
+    const matRadius = radius + 0.52;
+    const matBorder = new THREE.Mesh(
+      sharedCyl(matRadius + 0.06, matRadius + 0.06, 0.018, 22),
+      sharedMat(borderColor, 0.88),
+    );
+    matBorder.position.y = 0.015;
+    const matMesh = new THREE.Mesh(
+      sharedCyl(matRadius, matRadius, 0.026, 22),
+      sharedMat(matColor, 0.9),
+    );
+    matMesh.position.y = 0.022;
+    matMesh.receiveShadow = true;
+    pitchPivot.add(matBorder, matMesh);
+  }
+
+  // Light picnic basket / Hue iced tea cups in the center of the circle
+  const tray = new THREE.Mesh(
+    sharedCyl(0.24, 0.22, 0.03, 12),
+    sharedMat("#d8c29a", 0.78),
+  );
+  tray.position.y = seatY + 0.015;
+  pitchPivot.add(tray);
+
+  const cupGeo = sharedCyl(0.034, 0.026, 0.085, 8);
+  const cupColors = ["#d95248", "#3d85c6", "#58a85c", "#e8a838"];
+  for (let c = 0; c < 3; c++) {
+    const ca = (c * Math.PI * 2) / 3 + phase;
+    const cup = new THREE.Mesh(cupGeo, sharedMat(cupColors[c % cupColors.length], 0.45));
+    cup.position.set(Math.cos(ca) * 0.11, seatY + 0.065, Math.sin(ca) * 0.11);
+    pitchPivot.add(cup);
+  }
+
+  if (kind === "family") {
+    const basket = new THREE.Mesh(
+      sharedBox(0.28, 0.18, 0.2),
+      sharedMat("#b68449", 0.84),
+    );
+    basket.position.set(0.18, seatY + 0.09, -0.14);
+    basket.castShadow = true;
+    pitchPivot.add(basket);
+  }
+
+  const familyPool = [
+    SOCIETY_PRESETS[0],
+    SOCIETY_PRESETS[1],
+    SOCIETY_PRESETS[4],
+    SOCIETY_PRESETS[5],
+    SOCIETY_PRESETS[7],
+  ];
+  const memberCount = Math.max(3, Math.min(5, count));
+  const members = [];
+
+  for (let i = 0; i < memberCount; i++) {
+    const angle = (i / memberCount) * Math.PI * 2 + phase * 0.4;
+    const mx = Math.cos(angle) * radius;
+    const mz = Math.sin(angle) * radius;
+    const pool = kind === "family" ? familyPool : YOUTH_PRESETS;
+    const preset = pool[(i + Math.round(phase * 5)) % pool.length];
+    const person = makePerson({
+      ...preset,
+      accessory: undefined,
+      onMat: true,
+    });
+    person.position.set(mx, seatY, mz);
+    person.rotation.y = Math.atan2(-mx, -mz);
+    pitchPivot.add(person);
+    members.push({
+      arms: person.userData.limbs?.arms || [],
+      head: person.getObjectByName("head-group"),
+      p: phase + i * 1.15,
+    });
+  }
+
+  const update = (time = 0) => {
+    for (let i = 0; i < members.length; i++) {
+      const m = members[i];
+      const t = time * 1.7 + m.p;
+      if (m.head) {
+        m.head.rotation.y = Math.sin(t * 0.85) * 0.22;
+        m.head.rotation.x = 0.05 + Math.sin(t * 1.9) * 0.09;
+      }
+      if (m.arms[0]) {
+        m.arms[0].rotation.x = -0.52 - Math.max(0, Math.sin(t * 1.4)) * 0.28;
+        m.arms[0].rotation.z = 0.14 + Math.sin(t) * 0.08;
+      }
+      if (m.arms[1]) {
+        m.arms[1].rotation.x = -0.52 - Math.max(0, Math.cos(t * 1.3)) * 0.26;
+        m.arms[1].rotation.z = -0.14 - Math.cos(t) * 0.08;
+      }
+    }
+  };
+  update(0);
+
+  return { group, members, update };
+}
