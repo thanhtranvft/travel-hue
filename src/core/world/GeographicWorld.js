@@ -51,6 +51,11 @@ import {
   hitsRail,
 } from "../../modules/areas/south-bank/view/BoardwalkRails.js";
 import { LivingGrass, riverMaterial } from "./LivingLandscape.js";
+import {
+  createPoeticSky,
+  POETIC_BG_COLOR,
+  POETIC_HORIZON_COLOR,
+} from "./PoeticSky.js";
 import { placeTrafficSignal } from "./TrafficSignalPlacement.js";
 import { PedestrianLife } from "./PedestrianLife.js";
 import { routeTrafficSign, civicPlaqueBoard, mountSignPanel } from "./TrafficBoard.js";
@@ -315,8 +320,12 @@ export class GeographicWorld {
         ...getCentroid(f),
       }));
     const scene = this.scene;
-    scene.background = new THREE.Color("#b8d2dd");
-    scene.fog = new THREE.Fog("#b8d2dd", 450, 1800);
+    scene.background = new THREE.Color(POETIC_BG_COLOR);
+    scene.fog = new THREE.Fog(POETIC_HORIZON_COLOR, 520, 2000);
+    this.poeticSky = createPoeticSky({
+      radius: this.quality?.mobile ? 1950 : 2300,
+    });
+    scene.add(this.poeticSky.mesh);
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(6500, 6500),
       createManicuredLawnMaterial(360, 360, { striped: false, rich: true }),
@@ -1373,7 +1382,7 @@ export class GeographicWorld {
     this.buildTreeGrid();
     this.grass = new LivingGrass(this);
     this.pedestrianLife = new PedestrianLife(this);
-    scene.add(new THREE.HemisphereLight("#d9edff", "#5c8a45", 2));
+    scene.add(new THREE.HemisphereLight("#bfe6ff", "#5c8d45", 2.08));
     this.sun = new THREE.DirectionalLight(
       this.region?.id === "truong-tien" ? "#ffebd0" : "#fff1d5",
       this.region?.id === "truong-tien" ? 3.2 : 3,
@@ -1873,6 +1882,7 @@ export class GeographicWorld {
   }
   update(time, position) {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
+    this.poeticSky?.update?.(time, position);
     this.truongTienBridge?.update?.(time);
     this.caHueBoats?.update?.(time);
     this.ambientSwanBoats?.update?.(time);

@@ -31,7 +31,7 @@ export function riverMaterial() {
     );
     shader.fragmentShader = shader.fragmentShader.replace(
       "#include <color_fragment>",
-      "#include <color_fragment>\n float wave=sin(riverXZ.x*.65+riverXZ.y*.23+landscapeTime*1.3)*sin(riverXZ.y*.9-landscapeTime*.8); float fresnel=pow(1.-abs(dot(normalize(vViewPosition),normalize(vNormal))),3.); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.46,.72,.82),.2+fresnel*.4); diffuseColor.rgb+=vec3(.12,.18,.2)*smoothstep(.65,1.,wave)*.4;",
+      "#include <color_fragment>\n float wave=sin(riverXZ.x*.65+riverXZ.y*.23+landscapeTime*1.3)*sin(riverXZ.y*.9-landscapeTime*.8); float fresnel=pow(1.-abs(dot(normalize(vViewPosition),normalize(vNormal))),3.); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.52,.81,.96),.24+fresnel*.44); diffuseColor.rgb+=vec3(.16,.22,.24)*smoothstep(.62,1.,wave)*.45;",
     );
   };
   return material;
