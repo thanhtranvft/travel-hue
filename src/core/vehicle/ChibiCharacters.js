@@ -1231,6 +1231,7 @@ export function animateChibiActor(
   const isBike = Boolean(bike) && stance === "bike";
   const isFish = stance === "fish";
   const isBoat = stance === "boat";
+  const isCruise = stance === "cruise";
   const isRun = stance === "run";
   const isWalk = stance === "walk";
   const absSpeed = Math.abs(speed);
@@ -1467,6 +1468,39 @@ export function animateChibiActor(
       return;
     }
 
+    if (isCruise) {
+      const sway = Math.sin(idleTime * 1.8);
+      const clap = Math.sin(idleTime * 4.2);
+      char.bodyPivot.position.set(0, 0.34, 0);
+      char.bodyPivot.rotation.set(0, 0, 0);
+      char.torsoPivot.rotation.set(
+        0.03 + Math.sin(idleTime * 2.1) * 0.025,
+        sway * 0.06,
+        sway * 0.03,
+      );
+      char.headPivot.rotation.set(
+        Math.sin(idleTime * 2.4) * 0.04,
+        sway * 0.14,
+        0,
+      );
+
+      char.leftLeg.position.set(-0.105, -0.02, 0.03);
+      char.rightLeg.position.set(0.105, -0.02, 0.03);
+      char.leftLeg.rotation.set(-1.35, 0, 0.04);
+      char.rightLeg.rotation.set(-1.35, 0, -0.04);
+      char.leftLeg.shin.rotation.set(1.28, 0, 0);
+      char.rightLeg.shin.rotation.set(1.28, 0, 0);
+
+      char.leftArm.rotation.set(-0.68, 0.24 + clap * 0.06, 0.06);
+      char.rightArm.rotation.set(-0.68, -0.24 - clap * 0.06, -0.06);
+      char.leftArm.forearm.rotation.set(-0.55, 0, 0);
+      char.rightArm.forearm.rotation.set(-0.55, 0, 0);
+      const wind = Math.sin(idleTime * 4.5 + absSpeed) * 0.04;
+      char.scarfTailL.rotation.x = 0.1 + wind;
+      char.scarfTailR.rotation.x = 0.1 - wind;
+      return;
+    }
+
     // Reset hip X/Z & leg positions for ground standing/walking/running
     char.leftLeg.position.set(-0.095, -0.02, 0);
     char.rightLeg.position.set(0.095, -0.02, 0);
@@ -1618,6 +1652,29 @@ export function animateChibiActor(
     char.backRightLeg.position.set(0.12, -0.06 + Math.sin(pR) * 0.06, 0.07 + Math.cos(pR) * 0.04);
     char.backLeftLeg.rotation.set(-0.68 + Math.cos(pL) * 0.26, 0, 0);
     char.backRightLeg.rotation.set(-0.68 + Math.cos(pR) * 0.26, 0, 0);
+    return;
+  }
+
+  if (isCruise) {
+    const sway = Math.sin(idleTime * 1.7);
+    char.bodyPivot.position.set(0, 0.35, 0);
+    char.bodyPivot.rotation.set(0, 0, sway * 0.02);
+    char.spinePivot.rotation.set(-0.92, sway * 0.06, 0);
+    char.headPivot.rotation.set(
+      0.84 + Math.sin(idleTime * 2.3) * 0.04,
+      sway * 0.14,
+      0,
+    );
+    char.tailPivot.rotation.set(0.32, Math.sin(idleTime * 4.5) * 0.32, 0);
+
+    char.frontLeftLeg.position.set(-0.14, 0.14, 0.1);
+    char.frontRightLeg.position.set(0.14, 0.14, 0.1);
+    char.frontLeftLeg.rotation.set(-0.65, 0, -0.1);
+    char.frontRightLeg.rotation.set(-0.65, 0, 0.1);
+    char.backLeftLeg.position.set(-0.12, -0.08, 0.06);
+    char.backRightLeg.position.set(0.12, -0.08, 0.06);
+    char.backLeftLeg.rotation.set(-1.18, 0, 0);
+    char.backRightLeg.rotation.set(-1.18, 0, 0);
     return;
   }
 

@@ -68,7 +68,7 @@ export class RemotePlayers {
         target.region === region &&
         performance.now() - last < 2500 &&
         Math.hypot(target.x - position.x, target.z - position.z) <
-          (target.stance === "boat" ? 220 : 150);
+          (target.stance === "boat" || target.stance === "cruise" ? 220 : 150);
       if (!bike.visible) continue;
       const alpha = 1 - Math.exp(-18 * dt);
       if (

@@ -1,6 +1,7 @@
 import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { cleanBoatIndex } from "../network/protocol.js";
 import { bindMultiTouchAction } from "../input/TouchControls.js";
+import { CA_HUE_SONGS } from "./CaHueBoats.js";
 
 export const FISH_SPECIES = [
   {
@@ -223,13 +224,16 @@ export function createFishingGameState() {
 export class RiverActivities {
   constructor(game) {
     this.game = game;
-    this.mode = null; // null | "fishing" | "boating"
+    this.mode = null; // null | "fishing" | "boating" | "cruise"
     this.activeBoatIndex = -1;
     this.fishing = createFishingGameState();
     this.riverScore = 0;
     this.fishCount = 0;
     this.cruiseDistance = 0;
-    this.pendingPrompt = null; // null | { kind: "fishing" | "boat", availableCount }
+    this.cruiseTracks = CA_HUE_SONGS.slice(0, 4);
+    this.cruiseTrackIdx = 0;
+    this.cruiseLoopDist = 0;
+    this.pendingPrompt = null; // null | { kind: "fishing" | "boat" | "cruise", availableCount }
     this.declinedKind = null;
     this.declinedUntil = -Infinity;
     this.seatPose = null;
@@ -244,7 +248,11 @@ export class RiverActivities {
   }
 
   isActive() {
-    return this.mode === "fishing" || this.mode === "boating";
+    return (
+      this.mode === "fishing" ||
+      this.mode === "boating" ||
+      this.mode === "cruise"
+    );
   }
 
   mountUi() {
@@ -332,6 +340,7 @@ export class RiverActivities {
         <span id="boat-bar-sub">0 / 90m (+15đ)</span>
       </div>
       <div class="boat-bar-actions">
+        <button type="button" id="cruise-next-song-btn" class="river-btn river-btn-secondary" hidden>♪ Đổi điệu Hò</button>
         <button type="button" id="boat-return-dock-btn" class="river-btn river-btn-primary" hidden>Trả thuyền tại bến [G]</button>
         <button type="button" id="boat-quick-exit-btn" class="river-btn river-btn-ghost">Lên bờ nhanh</button>
       </div>
@@ -361,6 +370,7 @@ export class RiverActivities {
       boatEl,
       boatTitle: boatEl.querySelector("#boat-bar-title"),
       boatSub: boatEl.querySelector("#boat-bar-sub"),
+      cruiseNextSongBtn: boatEl.querySelector("#cruise-next-song-btn"),
       boatReturnBtn: boatEl.querySelector("#boat-return-dock-btn"),
       boatQuickExitBtn: boatEl.querySelector("#boat-quick-exit-btn"),
     };
@@ -382,8 +392,13 @@ export class RiverActivities {
     bindMultiTouchAction(this.ui.declineBtn, () => this.declinePendingPrompt());
     bindMultiTouchAction(this.ui.actionBtn, () => this.handleSpaceAction());
     bindMultiTouchAction(this.ui.exitFishingBtn, () => this.exitFishing());
-    bindMultiTouchAction(this.ui.boatReturnBtn, () => this.exitBoat(true));
-    bindMultiTouchAction(this.ui.boatQuickExitBtn, () => this.exitBoat(false));
+    bindMultiTouchAction(this.ui.cruiseNextSongBtn, () => this.cycleCruiseSong());
+    bindMultiTouchAction(this.ui.boatReturnBtn, () =>
+      this.mode === "cruise" ? this.exitCruise() : this.exitBoat(true),
+    );
+    bindMultiTouchAction(this.ui.boatQuickExitBtn, () =>
+      this.mode === "cruise" ? this.exitCruise() : this.exitBoat(false),
+    );
   }
 
   getOccupiedBoatSet() {
@@ -439,6 +454,42 @@ export class RiverActivities {
     this.refreshScoreBadge();
   }
 
+  getCruiseAudioSource() {
+    const song =
+      this.cruiseTracks[this.cruiseTrackIdx % this.cruiseTracks.length] ||
+      CA_HUE_SONGS[0];
+    return {
+      id: "player-dragon-cruise",
+      boatIndex: -1,
+      song,
+    };
+  }
+
+  cycleCruiseSong() {
+    if (this.mode !== "cruise") return;
+    this.cruiseTrackIdx = (this.cruiseTrackIdx + 1) % this.cruiseTracks.length;
+    const src = this.getCruiseAudioSource();
+    this.game.audio?.setDragonCruiseMode?.(true, src);
+    this.showRewardToast(`♪ Đang hát: ${src.song.title}`);
+    this.refreshBoatUi();
+  }
+
+  findClosestLoopDistance(x, z) {
+    const loop = this.game.world?.caHueBoats?.loop;
+    if (!loop?.pts?.length) return 0;
+    let bestI = 0;
+    let bestD = Infinity;
+    for (let i = 0; i < loop.pts.length; i++) {
+      const p = loop.pts[i];
+      const d = Math.hypot(p.x - x, p.z - z);
+      if (d < bestD) {
+        bestD = d;
+        bestI = i;
+      }
+    }
+    return loop.arc[bestI] || 0;
+  }
+
   restoreOnlineBoat(player) {
     if (!player || player.region !== "quoc-hoc" || player.stance !== "boat") {
       return;
@@ -457,10 +508,45 @@ export class RiverActivities {
     this.refreshPanels();
   }
 
+  restoreOnlineCruise(player) {
+    if (!player || player.region !== "quoc-hoc" || player.stance !== "cruise") {
+      return;
+    }
+    const dock = this.game.world?.fireflyPark?.dragonDock;
+    this.mode = "cruise";
+    this.activeBoatIndex = -1;
+    this.returnLandPose = dock?.pierReturnPos
+      ? { ...dock.pierReturnPos, heading: this.game.bike.motion.heading }
+      : { x: 580, z: -606, y: 0.24, heading: 0 };
+    const px = Number.isFinite(player.x) ? player.x : dock?.dockWaterPos?.x || 580;
+    const pz = Number.isFinite(player.z) ? player.z : dock?.dockWaterPos?.z || -606;
+    const h = Number.isFinite(player.heading)
+      ? player.heading
+      : dock?.dockWaterPos?.heading || 0;
+    this.cruiseLoopDist = this.findClosestLoopDistance(px, pz);
+    dock?.setCruiseActive?.(true);
+    this.game.bike.setActivityStance("cruise");
+    this.game.world?.caHueBoats?.setExternalCruisePose?.({
+      x: px,
+      z: pz,
+      tx: Math.sin(h),
+      tz: Math.cos(h),
+    });
+    this.game.audio?.setDragonCruiseMode?.(true, this.getCruiseAudioSource());
+    this.game.syncMode?.();
+    this.refreshPanels();
+  }
+
   handleServerRejectBoat(pose) {
-    if (this.mode !== "boating") return;
+    if (this.mode !== "boating" && this.mode !== "cruise") return;
+    const wasCruise = this.mode === "cruise";
     this.mode = null;
     this.activeBoatIndex = -1;
+    if (wasCruise) {
+      this.game.world?.fireflyPark?.dragonDock?.setCruiseActive?.(false);
+      this.game.world?.caHueBoats?.setExternalCruisePose?.(null);
+      this.game.audio?.setDragonCruiseMode?.(false);
+    }
     this.game.bike.setActivityStance(null);
     if (Number.isFinite(pose?.x) && Number.isFinite(pose?.z)) {
       this.game.bike.position.set(
@@ -518,6 +604,25 @@ export class RiverActivities {
       }
     }
 
+    const dragonDock = world.fireflyPark?.dragonDock;
+    if (dragonDock) {
+      const distVendor = Math.hypot(
+        pos.x - dragonDock.vendorPos.x,
+        pos.z - dragonDock.vendorPos.z,
+      );
+      const distPier = Math.hypot(
+        pos.x - dragonDock.pierReturnPos.x,
+        pos.z - dragonDock.pierReturnPos.z,
+      );
+      const distBoat = Math.hypot(
+        pos.x - dragonDock.dockWaterPos.x,
+        pos.z - dragonDock.dockWaterPos.z,
+      );
+      if (distVendor <= 7.5 || distPier <= 5.8 || distBoat <= 8.5) {
+        return { kind: "cruise" };
+      }
+    }
+
     const dock = world.fountainPark?.pedalDock;
     if (dock) {
       const distVendor = Math.hypot(
@@ -546,6 +651,7 @@ export class RiverActivities {
     const kind = this.pendingPrompt.kind;
     this.pendingPrompt = null;
     if (kind === "fishing") return this.enterFishing();
+    if (kind === "cruise") return this.enterCruise();
     if (kind === "boat") return this.enterBoat();
     return false;
   }
@@ -721,12 +827,83 @@ export class RiverActivities {
     return true;
   }
 
+  enterCruise() {
+    const dock = this.game.world?.fireflyPark?.dragonDock;
+    if (!dock) return false;
+    this.returnLandPose = {
+      ...dock.pierReturnPos,
+      heading: this.game.bike.motion.heading,
+    };
+    this.mode = "cruise";
+    this.activeBoatIndex = -1;
+    this.cruiseDistance = 0;
+    this.nearReturnDock = false;
+    const spawn = dock.dockWaterPos;
+    const loopTotal = this.game.world?.caHueBoats?.loop?.total || 1;
+    this.cruiseLoopDist =
+      (this.findClosestLoopDistance(spawn.x, spawn.z) + 12) % loopTotal;
+
+    const bike = this.game.bike;
+    bike.position.set(
+      spawn.x,
+      this.game.world.riverSurfaceAt?.(spawn.x, spawn.z, this.game.elapsed || 0) ??
+        0.03,
+      spawn.z,
+    );
+    bike.motion.heading = spawn.heading;
+    bike.rotation.y = spawn.heading;
+    bike.motion.speed = 2.8;
+    bike.motion.lean = 0;
+    dock.setCruiseActive?.(true);
+    bike.setActivityStance("cruise");
+    this.game.world?.caHueBoats?.setExternalCruisePose?.({
+      x: spawn.x,
+      z: spawn.z,
+      tx: Math.sin(spawn.heading),
+      tz: Math.cos(spawn.heading),
+    });
+    this.game.cameraYaw = spawn.heading;
+    this.game.input?.reset?.();
+    this.game.audio?.playBoatBell?.();
+    this.game.audio?.setDragonCruiseMode?.(true, this.getCruiseAudioSource());
+    this.game.syncMode?.();
+    this.refreshPanels();
+    return true;
+  }
+
+  exitCruise() {
+    if (this.mode !== "cruise") return false;
+    const dock = this.game.world?.fireflyPark?.dragonDock;
+    const land = dock?.pierReturnPos || this.returnLandPose;
+    this.mode = null;
+    this.nearReturnDock = false;
+    dock?.setCruiseActive?.(false);
+    this.game.world?.caHueBoats?.setExternalCruisePose?.(null);
+    this.game.audio?.setDragonCruiseMode?.(false);
+    const bike = this.game.bike;
+    bike.setActivityStance(null);
+    if (land) {
+      const y =
+        this.game.world?.groundAt?.(land.x, land.z, land.y) ?? land.y ?? 0.22;
+      bike.position.set(land.x, y, land.z);
+      bike.motion.speed = 0;
+    }
+    this.declinedKind = "cruise";
+    this.declinedUntil = (this.game.elapsed || 0) + 4;
+    this.game.syncMode?.();
+    this.refreshPanels();
+    return true;
+  }
+
   handleKeyG() {
     if (this.pendingPrompt) {
       return this.acceptPendingPrompt();
     }
     if (this.mode === "boating" && this.nearReturnDock) {
       return this.exitBoat(true);
+    }
+    if (this.mode === "cruise" && this.nearReturnDock) {
+      return this.exitCruise();
     }
     return false;
   }
@@ -756,6 +933,9 @@ export class RiverActivities {
     if (this.mode === "fishing") {
       return this.exitFishing();
     }
+    if (this.mode === "cruise") {
+      return this.exitCruise();
+    }
     if (this.pendingPrompt) {
       this.declinePendingPrompt();
       return true;
@@ -783,9 +963,9 @@ export class RiverActivities {
     }
   }
 
-  awardBoatCruise() {
+  awardBoatCruise(label = "Du ngoạn trên sông Hương!") {
     this.riverScore += 15;
-    this.showRewardToast("+15đ · Du ngoạn trên sông Hương!");
+    this.showRewardToast(`+15đ · ${label}`);
     this.game.audio?.playBoatBell?.();
     this.refreshScoreBadge();
     if (this.game.online) {
@@ -900,6 +1080,150 @@ export class RiverActivities {
       return true;
     }
 
+    if (this.mode === "cruise") {
+      const world = this.game.world;
+      const caHue = world?.caHueBoats;
+      const oldX = bike.position.x;
+      const oldZ = bike.position.z;
+      let heading = bike.motion.heading || 0;
+      let hx = Math.sin(heading);
+      let hz = Math.cos(heading);
+
+      let targetPose = {
+        x: oldX + hx * 18,
+        z: oldZ + hz * 18,
+        tx: hx,
+        tz: hz,
+      };
+      if (caHue?.loop?.total) {
+        for (let iter = 0; iter < 5; iter++) {
+          const probe = caHue.sampleLoop(this.cruiseLoopDist + 16);
+          const pdx = probe.x - oldX;
+          const pdz = probe.z - oldZ;
+          const distToProbe = Math.hypot(pdx, pdz);
+          const aheadDot = pdx * probe.tx + pdz * probe.tz;
+          if (distToProbe < 14 || aheadDot < 9) {
+            this.cruiseLoopDist =
+              (this.cruiseLoopDist + 5) % caHue.loop.total;
+          } else {
+            break;
+          }
+        }
+        targetPose = caHue.sampleLoop(this.cruiseLoopDist + 18);
+      }
+
+      // Check all ambient dragon boats to steer clear or slow down so zero collisions happen
+      let avoidOffset = 0;
+      let speedScale = 1.0;
+      if (caHue?.boats?.length) {
+        for (const other of caHue.boats) {
+          const dx = other.x - oldX;
+          const dz = other.z - oldZ;
+          const dist = Math.hypot(dx, dz);
+          if (dist > 30) continue;
+          const fwd = dx * hx + dz * hz;
+          const lat = -dx * hz + dz * hx;
+          if (fwd > -6 && fwd < 22 && Math.abs(lat) < 7.5) {
+            const awaySign = lat >= 0 ? -1 : 1;
+            const urgency = Math.max(0, 1 - dist / 26);
+            avoidOffset += awaySign * (5.5 + urgency * 3.5);
+            if (fwd > 0 && Math.abs(lat) < 5.6) {
+              speedScale = Math.min(speedScale, dist < 13.5 ? 0.12 : 0.58);
+            }
+          } else if (dist < 14.0) {
+            const awaySign = lat >= 0 ? -1 : 1;
+            avoidOffset += awaySign * 6.5;
+            speedScale = Math.min(speedScale, 0.35);
+          }
+        }
+      }
+      avoidOffset = Math.max(-7.5, Math.min(7.5, avoidOffset));
+
+      let steerX = targetPose.x + -targetPose.tz * avoidOffset;
+      let steerZ = targetPose.z + targetPose.tx * avoidOffset;
+      const canAim =
+        world?.canCruiseAt?.(steerX, steerZ) ??
+        world?.canBoat?.(steerX, steerZ, -2) ??
+        true;
+      if (!canAim) {
+        steerX = targetPose.x;
+        steerZ = targetPose.z;
+      }
+
+      const desiredHeading = Math.atan2(steerX - oldX, steerZ - oldZ);
+      const angleDiff = wrapAngle(desiredHeading - heading);
+      const maxTurn = 1.15 * dt;
+      heading = wrapAngle(
+        heading + Math.max(-maxTurn, Math.min(maxTurn, angleDiff)),
+      );
+      hx = Math.sin(heading);
+      hz = Math.cos(heading);
+
+      const targetSpeed = 3.65 * speedScale;
+      const curSpeed = Number.isFinite(bike.motion.speed)
+        ? bike.motion.speed
+        : targetSpeed;
+      const speed =
+        curSpeed + (targetSpeed - curSpeed) * (1 - Math.exp(-3.2 * dt));
+
+      const nextX = oldX + hx * speed * dt;
+      const nextZ = oldZ + hz * speed * dt;
+      const canStep =
+        world?.canCruiseAt?.(nextX, nextZ) ??
+        world?.canBoat?.(nextX, nextZ, -2) ??
+        true;
+      if (canStep) {
+        bike.position.x = nextX;
+        bike.position.z = nextZ;
+      } else if (
+        world?.canCruiseAt?.(nextX, oldZ) ??
+        world?.canBoat?.(nextX, oldZ, -2)
+      ) {
+        bike.position.x = nextX;
+        bike.position.z = oldZ;
+      } else if (
+        world?.canCruiseAt?.(oldX, nextZ) ??
+        world?.canBoat?.(oldX, nextZ, -2)
+      ) {
+        bike.position.x = oldX;
+        bike.position.z = nextZ;
+      }
+
+      const tNow = this.game.elapsed || 0;
+      bike.position.y =
+        world?.riverSurfaceAt?.(bike.position.x, bike.position.z, tNow) ?? 0.03;
+      bike.motion.heading = heading;
+      bike.motion.speed = speed;
+      bike.motion.steering = Math.max(-1, Math.min(1, angleDiff));
+      bike.motion.lean =
+        -Math.max(-0.5, Math.min(0.5, angleDiff)) * 0.05 +
+        Math.sin(tNow * 1.45) * 0.022;
+      bike.rotation.y = heading;
+      bike.rotation.z = bike.motion.lean;
+
+      caHue?.setExternalCruisePose?.({
+        x: bike.position.x,
+        z: bike.position.z,
+        tx: hx,
+        tz: hz,
+      });
+
+      bike.update(dt, 0, 0, false, {
+        stance: "cruise",
+        poseOnly: true,
+      });
+
+      const moved = Math.hypot(bike.position.x - oldX, bike.position.z - oldZ);
+      if (moved > 0 && moved < 2.0) {
+        this.cruiseDistance += moved;
+        if (this.cruiseDistance >= 90) {
+          this.cruiseDistance -= 90;
+          this.awardBoatCruise("Du ngoạn thuyền rồng Ca Huế!");
+        }
+      }
+      return true;
+    }
+
     return false;
   }
 
@@ -925,6 +1249,21 @@ export class RiverActivities {
           this.game.bike.position.z - dock.pierReturnPos.z,
         );
         this.nearReturnDock = d <= 9.5;
+      } else {
+        this.nearReturnDock = false;
+      }
+      this.refreshBoatUi();
+      return;
+    }
+
+    if (this.mode === "cruise") {
+      const dock = this.game.world?.fireflyPark?.dragonDock;
+      if (dock) {
+        const d = Math.hypot(
+          this.game.bike.position.x - dock.pierReturnPos.x,
+          this.game.bike.position.z - dock.pierReturnPos.z,
+        );
+        this.nearReturnDock = d <= 13.5;
       } else {
         this.nearReturnDock = false;
       }
@@ -1027,16 +1366,32 @@ export class RiverActivities {
 
   refreshBoatUi() {
     if (!this.ui?.boatEl) return;
-    this.ui.boatEl.hidden = this.mode !== "boating";
-    if (this.mode !== "boating") return;
+    const isBoatOrCruise = this.mode === "boating" || this.mode === "cruise";
+    this.ui.boatEl.hidden = !isBoatOrCruise;
+    if (!isBoatOrCruise) return;
+    const remain = Math.round(this.cruiseDistance);
+    if (this.mode === "cruise") {
+      const song = this.getCruiseAudioSource().song;
+      this.ui.boatTitle.textContent = `🐉 Thuyền rồng Ca Huế · ${song.shortTitle}`;
+      this.ui.boatSub.textContent = this.nearReturnDock
+        ? "Gần bến · Nhấn [G] để cập bến hoặc tiếp tục nghe Hò Đối Đáp"
+        : `Tự động du ngoạn (${remain} / 90m · +15đ) · Kéo màn hình để xoay ngắm`;
+      if (this.ui.cruiseNextSongBtn) this.ui.cruiseNextSongBtn.hidden = false;
+      this.ui.boatReturnBtn.textContent = "Cập bến lên bờ [G]";
+      this.ui.boatReturnBtn.hidden = !this.nearReturnDock;
+      this.ui.boatQuickExitBtn.textContent = "Lên bờ [Esc]";
+      return;
+    }
+    if (this.ui.cruiseNextSongBtn) this.ui.cruiseNextSongBtn.hidden = true;
     const dock = this.game.world?.fountainPark?.pedalDock;
     const spec = dock?.boats?.[this.activeBoatIndex];
     this.ui.boatTitle.textContent = `🦢 ${spec?.label || "Vịt Sông Hương"} · Đang đạp vịt`;
-    const remain = Math.round(this.cruiseDistance);
     this.ui.boatSub.textContent = this.nearReturnDock
       ? `Đã cập bến! Nhấn [G] để trả thuyền`
       : `Hành trình: ${remain} / 90m (+15đ) · WASD để lái`;
+    this.ui.boatReturnBtn.textContent = "Trả thuyền tại bến [G]";
     this.ui.boatReturnBtn.hidden = !this.nearReturnDock;
+    this.ui.boatQuickExitBtn.textContent = "Lên bờ nhanh";
   }
 
   refreshPanels() {
@@ -1053,6 +1408,11 @@ export class RiverActivities {
         this.ui.promptTitle.textContent = "Thuê cần câu cá bên sông Hương?";
         this.ui.promptDesc.textContent =
           "Ngồi dọc sàn gỗ Bia Quốc Học, câu cá chép, cá koi, cá rô phi, cá diếc, cá bống để tích điểm.";
+      } else if (this.pendingPrompt.kind === "cruise") {
+        this.ui.promptIcon.textContent = "🐉";
+        this.ui.promptTitle.textContent = "Thuê thuyền rồng Ca Huế · Hò Đối Đáp?";
+        this.ui.promptDesc.textContent =
+          "Thuyền tự động dạo sông Hương cùng du khách, 2 cô gái áo dài tím, vàng và liền anh đội khăn hát Hò Đối Đáp.";
       } else {
         const avail = this.pendingPrompt.availableCount ?? 6;
         this.ui.promptIcon.textContent = "🦢";
@@ -1082,7 +1442,10 @@ export class RiverActivities {
     this.cruiseDistance = 0;
     this.fishing.reset();
     this.game.world?.biaPark?.fishingSpot?.setFishingActive?.(false);
+    this.game.world?.fireflyPark?.dragonDock?.setCruiseActive?.(false);
+    this.game.world?.caHueBoats?.setExternalCruisePose?.(null);
     this.game.audio?.setFishingMode?.(false);
+    this.game.audio?.setDragonCruiseMode?.(false);
     if (wasActive && this.game.bike) {
       this.game.bike.setActivityStance(null);
     }

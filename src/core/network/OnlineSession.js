@@ -55,6 +55,8 @@ export class OnlineSession {
         game.syncMode?.();
       } else if (detail.reconnected && detail.player.stance === "boat") {
         game.riverActivities?.restoreOnlineBoat?.(detail.player);
+      } else if (detail.reconnected && detail.player.stance === "cruise") {
+        game.riverActivities?.restoreOnlineCruise?.(detail.player);
       }
       const nextRegion = detail.player?.region || game.world.region.id;
       const nextMode = cleanGameModeId(
@@ -155,8 +157,13 @@ export class OnlineSession {
     if (!p || game.world.region.id !== p.region) return;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.z)) return;
     const refY = Number.isFinite(p.y) ? p.y : game.bike.position.y;
-    const isBoat = p.stance === "boat";
-    if (!snapCamera && !isBoat && game.riverActivities?.mode === "boating") {
+    const isBoat = p.stance === "boat" || p.stance === "cruise";
+    if (
+      !snapCamera &&
+      !isBoat &&
+      (game.riverActivities?.mode === "boating" ||
+        game.riverActivities?.mode === "cruise")
+    ) {
       game.riverActivities.handleServerRejectBoat?.(p);
     }
     const y = isBoat

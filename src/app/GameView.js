@@ -11,6 +11,7 @@ const STANCE_LABELS = {
   bike: "Đang đạp xe",
   fish: "Đang ngồi câu cá",
   boat: "Đang đạp vịt trên sông",
+  cruise: "Đang nghe Hò Đối Đáp trên thuyền rồng",
 };
 
 export class GameView {
@@ -114,11 +115,13 @@ export class GameView {
     const soundLocation = document.querySelector("#sound-location");
     if (soundLocation)
       soundLocation.textContent =
-        game.audio.venueLevel > 0.07
-          ? `Nhạc ven quán · ${game.audio.nearbyVenue.title}`
-          : game.audio.caHueLevel > 0.03 && game.audio.activeCaHueBoat?.song
-            ? `🚤 Ca Huế: ${game.audio.activeCaHueBoat.song.shortTitle}`
-            : "Giai điệu bên sông Hương";
+        game.audio.dragonCruiseMode && game.audio.activeCaHueBoat?.song
+          ? `🐉 Thuyền rồng: ${game.audio.activeCaHueBoat.song.shortTitle}`
+          : game.audio.venueLevel > 0.07
+            ? `Nhạc ven quán · ${game.audio.nearbyVenue.title}`
+            : game.audio.caHueLevel > 0.03 && game.audio.activeCaHueBoat?.song
+              ? `🚤 Ca Huế: ${game.audio.activeCaHueBoat.song.shortTitle}`
+              : "Giai điệu bên sông Hương";
     let near = null,
       distance = Infinity;
     for (const lm of game.world.landmarks.values()) {

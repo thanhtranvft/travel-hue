@@ -15,6 +15,7 @@ import {
   createKiteFlyingGroup,
   createSeatedBenchCouple,
 } from "../../../../core/world/RiversideParkLife.js";
+import { createDragonCruiseBoat } from "../../../../core/world/DragonBoatBuilder.js";
 
 function createCanvasTexture(width, height, draw, repeatX = 1, repeatY = 1) {
   if (typeof document === "undefined") return null;
@@ -855,6 +856,223 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     ffDaCau.update,
   );
 
+  // 9. BẾN THUYỀN RỒNG CA HUẾ · HÒ ĐỐI ĐÁP (between Bia Quốc Học fishing & Fountain Park pedal dock)
+  const dockLx = 155;
+  const dockShoreZ = shoreDeckRiverZ(dockLx);
+  const dockLandZ = shoreDeckLandZ(dockLx);
+  const pierStartZ = dockShoreZ + 0.08;
+  const pierLen = 3.2;
+  const pierCenterZ = pierStartZ - pierLen / 2;
+  const pierY = 0.24;
+
+  // Step transition + timber landing pier extending riverward from the 0.36m boardwalk
+  const pierStep = new THREE.Mesh(
+    new THREE.BoxGeometry(5.6, 0.14, 0.6),
+    mat("#7d5432", 0.82),
+  );
+  pierStep.position.set(dockLx, 0.28, dockShoreZ - 0.16);
+  pierStep.receiveShadow = true;
+  const pierDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(5.6, 0.16, pierLen),
+    mat("#8d613c", 0.8),
+  );
+  pierDeck.position.set(dockLx, pierY - 0.08, pierCenterZ);
+  pierDeck.castShadow = pierDeck.receiveShadow = true;
+  group.add(pierStep, pierDeck);
+
+  for (const px of [dockLx - 2.4, dockLx, dockLx + 2.4]) {
+    for (const pz of [pierStartZ - 0.45, pierStartZ - pierLen + 0.35]) {
+      const pile = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.14, 0.16, 0.72, 8),
+        mat("#543a24", 0.9),
+      );
+      pile.position.set(px, -0.1, pz);
+      group.add(pile);
+    }
+  }
+  for (const bx of [dockLx - 2.4, dockLx + 2.4]) {
+    const bollard = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.13, 0.48, 8),
+      mat("#3e2c1c", 0.85),
+    );
+    bollard.position.set(bx, pierY + 0.24, pierStartZ - pierLen + 0.3);
+    group.add(bollard);
+  }
+
+  // Heritage Signboard & Ticket Booth for Thuyền Rồng Ca Huế
+  const vendorLx = dockLx - 2.75;
+  const vendorLz = dockLandZ - 0.68;
+  const dragonBooth = new THREE.Group();
+  dragonBooth.name = "dragon-dock-booth";
+  dragonBooth.position.set(vendorLx, shoreDeckY, vendorLz);
+
+  const dPostL = box([0.08, 1.98, 0.08], "#523a23", [-1.96, 0.99, -0.1]);
+  dPostL.name = "dragon-sign-post-left";
+  const dPostR = box([0.08, 1.98, 0.08], "#523a23", [0.46, 0.99, -0.1]);
+  dPostR.name = "dragon-sign-post-right";
+  const dTopRail = box([2.5, 0.08, 0.06], "#523a23", [-0.75, 1.62, -0.05]);
+  const dLowRail = box([2.42, 0.06, 0.05], "#523a23", [-0.75, 1.15, -0.05]);
+  const dBacking = box([2.34, 0.74, 0.045], "#4a1723", [-0.75, 1.62, 0.0]);
+  const dTrimTop = box([2.38, 0.04, 0.06], "#f2cb6d", [-0.75, 1.99, 0.0]);
+  const dTrimBot = box([2.38, 0.04, 0.06], "#f2cb6d", [-0.75, 1.25, 0.0]);
+  dragonBooth.add(dPostL, dPostR, dTopRail, dLowRail, dBacking, dTrimTop, dTrimBot);
+
+  if (typeof document !== "undefined") {
+    const dragonSignTex = createCanvasTexture(512, 160, (ctx, w, h) => {
+      if (typeof ctx.createLinearGradient === "function") {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, "#5c1624");
+        grad.addColorStop(1, "#8c2434");
+        ctx.fillStyle = grad;
+      } else {
+        ctx.fillStyle = "#6c1b2a";
+      }
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = "#f2cb6d";
+      ctx.lineWidth = 6;
+      ctx.strokeRect(7, 7, w - 14, h - 14);
+      ctx.strokeStyle = "rgba(242, 203, 109, 0.35)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(14, 14, w - 28, h - 28);
+
+      const cxIcon = 78;
+      const cyIcon = 80;
+      if (typeof ctx.arc === "function") {
+        ctx.fillStyle = "rgba(242, 203, 109, 0.16)";
+        ctx.beginPath();
+        ctx.arc(cxIcon, cyIcon, 50, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#f2cb6d";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = "#f2cb6d";
+        ctx.fillRect(cxIcon - 30, cyIcon + 8, 56, 12);
+        ctx.fillStyle = "#d94f26";
+        ctx.fillRect(cxIcon - 22, cyIcon - 12, 40, 20);
+        ctx.fillStyle = "#f2cb6d";
+        ctx.beginPath();
+        ctx.moveTo(cxIcon + 24, cyIcon + 14);
+        ctx.lineTo(cxIcon + 36, cyIcon - 18);
+        ctx.lineTo(cxIcon + 20, cyIcon - 8);
+        ctx.closePath?.();
+        ctx.fill();
+      }
+
+      const textCenterX = 314;
+      ctx.fillStyle = "#ffe9a8";
+      ctx.font = "bold 28px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText?.("THUYỀN RỒNG CA HUẾ", textCenterX, 60);
+      ctx.fillStyle = "#fde6cb";
+      ctx.font = "600 18px sans-serif";
+      ctx.fillText?.("HÒ ĐỐI ĐÁP SÔNG HƯƠNG · [G]", textCenterX, 106);
+    });
+    const dSignBoard = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.26, 0.68),
+      new THREE.MeshStandardMaterial({
+        map: dragonSignTex,
+        roughness: 0.65,
+        side: THREE.DoubleSide,
+      }),
+    );
+    dSignBoard.name = "dragon-dock-signboard";
+    dSignBoard.position.set(-0.75, 1.62, 0.032);
+    dragonBooth.add(dSignBoard);
+  }
+  const dBuoy = new THREE.Mesh(
+    new THREE.TorusGeometry(0.28, 0.08, 8, 16),
+    mat("#eb6b38", 0.55),
+  );
+  dBuoy.position.set(-0.75, 0.82, 0.05);
+  dragonBooth.add(dBuoy);
+  group.add(dragonBooth);
+
+  // Welcoming Dragon Boat Rental Crew Group (3 attendants by booth & pier)
+  const makeCrewNpc = ({ x, y, z, yaw, shirt, pants, hat = null, vest = null }) => {
+    const npc = new THREE.Group();
+    npc.position.set(x, y, z);
+    npc.rotation.y = yaw;
+    npc.add(
+      box([0.16, 0.54, 0.16], pants, [-0.1, 0.27, 0]),
+      box([0.16, 0.54, 0.16], pants, [0.1, 0.27, 0]),
+      box([0.4, 0.58, 0.24], vest || shirt, [0, 0.83, 0]),
+    );
+    const armL = box([0.11, 0.42, 0.11], shirt, [-0.26, 0.84, 0]);
+    const armR = box([0.11, 0.42, 0.11], shirt, [0.26, 0.84, 0]);
+    npc.add(armL, armR);
+    const nHead = new THREE.Mesh(
+      new THREE.SphereGeometry(0.175, 10, 8),
+      mat("#f3ceb0", 0.74),
+    );
+    nHead.position.set(0, 1.29, 0);
+    npc.add(nHead);
+    if (hat === "non-la") {
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(0.3, 0.18, 12),
+        mat("#e5cf95", 0.82),
+      );
+      cone.position.set(0, 1.49, 0);
+      npc.add(cone);
+    } else if (hat === "cap") {
+      const cap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.18, 10, 5, 0, Math.PI * 2, 0, Math.PI * 0.5),
+        mat("#1e446b", 0.72),
+      );
+      cap.position.set(0, 1.32, 0);
+      npc.add(cap);
+    }
+    return { npc, armR };
+  };
+  const crewHost = makeCrewNpc({
+    x: dockLx - 1.25,
+    y: shoreDeckY,
+    z: dockLandZ - 0.55,
+    yaw: 0.25,
+    shirt: "#1f7a8c",
+    vest: "#e8b44c",
+    pants: "#233442",
+    hat: "non-la",
+  });
+  const crewHostess = makeCrewNpc({
+    x: dockLx + 1.55,
+    y: shoreDeckY,
+    z: dockLandZ - 0.7,
+    yaw: -0.35,
+    shirt: "#7c2ea0",
+    pants: "#f2f4f8",
+    hat: null,
+  });
+  const crewCaptain = makeCrewNpc({
+    x: dockLx + 2.0,
+    y: pierY,
+    z: pierStartZ - pierLen + 0.65,
+    yaw: -0.2,
+    shirt: "#1d3e6e",
+    pants: "#1d2733",
+    hat: "cap",
+  });
+  group.add(crewHost.npc, crewHostess.npc, crewCaptain.npc);
+  lifeAnimators.push((t) => {
+    crewHost.armR.rotation.x = -0.55 + Math.sin(t * 2.4) * 0.28;
+    crewHostess.armR.rotation.x = -0.35 + Math.cos(t * 2.1) * 0.22;
+    crewCaptain.armR.rotation.x = -0.2 + Math.sin(t * 1.6 + 0.8) * 0.14;
+  });
+
+  // Moored Cruise Dragon Boat docked alongside the pier (hidden when player boards cruise)
+  const mooredBoatLz = sampleShoreZ(dockLx) - 5.4;
+  const mooredCruiseBoat = createDragonCruiseBoat();
+  mooredCruiseBoat.group.position.set(dockLx, 0.03, mooredBoatLz);
+  mooredCruiseBoat.group.rotation.y = Math.PI / 2;
+  group.add(mooredCruiseBoat.group);
+
+  let cruiseActive = false;
+  const setCruiseActive = (active) => {
+    cruiseActive = Boolean(active);
+    mooredCruiseBoat.group.visible = !cruiseActive;
+  };
+
   world.scene.add(group);
   world.cameraObstacles.push(mainTrunk);
 
@@ -897,12 +1115,51 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     for (let i = 0; i < lifeAnimators.length; i++) {
       lifeAnimators[i](time);
     }
+    if (!cruiseActive) {
+      mooredCruiseBoat.group.position.y =
+        0.03 + Math.sin(time * 1.45 + 0.7) * 0.04;
+      mooredCruiseBoat.group.rotation.z = Math.sin(time * 1.15) * 0.025;
+      mooredCruiseBoat.update(time);
+    }
+  };
+
+  const dragonVendorWorld = toWorld(dockLx - 0.8, dockLandZ - 0.6);
+  const dragonPierReturnWorld = toWorld(dockLx, pierStartZ - 1.2);
+  const dragonDockWaterWorld = toWorld(dockLx + 2.5, sampleShoreZ(dockLx) - 7.8);
+  const dragonDock = {
+    vendorPos: { ...dragonVendorWorld, y: shoreDeckY },
+    pierReturnPos: { ...dragonPierReturnWorld, y: pierY },
+    dockWaterPos: {
+      ...dragonDockWaterWorld,
+      y: 0.03,
+      heading: heading + Math.PI / 2,
+    },
+    setCruiseActive,
+    isCruiseActive: () => cruiseActive,
+    isDockBlocked(wx, wz, excludeCruise = false) {
+      const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= dockLx - 3.4 &&
+        lx <= dockLx + 3.4 &&
+        lz >= pierStartZ - pierLen - 1.2 &&
+        lz <= pierStartZ + 1.0
+      ) {
+        return true;
+      }
+      if (!excludeCruise && !cruiseActive) {
+        if (Math.abs(lx - dockLx) < 8.4 && Math.abs(lz - mooredBoatLz) < 3.4) {
+          return true;
+        }
+      }
+      return false;
+    },
   };
 
   return {
     group,
     treeCenterLocal: { lx: treeLx, lz: treeLz },
     treeColliders,
+    dragonDock,
     hitsTree(wx, wz) {
       for (let i = 0; i < treeColliders.length; i++) {
         const t = treeColliders[i];
@@ -914,12 +1171,33 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     isWaterBlocked(wx, wz, pad = 2.0) {
       const { lx, lz } = toLocal(wx, wz);
-      return lx >= 64 && lx <= 218 && lz >= shoreDeckRiverZ(lx) - pad && lz <= 41;
+      if (lx >= 64 && lx <= 218 && lz >= shoreDeckRiverZ(lx) - pad && lz <= 41) {
+        return true;
+      }
+      if (
+        lx >= dockLx - 2.8 - pad &&
+        lx <= dockLx + 2.8 + pad &&
+        lz >= pierStartZ - pierLen - pad &&
+        lz <= pierStartZ + 0.5
+      ) {
+        return true;
+      }
+      return false;
     },
     animatedObjects,
     update,
     groundAt(wx, wz, referenceY) {
       const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= dockLx - 2.8 &&
+        lx <= dockLx + 2.8 &&
+        lz >= pierStartZ - pierLen &&
+        lz <= pierStartZ + 0.15
+      ) {
+        if (!Number.isFinite(referenceY) || referenceY <= 1.8) {
+          return lz > dockShoreZ - 0.3 ? 0.3 : pierY;
+        }
+      }
       if (lx < 64 || lx > 218 || lz < shoreDeckRiverZ(lx) - 0.5 || lz > 41)
         return null;
       if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
@@ -964,6 +1242,14 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     },
     canRide(wx, wz) {
       const { lx, lz } = toLocal(wx, wz);
+      if (
+        lx >= dockLx - 2.6 &&
+        lx <= dockLx + 2.6 &&
+        lz >= pierStartZ - pierLen + 0.2 &&
+        lz <= pierStartZ + 0.25
+      ) {
+        return true;
+      }
       if (lx < 64 || lx > 218 || lz < shoreDeckRiverZ(lx) || lz > 40.5)
         return null;
       if (
@@ -971,6 +1257,10 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
           (t) => (wx - t.x) ** 2 + (wz - t.z) ** 2 < t.r * t.r,
         )
       ) {
+        return false;
+      }
+      // Block booth & crew NPCs on the boardwalk
+      if (Math.hypot(lx - (vendorLx - 0.75), lz - vendorLz) < 1.1) {
         return false;
       }
       // Solid trunk + circular wrap-around bench ring

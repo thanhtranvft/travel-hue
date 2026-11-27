@@ -657,6 +657,7 @@ export class Room {
     const prevStance = cleanStance(p.stance, p.speed);
     const nextStance = cleanStance(m.stance, m.speed);
     const FOUNTAIN_DOCK_CENTER = { x: 678.5, z: -714.0 };
+    const DRAGON_DOCK_CENTER = { x: 580.0, z: -606.0 };
     const BIA_DECK_CENTER = { x: 480.44, z: -498.06 };
     const allowBoatBoard =
       p.region === "quoc-hoc" &&
@@ -669,6 +670,17 @@ export class Room {
       prevStance === "boat" &&
       nextStance !== "boat" &&
       Math.hypot(m.x - FOUNTAIN_DOCK_CENTER.x, m.z - FOUNTAIN_DOCK_CENTER.z) <= 28;
+    const allowCruiseBoard =
+      p.region === "quoc-hoc" &&
+      prevStance !== "cruise" &&
+      nextStance === "cruise" &&
+      Math.hypot(p.x - DRAGON_DOCK_CENTER.x, p.z - DRAGON_DOCK_CENTER.z) <= 75 &&
+      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 75;
+    const allowCruiseExit =
+      p.region === "quoc-hoc" &&
+      prevStance === "cruise" &&
+      nextStance !== "cruise" &&
+      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 65;
     const allowFishTransition =
       p.region === "quoc-hoc" &&
       ((prevStance !== "fish" && nextStance === "fish") ||
@@ -676,7 +688,11 @@ export class Room {
       distance <= 16 &&
       Math.hypot(m.x - BIA_DECK_CENTER.x, m.z - BIA_DECK_CENTER.z) <= 85;
     const allowActivityTeleport =
-      allowBoatBoard || allowBoatExit || allowFishTransition;
+      allowBoatBoard ||
+      allowBoatExit ||
+      allowCruiseBoard ||
+      allowCruiseExit ||
+      allowFishTransition;
     if (
       now < p.stunnedUntil ||
       Math.abs(m.speed) > 9.1 * activeMult ||
@@ -754,6 +770,8 @@ export class Room {
       if (
         pActivity === "fish" ||
         oActivity === "fish" ||
+        pActivity === "cruise" ||
+        oActivity === "cruise" ||
         (pActivity === "boat") !== (oActivity === "boat") ||
         Math.abs(p.speed) + Math.abs(other.speed) < 0.5 ||
         !sweptContact(old, p, other)

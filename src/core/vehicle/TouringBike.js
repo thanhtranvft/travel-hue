@@ -12,6 +12,7 @@ import {
   createPedalBoat,
   PEDAL_BOAT_SPECS,
 } from "../../modules/areas/quoc-hoc/view/FountainPark.js";
+import { createDragonCruiseBoat } from "../world/DragonBoatBuilder.js";
 
 export class TouringBike extends THREE.Group {
   constructor({ avatar = DEFAULT_AVATAR_ID, mode = "foot" } = {}) {
@@ -25,6 +26,7 @@ export class TouringBike extends THREE.Group {
     this.boatIndex = -1;
     this.boatHull = null;
     this.boatHullIndex = -1;
+    this.cruiseBoat = null;
     this.activityStance = null;
     this.fishState = null;
     this.rider = new THREE.Group();
@@ -58,6 +60,31 @@ export class TouringBike extends THREE.Group {
     }
     return this.boatHull;
   }
+  ensureCruiseBoat() {
+    if (!this.cruiseBoat) {
+      this.cruiseBoat = createDragonCruiseBoat();
+      this.cruiseBoat.group.visible = false;
+      this.add(this.cruiseBoat.group);
+    }
+    return this.cruiseBoat;
+  }
+  syncCruiseSeatTransform(active) {
+    if (!this.rig?.actor) return;
+    if (active && this.cruiseBoat?.playerSeatOffset) {
+      const seat = this.cruiseBoat.playerSeatOffset;
+      this.rig.actor.position.set(seat.x, seat.y, seat.z);
+      this.rig.actor.rotation.y = seat.yaw || 0;
+      if (this.identityTag) {
+        this.identityTag.position.set(seat.x, seat.y + this.headTopY + 0.34, seat.z);
+      }
+    } else {
+      this.rig.actor.position.set(0, 0, 0);
+      this.rig.actor.rotation.y = 0;
+      if (this.identityTag) {
+        this.identityTag.position.set(0, this.headTopY + 0.34, 0);
+      }
+    }
+  }
   setBoat(boatIndex) {
     const next = cleanBoatIndex(boatIndex, "boat");
     this.boatIndex = next;
@@ -68,7 +95,7 @@ export class TouringBike extends THREE.Group {
     return this.boatIndex;
   }
   setActivityStance(stance, options = {}) {
-    if (stance === "fish" || stance === "boat") {
+    if (stance === "fish" || stance === "boat" || stance === "cruise") {
       this.activityStance = stance;
       this.motion.stance = stance;
       this.fishState = options.fishState ?? this.fishState;
@@ -80,15 +107,28 @@ export class TouringBike extends THREE.Group {
         this.boatIndex = idx >= 0 ? idx : 0;
         const hull = this.ensureBoatHull(this.boatIndex);
         hull.visible = true;
+        if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+        this.syncCruiseSeatTransform(false);
+      } else if (stance === "cruise") {
+        this.boatIndex = -1;
+        if (this.boatHull) this.boatHull.visible = false;
+        const cruise = this.ensureCruiseBoat();
+        cruise.group.visible = true;
+        cruise.update(this.idleTime);
+        this.syncCruiseSeatTransform(true);
       } else {
         this.boatIndex = -1;
         if (this.boatHull) this.boatHull.visible = false;
+        if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+        this.syncCruiseSeatTransform(false);
       }
     } else {
       this.activityStance = null;
       this.boatIndex = -1;
       this.fishState = null;
       if (this.boatHull) this.boatHull.visible = false;
+      if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+      this.syncCruiseSeatTransform(false);
       this.motion.speed = 0;
       this.motion.lean = 0;
       this.motion.stance = this.transportMode === "bike" ? "bike" : "idle";
@@ -118,9 +158,7 @@ export class TouringBike extends THREE.Group {
     this.wheels = this.rig.wheels;
     this.crank = this.rig.crank;
     this.headTopY = this.rig.headTopY;
-    if (this.identityTag) {
-      this.identityTag.position.y = this.headTopY + 0.34;
-    }
+    this.syncCruiseSeatTransform(this.motion.stance === "cruise");
     animateChibiActor(this.rig, {
       stance: this.motion.stance,
       speed: this.motion.speed,
@@ -141,6 +179,8 @@ export class TouringBike extends THREE.Group {
     this.activityStance = null;
     this.boatIndex = -1;
     if (this.boatHull) this.boatHull.visible = false;
+    if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+    this.syncCruiseSeatTransform(false);
     this.transportMode = this.motion.setMode(next);
     animateChibiActor(this.rig, {
       stance: this.motion.stance,
@@ -166,6 +206,8 @@ export class TouringBike extends THREE.Group {
     this.boatIndex = -1;
     this.fishState = null;
     if (this.boatHull) this.boatHull.visible = false;
+    if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+    this.syncCruiseSeatTransform(false);
     this.motion.reset(heading, this.transportMode);
     this.pedalPhase = 0;
     this.walkPhase = 0;
@@ -189,7 +231,12 @@ export class TouringBike extends THREE.Group {
       ? cleanStance(options.stance, this.motion.speed)
       : this.activityStance;
 
-    if (options?.poseOnly || forcedStance === "fish" || forcedStance === "boat") {
+    if (
+      options?.poseOnly ||
+      forcedStance === "fish" ||
+      forcedStance === "boat" ||
+      forcedStance === "cruise"
+    ) {
       if (forcedStance) {
         this.motion.stance = forcedStance;
       } else {
@@ -203,11 +250,23 @@ export class TouringBike extends THREE.Group {
         this.boatIndex = bIdx >= 0 ? bIdx : 0;
         const hull = this.ensureBoatHull(this.boatIndex);
         hull.visible = true;
-      } else if (this.boatHull) {
-        this.boatHull.visible = false;
+        if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+        this.syncCruiseSeatTransform(false);
+      } else if (this.motion.stance === "cruise") {
+        this.boatIndex = -1;
+        if (this.boatHull) this.boatHull.visible = false;
+        const cruise = this.ensureCruiseBoat();
+        cruise.group.visible = true;
+        this.syncCruiseSeatTransform(true);
+      } else {
+        if (this.boatHull) this.boatHull.visible = false;
+        if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+        this.syncCruiseSeatTransform(false);
       }
     } else {
       if (this.boatHull) this.boatHull.visible = false;
+      if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
+      this.syncCruiseSeatTransform(false);
       const step = this.motion.step(dt, throttle, steer, brake, sprint, speedMultiplier);
       this.position.x += step.dx;
       this.position.z += step.dz;
@@ -230,6 +289,10 @@ export class TouringBike extends THREE.Group {
         w.rotation.x += (this.motion.speed * dt) / 0.243;
       }
       this.crank.rotation.x = this.pedalPhase;
+    }
+
+    if (stance === "cruise" && this.cruiseBoat) {
+      this.cruiseBoat.update(this.idleTime);
     }
 
     animateChibiActor(this.rig, {

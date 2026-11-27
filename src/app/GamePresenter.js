@@ -392,7 +392,12 @@ export class GamePresenter {
     return chosen;
   }
   toggleTransportMode() {
-    if (this.riverActivities?.mode === "boating") return this.bike.transportMode;
+    if (
+      this.riverActivities?.mode === "boating" ||
+      this.riverActivities?.mode === "cruise"
+    ) {
+      return this.bike.transportMode;
+    }
     if (this.riverActivities?.mode === "fishing") {
       this.riverActivities.exitFishing();
     }
@@ -687,9 +692,12 @@ export class GamePresenter {
       this.input.recenterRequested = false;
     }
     const touchVec = !this.auto ? this.input.touchVector : null;
-    let followRate = 12;
+    const onCruise = this.bike.stance === "cruise";
+    let followRate = onCruise ? 4.5 : 12;
     let shouldEaseDrag =
-      !this.input.drag.active && Math.abs(this.bike.motion.speed) > 0.25;
+      !onCruise &&
+      !this.input.drag.active &&
+      Math.abs(this.bike.motion.speed) > 0.25;
     if (touchVec?.active) {
       const forwardAlign = Math.cos(touchVec.angle);
       if (forwardAlign > 0.35) {
@@ -722,9 +730,9 @@ export class GamePresenter {
       onBike = this.bike.stance === "bike",
       onBoat = this.bike.stance === "boat",
       onFish = this.bike.stance === "fish",
-      baseDist = onBoat ? 5.6 : onFish ? 4.35 : onBike ? 4.85 : 3.9,
-      camHeight = onBoat ? 2.35 : onFish ? 2.08 : onBike ? 1.9 : 1.68,
-      lookLift = onBoat ? 1.1 : onFish ? 0.68 : onBike ? 1.15 : 0.98,
+      baseDist = onCruise ? 8.2 : onBoat ? 5.6 : onFish ? 4.35 : onBike ? 4.85 : 3.9,
+      camHeight = onCruise ? 3.2 : onBoat ? 2.35 : onFish ? 2.08 : onBike ? 1.9 : 1.68,
+      lookLift = onCruise ? 1.35 : onBoat ? 1.1 : onFish ? 0.68 : onBike ? 1.15 : 0.98,
       distance = baseDist + speed * 0.07,
       p = this.bike.position;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))
@@ -796,8 +804,8 @@ export class GamePresenter {
     )
       this.camera.position.copy(this.desired);
     else this.camera.position.lerp(this.desired, 1 - Math.exp(-10 * dt));
-    const lookForward = onFish ? 1.2 : 1.8;
-    const lookY = onFish ? 0.72 : 1.1;
+    const lookForward = onCruise ? 2.1 : onFish ? 1.2 : 1.8;
+    const lookY = onCruise ? 1.28 : onFish ? 0.72 : 1.1;
     this.cameraTarget.set(
       p.x + Math.sin(yaw) * lookForward,
       p.y + lookY,

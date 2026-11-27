@@ -936,3 +936,476 @@ export function createDragonBoat(variant = 0) {
   mergeStaticBoatParts(boat);
   return boat;
 }
+
+function buildCruisePerformer({
+  x,
+  y,
+  z,
+  yaw = 0,
+  role = "woman-purple",
+  aoDaiColor = "#7c2ea0",
+  pantsColor = "#f4f6fa",
+  hairColor = "#1a1513",
+  skinColor = "#f0c5a2",
+  turban = false,
+  longHair = false,
+  hasFan = false,
+}) {
+  const root = new THREE.Group();
+  root.name = `cruise-performer-${role}`;
+  root.position.set(x, y, z);
+  root.rotation.y = yaw;
+
+  const tunicMat = sharedMat(aoDaiColor, 0.68, 0.06);
+  const pantsMat = sharedMat(pantsColor, 0.78);
+  const skinMat = sharedMat(skinColor, 0.7);
+  const hairMat = sharedMat(hairColor, 0.82);
+  const goldMat = sharedMat("#e8b942", 0.36, 0.48);
+
+  // Legs in flowing silk trousers
+  for (const sx of [-0.075, 0.075]) {
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.058, 0.052, 0.62, 6),
+      pantsMat,
+    );
+    leg.position.set(sx, 0.31, 0);
+    const shoe = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.05, 0.14),
+      sharedMat("#1e1a18", 0.7),
+    );
+    shoe.position.set(sx, 0.025, 0.02);
+    root.add(leg, shoe);
+  }
+
+  const torsoPivot = new THREE.Group();
+  torsoPivot.position.set(0, 0.62, 0);
+  root.add(torsoPivot);
+
+  // Fitted upper áo dài tunic + front & back long flowing tà panels
+  const upperBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.135, 0.145, 0.44, 8),
+    tunicMat,
+  );
+  upperBody.position.y = 0.22;
+  torsoPivot.add(upperBody);
+
+  const collar = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.082, 0.09, 0.06, 8),
+    tunicMat,
+  );
+  collar.position.y = 0.45;
+  torsoPivot.add(collar);
+
+  for (const sz of [-0.095, 0.095]) {
+    const flap = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.48, 0.032),
+      tunicMat,
+    );
+    flap.position.set(0, -0.14, sz);
+    flap.rotation.x = sz > 0 ? -0.06 : 0.06;
+    torsoPivot.add(flap);
+  }
+
+  if (turban) {
+    // Traditional golden brocade chest medallion on the man's áo dài
+    const sash = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.142, 0.142, 0.06, 8),
+      goldMat,
+    );
+    sash.position.y = 0.28;
+    torsoPivot.add(sash);
+  }
+
+  // Articulated arms for expressive Hò Đối Đáp singing gestures
+  const makeArm = (sx) => {
+    const armPivot = new THREE.Group();
+    armPivot.position.set(sx * 0.175, 0.38, 0);
+    const sleeve = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.044, 0.036, 0.34, 6),
+      tunicMat,
+    );
+    sleeve.position.y = -0.15;
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), skinMat);
+    hand.position.y = -0.34;
+    armPivot.add(sleeve, hand);
+    if (hasFan && sx > 0) {
+      const fan = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.16, 0.02, 0.02, 6, 1, false, -0.7, 1.4),
+        sharedMat("#f9e29c", 0.55),
+      );
+      fan.position.set(0.03, -0.36, 0.08);
+      fan.rotation.x = Math.PI / 2 - 0.35;
+      armPivot.add(fan);
+    }
+    torsoPivot.add(armPivot);
+    return armPivot;
+  };
+  const leftArm = makeArm(-1);
+  const rightArm = makeArm(1);
+
+  const headPivot = new THREE.Group();
+  headPivot.position.set(0, 0.54, 0);
+  torsoPivot.add(headPivot);
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 10, 8), skinMat);
+  head.position.y = 0.1;
+  const hairCap = new THREE.Mesh(
+    new THREE.SphereGeometry(0.142, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.58),
+    hairMat,
+  );
+  hairCap.position.y = 0.115;
+  headPivot.add(head, hairCap);
+
+  if (longHair) {
+    const hairBack = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, 0.36, 0.07),
+      hairMat,
+    );
+    hairBack.position.set(0, -0.04, -0.11);
+    const hairRibbon = new THREE.Mesh(
+      new THREE.BoxGeometry(0.11, 0.035, 0.08),
+      tunicMat,
+    );
+    hairRibbon.position.set(0, 0.08, -0.115);
+    headPivot.add(hairBack, hairRibbon);
+  }
+
+  if (turban) {
+    // Layered coiled khăn đóng (traditional Huế turban headwrap)
+    for (let ring = 0; ring < 3; ring++) {
+      const coil = new THREE.Mesh(
+        new THREE.TorusGeometry(0.132 - ring * 0.008, 0.028, 6, 14),
+        ring === 1 ? goldMat : tunicMat,
+      );
+      coil.position.set(0, 0.155 + ring * 0.034, 0);
+      coil.rotation.x = Math.PI / 2 - 0.08;
+      headPivot.add(coil);
+    }
+    const crownFold = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.11, 0.125, 0.055, 10),
+      tunicMat,
+    );
+    crownFold.position.set(0, 0.215, 0);
+    headPivot.add(crownFold);
+  }
+
+  return { root, torsoPivot, headPivot, leftArm, rightArm, role };
+}
+
+function buildSeatedCruiseTourist({
+  x,
+  y,
+  z,
+  yaw = 0,
+  shirt = "#e8b838",
+  pants = "#273342",
+  hat = null,
+}) {
+  const p = new THREE.Group();
+  p.position.set(x, y, z);
+  p.rotation.y = yaw;
+  addOccupant(p, {
+    x: 0,
+    y: 0,
+    z: 0,
+    yaw: 0,
+    seated: true,
+    shirt,
+    pants,
+    hat,
+  });
+  return p;
+}
+
+export function createDragonCruiseBoat() {
+  const boat = new THREE.Group();
+  boat.name = "dragon-cruise-ho-doi-dap";
+
+  const scaleTex = getScaleHullTex("#1c7b9e");
+  const hullSideMat = scaleTex
+    ? sharedMat("#ffffff", 0.54, 0.08, { map: scaleTex, doubleSide: true })
+    : sharedMat("#d97824", 0.6, 0.08, { doubleSide: true });
+  const roofTex = getRoofTex("#9e2230", "#721621");
+  const roofMat = roofTex
+    ? sharedMat("#ffffff", 0.52, 0.14, { map: roofTex, doubleSide: true })
+    : sharedMat("#9e2230", 0.52, 0.14, { doubleSide: true });
+
+  const trimMat = sharedMat("#1a88ab", 0.46, 0.12);
+  const redMat = sharedMat("#c92c27", 0.5, 0.1);
+  const goldMat = sharedMat("#e8b838", 0.36, 0.55);
+  const woodMat = sharedMat("#6d4628", 0.78);
+  const velvetMat = sharedMat("#8a2432", 0.72);
+  const steelMat = sharedMat("#e4eaef", 0.38, 0.52);
+  const lanternMat = sharedMat("#ffe7a0", 0.28, 0, {
+    emissive: "#ffac38",
+    emissiveIntensity: 1.15,
+  });
+
+  // Twin hull keels + painted scale flanks
+  for (const sx of [-1.25, 1.25]) {
+    const hullPts = [
+      new THREE.Vector2(0.01, -6.6),
+      new THREE.Vector2(0.55, -5.0),
+      new THREE.Vector2(0.68, 0),
+      new THREE.Vector2(0.55, 5.2),
+      new THREE.Vector2(0.01, 6.8),
+    ];
+    const hGeo = new THREE.LatheGeometry(hullPts, 8);
+    hGeo.rotateX(Math.PI / 2);
+    hGeo.scale(1, 0.55, 1);
+    const keel = new THREE.Mesh(hGeo, sharedMat("#263b47", 0.72));
+    keel.position.set(sx, 0.18, 0);
+    boat.add(keel);
+  }
+  for (const sx of [-1.92, 1.92]) {
+    const sideHull = new THREE.Mesh(new THREE.PlaneGeometry(11.8, 0.85), hullSideMat);
+    sideHull.position.set(sx, 0.44, -0.35);
+    sideHull.rotation.y = sx > 0 ? Math.PI / 2 : -Math.PI / 2;
+    boat.add(sideHull);
+  }
+
+  // Main wooden deck + open bow gangplank + red performance stage carpet
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(3.78, 0.16, 11.6), woodMat);
+  deck.position.set(0, 0.44, -0.3);
+  const bowRamp = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.08, 1.85), woodMat);
+  bowRamp.position.set(0, 0.42, 5.7);
+  bowRamp.rotation.x = 0.06;
+  const stageCarpet = new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.03, 2.2), velvetMat);
+  stageCarpet.position.set(0, 0.535, 2.65);
+  boat.add(deck, bowRamp, stageCarpet);
+
+  // Twin sculpted Dragon Heads at bow + curved dragon tails at stern
+  for (const sx of [-1.28, 1.28]) {
+    const prow = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 1.45), trimMat);
+    prow.position.set(sx, 0.46, 5.85);
+    prow.rotation.x = -0.22;
+    const dHead = buildSculptedDragonHead(
+      sharedMat("#e06e24", 0.52),
+      goldMat,
+      redMat,
+      sharedMat("#239fc2", 0.46),
+      1.04,
+    );
+    dHead.position.set(sx, 0.52, 6.1);
+
+    const sternTail = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.05, 0.44), goldMat);
+    sternTail.position.set(sx, 0.92, -6.15);
+    sternTail.rotation.x = -0.4;
+    const sternTip = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.52, 5), redMat);
+    sternTip.position.set(sx, 1.48, -6.36);
+    sternTip.rotation.x = -0.48;
+    boat.add(prow, dHead, sternTail, sternTip);
+  }
+
+  // Open-air perimeter rails (no tinted glass so performers & tourists stay crisp!)
+  for (const sx of [-1.84, 1.84]) {
+    const topRail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 10.6), goldMat);
+    topRail.position.set(sx, 1.12, -0.25);
+    const midRail = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 10.6), steelMat);
+    midRail.position.set(sx, 0.8, -0.25);
+    boat.add(topRail, midRail);
+    for (let pz = -5.0; pz <= 4.6; pz += 1.2) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.68, 5), steelMat);
+      post.position.set(sx, 0.78, pz);
+      boat.add(post);
+    }
+  }
+
+  // High open sightseeing canopy pillars & imperial roof (y ≈ 2.55..2.98 for open camera view)
+  for (const sx of [-1.74, 1.74]) {
+    for (let pz = -4.6; pz <= 3.8; pz += 2.1) {
+      const pillar = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 2.02, 6),
+        goldMat,
+      );
+      pillar.position.set(sx, 1.48, pz);
+      boat.add(pillar);
+    }
+  }
+  for (const sx of [-1, 1]) {
+    const eave = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.09, 9.6), roofMat);
+    eave.position.set(sx * 0.96, 2.56, -0.35);
+    eave.rotation.z = sx * -0.2;
+    const fascia = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 9.65), trimMat);
+    fascia.position.set(sx * 1.94, 2.36, -0.35);
+    boat.add(eave, fascia);
+  }
+  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 7.6), goldMat);
+  ridge.position.set(0, 2.86, -0.35);
+  boat.add(ridge);
+
+  for (const sx of [-1.55, 1.55]) {
+    for (const sz of [-3.4, -1.0, 1.4, 3.6]) {
+      const lantern = new THREE.Mesh(new THREE.OctahedronGeometry(0.13, 0), lanternMat);
+      lantern.position.set(sx, 2.24, sz);
+      boat.add(lantern);
+    }
+  }
+
+  // Side tourist benches + VIP passenger cushion + central tea table & stern helm
+  for (const sx of [-1.18, 1.18]) {
+    const bench = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.34, 5.2), woodMat);
+    bench.position.set(sx, 0.65, -1.05);
+    boat.add(bench);
+  }
+  const vipChair = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.28, 0.56), velvetMat);
+  vipChair.position.set(0.66, 0.62, -0.35);
+  const centerTable = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.46, 3.4), woodMat);
+  centerTable.position.set(0, 0.72, -1.35);
+  const helmConsole = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.8, 0.44), woodMat);
+  helmConsole.position.set(-0.92, 0.88, -4.15);
+  const helmWheel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.03, 5, 10), steelMat);
+  helmWheel.position.set(-0.92, 1.28, -3.98);
+  helmWheel.rotation.x = -0.5;
+  boat.add(vipChair, centerTable, helmConsole, helmWheel);
+
+  // Helmsman at stern steering wheel
+  addOccupant(boat, {
+    x: -0.92,
+    y: 0.52,
+    z: -4.65,
+    yaw: 0,
+    seated: true,
+    shirt: "#23577a",
+    hat: "non-la",
+  });
+
+  // Merge static architecture + helmsman before adding animated performers & tourists
+  mergeStaticBoatParts(boat);
+
+  const dynamicGroup = new THREE.Group();
+  dynamicGroup.name = "dragon-cruise-dynamic-crew";
+
+  // Seated tourists ("du khách ngồi ghế") watching the Hò Đối Đáp performance
+  const touristSlots = [
+    { x: -1.16, z: -2.95, yaw: 0.55, shirt: "#e68a38", hat: "cap" },
+    { x: -1.16, z: -1.65, yaw: 0.65, shirt: "#2e84b8", hat: null },
+    { x: -1.16, z: -0.35, yaw: 0.72, shirt: "#d85050", hat: "non-la" },
+    { x: -1.16, z: 0.9, yaw: 0.62, shirt: "#f0f4f7", hat: null },
+    { x: 1.16, z: -2.85, yaw: -0.55, shirt: "#38946e", hat: null },
+    { x: 1.16, z: -1.55, yaw: -0.65, shirt: "#8d4992", hat: "non-la" },
+    { x: 1.16, z: 0.9, yaw: -0.62, shirt: "#4c679c", hat: "cap" },
+  ];
+  const tourists = touristSlots.map((slot, idx) => {
+    const t = buildSeatedCruiseTourist({
+      x: slot.x,
+      y: 0.52,
+      z: slot.z,
+      yaw: slot.yaw,
+      shirt: slot.shirt,
+      hat: slot.hat,
+    });
+    t.userData.phase = idx * 0.85;
+    dynamicGroup.add(t);
+    return t;
+  });
+
+  // Hò Đối Đáp Trio on the bow performance deck:
+  // 2 young women in purple & yellow áo dài + 1 man in traditional áo dài & khăn đóng turban
+  const womanPurple = buildCruisePerformer({
+    x: -0.68,
+    y: 0.55,
+    z: 2.32,
+    yaw: Math.PI - 0.52,
+    role: "woman-purple",
+    aoDaiColor: "#7c2ea0",
+    longHair: true,
+    hasFan: true,
+  });
+  const womanYellow = buildCruisePerformer({
+    x: 0.68,
+    y: 0.55,
+    z: 2.32,
+    yaw: -Math.PI + 0.52,
+    role: "woman-yellow",
+    aoDaiColor: "#eab308",
+    longHair: true,
+    hasFan: true,
+  });
+  const manTurban = buildCruisePerformer({
+    x: 0,
+    y: 0.55,
+    z: 3.12,
+    yaw: Math.PI,
+    role: "man-turban",
+    aoDaiColor: "#1d3e6e",
+    turban: true,
+  });
+  const performers = [womanPurple, womanYellow, manTurban];
+  dynamicGroup.add(womanPurple.root, womanYellow.root, manTurban.root);
+  boat.add(dynamicGroup);
+
+  const playerSeatOffset = { x: 0.66, y: 0.54, z: -0.35, yaw: -0.22 };
+
+  const update = (time = 0) => {
+    const callPhase = Math.sin(time * 0.95);
+    const manLead = Math.max(0, callPhase);
+    const womenLead = Math.max(0, -callPhase);
+    const beat = Math.sin(time * 3.1);
+
+    // Man singing Hò Đối Đáp call phrase
+    manTurban.torsoPivot.rotation.set(
+      0.04 + manLead * 0.08,
+      Math.sin(time * 0.8) * 0.12,
+      Math.sin(time * 1.4) * 0.05,
+    );
+    manTurban.headPivot.rotation.set(
+      -0.04 + beat * 0.06 * (0.4 + manLead * 0.6),
+      Math.sin(time * 0.9) * 0.16,
+      0,
+    );
+    manTurban.rightArm.rotation.set(
+      -0.45 - manLead * 0.85 + beat * 0.12,
+      0.15,
+      0.18 + manLead * 0.16,
+    );
+    manTurban.leftArm.rotation.set(-0.28 - manLead * 0.25, -0.1, -0.14);
+
+    // 2 young women in purple & yellow áo dài responding in duet
+    [womanPurple, womanYellow].forEach((w, idx) => {
+      const sign = idx === 0 ? 1 : -1;
+      const sway = Math.sin(time * 1.65 + idx * 0.45);
+      w.torsoPivot.rotation.set(
+        0.04 + womenLead * 0.07,
+        sign * -0.12 + sway * 0.09,
+        sway * 0.05,
+      );
+      w.headPivot.rotation.set(
+        beat * 0.05 * (0.35 + womenLead * 0.65),
+        sign * 0.14 + sway * 0.1,
+        0,
+      );
+      w.rightArm.rotation.set(
+        -0.38 - womenLead * 0.72 + Math.sin(time * 2.8 + idx) * 0.14,
+        0.1,
+        0.22 + womenLead * 0.18,
+      );
+      w.leftArm.rotation.set(
+        -0.32 - womenLead * 0.48 - Math.sin(time * 2.8 + idx) * 0.1,
+        -0.08,
+        -0.18,
+      );
+    });
+
+    for (const t of tourists) {
+      const ph = t.userData.phase || 0;
+      t.rotation.z = Math.sin(time * 1.5 + ph) * 0.03;
+    }
+  };
+
+  boat.userData.dynamicGroup = dynamicGroup;
+  boat.userData.performers = performers;
+  boat.userData.tourists = tourists;
+  boat.userData.playerSeatOffset = playerSeatOffset;
+  boat.userData.update = update;
+  update(0);
+
+  return {
+    group: boat,
+    dynamicGroup,
+    performers,
+    tourists,
+    playerSeatOffset,
+    update,
+  };
+}

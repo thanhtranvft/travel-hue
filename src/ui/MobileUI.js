@@ -141,11 +141,6 @@ export function initializeAudioUI(audio) {
     status = document.querySelector("#audio-status"),
     volume = document.querySelector("#audio-volume");
   let settingsOpen = false;
-  const masterButton = document.createElement("button");
-  masterButton.type = "button";
-  masterButton.id = "master-audio-toggle";
-  masterButton.setAttribute("aria-label", "Bật hoặc tắt toàn bộ âm thanh");
-  button.after(masterButton);
   const expand = document.createElement("button");
   expand.type = "button";
   expand.id = "audio-settings-toggle";
@@ -186,15 +181,9 @@ export function initializeAudioUI(audio) {
   const sync = () => {
     button.setAttribute("aria-pressed", String(audio.musicEnabled));
     button.textContent = audio.musicEnabled ? "♫" : "♪̸";
-    const musicLabel = audio.musicEnabled ? "Tắt nhạc" : "Bật nhạc";
+    const musicLabel = audio.musicEnabled ? "Tắt nhạc nền" : "Bật nhạc nền";
     button.title = musicLabel;
     button.setAttribute("aria-label", musicLabel);
-
-    masterButton.setAttribute("aria-pressed", String(audio.enabled));
-    masterButton.textContent = audio.enabled ? "🔊" : "🔇";
-    const masterLabel = audio.enabled ? "Tắt âm" : "Bật âm";
-    masterButton.title = masterLabel;
-    masterButton.setAttribute("aria-label", masterLabel);
 
     settings.hidden = !audio.musicEnabled || !settingsOpen;
     expand.hidden = !audio.musicEnabled || settingsOpen;
@@ -228,25 +217,9 @@ export function initializeAudioUI(audio) {
       status.textContent = "";
     } catch {
       status.textContent =
-        "Chưa phát được âm thanh. Hãy chạm nút Âm thanh để thử lại.";
+        "Chưa phát được nhạc nền. Hãy chạm nút Nhạc nền để thử lại.";
     } finally {
       button.disabled = false;
-      sync();
-    }
-  });
-  masterButton.addEventListener("click", async () => {
-    masterButton.disabled = true;
-    try {
-      if (audio.enabled && audio.ctx?.state !== "running") {
-        await audio.setEnabled(true);
-      } else {
-        await audio.setEnabled(!audio.enabled);
-      }
-      status.textContent = "";
-    } catch {
-      status.textContent = "Chưa phát được âm thanh. Hãy thử lại.";
-    } finally {
-      masterButton.disabled = false;
       sync();
     }
   });

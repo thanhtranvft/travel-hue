@@ -251,6 +251,18 @@ function sampleLoopAtDistance(loop, s) {
   return { x: pts[0].x, z: pts[0].z, tx: 1, tz: 0 };
 }
 
+function boatsOverlap(a, b, pad = 1.6) {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const distSq = dx * dx + dz * dz;
+  if (distSq > (15.5 + pad) * (15.5 + pad)) return false;
+  const aAlong = Math.abs(dx * a.tx + dz * a.tz);
+  const aLat = Math.abs(-dx * a.tz + dz * a.tx);
+  const bAlong = Math.abs(dx * b.tx + dz * b.tz);
+  const bLat = Math.abs(-dx * b.tz + dz * b.tx);
+  return (aAlong < 14.2 + pad && aLat < 4.0 + pad) || (bAlong < 14.2 + pad && bLat < 4.0 + pad);
+}
+
 export class CaHueBoats {
   constructor(world) {
     this.world = world;
@@ -263,53 +275,93 @@ export class CaHueBoats {
     ];
     this.loop = buildClosedLoopSamples(this.piers, world.riverRings);
     this.speed = 3.3;
+    this.externalCruisePose = null;
 
-    const lanes = [-8.2, -3.2, 3.2, 8.2];
-    this.boats = CA_HUE_SONGS.map((song, idx) => {
-      const mesh = createDragonBoat(idx);
-      const stageGlow = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.16, 0),
-        new THREE.MeshStandardMaterial({
-          color: "#ffe7a8",
-          emissive: idx % 2 === 0 ? "#ffb338" : "#ff6b8b",
-          emissiveIntensity: 1.05,
-          roughness: 0.25,
-        }),
-      );
-      stageGlow.position.set(0, 2.78, 2.0);
-      mesh.add(stageGlow);
-
-      const startU = idx / CA_HUE_SONGS.length;
-      const dir = idx % 3 === 1 ? -1 : 1;
-      const laneOffset = lanes[idx % lanes.length];
-      const boatSpeed = 2.95 + (idx % 4) * 0.22;
-      const pose = this.sampleSafeBoatPose(startU * this.loop.total, laneOffset);
-      const fwdX = pose.tx * dir;
-      const fwdZ = pose.tz * dir;
-      mesh.position.set(pose.x, 0.03, pose.z);
-      mesh.rotation.y = Math.atan2(fwdX, fwdZ);
-      this.group.add(mesh);
-
-      return {
-        id: `ca-hue-boat-${idx}`,
-        boatIndex: idx,
-        song,
-        startU,
-        dir,
-        speed: boatSpeed,
-        laneOffset,
-        phase: idx * 1.4,
-        mesh,
-        x: pose.x,
-        y: 0.03,
-        z: pose.z,
-        tx: fwdX,
-        tz: fwdZ,
-      };
+    // Strictly directional lanes with wide lateral separation so boats never meet head-on,
+    // and uniform speed per lane + equal slot spacing so boats never overtake each other.
+    const laneSpecs = [
+      { laneOffset: -16.0, dir: -1, speed: 3.1 },
+      { laneOffset: -8.5, dir: -1, speed: 3.35 },
+      { laneOffset: 8.5, dir: 1, speed: 3.35 },
+      { laneOffset: 16.0, dir: 1, speed: 3.1 },
+    ];
+    const laneBuckets = laneSpecs.map(() => []);
+    CA_HUE_SONGS.forEach((song, idx) => {
+      laneBuckets[idx % laneSpecs.length].push({ song, idx });
     });
 
+    const boatList = new Array(CA_HUE_SONGS.length);
+    laneBuckets.forEach((items, laneIdx) => {
+      const lane = laneSpecs[laneIdx];
+      const count = items.length || 1;
+      const phaseStagger = (laneIdx * 0.23) / count;
+      items.forEach(({ song, idx }, slotIdx) => {
+        const mesh = createDragonBoat(idx);
+        const stageGlow = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.16, 0),
+          new THREE.MeshStandardMaterial({
+            color: "#ffe7a8",
+            emissive: idx % 2 === 0 ? "#ffb338" : "#ff6b8b",
+            emissiveIntensity: 1.05,
+            roughness: 0.25,
+          }),
+        );
+        stageGlow.position.set(0, 2.78, 2.0);
+        mesh.add(stageGlow);
+
+        const startU = (slotIdx / count + phaseStagger) % 1;
+        const pose = this.sampleSafeBoatPose(startU * this.loop.total, lane.laneOffset);
+        const fwdX = pose.tx * lane.dir;
+        const fwdZ = pose.tz * lane.dir;
+        mesh.position.set(pose.x, 0.03, pose.z);
+        mesh.rotation.y = Math.atan2(fwdX, fwdZ);
+        this.group.add(mesh);
+
+        boatList[idx] = {
+          id: `ca-hue-boat-${idx}`,
+          boatIndex: idx,
+          song,
+          startU,
+          dir: lane.dir,
+          speed: lane.speed,
+          laneOffset: lane.laneOffset,
+          phase: idx * 1.4,
+          mesh,
+          x: pose.x,
+          y: 0.03,
+          z: pose.z,
+          tx: fwdX,
+          tz: fwdZ,
+        };
+      });
+    });
+
+    this.boats = boatList;
     world.scene.add(this.group);
     this.update(0);
+  }
+
+  setExternalCruisePose(pose) {
+    if (
+      pose &&
+      Number.isFinite(pose.x) &&
+      Number.isFinite(pose.z) &&
+      Number.isFinite(pose.tx) &&
+      Number.isFinite(pose.tz)
+    ) {
+      this.externalCruisePose = {
+        x: pose.x,
+        z: pose.z,
+        tx: pose.tx,
+        tz: pose.tz,
+      };
+    } else {
+      this.externalCruisePose = null;
+    }
+  }
+
+  sampleLoop(dist) {
+    return sampleLoopAtDistance(this.loop, dist);
   }
 
   sampleSafeBoatPose(dist, laneOffset = 0) {
@@ -317,21 +369,88 @@ export class CaHueBoats {
     if (!laneOffset) return base;
     const rx = -base.tz;
     const rz = base.tx;
-    const shifted = {
-      x: base.x + rx * laneOffset,
-      z: base.z + rz * laneOffset,
-    };
-    const safe = nudgePointClearOfPiers(shifted, this.piers);
-    const inRiver =
-      !this.world.riverRings?.length ||
-      this.world.riverRings.some((r) => inside(safe, r));
-    if (!inRiver) return base;
-    return {
-      x: safe.x,
-      z: safe.z,
-      tx: base.tx,
-      tz: base.tz,
-    };
+    for (const scale of [1, 0.75, 0.5]) {
+      const shifted = {
+        x: base.x + rx * laneOffset * scale,
+        z: base.z + rz * laneOffset * scale,
+      };
+      const safe = nudgePointClearOfPiers(shifted, this.piers);
+      const inRiver =
+        !this.world.riverRings?.length ||
+        this.world.riverRings.some((r) => inside(safe, r));
+      if (inRiver) {
+        return {
+          x: safe.x,
+          z: safe.z,
+          tx: base.tx,
+          tz: base.tz,
+        };
+      }
+    }
+    return base;
+  }
+
+  resolveBoatCollisions() {
+    const ext = this.externalCruisePose;
+    const rings = this.world.riverRings;
+    const isSafePos = (x, z) =>
+      !rings?.length || rings.some((r) => inside({ x, z }, r));
+
+    // Keep all ambient dragon boats clear of the player's cruise dragon boat and each other
+    for (let pass = 0; pass < 3; pass++) {
+      if (ext) {
+        for (const b of this.boats) {
+          if (!boatsOverlap(ext, b, 2.2)) continue;
+          const dx = b.x - ext.x;
+          const dz = b.z - ext.z;
+          const lat = -dx * ext.tz + dz * ext.tx;
+          const sign = lat >= 0 ? 1 : -1;
+          const push = Math.max(1.5, 6.2 - Math.abs(lat));
+          const candX = b.x + -ext.tz * sign * push;
+          const candZ = b.z + ext.tx * sign * push;
+          const nudged = nudgePointClearOfPiers({ x: candX, z: candZ }, this.piers);
+          if (isSafePos(nudged.x, nudged.z)) {
+            b.x = nudged.x;
+            b.z = nudged.z;
+          }
+        }
+      }
+
+      for (let i = 0; i < this.boats.length; i++) {
+        const a = this.boats[i];
+        for (let j = i + 1; j < this.boats.length; j++) {
+          const b = this.boats[j];
+          if (!boatsOverlap(a, b, 1.8)) continue;
+          let dx = b.x - a.x;
+          let dz = b.z - a.z;
+          let d = Math.hypot(dx, dz);
+          if (d < 0.01) {
+            dx = -a.tz;
+            dz = a.tx;
+            d = 1;
+          }
+          const nx = dx / d;
+          const nz = dz / d;
+          const shift = 2.6;
+          const bCand = nudgePointClearOfPiers(
+            { x: b.x + nx * shift, z: b.z + nz * shift },
+            this.piers,
+          );
+          if (isSafePos(bCand.x, bCand.z)) {
+            b.x = bCand.x;
+            b.z = bCand.z;
+          }
+          const aCand = nudgePointClearOfPiers(
+            { x: a.x - nx * shift, z: a.z - nz * shift },
+            this.piers,
+          );
+          if (isSafePos(aCand.x, aCand.z)) {
+            a.x = aCand.x;
+            a.z = aCand.z;
+          }
+        }
+      }
+    }
   }
 
   update(time = 0, position = null) {
@@ -345,11 +464,15 @@ export class CaHueBoats {
       boat.z = pose.z;
       boat.tx = fwdX;
       boat.tz = fwdZ;
+    }
 
+    this.resolveBoatCollisions();
+
+    for (const boat of this.boats) {
       if (hasPos) {
         const cullDist = this.world.quality?.mobile ? 320 : 440;
-        const dx = pose.x - position.x;
-        const dz = pose.z - position.z;
+        const dx = boat.x - position.x;
+        const dz = boat.z - position.z;
         const visible = dx * dx + dz * dz <= cullDist * cullDist;
         boat.mesh.visible = visible;
         if (!visible) {
@@ -361,11 +484,11 @@ export class CaHueBoats {
       }
 
       const y =
-        this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
+        this.world.riverSurfaceAt?.(boat.x, boat.z, time) ??
         0.03 + Math.sin(time * 1.5 + boat.phase) * 0.04;
       boat.y = y;
-      boat.mesh.position.set(pose.x, y, pose.z);
-      boat.mesh.rotation.y = Math.atan2(fwdX, fwdZ);
+      boat.mesh.position.set(boat.x, y, boat.z);
+      boat.mesh.rotation.y = Math.atan2(boat.tx, boat.tz);
       boat.mesh.rotation.z = Math.sin(time * 1.1 + boat.phase) * 0.025;
       boat.mesh.rotation.x = Math.cos(time * 0.9 + boat.phase) * 0.015;
     }

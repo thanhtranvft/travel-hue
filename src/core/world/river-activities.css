@@ -222,6 +222,12 @@
   color: #1f1708;
 }
 
+.river-btn-secondary {
+  background: rgba(145, 72, 185, 0.28);
+  border-color: rgba(232, 178, 255, 0.45);
+  color: #f9ecff;
+}
+
 .river-btn-ghost {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
@@ -344,7 +350,9 @@
 }
 
 body[data-river-activity="fishing"] .touch-controls,
-body[data-river-activity="fishing"] .ride-panel {
+body[data-river-activity="fishing"] .ride-panel,
+body[data-river-activity="cruise"] .touch-controls,
+body[data-river-activity="cruise"] .ride-panel {
   opacity: 0;
   pointer-events: none;
 }

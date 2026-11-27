@@ -603,7 +603,6 @@
   cursor: pointer;
 }
 
-.utility-buttons #master-audio-toggle[aria-pressed="false"],
 .utility-buttons #audio-toggle[aria-pressed="false"] {
   background: #5b302a;
   border-color: #d89b7880;

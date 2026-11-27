@@ -38,7 +38,7 @@ export function handleRiverRewardAction(p, message, room, now = Date.now()) {
     p.lastFishRewardAt = now;
     p.fishCount = (p.fishCount || 0) + 1;
   } else {
-    if (p.stance !== "boat") return false;
+    if (p.stance !== "boat" && p.stance !== "cruise") return false;
     if (now - (p.lastBoatRewardAt || 0) < 6000) return false;
     points = BOAT_CRUISE_REWARD.points;
     label = BOAT_CRUISE_REWARD.title;

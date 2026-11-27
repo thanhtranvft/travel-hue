@@ -1685,6 +1685,9 @@ export class GeographicWorld {
     if (this.fountainPark?.pedalDock?.isDockBlocked?.(x, z, activeBoatIndex)) {
       return false;
     }
+    if (this.fireflyPark?.dragonDock?.isDockBlocked?.(x, z, activeBoatIndex === -2)) {
+      return false;
+    }
     if (this.boardwalkView?.mainPoints?.length) {
       const hit = nearestPoint({ x, z }, this.boardwalkView.mainPoints);
       if (hit.distance < (this.boardwalkView.halfWidth || 2.1) + 2.2) {
@@ -1697,6 +1700,50 @@ export class GeographicWorld {
     if (
       this.truongTienBridge?.mooredBoats?.some(
         (b) => Math.hypot(x - b.x, z - b.z) < 5.6,
+      )
+    ) {
+      return false;
+    }
+    return true;
+  }
+  canCruiseAt(x, z) {
+    if (!regionContains(this.region, x, z)) return false;
+    if (
+      x < this.bounds.minX ||
+      x > this.bounds.maxX ||
+      z < this.bounds.minZ ||
+      z > this.bounds.maxZ
+    ) {
+      return false;
+    }
+    const activeRiver = this.riverRings || getRiver();
+    if (!activeRiver?.length) return false;
+    const buf = 2.8;
+    const pts = [
+      { x, z },
+      { x: x + buf, z },
+      { x: x - buf, z },
+      { x, z: z + buf },
+      { x, z: z - buf },
+    ];
+    for (const pt of pts) {
+      if (!activeRiver.some((r) => inside(pt, r))) return false;
+    }
+    if (this.biaPark?.isWaterBlocked?.(x, z, 2.8)) return false;
+    if (this.fireflyPark?.isWaterBlocked?.(x, z, 2.8)) return false;
+    if (this.phuXuanParkWalk?.isWaterBlocked?.(x, z, 2.8)) return false;
+    if (this.fountainPark?.pedalDock?.isDockBlocked?.(x, z, -1)) return false;
+    if (this.fireflyPark?.dragonDock?.isDockBlocked?.(x, z, true)) return false;
+    if (this.boardwalkView?.mainPoints?.length) {
+      const hit = nearestPoint({ x, z }, this.boardwalkView.mainPoints);
+      if (hit.distance < (this.boardwalkView.halfWidth || 2.1) + 3.0) {
+        return false;
+      }
+    }
+    if (this.hitsBridgePier(x, z, 3.2)) return false;
+    if (
+      this.truongTienBridge?.mooredBoats?.some(
+        (b) => Math.hypot(x - b.x, z - b.z) < 7.0,
       )
     ) {
       return false;

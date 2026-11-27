@@ -202,16 +202,17 @@ export function initializeCaptureShareUI(game, audio) {
   };
 
   const syncAudioBanner = () => {
+    const soundReady = Boolean(audio?.enabled && audio?.ctx?.state === "running");
     const soundOn = Boolean(audio?.enabled);
     const musicOn = Boolean(audio?.musicEnabled);
     audioBox.classList.toggle("muted", !soundOn);
-    enableAudioBtn.hidden = soundOn;
-    if (!soundOn) {
+    enableAudioBtn.hidden = soundReady;
+    if (!soundOn || !soundReady) {
       audioText.textContent =
-        "🔇 Âm thanh game đang tắt — clip quay sẽ không có tiếng. Bật âm thanh để thu trọn nhạc & hiệu ứng game (không thu mic).";
+        "🔊 Chạm vào game hoặc nút bên cạnh để kích hoạt âm thanh & Ca Huế khi quay clip (không thu mic).";
     } else if (!musicOn) {
       audioText.textContent =
-        "🔊 Đang thu hiệu ứng & tiếng xe (Nhạc nền ♫ đang tắt) · 🎙️ Không xin quyền micro, không thu lời nói của bạn.";
+        "🔊 Đang thu hiệu ứng & Ca Huế (Nhạc nền ♫ đang tắt) · 🎙️ Không xin quyền micro, không thu lời nói của bạn.";
     } else {
       audioText.textContent =
         "🔊 Thu trọn nhạc nền, Ca Huế & âm thanh game · 🎙️ Không xin quyền micro, không thu lời nói của bạn.";
@@ -346,15 +347,10 @@ export function initializeCaptureShareUI(game, audio) {
   enableAudioBtn.addEventListener("click", async () => {
     try {
       await audio?.setEnabled?.(true);
-      document
-        .querySelector("#master-audio-toggle")
-        ?.setAttribute("aria-pressed", "true");
-      const masterBtn = document.querySelector("#master-audio-toggle");
-      if (masterBtn) masterBtn.textContent = "🔊";
       syncAudioBanner();
-      setStatus("Đã bật âm thanh game.");
+      setStatus("Đã kích hoạt âm thanh game.");
     } catch {
-      setStatus("Chưa bật được âm thanh. Hãy chạm nút 🔊 trên góc phải.");
+      setStatus("Chưa bật được âm thanh. Hãy chạm màn hình hoặc nút ♫ trên góc phải.");
     }
   });
 
