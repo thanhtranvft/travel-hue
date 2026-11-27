@@ -1,3 +1,4 @@
+import { addNpcFace } from "./NpcFace.js";
 import * as THREE from "three";
 
 const _texCache = new Map();
@@ -298,6 +299,7 @@ function addOccupant(parent, { x, y, z, yaw = 0, seated = true, shirt = "#e6b83a
   const headY = seated ? 0.82 : 1.36;
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 8, 6), skinMat);
   head.position.y = headY;
+  addNpcFace(head, .135);
   const hairCap = new THREE.Mesh(
     new THREE.SphereGeometry(0.142, 8, 5, 0, Math.PI * 2, 0, Math.PI * 0.56),
     hairMat,
@@ -1049,6 +1051,7 @@ function buildCruisePerformer({
 
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.135, 10, 8), skinMat);
   head.position.y = 0.1;
+  addNpcFace(head, .135);
   const hairCap = new THREE.Mesh(
     new THREE.SphereGeometry(0.142, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.58),
     hairMat,

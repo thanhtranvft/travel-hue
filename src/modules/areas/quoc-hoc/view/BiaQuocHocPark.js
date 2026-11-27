@@ -1,3 +1,4 @@
+import { addNpcFace } from "../../../../core/world/NpcFace.js";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
@@ -955,6 +956,7 @@ export function createBiaQuocHocPark(world, site, heading) {
     mat("#f6d2b5", 0.75),
   );
   vHead.position.set(0, 1.34, 0);
+  addNpcFace(vHead, .18);
   const nonLa = new THREE.Mesh(
     new THREE.ConeGeometry(0.32, 0.2, 14),
     mat("#e5cf95", 0.82),

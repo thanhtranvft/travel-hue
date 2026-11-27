@@ -1,3 +1,4 @@
+import { addNpcFace } from "../../../../core/world/NpcFace.js";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { inside } from "../../../../core/shared/geography/geometry.js";
@@ -1019,6 +1020,7 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
       mat("#f3ceb0", 0.74),
     );
     nHead.position.set(0, 1.29, 0);
+    addNpcFace(nHead, .175);
     npc.add(nHead);
     if (hat === "non-la") {
       const cone = new THREE.Mesh(

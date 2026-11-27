@@ -1,3 +1,4 @@
+import { addNpcFace } from "../../../../core/world/NpcFace.js";
 import * as THREE from "three";
 import { inside } from "../../../../core/shared/geography/geometry.js";
 import { box, mat } from "../../../../core/shared/architecture/shared.js";
@@ -1343,6 +1344,7 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
     mat("#f6d2b5", 0.75),
   );
   nHead.position.set(0, 1.31, 0);
+  addNpcFace(nHead, .18);
   const nHat = new THREE.Mesh(
     new THREE.ConeGeometry(0.31, 0.19, 14),
     mat("#e5cf95", 0.82),
