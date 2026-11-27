@@ -1092,6 +1092,7 @@ export function createBiaQuocHocPark(world, site, heading) {
   // 5. VIBRANT CÁ CHÉP & CÁ KOI SHOAL SWIMMING ALONG BIA QUỐC HỌC RIVERFRONT
   const fishGroup = new THREE.Group();
   fishGroup.name = "bia-river-carp-koi-shoal";
+  fishGroup.userData.dynamicAnimated = true;
   const riverFishSwimmers = [];
   const rippleMat = new THREE.MeshBasicMaterial({
     color: "#d9fbff",
@@ -1242,10 +1243,21 @@ export function createBiaQuocHocPark(world, site, heading) {
     biaDaCau.update,
   );
 
+  const parkCenter = toWorld(0, -15);
   let fishingActive = false;
   let fishingAnchorLx = stallLx;
 
-  const update = (time = 0) => {
+  const update = (time = 0, position = null) => {
+    if (
+      !fishingActive &&
+      position &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.z) &&
+      (position.x - parkCenter.x) ** 2 + (position.z - parkCenter.z) ** 2 >
+        195 * 195
+    ) {
+      return;
+    }
     const paceMul = fishingActive ? 1.35 : 0.88;
     const baseY = fishingActive ? 0.01 : -0.025;
     for (let i = 0; i < riverFishSwimmers.length; i++) {
@@ -1339,6 +1351,7 @@ export function createBiaQuocHocPark(world, site, heading) {
 
   return {
     group,
+    animatedObjects: [fishGroup],
     toLocal,
     toWorld,
     fishingSpot,

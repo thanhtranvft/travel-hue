@@ -18,14 +18,21 @@ export async function loadMobileTrees(world) {
     height = bounds.max.y - bounds.min.y,
     center = bounds.getCenter(new THREE.Vector3()),
     parts = [],
-    capacity = 42;
+    isMobile = Boolean(world.quality?.mobile),
+    capacity = isMobile ? 42 : 76,
+    nearRadiusSq = (isMobile ? 115 : 150) ** 2,
+    farRadiusSq = (isMobile ? 700 : 950) ** 2,
+    castShadow = Boolean(world.quality?.shadows);
+
   template.traverse((o) => {
     if (!o.isMesh) return;
     const mesh = new THREE.InstancedMesh(o.geometry, o.material, capacity);
     mesh.frustumCulled = false;
+    mesh.castShadow = castShadow;
     world.scene.add(mesh);
     parts.push({ mesh, local: inverse.clone().multiply(o.matrixWorld) });
   });
+
   const trunkGeometry = new THREE.CylinderGeometry(0.12, 0.2, 2, 5);
   trunkGeometry.translate(0, 1, 0);
   const crowns = [];
@@ -51,24 +58,34 @@ export async function loadMobileTrees(world) {
       world.treePositions.length,
     );
   farTrunks.frustumCulled = farCrowns.frustumCulled = false;
+  farTrunks.computeBoundingSphere();
+  farCrowns.computeBoundingSphere();
   world.scene.add(farTrunks, farCrowns);
+
   let last = { x: Infinity, z: Infinity };
   const dummy = new THREE.Object3D(),
     matrix = new THREE.Matrix4();
   world.mobileTrees = {
     update(position) {
-      if (Math.hypot(position.x - last.x, position.z - last.z) < 8) return;
+      const moveDx = position.x - last.x;
+      const moveDz = position.z - last.z;
+      if (moveDx * moveDx + moveDz * moveDz < 64) return;
       last = { x: position.x, z: position.z };
-      const ordered = world.treePositions
-          .map((p, i) => ({
-            p,
-            i,
-            d: (p.x - position.x) ** 2 + (p.z - position.z) ** 2,
-          }))
-          .filter((p) => p.d < 700 ** 2)
-          .sort((a, b) => a.d - b.d),
-        near = ordered.filter((p) => p.d < 115 ** 2).slice(0, capacity),
-        nearIds = new Set(near.map((p) => p.i));
+      const ordered = [];
+      for (let i = 0; i < world.treePositions.length; i++) {
+        const p = world.treePositions[i];
+        const dx = p.x - position.x;
+        const dz = p.z - position.z;
+        const d = dx * dx + dz * dz;
+        if (d < farRadiusSq) ordered.push({ p, i, d });
+      }
+      ordered.sort((a, b) => a.d - b.d);
+      const near = [];
+      for (let k = 0; k < ordered.length && near.length < capacity; k++) {
+        if (ordered[k].d >= nearRadiusSq) break;
+        near.push(ordered[k]);
+      }
+      const nearIds = new Set(near.map((p) => p.i));
       for (const [j, { p, i }] of near.entries()) {
         const scale = (i % 5 === 0 ? 3 : 6 + (i % 6)) / height;
         dummy.position.set(

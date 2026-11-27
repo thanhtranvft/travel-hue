@@ -138,6 +138,10 @@ export class LivingGrass {
       world.dongDaCorridor,
     ].filter((b) => b && typeof b.blocksGrass === "function");
 
+    if (!this._parkingBounds && world.parkingAreas?.length) {
+      this._parkingBounds = world.parkingAreas.map(ringBounds);
+    }
+
     this._job = {
       cx: position.x,
       cz: position.z,
@@ -150,26 +154,43 @@ export class LivingGrass {
       parks: filterBoxes(world.parkPolygons),
       rivers: filterBoxes(this._riverBounds),
       clearances:
-        world.entranceClearances?.filter(
-          (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 20,
-        ) || [],
+        world.entranceClearances
+          ?.filter(
+            (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 20,
+          )
+          .map((g) => ({
+            x: g.x,
+            z: g.z,
+            halfW: g.width / 2,
+            cos: Math.cos(g.heading),
+            sin: Math.sin(g.heading),
+          })) || [],
       gates:
-        world.schoolGates?.filter(
-          (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 22,
-        ) || [],
-      parking: world.parkingAreas || [],
+        world.schoolGates
+          ?.filter(
+            (g) => Math.hypot(g.x - position.x, g.z - position.z) <= half + 22,
+          )
+          .map((g) => ({
+            x: g.x,
+            z: g.z,
+            cos: Math.cos(g.heading),
+            sin: Math.sin(g.heading),
+          })) || [],
+      parking: filterBoxes(this._parkingBounds),
       playgrounds:
-        world.playgroundAreas?.filter(
-          (a) =>
-            Math.hypot(a.x - position.x, a.z - position.z) <=
-            half + (a.radius || 0) + 1,
-        ) || [],
+        world.playgroundAreas
+          ?.filter(
+            (a) =>
+              Math.hypot(a.x - position.x, a.z - position.z) <=
+              half + (a.radius || 0) + 1,
+          )
+          .map((a) => ({ x: a.x, z: a.z, rSq: (a.radius + 0.2) ** 2 })) || [],
       blockers,
     };
   }
   update(position) {
     if (
-      Math.hypot(position.x - this.center.x, position.z - this.center.z) >= 20
+      Math.hypot(position.x - this.center.x, position.z - this.center.z) >= 22
     ) {
       this.center = { x: position.x, z: position.z };
       this._startJob(position);
@@ -179,7 +200,7 @@ export class LivingGrass {
 
     const world = this.world;
     const isInitial = this.mesh.count === 0;
-    const batchLimit = isInitial ? Math.min(job.maxCount, 4500) : 1800;
+    const batchLimit = isInitial ? Math.min(job.maxCount, 4000) : 1100;
     const endI = Math.min(job.maxCount, job.i + batchLimit);
     const {
       cx,
@@ -242,20 +263,29 @@ export class LivingGrass {
         const g = clearances[j];
         const dx = px - g.x,
           dz = pz - g.z,
-          lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
-          forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
-        if (Math.abs(lateral) < g.width / 2 && forward > -15 && forward < 5) {
+          lateral = dx * g.cos - dz * g.sin,
+          forward = dx * g.sin + dz * g.cos;
+        if (Math.abs(lateral) < g.halfW && forward > -15 && forward < 5) {
           skip = true;
           break;
         }
       }
       if (skip) continue;
 
-      if (parking.length && parking.some((r) => inside(p, r))) continue;
+      for (let j = 0; j < parking.length; j++) {
+        const b = parking[j];
+        if (px > b.minX && px < b.maxX && pz > b.minZ && pz < b.maxZ && inside(p, b.points)) {
+          skip = true;
+          break;
+        }
+      }
+      if (skip) continue;
 
       for (let j = 0; j < playgrounds.length; j++) {
         const a = playgrounds[j];
-        if (Math.hypot(px - a.x, pz - a.z) < a.radius + 0.2) {
+        const dx = px - a.x,
+          dz = pz - a.z;
+        if (dx * dx + dz * dz < a.rSq) {
           skip = true;
           break;
         }
@@ -266,8 +296,8 @@ export class LivingGrass {
         const g = gates[j];
         const dx = px - g.x,
           dz = pz - g.z,
-          lateral = dx * Math.cos(g.heading) - dz * Math.sin(g.heading),
-          forward = dx * Math.sin(g.heading) + dz * Math.cos(g.heading);
+          lateral = dx * g.cos - dz * g.sin,
+          forward = dx * g.sin + dz * g.cos;
         if (Math.abs(lateral) < 5 && forward > -18 && forward < 4) {
           skip = true;
           break;

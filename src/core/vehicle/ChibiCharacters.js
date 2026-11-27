@@ -565,7 +565,7 @@ function buildFishingRod() {
   };
 }
 
-function buildHumanRig(avatarId) {
+function buildHumanRig(avatarId, { includeFishingRod = true } = {}) {
   const isGirl = avatarId === "girl";
   const root = new THREE.Group();
   root.name = `chibi-${avatarId}`;
@@ -686,6 +686,8 @@ function buildHumanRig(avatarId) {
     1,
     0.45,
   );
+  scarfTailL.userData.keepSeparate = true;
+  scarfTailR.userData.keepSeparate = true;
 
   // Backpack
   buildBackpack(torsoPivot, isGirl ? "#df5f86" : "#2260b8");
@@ -870,10 +872,13 @@ function buildHumanRig(avatarId) {
   const leftLeg = buildLeg(-1);
   const rightLeg = buildLeg(1);
 
-  const fishingRod = buildFishingRod();
-  fishingRod.group.position.set(0, -0.13, 0.02);
-  fishingRod.group.rotation.set(0.45, 0, 0);
-  rightArm.forearm.add(fishingRod.group);
+  let fishingRod = null;
+  if (includeFishingRod) {
+    fishingRod = buildFishingRod();
+    fishingRod.group.position.set(0, -0.13, 0.02);
+    fishingRod.group.rotation.set(0.45, 0, 0);
+    rightArm.forearm.add(fishingRod.group);
+  }
 
   return {
     id: avatarId,
@@ -896,7 +901,7 @@ function buildHumanRig(avatarId) {
   };
 }
 
-function buildAnimalRig(avatarId) {
+function buildAnimalRig(avatarId, { includeFishingRod = true } = {}) {
   const root = new THREE.Group();
   root.name = `chibi-${avatarId}`;
 
@@ -1017,6 +1022,7 @@ function buildAnimalRig(avatarId) {
     0.05,
     0.30,
   );
+  bell.userData.keepSeparate = true;
 
   // Cute Articulated Head Pivot attached cleanly to neck front
   const headPivot = new THREE.Group();
@@ -1145,10 +1151,13 @@ function buildAnimalRig(avatarId) {
   const backLeftLeg = makeAnimalLimb(-0.12, -0.15, 0.25);
   const backRightLeg = makeAnimalLimb(0.12, -0.15, 0.25);
 
-  const fishingRod = buildFishingRod();
-  fishingRod.group.position.set(0, -0.18, 0.04);
-  fishingRod.group.rotation.set(0.35, 0, 0);
-  frontRightLeg.add(fishingRod.group);
+  let fishingRod = null;
+  if (includeFishingRod) {
+    fishingRod = buildFishingRod();
+    fishingRod.group.position.set(0, -0.18, 0.04);
+    fishingRod.group.rotation.set(0.35, 0, 0);
+    frontRightLeg.add(fishingRod.group);
+  }
 
   return {
     id: avatarId,
@@ -1171,14 +1180,19 @@ function buildAnimalRig(avatarId) {
   };
 }
 
-export function buildChibiActor(avatarId = "boy", { includeBike = true } = {}) {
+export function buildChibiActor(
+  avatarId = "boy",
+  { includeBike = true, includeFishingRod = true } = {},
+) {
   const id = cleanAvatarId(avatarId);
   const meta = getAvatarMeta(id);
   const actor = new THREE.Group();
   actor.name = "chibi-actor";
 
   const character =
-    meta.kind === "human" ? buildHumanRig(id) : buildAnimalRig(id);
+    meta.kind === "human"
+      ? buildHumanRig(id, { includeFishingRod })
+      : buildAnimalRig(id, { includeFishingRod });
   const bike = includeBike ? buildChibiBicycle(meta.bikeColor) : null;
   if (bike) {
     bike.group.visible = false;

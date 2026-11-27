@@ -99,6 +99,7 @@ export function createSeatedBenchCouple({
 } = {}) {
   const group = new THREE.Group();
   group.name = "bench-couple";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, benchBaseY + seatDeltaY, z);
   group.rotation.y = yaw;
 
@@ -170,6 +171,7 @@ export function createSeatedBenchCouple({
 export function createFishingAnglerRow(positions = []) {
   const group = new THREE.Group();
   group.name = "fishing-angler-row";
+  group.userData.dynamicAnimated = true;
 
   const rodBaseGeo = markSharedResource(new THREE.CylinderGeometry(0.011, 0.018, 1.55, 6));
   rodBaseGeo.translate(0, 0.775, 0);
@@ -416,6 +418,7 @@ export function createKiteFlyingGroup({
 } = {}) {
   const group = new THREE.Group();
   group.name = "kite-flying-group";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, y, z);
   group.rotation.y = yaw;
 
@@ -466,6 +469,7 @@ export function createKiteFlyingGroup({
     for (let t = 0; t < 4; t++) {
       const seg = new THREE.Mesh(sharedBox(0.085, 0.012, 0.32), tailMat);
       seg.position.set(0, -0.02, 0.64 + t * 0.34);
+      seg.userData.keepSeparate = true;
       kite.add(seg);
       tails.push(seg);
     }
@@ -528,6 +532,7 @@ export function createGuitarCircleGroup({
 } = {}) {
   const group = new THREE.Group();
   group.name = "guitar-circle-group";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, y, z);
   group.rotation.y = yaw;
 
@@ -655,6 +660,7 @@ export function createBadmintonGroup({
 } = {}) {
   const group = new THREE.Group();
   group.name = "badminton-group";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, y, z);
   group.rotation.y = yaw;
 
@@ -756,6 +762,7 @@ export function createDaCauGroup({
 } = {}) {
   const group = new THREE.Group();
   group.name = "da-cau-group";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, y, z);
 
   const count = 3;
@@ -843,6 +850,7 @@ export function createDaCauGroup({
 export function createPedalDockCrowd(specs = []) {
   const group = new THREE.Group();
   group.name = "pedal-dock-crowd";
+  group.userData.dynamicAnimated = true;
 
   const camBodyMat = sharedMat("#22262b", 0.45, 0.5);
   const camLensMat = sharedMat("#82c9e6", 0.2, 0.7);
@@ -923,6 +931,7 @@ export function createSittingCircleGroup({
 } = {}) {
   const group = new THREE.Group();
   group.name = kind === "family" ? "family-sitting-circle" : "youth-sitting-circle";
+  group.userData.dynamicAnimated = true;
   group.position.set(x, y, z);
   group.rotation.y = yaw;
 

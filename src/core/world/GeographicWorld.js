@@ -1388,14 +1388,14 @@ export class GeographicWorld {
       this.region?.id === "truong-tien" ? 3.2 : 3,
     );
     this.sun.castShadow = Boolean(this.quality?.shadows);
-    this.sun.shadow.mapSize.set(2048, 2048);
+    this.sun.shadow.mapSize.set(1536, 1536);
     Object.assign(this.sun.shadow.camera, {
-      left: -110,
-      right: 110,
-      top: 110,
-      bottom: -110,
+      left: -95,
+      right: 95,
+      top: 95,
+      bottom: -95,
       near: 1,
-      far: 400,
+      far: 380,
     });
     this.sun.shadow.bias = -0.0004;
     this.sun.shadow.normalBias = 0.03;
@@ -1884,12 +1884,12 @@ export class GeographicWorld {
     if (this.waterMaterial) this.waterMaterial.userData.time.value = time;
     this.poeticSky?.update?.(time, position);
     this.truongTienBridge?.update?.(time);
-    this.caHueBoats?.update?.(time);
-    this.ambientSwanBoats?.update?.(time);
-    this.biaPark?.update?.(time);
-    this.fireflyPark?.update?.(time);
-    this.fountainPark?.update?.(time);
-    this.phuXuanParkWalk?.update?.(time);
+    this.caHueBoats?.update?.(time, position);
+    this.ambientSwanBoats?.update?.(time, position);
+    this.biaPark?.update?.(time, position);
+    this.fireflyPark?.update?.(time, position);
+    this.fountainPark?.update?.(time, position);
+    this.phuXuanParkWalk?.update?.(time, position);
     this.northBankVista?.update?.(time);
     this.youthPlayground?.update(time);
     this.ubndPalace?.update(time);

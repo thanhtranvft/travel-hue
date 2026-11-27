@@ -1438,8 +1438,18 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
   world.scene.add(group);
   world.cameraObstacles.push(copingMesh);
 
+  const parkCenter = toWorld(295, 0);
   const animatedObjects = [jets, foamRing, ...boats];
-  const update = (time) => {
+  const update = (time, position = null) => {
+    if (
+      position &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.z) &&
+      (position.x - parkCenter.x) ** 2 + (position.z - parkCenter.z) ** 2 >
+        210 * 210
+    ) {
+      return;
+    }
     for (let i = 0; i < jetSpecs.length; i++) {
       const j = jetSpecs[i];
       const h = j.baseH + Math.sin(time * 4.2 + j.phase) * j.amp;

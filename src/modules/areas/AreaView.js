@@ -12,14 +12,14 @@ export async function createAreaView(quality) {
   world.quality = quality;
   world.region = currentRegion;
   world.build();
-  if (quality.mobile) optimizeMobileStaticScene(world);
+  optimizeMobileStaticScene(world);
   scene.traverse((o) => {
     if (o.isSprite) o.visible = false;
   });
   const traffic = new GeographicTraffic(scene, world);
-  if (quality.mobile) world.mobileCrowd = new MobileCrowd(world, traffic);
+  world.mobileCrowd = new MobileCrowd(world, traffic);
   const assets = await Promise.allSettled([
-    quality.mobile ? loadMobileTrees(world) : world.loadDetailedTrees(),
+    loadMobileTrees(world),
     quality.mobile ? loadMobileCars(traffic) : traffic.loadDetailedCars(),
   ]);
   return {

@@ -129,26 +129,26 @@ function sampleLoop(loop, s) {
   const { pts, arc, total } = loop;
   const target = ((s % total) + total) % total;
   const n = pts.length;
-  for (let i = 0; i < n; i++) {
-    const s0 = arc[i];
-    const s1 = arc[i + 1];
-    if (target <= s1 || i === n - 1) {
-      const a = pts[i];
-      const b = pts[(i + 1) % n];
-      const span = s1 - s0 || 1;
-      const t = Math.max(0, Math.min(1, (target - s0) / span));
-      const dx = b.x - a.x;
-      const dz = b.z - a.z;
-      const len = Math.hypot(dx, dz) || 1;
-      return {
-        x: a.x + dx * t,
-        z: a.z + dz * t,
-        tx: dx / len,
-        tz: dz / len,
-      };
-    }
+  let lo = 0;
+  let hi = n - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (arc[mid + 1] < target) lo = mid + 1;
+    else hi = mid;
   }
-  return { x: pts[0].x, z: pts[0].z, tx: 1, tz: 0 };
+  const a = pts[lo];
+  const b = pts[(lo + 1) % n];
+  const span = arc[lo + 1] - arc[lo] || 1;
+  const t = Math.max(0, Math.min(1, (target - arc[lo]) / span));
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  return {
+    x: a.x + dx * t,
+    z: a.z + dz * t,
+    tx: dx / len,
+    tz: dz / len,
+  };
 }
 
 export class AmbientSwanBoats {
@@ -176,7 +176,7 @@ export class AmbientSwanBoats {
       const mesh = createPedalBoat(0, 0, 0, 0, color);
       mesh.name = `ambient-swan-boat-${idx}`;
 
-      const rig = buildChibiActor(avatarId, { includeBike: false });
+      const rig = buildChibiActor(avatarId, { includeBike: false, includeFishingRod: false });
       rig.actor.position.set(idx % 2 === 0 ? -0.26 : 0.26, 0, 0.02);
       mesh.add(rig.actor);
 
@@ -184,7 +184,7 @@ export class AmbientSwanBoats {
       let companionRig = null;
       if (idx % 3 === 0) {
         const compAvatar = AVATAR_IDS[(idx + 2) % AVATAR_IDS.length];
-        companionRig = buildChibiActor(compAvatar, { includeBike: false });
+        companionRig = buildChibiActor(compAvatar, { includeBike: false, includeFishingRod: false });
         companionRig.actor.position.set(idx % 2 === 0 ? 0.26 : -0.26, 0, 0.02);
         mesh.add(companionRig.actor);
       }
@@ -222,7 +222,8 @@ export class AmbientSwanBoats {
     this.update(0);
   }
 
-  update(time = 0) {
+  update(time = 0, position = null) {
+    const hasPos = Boolean(position && Number.isFinite(position.x) && Number.isFinite(position.z));
     for (const boat of this.boats) {
       const loop = this.loops[boat.loopIndex];
       const dist = boat.startU * loop.total + time * boat.speed;
@@ -230,19 +231,35 @@ export class AmbientSwanBoats {
       const dirSign = boat.speed >= 0 ? 1 : -1;
       const fwdX = pose.tx * dirSign;
       const fwdZ = pose.tz * dirSign;
-      const y =
-        this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
-        0.03 + Math.sin(time * 1.6 + boat.phase) * 0.04;
 
       boat.x = pose.x;
-      boat.y = y;
       boat.z = pose.z;
       boat.tx = fwdX;
       boat.tz = fwdZ;
+
+      let distSq = 0;
+      if (hasPos) {
+        const cullDist = this.world.quality?.mobile ? 210 : 270;
+        const dx = pose.x - position.x;
+        const dz = pose.z - position.z;
+        distSq = dx * dx + dz * dz;
+        const visible = distSq <= cullDist * cullDist;
+        boat.mesh.visible = visible;
+        if (!visible) continue;
+      } else {
+        boat.mesh.visible = true;
+      }
+
+      const y =
+        this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
+        0.03 + Math.sin(time * 1.6 + boat.phase) * 0.04;
+      boat.y = y;
       boat.mesh.position.set(pose.x, y, pose.z);
       boat.mesh.rotation.y = Math.atan2(fwdX, fwdZ);
       boat.mesh.rotation.z = Math.sin(time * 1.5 + boat.phase) * 0.038;
       boat.mesh.rotation.x = Math.cos(time * 1.2 + boat.phase) * 0.018;
+
+      if (hasPos && distSq > 170 * 170) continue;
 
       const pedalPhase = time * Math.abs(boat.speed) * 2.9 + boat.phase;
       const steerWave = Math.sin(time * 0.6 + boat.phase) * 0.14;

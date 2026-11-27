@@ -286,18 +286,34 @@ export class CaHueBoats {
     };
   }
 
-  update(time = 0) {
+  update(time = 0, position = null) {
+    const hasPos = Boolean(position && Number.isFinite(position.x) && Number.isFinite(position.z));
     for (const boat of this.boats) {
       const dist = boat.startU * this.loop.total + time * this.speed;
       const pose = this.sampleSafeBoatPose(dist, boat.laneOffset);
-      const y =
-        this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
-        0.03 + Math.sin(time * 1.5 + boat.phase) * 0.04;
       boat.x = pose.x;
-      boat.y = y;
       boat.z = pose.z;
       boat.tx = pose.tx;
       boat.tz = pose.tz;
+
+      if (hasPos) {
+        const cullDist = this.world.quality?.mobile ? 320 : 440;
+        const dx = pose.x - position.x;
+        const dz = pose.z - position.z;
+        const visible = dx * dx + dz * dz <= cullDist * cullDist;
+        boat.mesh.visible = visible;
+        if (!visible) {
+          boat.y = 0.03;
+          continue;
+        }
+      } else {
+        boat.mesh.visible = true;
+      }
+
+      const y =
+        this.world.riverSurfaceAt?.(pose.x, pose.z, time) ??
+        0.03 + Math.sin(time * 1.5 + boat.phase) * 0.04;
+      boat.y = y;
       boat.mesh.position.set(pose.x, y, pose.z);
       boat.mesh.rotation.y = Math.atan2(pose.tx, pose.tz);
       boat.mesh.rotation.z = Math.sin(time * 1.1 + boat.phase) * 0.025;

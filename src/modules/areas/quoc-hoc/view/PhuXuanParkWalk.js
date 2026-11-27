@@ -1202,7 +1202,17 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   world.scene.add(group);
   world.cameraObstacles.push(lawnMesh);
 
-  const update = (time = 0) => {
+  const parkCenter = toWorld(452, 0);
+  const update = (time = 0, position = null) => {
+    if (
+      position &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.z) &&
+      (position.x - parkCenter.x) ** 2 + (position.z - parkCenter.z) ** 2 >
+        210 * 210
+    ) {
+      return;
+    }
     for (let i = 0; i < lifeAnimators.length; i++) {
       lifeAnimators[i](time);
     }

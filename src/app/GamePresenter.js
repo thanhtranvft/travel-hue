@@ -608,10 +608,8 @@ export class GamePresenter {
       tierId: activeBoost?.tier || "10",
       speed: this.bike.motion.speed,
     });
-    if (this.quality.mobile) {
-      updateMobileStaticScene(this.world, this.bike.position);
-      this.world.mobileCrowd?.update(this.bike.position);
-    }
+    updateMobileStaticScene(this.world, this.bike.position);
+    this.world.mobileCrowd?.update(this.bike.position);
     if (this.impact.visible) {
       const age = 1 - this.stun;
       this.impact.scale.setScalar(1 + age * 1.4);

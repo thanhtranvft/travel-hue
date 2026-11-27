@@ -858,8 +858,18 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
   world.scene.add(group);
   world.cameraObstacles.push(mainTrunk);
 
+  const parkCenter = toWorld(138, 0);
   const animatedObjects = [ribbons, fireflies];
-  const update = (time) => {
+  const update = (time, position = null) => {
+    if (
+      position &&
+      Number.isFinite(position.x) &&
+      Number.isFinite(position.z) &&
+      (position.x - parkCenter.x) ** 2 + (position.z - parkCenter.z) ** 2 >
+        210 * 210
+    ) {
+      return;
+    }
     for (let i = 0; i < ribbonCount; i++) {
       const r = ribbonData[i];
       const sway = Math.sin(time * 1.45 + r.phase) * 0.14;
