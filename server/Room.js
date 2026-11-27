@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { boatHull, boatHullsOverlap } from "../src/core/world/boatCollision.js";
 import {
   cleanAvatarId,
   cleanBoatIndex,
@@ -703,6 +704,19 @@ export class Room {
       !this.contains(this.areas.get(p.region).region, m.x, m.z)
     ) {
       return this.send(p, { type: "correct", player: this.publicPlayer(p) });
+    }
+    if (nextStance === "cruise") {
+      const nextHull = boatHull(m);
+      const occupied = this.roomPlayers(pRoomKey, p).some(other =>
+        other.send && other.ready && other.stance === "cruise" &&
+        boatHullsOverlap(nextHull, boatHull(other)) &&
+        (prevStance !== "cruise" || !boatHullsOverlap(boatHull(p),boatHull(other)) ||
+          Math.hypot(m.x-other.x,m.z-other.z)<=Math.hypot(p.x-other.x,p.z-other.z))
+      );
+      if (occupied) {
+        p.speed = 0;
+        return this.send(p,{type:"correct",player:this.publicPlayer(p)});
+      }
     }
     const old = { x: p.x, z: p.z };
     p.credit = allowActivityTeleport

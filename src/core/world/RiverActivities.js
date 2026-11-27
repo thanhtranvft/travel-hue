@@ -2,6 +2,7 @@ import { wrapAngle } from "../vehicle/BicycleMotion.js";
 import { cleanBoatIndex } from "../network/protocol.js";
 import { bindMultiTouchAction } from "../input/TouchControls.js";
 import { CA_HUE_SONGS } from "./CaHueBoats.js";
+import { boatHull, boatHullsOverlap } from "./boatCollision.js";
 
 export const FISH_SPECIES = [
   {
@@ -340,7 +341,7 @@ export class RiverActivities {
         <span id="boat-bar-sub">0 / 90m (+15đ)</span>
       </div>
       <div class="boat-bar-actions">
-        <button type="button" id="cruise-next-song-btn" class="river-btn river-btn-secondary" hidden>♪ Đổi điệu Hò</button>
+        <button type="button" id="cruise-next-song-btn" class="river-btn river-btn-secondary" hidden>♪ Đổi đoạn Hò</button>
         <button type="button" id="boat-return-dock-btn" class="river-btn river-btn-primary" hidden>Trả thuyền tại bến [G]</button>
         <button type="button" id="boat-quick-exit-btn" class="river-btn river-btn-ghost">Lên bờ nhanh</button>
       </div>
@@ -418,6 +419,8 @@ export class RiverActivities {
   onServerSnapshot(snapshot, selfId) {
     const occupied = new Set();
     const players = snapshot?.players || [];
+    this.remoteCruisePoses = players.filter(p=>p.id !== selfId && p.connected && p.ready && p.region === "quoc-hoc" && p.stance === "cruise").map(p=>boatHull(p));
+    if(this.game.world?.caHueBoats) this.game.world.caHueBoats.remoteCruisePoses = this.remoteCruisePoses;
     for (const p of players) {
       if (!p || !p.connected || p.region !== "quoc-hoc") continue;
       if (p.id === selfId) {
@@ -808,7 +811,11 @@ export class RiverActivities {
     if (this.mode !== "boating") return false;
     if (requireDockCheck && !this.nearReturnDock) return false;
     const dock = this.game.world?.fountainPark?.pedalDock;
-    const land = dock?.pierReturnPos || this.returnLandPose;
+    const land = this.findDisembarkPose(dock);
+    if (!land) {
+      this.showRewardToast("Chưa có chỗ lên bờ an toàn, bạn thử lại một chút nhé!");
+      return false;
+    }
     this.mode = null;
     this.activeBoatIndex = -1;
     this.nearReturnDock = false;
@@ -817,8 +824,13 @@ export class RiverActivities {
     if (land) {
       const y = this.game.world?.groundAt?.(land.x, land.z, land.y) ?? land.y ?? 0.22;
       bike.position.set(land.x, y, land.z);
+      bike.motion.heading = land.heading;
+      bike.rotation.y = land.heading;
       bike.motion.speed = 0;
     }
+    this.game.auto = false;
+    this.game.input?.reset?.();
+    this.game.cameraYaw = land.heading;
     this.declinedKind = "boat";
     this.declinedUntil = (this.game.elapsed || 0) + 4;
     this.syncDockOccupancy();
@@ -830,6 +842,10 @@ export class RiverActivities {
   enterCruise() {
     const dock = this.game.world?.fireflyPark?.dragonDock;
     if (!dock) return false;
+    if ((this.remoteCruisePoses || []).some(other=>boatHullsOverlap(boatHull(dock.dockWaterPos),other))) {
+      this.showRewardToast("Thuyền trước đang rời bến, bạn chờ một chút nhé!");
+      return false;
+    }
     this.returnLandPose = {
       ...dock.pierReturnPos,
       heading: this.game.bike.motion.heading,
@@ -875,7 +891,11 @@ export class RiverActivities {
   exitCruise() {
     if (this.mode !== "cruise") return false;
     const dock = this.game.world?.fireflyPark?.dragonDock;
-    const land = dock?.pierReturnPos || this.returnLandPose;
+    const land = this.findDisembarkPose(dock);
+    if (!land) {
+      this.showRewardToast("Chưa có chỗ lên bờ an toàn, bạn thử lại một chút nhé!");
+      return false;
+    }
     this.mode = null;
     this.nearReturnDock = false;
     dock?.setCruiseActive?.(false);
@@ -887,13 +907,40 @@ export class RiverActivities {
       const y =
         this.game.world?.groundAt?.(land.x, land.z, land.y) ?? land.y ?? 0.22;
       bike.position.set(land.x, y, land.z);
+      bike.motion.heading = land.heading;
+      bike.rotation.y = land.heading;
       bike.motion.speed = 0;
     }
+    this.game.auto = false;
+    this.game.input?.reset?.();
+    this.game.cameraYaw = land.heading;
     this.declinedKind = "cruise";
     this.declinedUntil = (this.game.elapsed || 0) + 4;
     this.game.syncMode?.();
     this.refreshPanels();
     return true;
+  }
+
+  findDisembarkPose(dock) {
+    const world = this.game.world;
+    const pier = dock?.pierReturnPos || this.returnLandPose;
+    const shore = dock?.vendorPos || this.returnLandPose || pier;
+    if (!shore || !pier) return null;
+    const heading = Math.atan2(shore.x-pier.x,shore.z-pier.z);
+    const hx = Math.sin(heading), hz = Math.cos(heading);
+    // Return to the promenade, with room to walk inland. The old pier point
+    // faced back into the river and could strand the rider between railings.
+    for (const radius of [1.5,3,4.5,6,0]) {
+      for(let i=0;i<12;i++){
+        const angle=heading+i*Math.PI/6;
+        const x=shore.x+Math.sin(angle)*radius,z=shore.z+Math.cos(angle)*radius;
+        const y=world?.groundAt?.(x,z,shore.y) ?? shore.y ?? .36;
+        if (!Number.isFinite(y)) continue;
+        const points=[[0,0],[.4,0],[-.4,0],[0,.4],[0,-.4],[hx*.8,hz*.8],[hx*1.5,hz*1.5]];
+        if(points.every(([dx,dz])=>world?.canRide?.(x+dx,z+dz,y) ?? true))return {x,z,y,heading};
+      }
+    }
+    return null;
   }
 
   handleKeyG() {
@@ -1210,8 +1257,15 @@ export class RiverActivities {
       const speed =
         curSpeed + (targetSpeed - curSpeed) * (1 - Math.exp(-3.2 * dt));
 
-      const canAt = (px, pz) =>
-        world?.canCruiseAt?.(px, pz) ?? world?.canBoat?.(px, pz, -2) ?? true;
+      const canAt = (px, pz, h = heading) => {
+        if (!(world?.canCruiseAt?.(px,pz) ?? world?.canBoat?.(px,pz,-2) ?? true)) return false;
+        const hull=boatHull({x:px,z:pz,heading:h});
+        if ([...(caHue?.boats || []),...(this.remoteCruisePoses || [])].some(other=>boatHullsOverlap(hull,boatHull(other))))return false;
+        for(const pier of [...(world?.phuXuanBridge?.piers||[]),...(world?.truongTienBridge?.piers||[])]){
+          if(boatHullsOverlap(hull,boatHull({x:pier.x,z:pier.z,tx:pier.nx,tz:pier.nz},pier.halfLen||10,pier.halfWidth||2.5)))return false;
+        }
+        return true;
+      };
       let chosenX = oldX + hx * speed * dt;
       let chosenZ = oldZ + hz * speed * dt;
       if (!canAt(chosenX, chosenZ)) {
@@ -1220,7 +1274,7 @@ export class RiverActivities {
           const testH = wrapAngle(heading + offsetRad);
           const tx = oldX + Math.sin(testH) * speed * dt;
           const tz = oldZ + Math.cos(testH) * speed * dt;
-          if (canAt(tx, tz)) {
+          if (canAt(tx, tz, testH)) {
             heading = testH;
             hx = Math.sin(heading);
             hz = Math.cos(heading);
@@ -1231,14 +1285,11 @@ export class RiverActivities {
           }
         }
         if (!found) {
-          if (canAt(chosenX, oldZ)) {
-            chosenZ = oldZ;
-          } else if (canAt(oldX, chosenZ)) {
-            chosenX = oldX;
-          } else {
-            chosenX = oldX;
-            chosenZ = oldZ;
-          }
+          chosenX = oldX;
+          chosenZ = oldZ;
+          heading = bike.motion.heading;
+          hx = Math.sin(heading);
+          hz = Math.cos(heading);
         }
       }
       bike.position.x = chosenX;
@@ -1248,7 +1299,7 @@ export class RiverActivities {
       bike.position.y =
         world?.riverSurfaceAt?.(bike.position.x, bike.position.z, tNow) ?? 0.03;
       bike.motion.heading = heading;
-      bike.motion.speed = speed;
+      bike.motion.speed = chosenX === oldX && chosenZ === oldZ ? 0 : speed;
       bike.motion.steering = Math.max(-1, Math.min(1, angleDiff));
       bike.motion.lean =
         -Math.max(-0.5, Math.min(0.5, angleDiff)) * 0.05 +
@@ -1489,6 +1540,8 @@ export class RiverActivities {
   reset() {
     const wasActive = this.isActive();
     this.mode = null;
+    this.remoteCruisePoses = [];
+    if (this.game.world?.caHueBoats) this.game.world.caHueBoats.remoteCruisePoses = [];
     this.activeBoatIndex = -1;
     this.pendingPrompt = null;
     this.seatPose = null;

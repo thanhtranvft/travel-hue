@@ -207,13 +207,12 @@ export function initializeAudioUI(audio) {
   });
   button.addEventListener("click", async () => {
     button.disabled = true;
+    const nextMusicEnabled = !audio.musicEnabled;
     try {
       if (audio.enabled && audio.ctx?.state !== "running") {
         await audio.setEnabled(true);
-        if (!audio.musicEnabled) audio.setMusicEnabled(true);
-      } else {
-        audio.setMusicEnabled(!audio.musicEnabled);
       }
+      audio.setMusicEnabled(nextMusicEnabled);
       status.textContent = "";
     } catch {
       status.textContent =

@@ -1,0 +1,40 @@
+{
+  "prompt": "Thuê thuyền rồng Ca Huế · Hò Đối Đáp?",
+  "during": {
+    "activity": "cruise",
+    "musicEnabled": "false",
+    "masterButton": false
+  },
+  "initial": {
+    "x": 565.4191634702923,
+    "z": -648.9648899265418,
+    "stance": "cruise"
+  },
+  "final": {
+    "x": 560.6712596406403,
+    "z": -660.8903253621365,
+    "stance": "cruise"
+  },
+  "moved": 12.835832700069112,
+  "exitStance": "idle",
+  "onLand": {
+    "x": 574.5783720084409,
+    "z": -623.8606977287745,
+    "stance": "idle"
+  },
+  "forward": {
+    "x": 579.998366438508,
+    "z": -615.4522888084234,
+    "stance": "run"
+  },
+  "backward": {
+    "x": 578.3452537957861,
+    "z": -618.0168757781613,
+    "stance": "walk"
+  },
+  "musicRequests": [
+    "http://127.0.0.1:50406/assets/ho-doi-dap-song-huong-03-B0VTfZ1n.mp3",
+    "http://127.0.0.1:50406/assets/ho-doi-dap-song-huong-01-BInvs0YP.mp3"
+  ],
+  "errors": []
+}

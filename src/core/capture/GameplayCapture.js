@@ -332,6 +332,35 @@ export async function captureScreenshot({
   };
 }
 
+export async function prepareRecordingAudio(audio) {
+  const message = "Chưa thu được âm thanh game. Hãy chạm vào game để bật tiếng rồi thử quay lại.";
+  if (!audio) throw new Error(message);
+  try {
+    if (!audio.enabled || audio.ctx?.state !== "running") await audio.setEnabled(true);
+  } catch {
+    throw new Error(message);
+  }
+  if (audio.ctx?.state !== "running") throw new Error(message);
+  const source = audio.getCaptureAudioStream?.();
+  const liveTracks = source?.getAudioTracks?.().filter(track=>track.readyState === "live") || [];
+  if (!liveTracks.length) throw new Error(message);
+  // Own a track per clip; stopping a recorder must not change the shared mixer.
+  const tracks = liveTracks.map(track=>track.clone());
+  for (const track of tracks) track.enabled = true;
+  const previousKeepAlive = Boolean(audio.keepAliveInBackground);
+  audio.setKeepAliveInBackground?.(true);
+  let released = false;
+  return {
+    tracks,
+    release() {
+      if (released) return;
+      released = true;
+      for (const track of tracks) track.stop();
+      audio.setKeepAliveInBackground?.(previousKeepAlive);
+    },
+  };
+}
+
 export async function startClipRecording({
   getCanvas,
   audio,
@@ -360,18 +389,9 @@ export async function startClipRecording({
 
   const preset = resolveVideoQuality(quality);
 
-  // Strictly capture game audio from Web Audio graph — NEVER request microphone.
-  if (audio?.enabled && audio?.ctx?.state !== "running") {
-    try {
-      await audio.setEnabled(true);
-    } catch {}
-  }
-
-  const audioStream =
-    audio?.enabled && audio?.ctx?.state === "running"
-      ? audio.getCaptureAudioStream?.() || null
-      : null;
-  const audioTracks = audioStream ? audioStream.getAudioTracks() : [];
+  // A failed audio unlock must not silently turn into a successful silent clip.
+  const recordingAudio = await prepareRecordingAudio(audio);
+  const audioTracks = recordingAudio.tracks;
 
   const srcWidth = initialCanvas.width || initialCanvas.clientWidth || 1280;
   const srcHeight = initialCanvas.height || initialCanvas.clientHeight || 720;
@@ -452,6 +472,7 @@ export async function startClipRecording({
 
   const videoTracks = videoStream.getVideoTracks();
   if (!videoTracks.length) {
+    recordingAudio.release();
     stopped = true;
     if (rafId) cancelAnimationFrame(rafId);
     throw new Error("Không khởi tạo được luồng hình ảnh để quay clip.");
@@ -474,9 +495,17 @@ export async function startClipRecording({
   try {
     recorder = new MediaRecorder(combinedStream, recorderOptions);
   } catch {
-    recorder = preferredMime
-      ? new MediaRecorder(combinedStream, { mimeType: preferredMime })
-      : new MediaRecorder(combinedStream);
+    try {
+      recorder = preferredMime
+        ? new MediaRecorder(combinedStream, { mimeType: preferredMime })
+        : new MediaRecorder(combinedStream);
+    } catch (error) {
+      recordingAudio.release();
+      for (const track of videoTracks) track.stop();
+      stopped = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      throw error;
+    }
   }
 
   const chunks = [];
@@ -500,6 +529,8 @@ export async function startClipRecording({
       stopTimeout = null;
     }
     window.removeEventListener("hue-webgl-lost", onContextLost);
+    for (const track of audioTracks) track.removeEventListener("ended", onAudioEnded);
+    recordingAudio.release();
     // Stop ONLY our video capture tracks; never stop shared CityAudio capture tracks.
     for (const track of videoTracks) {
       try {
@@ -552,18 +583,39 @@ export async function startClipRecording({
   };
 
   const onContextLost = () => stop();
+  const onAudioEnded = () => {
+    if (finished) return;
+    finished = true;
+    if (recorder.state !== "inactive") {
+      try { recorder.stop(); } catch {}
+    }
+    cleanupStreams();
+    onError?.(new Error("Luồng âm thanh bị gián đoạn. Hãy bật tiếng và quay lại clip."));
+  };
+  for (const track of audioTracks) track.addEventListener("ended", onAudioEnded);
   window.addEventListener("hue-webgl-lost", onContextLost);
 
   recorder.ondataavailable = (event) => {
     if (event.data && event.data.size > 0) chunks.push(event.data);
   };
   recorder.onerror = () => {
+    if (finished) return;
+    finished = true;
+    if (recorder.state !== "inactive") {
+      try { recorder.stop(); } catch {}
+    }
     cleanupStreams();
     onError?.(new Error("Quá trình ghi clip gặp gián đoạn trên thiết bị."));
   };
   recorder.onstop = finalize;
 
-  recorder.start(1000);
+  try {
+    recorder.start(1000);
+  } catch (error) {
+    finished = true;
+    cleanupStreams();
+    throw error;
+  }
   onTick?.({ elapsedSec: 0, maxDurationSec });
 
   tickTimer = setInterval(() => {

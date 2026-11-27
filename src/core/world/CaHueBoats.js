@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { createDragonBoat } from "./DragonBoatBuilder.js";
 import { inside } from "../shared/geography/geometry.js";
+import { boatHull, boatHullsOverlap } from "./boatCollision.js";
 
 const CA_HUE_AUDIO_URLS = [
   new URL("../../assets/music/ho-doi-dap-song-huong-01.mp3", import.meta.url).href,
@@ -155,6 +156,15 @@ export const CA_HUE_SONGS = [
     audioUrl: CA_HUE_AUDIO_URLS[1],
   },
 ];
+
+// These four recordings are excerpts of the supplied Hò Đối Đáp file;
+// do not label them as unrelated traditional compositions.
+CA_HUE_SONGS.forEach((song, index) => {
+  const excerpt = index % 4 + 1;
+  song.id = `ho-doi-dap-0${excerpt}`;
+  song.title = `Hò Đối Đáp trên sông Hương · Đoạn ${excerpt}`;
+  song.shortTitle = `Hò Đối Đáp · ${excerpt}`;
+});
 
 const RAW_LOOP_WAYPOINTS = [
   { x: 354.17, z: -563.68 },
@@ -316,6 +326,7 @@ export class CaHueBoats {
     this.loop = buildClosedLoopSamples(this.piers, world.riverRings, this.mooredBoats);
     this.speed = 3.3;
     this.externalCruisePose = null;
+    this.remoteCruisePoses = [];
 
     // Strictly directional lanes with wide lateral separation so boats never meet head-on,
     // and uniform speed per direction + equal slot spacing so boats never overtake each other.
@@ -431,7 +442,7 @@ export class CaHueBoats {
   }
 
   resolveBoatCollisions() {
-    const ext = this.externalCruisePose;
+    const externals = [this.externalCruisePose, ...this.remoteCruisePoses].filter(Boolean);
     const rings = this.world.riverRings;
     const isSafePos = (x, z) =>
       !rings?.length || rings.some((r) => inside({ x, z }, r));
@@ -450,9 +461,9 @@ export class CaHueBoats {
         }
       }
 
-      if (ext) {
+      for (const ext of externals) {
         for (const b of this.boats) {
-          if (!boatsOverlap(ext, b, 2.8)) continue;
+          if (!boatHullsOverlap(boatHull(ext), boatHull(b), 2.8)) continue;
           const dx = b.x - ext.x;
           const dz = b.z - ext.z;
           const lat = -dx * ext.tz + dz * ext.tx;
@@ -476,7 +487,7 @@ export class CaHueBoats {
         const a = this.boats[i];
         for (let j = i + 1; j < this.boats.length; j++) {
           const b = this.boats[j];
-          if (!boatsOverlap(a, b, 2.2)) continue;
+          if (!boatHullsOverlap(boatHull(a), boatHull(b), 2.2)) continue;
           let dx = b.x - a.x;
           let dz = b.z - a.z;
           let d = Math.hypot(dx, dz);

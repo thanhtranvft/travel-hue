@@ -7,10 +7,36 @@ import {
   extensionForMimeType,
   formatDuration,
   pickRecorderMimeType,
+  prepareRecordingAudio,
   resolveVideoQuality,
   shareCapturedMedia,
   VIDEO_QUALITY_PRESETS,
 } from "../src/core/capture/GameplayCapture.js";
+
+test("recording resumes game audio, owns its track and restores background policy after each clip", async () => {
+  let sourceStops=0,cloneStops=0;
+  const source={readyState:"live",stop(){sourceStops++;},clone(){return {enabled:false,stop(){cloneStops++;}};}};
+  const audio={enabled:true,ctx:{state:"suspended"},keepAliveInBackground:false,
+    async setEnabled(){this.ctx.state="running";},
+    getCaptureAudioStream(){return {getAudioTracks:()=>[source]};},
+    setKeepAliveInBackground(value){this.keepAliveInBackground=value;}
+  };
+  for(let i=0;i<2;i++){
+    const recording=await prepareRecordingAudio(audio);
+    assert.equal(recording.tracks[0].enabled,true);
+    assert.notEqual(recording.tracks[0],source);
+    assert.equal(audio.keepAliveInBackground,true);
+    recording.release();recording.release();
+    assert.equal(audio.keepAliveInBackground,false);
+  }
+  assert.equal(cloneStops,2);assert.equal(sourceStops,0);
+});
+
+test("audio unlock failure or absent/ended track cannot silently export a video without sound", async () => {
+  await assert.rejects(prepareRecordingAudio({enabled:true,ctx:{state:"suspended"},async setEnabled(){throw Error("blocked");}}),/âm thanh/);
+  await assert.rejects(prepareRecordingAudio({enabled:true,ctx:{state:"running"},getCaptureAudioStream:()=>({getAudioTracks:()=>[]})}),/âm thanh/);
+  await assert.rejects(prepareRecordingAudio({enabled:true,ctx:{state:"running"},getCaptureAudioStream:()=>({getAudioTracks:()=>[{readyState:"ended"}]})}),/âm thanh/);
+});
 import { CityAudio } from "../src/core/audio/CityAudio.js";
 import {
   compositeHudOverFrame,

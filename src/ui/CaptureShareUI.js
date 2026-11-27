@@ -269,7 +269,7 @@ export function initializeCaptureShareUI(game, audio) {
       previewFrame.append(video);
       const audioLabel = result.hasAudio
         ? "Có âm thanh & nhạc game · Không thu micro"
-        : "Không có âm thanh (đang tắt tiếng)";
+        : "Không thu được âm thanh game";
       const hudLabel = result.includeHud ? " · Gồm toàn bộ giao diện HUD" : "";
       const fpsLabel = result.fps ? ` · ${result.fps}fps` : "";
       const sizeMb =

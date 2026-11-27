@@ -1,5 +1,21 @@
 # Handoff
 
+## Quay có âm thanh và di chuyển sau khi lên bờ — 2026-11-27
+
+Theo báo lỗi video thiếu tiếng trên Firefox và kẹt sau đi thuyền. Luồng quay cũ bắt lỗi resume âm thanh rồi bỏ qua, vẫn có thể xuất video không audio. `prepareRecordingAudio` nay yêu cầu context running và track live, clone track riêng cho mỗi clip, giữ âm thanh chạy khi quay và hoàn nguyên chính sách sau đó. Track bị gián đoạn/recorder lỗi không còn được báo thành công; không dùng micro. Chưa tái hiện mất tiếng trên bản Firefox kiểm tra khi nguồn âm hoạt động bình thường; ba file WebM/Opus sau vá đã giải mã PCM stereo có tín hiệu thật (nhạc nền, Hò Đối Đáp, quay lặp). Artifacts tại `tool/browser-test/capture-audio-check/firefox/`.
+
+Thuyền rồng/đạp vịt nay tìm điểm lên bờ có khoảng trống và lối đi tiếp về phía đất liền, thay vì chỉ trả ra cầu tàu và giữ hướng ra sông. Nếu không có điểm hợp lệ thì giữ hoạt động, báo thử lại; khôi phục heading/camera/input và tắt tự lái. Browser production với server thử nghiệm riêng xác nhận xuống thuyền rồi chạy khoảng 10m vào bờ, không lỗi JavaScript. 23/23 kiểm thử capture/river/cruise qua. Chưa đo trên mọi phiên bản Firefox hoặc điện thoại thật.
+
+## Rà soát thuyền rồng và âm thanh — 2026-11-27
+
+Tiếp tục theo yêu cầu trực tiếp sau hai commit `9425a64`, `a4afdb1`. Giữ bến thuê/nhóm tiếp khách và ba nghệ sĩ đã có: hai nữ áo dài tím/vàng, nam áo dài khăn đóng; avatar ngồi làm du khách, thuyền tự lái. Nút master đã được bỏ trong commit trước, âm thanh và nhạc nền mặc định bật. Nút nhạc nền giờ đảo trạng thái đúng cả khi AudioContext đang suspend; tắt nền vẫn giữ tiếng game và buổi hò trên thuyền.
+
+Sửa vòng đời media: khi chuyển sang nhạc thuyền mình, dọn cả Audio element còn fade của thuyền trước, hủy tải và ngắt node cũ. Trong cruise chỉ chọn nguồn hát trên thuyền mình. Các file được đặt nhãn đúng “Hò Đối Đáp · Đoạn 1–4”, không gắn tên Nam Ai/Phú Lục cho những trích đoạn chưa xác minh.
+
+Helper `src/core/world/boatCollision.js` kiểm tra thân thuyền có hướng. Thuyền du khách tránh thân thuyền khác/trụ cầu, dừng nhường khi không tìm được vị trí an toàn; thuyền cảnh tránh cả local và remote cruise. Server từ chối lên chồng thuyền hoặc cập nhật vị trí làm hai cruise chồng nhau; client báo chờ nếu thuyền trước còn sát bến. Reset khu xóa danh sách cruise cũ.
+
+20/20 kiểm thử mục tiêu qua (âm thanh, 6 avatar, 3 nghệ sĩ, tránh thuyền, online, sông/mobile). Mô phỏng thuyền cảnh kiểm tra từng mẫu 5s trên hành trình 15 phút, không thay thế đo liên tục trên thiết bị thật. Browser chạy production trên server kiểm thử riêng, đổi spawn slot tới bến: thuê → tự chạy → tắt nhạc nền → lên bờ, không lỗi JavaScript; ảnh và kết quả tại `tool/browser-test/dragon-cruise-check/`. Test server đã đóng; dev để thử ở cổng 5182. Chưa kiểm chứng 10 người thật/WAN, chưa deploy hoặc tạo commit mới. Bản production cần khởi động lại Node để dùng bản vá server.
+
 ## Khám phá Huế kết hợp tranh tài — 2026-11-24
 
 Phạm vi đã duyệt bằng `/implement idea 3`. `tag-chase` giữ map 01/05, thêm nhịp khám phá 60s → rượt bắt 45s → hợp tác 45–57s theo sĩ số. Đổi vai và lợi thế Người Săn chỉ có lúc tranh tài. Ghé địa danh +120đ một lần/ván sau khi thực sự di chuyển; sinh tồn yêu cầu chuyển động và Người Săn đang hoạt động gần đó. Cuối ván ghi nhận người khám phá, đồng hành và tranh tài riêng.

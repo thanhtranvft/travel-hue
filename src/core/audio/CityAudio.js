@@ -168,6 +168,10 @@ export class CityAudio {
     else this.caHueAudioOverrides.delete(songId);
   }
   stopCaHueMedia(immediate = false) {
+    // A previous fade may still own a detached media element. Finish it before
+    // switching boats so cancelling its timer cannot leave a second song alive.
+    this.caHueFadeCleanup?.();
+    this.caHueFadeCleanup = null;
     const oldEl = this.caHueMediaEl;
     const oldGain = this.caHueMediaGain;
     const oldSrc = this.caHueMediaSrc;
@@ -183,6 +187,8 @@ export class CityAudio {
     const cleanup = () => {
       try {
         oldEl.pause();
+        oldEl.removeAttribute?.("src");
+        oldEl.load?.();
       } catch {}
       try {
         oldSrc?.disconnect?.();
@@ -198,8 +204,10 @@ export class CityAudio {
       } catch {}
       this.caHueFadeTimer = setTimeout(() => {
         this.caHueFadeTimer = null;
+        this.caHueFadeCleanup = null;
         cleanup();
       }, 950);
+      this.caHueFadeCleanup = cleanup;
     } else {
       cleanup();
     }

@@ -1,0 +1,58 @@
+import {chromium} from 'playwright';
+import {createGameServer} from '../../server/index.js';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import * as THREE from 'three';
+import {sites,mainRoads,river} from '../../src/core/shared/geography/map.js';
+import {nearestPoint} from '../../src/core/shared/geography/geometry.js';
+import {createFireflyTreePark} from '../../src/modules/areas/quoc-hoc/view/FireflyTreePark.js';
+// Isolated test server: start at the rental pier instead of driving from the station.
+const app=await createGameServer();
+const site=sites.find(s=>s.id==='quoc-hoc');
+const near=mainRoads.map(r=>nearestPoint(site.sign,r.points)).sort((a,b)=>a.distance-b.distance)[0];
+const heading=Math.atan2(near.x-site.sign.x,near.z-site.sign.z);
+const park=createFireflyTreePark({scene:new THREE.Scene(),riverRings:river,cameraObstacles:[]},site,heading,{haiBaTrung:sites.find(s=>s.id==='hai-ba-trung')});
+console.log(JSON.stringify({dock:park.dragonDock.vendorPos}));
+app.room.areas.get('quoc-hoc').spawn={...park.dragonDock.vendorPos,heading};
+app.room.areas.get('quoc-hoc').spawnSlots=[{...park.dragonDock.vendorPos,heading}];
+await new Promise(resolve=>app.server.listen(0,'127.0.0.1',resolve));
+const directory=fileURLToPath(new URL('./dragon-cruise-check/',import.meta.url));await mkdir(directory,{recursive:true});
+const browser=await chromium.launch({headless:true,executablePath:'C:/Users/Admin/AppData/Local/ms-playwright/chromium-1200/chrome-win64/chrome.exe'});
+const page=await browser.newPage({viewport:{width:1280,height:800}});
+const errors=[],musicRequests=[],states=[];
+page.on('pageerror',e=>errors.push(e.message));
+page.on('request',r=>{if(r.url().includes('.mp3'))musicRequests.push(r.url());});
+page.on('websocket',ws=>ws.on('framereceived',({payload})=>{try{const m=JSON.parse(payload);if(m.type==='snapshot')states.push(m.players.map(p=>({x:p.x,z:p.z,stance:p.stance})));}catch{}}));
+try{
+  await page.goto(`http://127.0.0.1:${app.server.address().port}`,{waitUntil:'networkidle'});
+  await page.locator('#player-name').fill('Du khách thử');
+  await page.locator('[data-game-mode="free-roam"]').click();
+  await page.locator('.lobby-cta').click();
+  await page.locator('#scene-loading').waitFor({state:'hidden',timeout:60000});
+  await page.locator('#river-accept-btn').waitFor({state:'visible',timeout:15000});
+  const prompt=await page.locator('#river-prompt-title').innerText();
+  console.log(JSON.stringify({prompt}));
+  if(!prompt.includes('thuyền rồng'))throw Error('Test spawn did not reach dragon rental');
+  await page.locator('#river-accept-btn').click();
+  await page.waitForTimeout(4000);
+  const initial=states.at(-1)?.[0];
+  await page.locator('#audio-toggle').click();
+  await page.waitForTimeout(3000);
+  const during=await page.evaluate(()=>({activity:document.body.dataset.riverActivity,musicEnabled:document.querySelector('#audio-toggle').getAttribute('aria-pressed'),masterButton:!!document.querySelector('#master-audio-toggle')}));
+  await page.screenshot({path:`${directory}/onboard.png`});
+  const final=states.at(-1)?.[0];
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(1200);
+  const onLand=states.at(-1)?.[0];
+  await page.keyboard.down('w');await page.waitForTimeout(2500);await page.keyboard.up('w');
+  const forward=states.at(-1)?.[0];
+  await page.keyboard.down('s');await page.waitForTimeout(2500);await page.keyboard.up('s');
+  const backward=states.at(-1)?.[0];
+  const result={prompt,during,initial,final,moved:initial&&final?Math.hypot(final.x-initial.x,final.z-initial.z):null,exitStance:onLand?.stance,onLand,forward,backward,musicRequests,errors};
+  await writeFile(`${directory}/result.json`,JSON.stringify(result,null,2));
+  console.log(JSON.stringify(result));
+}catch(error){
+  await page.screenshot({path:`${directory}/failure.png`});
+  console.log(JSON.stringify({failure:error.message,states:states.slice(-2),errors,text:(await page.locator('body').innerText()).slice(-1500)}));
+  process.exitCode=1;
+}finally{await browser.close();app.close();}

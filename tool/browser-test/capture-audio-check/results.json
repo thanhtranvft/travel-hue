@@ -1,0 +1,41 @@
+[
+  {
+    "mode": "background",
+    "mime": "video/mp4;codecs=avc1.64001f,mp4a.40.2",
+    "hasAudio": true,
+    "bytes": 144819,
+    "decoded": {
+      "duration": 2.9401458333333332,
+      "channels": 2,
+      "rms": 0.01289022283521625,
+      "peak": 0.04852444678544998
+    },
+    "context": "running"
+  },
+  {
+    "mode": "cruise",
+    "mime": "video/mp4;codecs=avc1.64001f,mp4a.40.2",
+    "hasAudio": true,
+    "bytes": 153032,
+    "decoded": {
+      "duration": 2.9614583333333333,
+      "channels": 2,
+      "rms": 0.042338473690417724,
+      "peak": 0.21502459049224854
+    },
+    "context": "running"
+  },
+  {
+    "mode": "repeat",
+    "mime": "video/mp4;codecs=avc1.64001f,mp4a.40.2",
+    "hasAudio": true,
+    "bytes": 152701,
+    "decoded": {
+      "duration": 2.9401458333333332,
+      "channels": 2,
+      "rms": 0.04998493180277808,
+      "peak": 0.2785244882106781
+    },
+    "context": "running"
+  }
+]
