@@ -7,6 +7,9 @@ import {
   TRUONG_TIEN_WALK_LIFT,
   truongTienElevation,
 } from "../../../../core/world/roadSurface.js";
+import { createDragonBoat } from "../../../../core/world/DragonBoatBuilder.js";
+
+export { createDragonBoat };
 
 export const TRUONG_TIEN_SPANS = 6;
 export const TRUONG_TIEN_ARCH_COUNT = 12;
@@ -441,121 +444,6 @@ function createCutwaterPierGeometry(width, depth, height, bevel = 0.9) {
   });
   geo.rotateX(-Math.PI / 2);
   return geo;
-}
-
-export function createDragonBoat(variant = 0) {
-  const boat = new THREE.Group();
-  const hullMat = new THREE.MeshStandardMaterial({
-    color: "#3d2619",
-    roughness: 0.78,
-    metalness: 0.06,
-  });
-  const trimMat = new THREE.MeshStandardMaterial({
-    color: variant % 2 === 0 ? "#b8332a" : "#9d2b24",
-    roughness: 0.5,
-    metalness: 0.14,
-  });
-  const goldMat = new THREE.MeshStandardMaterial({
-    color: "#e2b24c",
-    roughness: 0.34,
-    metalness: 0.62,
-  });
-  const roofMat = new THREE.MeshStandardMaterial({
-    color: variant % 2 === 0 ? "#d79e3b" : "#c58d35",
-    roughness: 0.52,
-    metalness: 0.18,
-  });
-  const lanternMat = new THREE.MeshStandardMaterial({
-    color: "#ffd98c",
-    emissive: "#ffaa3b",
-    emissiveIntensity: 1.0,
-    roughness: 0.3,
-  });
-
-  // 1. Curved sampan hull
-  const hullPts = [
-    new THREE.Vector2(0.01, -6.8),
-    new THREE.Vector2(1.15, -4.4),
-    new THREE.Vector2(1.55, 0),
-    new THREE.Vector2(1.15, 4.4),
-    new THREE.Vector2(0.01, 6.8),
-  ];
-  const hullGeo = new THREE.LatheGeometry(hullPts, 10);
-  hullGeo.rotateX(Math.PI / 2);
-  hullGeo.scale(1, 0.42, 1);
-  const hull = new THREE.Mesh(hullGeo, hullMat);
-  hull.position.y = 0.25;
-  boat.add(hull);
-
-  // 2. Deck platform & red gunwale trim
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.14, 9.2), hullMat);
-  deck.position.y = 0.46;
-  boat.add(deck);
-
-  for (const sx of [-1.22, 1.22]) {
-    const gunwale = new THREE.Mesh(
-      new THREE.BoxGeometry(0.14, 0.28, 9.8),
-      trimMat,
-    );
-    gunwale.position.set(sx, 0.6, 0);
-    boat.add(gunwale);
-  }
-
-  // 3. Sculpted Dragon Head Prow (bow) & Curved Phoenix Tail (stern)
-  const neck = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.35, 0.65), trimMat);
-  neck.position.set(0, 1.05, 6.1);
-  neck.rotation.x = 0.32;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.56, 1.15), goldMat);
-  head.position.set(0, 1.72, 6.5);
-  head.rotation.x = -0.15;
-  const crest = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.8, 6), trimMat);
-  crest.position.set(0, 2.15, 6.22);
-  crest.rotation.x = -0.45;
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.25, 0.55), goldMat);
-  tail.position.set(0, 1.05, -6.15);
-  tail.rotation.x = -0.36;
-  boat.add(neck, head, crest, tail);
-
-  // 4. Imperial Pavilion Canopy & Upturned Roof Ridge
-  for (const sx of [-1.05, 1.05]) {
-    for (const sz of [-3.1, 0, 3.1]) {
-      const col = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.06, 0.06, 1.45, 6),
-        trimMat,
-      );
-      col.position.set(sx, 1.25, sz);
-      boat.add(col);
-    }
-  }
-  const roofLeft = new THREE.Mesh(
-    new THREE.BoxGeometry(1.42, 0.09, 7.6),
-    roofMat,
-  );
-  roofLeft.position.set(-0.62, 2.08, 0);
-  roofLeft.rotation.z = 0.26;
-  const roofRight = new THREE.Mesh(
-    new THREE.BoxGeometry(1.42, 0.09, 7.6),
-    roofMat,
-  );
-  roofRight.position.set(0.62, 2.08, 0);
-  roofRight.rotation.z = -0.26;
-  const ridge = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.16, 7.9), goldMat);
-  ridge.position.y = 2.3;
-  boat.add(roofLeft, roofRight, ridge);
-
-  // 5. Glowing festival lanterns along canopy eaves
-  for (const sx of [-1.18, 1.18]) {
-    for (const sz of [-2.4, 0, 2.4]) {
-      const lantern = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.15, 0),
-        lanternMat,
-      );
-      lantern.position.set(sx, 1.72, sz);
-      boat.add(lantern);
-    }
-  }
-
-  return boat;
 }
 
 export function addTruongTienBridge(world, road) {
@@ -1283,17 +1171,21 @@ export function addTruongTienBridge(world, road) {
   const inRiver = (pt) =>
     !riverRings.length || riverRings.some((ring) => inside(pt, ring));
   const boatConfigs = [
-    { s: 108, lat: -52, yawOffset: 1.35, phase: 0.2 },
-    { s: 175, lat: -74, yawOffset: -1.65, phase: 1.7 },
-    { s: 245, lat: -48, yawOffset: 1.52, phase: 3.1 },
-    { s: 158, lat: 62, yawOffset: -1.48, phase: 4.5 },
+    { s: 102, lat: -48, yawOffset: 1.42, phase: 0.2, variant: 0 },
+    { s: 172, lat: -76, yawOffset: -1.62, phase: 1.4, variant: 1 },
+    { s: 242, lat: -46, yawOffset: 1.54, phase: 2.6, variant: 2 },
+    { s: 304, lat: -88, yawOffset: -1.46, phase: 3.7, variant: 3 },
+    { s: 118, lat: 54, yawOffset: -1.52, phase: 4.5, variant: 1 },
+    { s: 162, lat: 68, yawOffset: 1.48, phase: 5.2, variant: 0 },
+    { s: 232, lat: 52, yawOffset: -1.6, phase: 0.9, variant: 3 },
+    { s: 290, lat: 84, yawOffset: 1.62, phase: 2.1, variant: 2 },
   ];
   boatConfigs.forEach((cfg, idx) => {
     const f = frameAt(frames, cfg.s);
     const bx = f.x + f.nx * cfg.lat;
     const bz = f.z + f.nz * cfg.lat;
     if (!inRiver({ x: bx, z: bz })) return;
-    const boat = createDragonBoat(idx);
+    const boat = createDragonBoat(cfg.variant ?? idx);
     boat.position.set(bx, 0.04, bz);
     boat.rotation.y = yaw + cfg.yawOffset;
     group.add(boat);

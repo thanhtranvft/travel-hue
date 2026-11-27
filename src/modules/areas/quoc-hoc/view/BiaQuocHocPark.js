@@ -798,11 +798,11 @@ export function createBiaQuocHocPark(world, site, heading) {
       const dyW = yTopW - deckY;
       const slopeAng = Math.atan2(dyW, len);
       const curbMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(0.22, 0.18, Math.hypot(len, dyW) + 0.2),
+        new THREE.BoxGeometry(0.22, 0.14, Math.hypot(len, dyW) + 0.2),
         curbMat,
       );
-      curbMesh.position.set(sx + side, (yTopW + deckY) / 2 + 0.05, (zStart + zEnd) / 2);
-      curbMesh.rotation.x = slopeAng;
+      curbMesh.position.set(sx + side, (yTopW + deckY) / 2 + 0.025, (zStart + zEnd) / 2);
+      curbMesh.rotation.x = -slopeAng;
       curbMesh.receiveShadow = true;
       group.add(curbMesh);
     }

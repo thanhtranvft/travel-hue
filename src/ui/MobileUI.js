@@ -219,9 +219,12 @@ export function initializeAudioUI(audio) {
   button.addEventListener("click", async () => {
     button.disabled = true;
     try {
-      if (audio.enabled && audio.ctx?.state !== "running")
+      if (audio.enabled && audio.ctx?.state !== "running") {
         await audio.setEnabled(true);
-      audio.setMusicEnabled(!audio.musicEnabled);
+        if (!audio.musicEnabled) audio.setMusicEnabled(true);
+      } else {
+        audio.setMusicEnabled(!audio.musicEnabled);
+      }
       status.textContent = "";
     } catch {
       status.textContent =
@@ -234,7 +237,11 @@ export function initializeAudioUI(audio) {
   masterButton.addEventListener("click", async () => {
     masterButton.disabled = true;
     try {
-      await audio.setEnabled(!audio.enabled);
+      if (audio.enabled && audio.ctx?.state !== "running") {
+        await audio.setEnabled(true);
+      } else {
+        await audio.setEnabled(!audio.enabled);
+      }
       status.textContent = "";
     } catch {
       status.textContent = "Chưa phát được âm thanh. Hãy thử lại.";
@@ -243,9 +250,17 @@ export function initializeAudioUI(audio) {
       sync();
     }
   });
-  volume.addEventListener("input", () =>
-    audio.setVolume(Number(volume.value) / 100),
-  );
+  volume.addEventListener("input", () => {
+    audio.setVolume(Number(volume.value) / 100);
+    if (audio.enabled && audio.ctx?.state !== "running") {
+      void audio.tryUnlock();
+    }
+  });
+  const prevStateChange = audio.onStateChange;
+  audio.onStateChange = () => {
+    prevStateChange?.();
+    sync();
+  };
   audio.onStatus = (text) => (status.textContent = text);
   sync();
 }

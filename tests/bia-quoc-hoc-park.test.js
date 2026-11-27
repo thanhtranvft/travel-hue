@@ -107,6 +107,29 @@ test("Bia Quốc Học monument and riverside park build cleanly with rideable o
       "twin walkways must slope downward toward the river",
     );
 
+    // Sloped walkway border curbs must tilt down toward the river (-Z local) and never jut into mid-air over the 0.36m deck
+    const slopedCurbs = [];
+    park.group.traverse((obj) => {
+      if (
+        obj.isMesh &&
+        obj.geometry?.type === "BoxGeometry" &&
+        Math.abs((obj.geometry.parameters?.width ?? 0) - 0.22) < 1e-4 &&
+        Math.abs((obj.geometry.parameters?.height ?? 0) - 0.14) < 1e-4
+      ) {
+        slopedCurbs.push(obj);
+      }
+    });
+    assert.equal(slopedCurbs.length, 4, "4 sloped walkway border curbs exist");
+    for (const curb of slopedCurbs) {
+      assert.ok(curb.rotation.x < 0, `sloped curb must tilt downward toward river deck, got rotX=${curb.rotation.x}`);
+      const halfL = (curb.geometry.parameters.depth || 0) * 0.5;
+      const sinX = Math.sin(curb.rotation.x);
+      const yAtRiverEnd = curb.position.y + halfL * sinX;
+      const yAtTopEnd = curb.position.y - halfL * sinX;
+      assert.ok(yAtRiverEnd < 0.55 && yAtRiverEnd > 0.25, `river end of curb should sit flush near deckY (0.36m), got ${yAtRiverEnd}`);
+      assert.ok(yAtTopEnd > 1.35 && yAtTopEnd < 1.75, `top end of curb should sit flush near crest (~1.56m), got ${yAtTopEnd}`);
+    }
+
     // Seated youth/family circles and kite flying behind Bia Quoc Hoc
     let circleCount = 0;
     let kiteCount = 0;

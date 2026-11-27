@@ -41,16 +41,22 @@ export class CityAudio {
     this.captureDestination = null;
     this.keepAliveInBackground = false;
     this.onStatus = () => {};
-    document.addEventListener("visibilitychange", () => {
+    this.onStateChange = () => {};
+    document.addEventListener?.("visibilitychange", () => {
       if (!this.ctx) return;
-      if (document.hidden && !this.keepAliveInBackground)
+      if (document.hidden && !this.keepAliveInBackground) {
         this.ctx.suspend().catch(() => {});
-      else if (this.enabled)
+      } else if (this.enabled) {
         this.ctx
           .resume()
+          .then(() => {
+            this.onStatus("");
+            this.onStateChange?.();
+          })
           .catch(() => this.onStatus("Chạm nút âm thanh để phát tiếp."));
+      }
     });
-    addEventListener("pagehide", () => this.ctx?.suspend().catch(() => {}));
+    globalThis.addEventListener?.("pagehide", () => this.ctx?.suspend().catch(() => {}));
   }
   initialize() {
     if (this.ctx) return;
@@ -58,6 +64,7 @@ export class CityAudio {
     if (!Context) throw new Error("Web Audio không được hỗ trợ");
     this.ctx = new Context();
     const ctx = this.ctx;
+    ctx.addEventListener?.("statechange", () => this.onStateChange?.());
     this.master = ctx.createGain();
     this.master.gain.value = this.volume;
     const compressor = ctx.createDynamicsCompressor();
@@ -79,7 +86,11 @@ export class CityAudio {
       return gain;
     };
     this.background = bus();
-    this.background.gain.value = 0.65;
+    this.background.gain.value = this.musicEnabled
+      ? this.fishingMode
+        ? 0.04
+        : 0.65
+      : 0;
     this.venue = ctx.createGain();
     this.venue.gain.value = 0;
     this.venuePan = ctx.createStereoPanner();
@@ -259,18 +270,41 @@ export class CityAudio {
   }
   async setEnabled(enabled) {
     if (enabled) {
+      this.enabled = true;
       this.initialize();
       await this.ctx.resume();
-      if (this.ctx.state !== "running")
+      if (this.ctx.state !== "running") {
+        this.onStateChange?.();
         throw new Error("Audio đang bị tạm dừng");
-      this.enabled = true;
+      }
       this.nextNote = this.ctx.currentTime + 0.08;
+      this.nextFishingNote = this.ctx.currentTime + 0.08;
+      this.onStatus("");
+      this.onStateChange?.();
+      this.schedule();
     } else {
       this.enabled = false;
+      this.stopCaHueMedia(true);
       this.collisionVoice?.stop();
       if (this.ctx) await this.ctx.suspend();
+      this.onStateChange?.();
     }
     return this.enabled;
+  }
+  async tryUnlock() {
+    if (!this.enabled) return false;
+    if (this.ctx?.state === "running") {
+      this.onStatus("");
+      this.onStateChange?.();
+      return true;
+    }
+    try {
+      await this.setEnabled(true);
+      return true;
+    } catch {
+      this.onStateChange?.();
+      return false;
+    }
   }
   setKeepAliveInBackground(enabled) {
     this.keepAliveInBackground = Boolean(enabled);

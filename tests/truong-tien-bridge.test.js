@@ -102,7 +102,7 @@ test("Cầu Trường Tiền builds 6 vài 12 nhịp, 5 masonry river piers, 2 o
     assert.equal(world.truongTienBridge.pierCount, TRUONG_TIEN_PIER_COUNT);
     assert.equal(world.truongTienBridge.balconyCount, 10);
     assert.ok(
-      world.truongTienBridge.boatCount >= 3,
+      world.truongTienBridge.boatCount >= 6,
       "traditional Hue dragon boats float on Huong River",
     );
 

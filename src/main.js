@@ -53,7 +53,7 @@ document.querySelector("#app").innerHTML = `
       </div>
       <div class="topbar-right">
         <div class="topbar-controls-row">
-          <div class="utility-buttons"><button id="audio-toggle" type="button" aria-pressed="false" title="Bật / Tắt nhạc">♫</button><button id="landscape-toggle" type="button" aria-pressed="false" title="Chơi ngang">↔</button></div>
+          <div class="utility-buttons"><button id="audio-toggle" type="button" aria-pressed="true" title="Tắt nhạc">♫</button><button id="landscape-toggle" type="button" aria-pressed="false" title="Chơi ngang">↔</button></div>
           <div class="tour-toolbar"><button id="map-toggle" type="button" title="Hiện / Ẩn bản đồ khu vực [M]" aria-pressed="false" aria-expanded="false" aria-controls="map-panel">🗺 Bản đồ</button><button id="reset" title="Về đầu khu vực [R]">↺ Về đầu</button></div>
         </div>
         <div class="utility-toolbar">
@@ -80,13 +80,23 @@ document.querySelector("#app").innerHTML = `
 const audio = new CityAudio();
 const landscape = initializeLandscapeMode();
 let autoLandscapeDone = false;
-const primeAudio = () => {
-  void audio
-    .setEnabled(audio.enabled)
-    .catch(() => audio.onStatus("Chạm nút Âm thanh để phát tiếng."));
+const primeAudio = async ({ notifyOnBlock = false } = {}) => {
+  const ok = await audio.tryUnlock();
+  if (!ok && notifyOnBlock && audio.enabled) {
+    audio.onStatus("Chạm màn hình hoặc phím bất kỳ để bật tiếng.");
+  }
+  return ok;
 };
+const onAudioGesture = () => {
+  if (!audio.enabled || audio.ctx?.state === "running") return;
+  void audio.tryUnlock();
+};
+for (const evt of ["pointerdown", "touchstart", "mousedown", "keydown", "click"]) {
+  window.addEventListener(evt, onAudioGesture, { capture: true, passive: true });
+}
+void primeAudio();
 const onStart = () => {
-  primeAudio();
+  void primeAudio({ notifyOnBlock: true });
   if (!autoLandscapeDone && isMobileViewport()) {
     autoLandscapeDone = true;
     void landscape.enter({ showHintOnFailure: true });
@@ -369,6 +379,9 @@ if (game) {
   initializeMobileUI();
   initializeAudioUI(game.audio);
   initializeCaptureShareUI(game, game.audio);
+  if (game.audio?.enabled && game.audio?.ctx?.state !== "running") {
+    void primeAudio({ notifyOnBlock: Boolean(initialSession?.restored) });
+  }
 } else {
   document.querySelector("#scene-loading").textContent =
     "Hiện chưa có khu vực tham quan được mở.";

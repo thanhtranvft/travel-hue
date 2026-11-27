@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { createDragonBoat } from "../../modules/areas/truong-tien/view/BridgeView.js";
+import { createDragonBoat } from "./DragonBoatBuilder.js";
 import { inside } from "../shared/geography/geometry.js";
 
 const CA_HUE_AUDIO_URLS = [
@@ -89,6 +89,70 @@ export const CA_HUE_SONGS = [
     tempo: 0.72,
     notes: [65, 67, 69, 72, 74, 72, 69, 67, 65, 62, 65, null],
     audioUrl: CA_HUE_AUDIO_URLS[2],
+  },
+  {
+    id: "ly-tinh-tang",
+    title: "Lý Tình Tang — Vang vọng bến Ngự",
+    shortTitle: "Lý Tình Tang",
+    tempo: 0.7,
+    notes: [64, 67, 72, 69, 67, 64, 62, 64, 67, 69, 67, null],
+    audioUrl: CA_HUE_AUDIO_URLS[1],
+  },
+  {
+    id: "ly-con-sao",
+    title: "Lý Con Sáo Huế — Nắng chiều Gia Hội",
+    shortTitle: "Lý Con Sáo Huế",
+    tempo: 0.66,
+    notes: [67, 71, 74, 72, 69, 67, 64, 67, 69, 72, 71, null],
+    audioUrl: CA_HUE_AUDIO_URLS[3],
+  },
+  {
+    id: "ho-gia-gao",
+    title: "Hò Giã Gạo — Nhịp chày đêm Kim Long",
+    shortTitle: "Hò Giã Gạo",
+    tempo: 0.74,
+    notes: [62, 64, 67, 69, 67, 64, 62, 60, 62, 67, 64, null],
+    audioUrl: CA_HUE_AUDIO_URLS[0],
+  },
+  {
+    id: "kim-tien",
+    title: "Kim Tiền — Đèn hoa bến Nghinh Lương",
+    shortTitle: "Kim Tiền",
+    tempo: 0.65,
+    notes: [69, 72, 74, 76, 74, 72, 69, 67, 69, 72, 74, null],
+    audioUrl: CA_HUE_AUDIO_URLS[1],
+  },
+  {
+    id: "xuan-phong",
+    title: "Xuân Phong — Sóng biếc cầu Phú Xuân",
+    shortTitle: "Xuân Phong",
+    tempo: 0.72,
+    notes: [64, 67, 69, 72, 74, 72, 69, 67, 64, 67, 69, null],
+    audioUrl: CA_HUE_AUDIO_URLS[2],
+  },
+  {
+    id: "long-ho",
+    title: "Long Hổ Hội — Rồng lượn sông Hương",
+    shortTitle: "Long Hổ Hội",
+    tempo: 0.78,
+    notes: [60, 64, 67, 72, 69, 67, 64, 62, 60, 64, 67, null],
+    audioUrl: CA_HUE_AUDIO_URLS[3],
+  },
+  {
+    id: "van-thien-tuong",
+    title: "Vạn Thiên Tường — Trăng soi Thiên Mụ",
+    shortTitle: "Vạn Thiên Tường",
+    tempo: 0.86,
+    notes: [62, 65, 69, 72, 70, 69, 65, 62, 60, 62, 65, null],
+    audioUrl: CA_HUE_AUDIO_URLS[0],
+  },
+  {
+    id: "ly-chieu-chieu",
+    title: "Lý Chiều Chiều — Hoàng hôn Cồn Hến",
+    shortTitle: "Lý Chiều Chiều",
+    tempo: 0.8,
+    notes: [64, 67, 71, 69, 67, 64, 62, 60, 64, 67, 69, null],
+    audioUrl: CA_HUE_AUDIO_URLS[1],
   },
 ];
 
@@ -200,48 +264,30 @@ export class CaHueBoats {
     this.loop = buildClosedLoopSamples(this.piers, world.riverRings);
     this.speed = 3.3;
 
+    const lanes = [-8.2, -3.2, 3.2, 8.2];
     this.boats = CA_HUE_SONGS.map((song, idx) => {
       const mesh = createDragonBoat(idx);
-      // Warm Ca Huế lantern beacon on bow & singing ensemble figures under pavilion
       const stageGlow = new THREE.Mesh(
-        new THREE.OctahedronGeometry(0.24, 0),
+        new THREE.OctahedronGeometry(0.16, 0),
         new THREE.MeshStandardMaterial({
           color: "#ffe7a8",
           emissive: idx % 2 === 0 ? "#ffb338" : "#ff6b8b",
-          emissiveIntensity: 1.15,
+          emissiveIntensity: 1.05,
           roughness: 0.25,
         }),
       );
-      stageGlow.position.set(0, 2.68, 2.2);
+      stageGlow.position.set(0, 2.78, 2.0);
       mesh.add(stageGlow);
 
-      const performerMat = new THREE.MeshStandardMaterial({
-        color: idx % 2 === 0 ? "#7a2c72" : "#1f5f72",
-        roughness: 0.72,
-      });
-      const skinMat = new THREE.MeshStandardMaterial({
-        color: "#f5d0b4",
-        roughness: 0.75,
-      });
-      for (const pz of [-1.2, 0.9]) {
-        const torso = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.14, 0.2, 0.56, 7),
-          performerMat,
-        );
-        torso.position.set(pz < 0 ? -0.32 : 0.32, 0.82, pz);
-        const head = new THREE.Mesh(
-          new THREE.SphereGeometry(0.14, 7, 6),
-          skinMat,
-        );
-        head.position.set(pz < 0 ? -0.32 : 0.32, 1.2, pz);
-        mesh.add(torso, head);
-      }
-
       const startU = idx / CA_HUE_SONGS.length;
-      const laneOffset = idx % 2 === 0 ? 4.2 : -4.2;
+      const dir = idx % 3 === 1 ? -1 : 1;
+      const laneOffset = lanes[idx % lanes.length];
+      const boatSpeed = 2.95 + (idx % 4) * 0.22;
       const pose = this.sampleSafeBoatPose(startU * this.loop.total, laneOffset);
+      const fwdX = pose.tx * dir;
+      const fwdZ = pose.tz * dir;
       mesh.position.set(pose.x, 0.03, pose.z);
-      mesh.rotation.y = Math.atan2(pose.tx, pose.tz);
+      mesh.rotation.y = Math.atan2(fwdX, fwdZ);
       this.group.add(mesh);
 
       return {
@@ -249,14 +295,16 @@ export class CaHueBoats {
         boatIndex: idx,
         song,
         startU,
+        dir,
+        speed: boatSpeed,
         laneOffset,
         phase: idx * 1.4,
         mesh,
         x: pose.x,
         y: 0.03,
         z: pose.z,
-        tx: pose.tx,
-        tz: pose.tz,
+        tx: fwdX,
+        tz: fwdZ,
       };
     });
 
@@ -289,12 +337,14 @@ export class CaHueBoats {
   update(time = 0, position = null) {
     const hasPos = Boolean(position && Number.isFinite(position.x) && Number.isFinite(position.z));
     for (const boat of this.boats) {
-      const dist = boat.startU * this.loop.total + time * this.speed;
+      const dist = boat.startU * this.loop.total + time * (boat.speed ?? this.speed) * (boat.dir ?? 1);
       const pose = this.sampleSafeBoatPose(dist, boat.laneOffset);
+      const fwdX = pose.tx * (boat.dir ?? 1);
+      const fwdZ = pose.tz * (boat.dir ?? 1);
       boat.x = pose.x;
       boat.z = pose.z;
-      boat.tx = pose.tx;
-      boat.tz = pose.tz;
+      boat.tx = fwdX;
+      boat.tz = fwdZ;
 
       if (hasPos) {
         const cullDist = this.world.quality?.mobile ? 320 : 440;
@@ -315,7 +365,7 @@ export class CaHueBoats {
         0.03 + Math.sin(time * 1.5 + boat.phase) * 0.04;
       boat.y = y;
       boat.mesh.position.set(pose.x, y, pose.z);
-      boat.mesh.rotation.y = Math.atan2(pose.tx, pose.tz);
+      boat.mesh.rotation.y = Math.atan2(fwdX, fwdZ);
       boat.mesh.rotation.z = Math.sin(time * 1.1 + boat.phase) * 0.025;
       boat.mesh.rotation.x = Math.cos(time * 0.9 + boat.phase) * 0.015;
     }

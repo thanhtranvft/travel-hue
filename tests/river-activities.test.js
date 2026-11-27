@@ -162,7 +162,20 @@ test("all 6 chibi avatars animate 3D fishing rod, reveal & reel up caught specie
   }
 });
 
-test("CaHueBoats (10 dragon boats) & AmbientSwanBoats (10 occupied pedal boats) cruise safely inside Perfume River", () => {
+test("CaHueBoats (18 diverse dragon boats) & AmbientSwanBoats (10 occupied pedal boats) cruise safely inside Perfume River", async () => {
+  const { createDragonBoat } = await import("../src/core/world/DragonBoatBuilder.js");
+  const styleNames = new Set();
+  for (let v = 0; v < 4; v++) {
+    const sampleBoat = createDragonBoat(v);
+    styleNames.add(sampleBoat.name);
+    let meshCount = 0;
+    sampleBoat.traverse((o) => {
+      if (o.isMesh) meshCount++;
+    });
+    assert.ok(meshCount >= 1 && meshCount <= 12, `boat variant ${v} merged cleanly (${meshCount} meshes)`);
+  }
+  assert.equal(styleNames.size, 4, "4 distinct dragon boat styles built");
+
   const piers = [
     { x: 430, z: -610, nx: 0.7, nz: 0.7, tx: -0.7, tz: 0.7, halfLen: 10, halfWidth: 2.5 },
   ];
@@ -174,8 +187,9 @@ test("CaHueBoats (10 dragon boats) & AmbientSwanBoats (10 occupied pedal boats) 
     riverSurfaceAt: (_x, _z, t) => 0.03 + Math.sin(t) * 0.02,
   };
   const caHue = new CaHueBoats(world);
-  assert.ok(CA_HUE_SONGS.length >= 10);
+  assert.ok(CA_HUE_SONGS.length >= 16);
   assert.equal(caHue.boats.length, CA_HUE_SONGS.length);
+  assert.ok(caHue.boats.some((b) => b.dir === 1) && caHue.boats.some((b) => b.dir === -1));
 
   caHue.update(12.5);
   const sources = caHue.getAudioSources();
