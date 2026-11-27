@@ -15,6 +15,8 @@ const VIDEO_MIME_CANDIDATES = [
   "video/webm",
 ];
 
+export const CLIP_DURATION_OPTIONS = [15, 30, 60, 120];
+
 export const VIDEO_QUALITY_PRESETS = {
   standard: {
     id: "standard",
@@ -395,7 +397,8 @@ export async function startClipRecording({
 
   const srcWidth = initialCanvas.width || initialCanvas.clientWidth || 1280;
   const srcHeight = initialCanvas.height || initialCanvas.clientHeight || 720;
-  const useCompositor = aspect !== "full" || watermark || includeHud;
+  // Keep the recording canvas alive even if WebGL replaces the game canvas.
+  const useCompositor = true;
   const rect = computeCropRect(srcWidth, srcHeight, aspect, preset.maxEdge);
 
   let videoStream = null;
@@ -509,7 +512,7 @@ export async function startClipRecording({
   }
 
   const chunks = [];
-  const startedAt = Date.now();
+  const startedAt = performance.now();
   let tickTimer = null;
   let stopTimeout = null;
   let finished = false;
@@ -548,7 +551,7 @@ export async function startClipRecording({
     const blob = new Blob(chunks, { type: actualMime });
     const durationSec = Math.max(
       1,
-      Math.round((Date.now() - startedAt) / 1000),
+      Math.round((performance.now() - startedAt) / 1000),
     );
     if (!blob.size) {
       onError?.(new Error("Clip chưa thu được dữ liệu hình ảnh."));
@@ -582,7 +585,10 @@ export async function startClipRecording({
     finalize();
   };
 
-  const onContextLost = () => stop();
+  const onContextLost = () => {
+    // The game recovers/replaces its WebGL canvas. drawFrame reads getCanvas
+    // each time, so keep this stable recording stream instead of ending early.
+  };
   const onAudioEnded = () => {
     if (finished) return;
     finished = true;
@@ -619,7 +625,7 @@ export async function startClipRecording({
   onTick?.({ elapsedSec: 0, maxDurationSec });
 
   tickTimer = setInterval(() => {
-    const elapsedSec = Math.floor((Date.now() - startedAt) / 1000);
+    const elapsedSec = Math.floor((performance.now() - startedAt) / 1000);
     onTick?.({ elapsedSec: Math.min(elapsedSec, maxDurationSec), maxDurationSec });
   }, 250);
 

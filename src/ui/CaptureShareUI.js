@@ -4,6 +4,7 @@ import {
   getCaptureCapabilities,
   shareCapturedMedia,
   startClipRecording,
+  CLIP_DURATION_OPTIONS,
 } from "../core/capture/GameplayCapture.js";
 
 export function initializeCaptureShareUI(game, audio) {
@@ -80,9 +81,7 @@ export function initializeCaptureShareUI(game, audio) {
           <div class="capture-group">
             <span class="capture-label">Thời lượng clip tối đa</span>
             <div class="capture-pills">
-              <button type="button" class="capture-pill" data-duration="15" aria-pressed="false">15 giây</button>
-              <button type="button" class="capture-pill" data-duration="30" aria-pressed="true">30 giây</button>
-              <button type="button" class="capture-pill" data-duration="60" aria-pressed="false">60 giây</button>
+              ${CLIP_DURATION_OPTIONS.map(seconds=>`<button type="button" class="capture-pill" data-duration="${seconds}" aria-pressed="${seconds === 30}">${seconds >= 60 ? `${seconds / 60} phút` : `${seconds} giây`}</button>`).join("")}
             </div>
           </div>
 
