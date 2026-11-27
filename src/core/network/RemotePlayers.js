@@ -98,7 +98,8 @@ export class RemotePlayers {
       bike.motion.speed = speed;
       bike.motion.steering = 0;
       if (stance === "boat") bike.setBoat?.(boatIndex);
-      bike.update(dt, 0, 0, false, { stance, boatIndex, poseOnly: true });
+      entry.jumpHeight = (entry.jumpHeight || 0) + ((target.jumpHeight || 0)-(entry.jumpHeight || 0))*alpha;
+      bike.update(dt, 0, 0, false, { stance, boatIndex, poseOnly: true, jumpHeight:entry.jumpHeight });
       bike.position.set(poseX, poseY, poseZ);
       bike.motion.heading = heading;
       bike.rotation.y = heading;

@@ -12,6 +12,7 @@ import {
   createBadmintonGroup,
   createDaCauGroup,
   createGuitarCircleGroup,
+  createSittingCircleGroup,
   createKiteFlyingGroup,
   createSeatedBenchCouple,
 } from "../../../../core/world/RiversideParkLife.js";
@@ -855,6 +856,17 @@ export function createFireflyTreePark(world, biaSite, heading, options = {}) {
     ffGuitar.update,
     ffDaCau.update,
   );
+
+  // Small social groups on the river-facing lawns; keep the main paths open.
+  [[76,-3,"family"],[98,-3,"music"],[118,-4,"youth"],[132,-5,"family"],[194,-3,"kite"],[211,-4,"youth"]].forEach(([x,z,activity],i)=>{
+    const options={x,y:0.13,z,phase:i*0.83};
+    const life=activity==='music'?createGuitarCircleGroup(options)
+      :activity==='kite'?createKiteFlyingGroup(options)
+      :createSittingCircleGroup({...options,kind:activity,count:4,matColor:i%2?'#c8b98e':'#91a48a'});
+    life.group.name='river-lawn-'+activity+'-'+i;
+    group.add(life.group);
+    lifeAnimators.push(life.update);
+  });
 
   // 9. BẾN THUYỀN RỒNG CA HUẾ · HÒ ĐỐI ĐÁP (between Bia Quốc Học fishing & Fountain Park pedal dock)
   const dockLx = 155;

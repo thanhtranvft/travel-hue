@@ -50,6 +50,8 @@ export class GameView {
   }
   syncMode(game) {
     const isBike = game.bike.transportMode === "bike";
+    const jumpButton=document.querySelector("#touch-jump");
+    if(jumpButton)jumpButton.hidden=isBike || Boolean(game.riverActivities?.isActive?.());
     const stanceText = STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
     if (game.hud.mode) {
       game.hud.mode.textContent = stanceText;

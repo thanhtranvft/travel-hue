@@ -19,9 +19,9 @@ import {
   saveAvatar,
 } from "../src/ui/SessionUI.js";
 
-test("all 6 Chibi characters build in 3D and animate idle/walk/run/bike cleanly", () => {
-  assert.deepEqual(AVATAR_IDS, ["boy", "girl", "dog", "cat", "cow", "buffalo"]);
-  assert.equal(AVATAR_CATALOG.length, 6);
+test("all 8 characters build in 3D and animate idle/walk/run/bike cleanly", () => {
+  assert.deepEqual(AVATAR_IDS, ["boy", "girl", "dog", "cat", "cow", "buffalo", "scholar", "ao-dai-woman"]);
+  assert.equal(AVATAR_CATALOG.length, 8);
 
   for (const id of AVATAR_IDS) {
     const rig = buildChibiActor(id);

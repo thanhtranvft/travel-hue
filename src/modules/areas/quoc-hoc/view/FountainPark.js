@@ -11,6 +11,7 @@ import {
   createBadmintonGroup,
   createDaCauGroup,
   createGuitarCircleGroup,
+  createSittingCircleGroup,
   createKiteFlyingGroup,
   createPedalDockCrowd,
   createSeatedBenchCouple,
@@ -1421,6 +1422,17 @@ export function createFountainPark(world, biaSite, heading, options = {}) {
 
   // Youth activity groups across FountainPark wing lawns
   const ftBadminton = createBadmintonGroup({ x: 263, y: 0.13, z: 27, yaw: 0.25, phase: 0.3 });
+  // Small social groups on the river-facing lawns; keep the main paths open.
+  [[235,-3,"family"],[252,17,"youth"],[238,27,"music"],[328,-3,"family"],[345,20,"kite"]].forEach(([x,z,activity],i)=>{
+    const options={x,y:0.13,z,phase:i*0.83};
+    const life=activity==='music'?createGuitarCircleGroup(options)
+      :activity==='kite'?createKiteFlyingGroup(options)
+      :createSittingCircleGroup({...options,kind:activity,count:4,matColor:i%2?'#c8b98e':'#91a48a'});
+    life.group.name='river-lawn-'+activity+'-'+i;
+    group.add(life.group);
+    lifeAnimators.push(life.update);
+  });
+
   const ftKite = createKiteFlyingGroup({ x: 316, y: 0.13, z: 27, yaw: -0.2, phase: 0.7 });
   const ftGuitar = createGuitarCircleGroup({ x: 265, y: 0.13, z: -7, phase: 1.2 });
   const ftDaCau = createDaCauGroup({ x: 314, y: 0.13, z: -7, phase: 0.5 });

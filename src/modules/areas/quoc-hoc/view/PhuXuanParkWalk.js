@@ -13,6 +13,7 @@ import {
   createBadmintonGroup,
   createDaCauGroup,
   createGuitarCircleGroup,
+  createSittingCircleGroup,
   createKiteFlyingGroup,
   createSeatedBenchCouple,
 } from "../../../../core/world/RiversideParkLife.js";
@@ -1189,6 +1190,17 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
     });
     group.add(couple.group);
     lifeAnimators.push(couple.update);
+  });
+
+  // Small social groups on the river-facing lawns; keep the main paths open.
+  [[378,-3,"family"],[398,-4,"music"],[418,-4,"youth"],[455,-5,"kite"],[475,-3,"family"]].forEach(([x,z,activity],i)=>{
+    const options={x,y:0.13,z,phase:i*0.83};
+    const life=activity==='music'?createGuitarCircleGroup(options)
+      :activity==='kite'?createKiteFlyingGroup(options)
+      :createSittingCircleGroup({...options,kind:activity,count:4,matColor:i%2?'#c8b98e':'#91a48a'});
+    life.group.name='river-lawn-'+activity+'-'+i;
+    group.add(life.group);
+    lifeAnimators.push(life.update);
   });
 
   // Youth activity groups across open PhuXuan Park lawns

@@ -49,6 +49,14 @@ export function pedestrianGround(world, road, p) {
     (isFootway(road) && road.tags.layer === "2");
   return onPhuXuanSidewalk ? y + 0.16 : y;
 }
+// Query at the current position, keeping the reference level for stacked bridges.
+export function pedestrianSurface(world, person) {
+  const p = person.mesh.position;
+  const reference = Number.isFinite(person.fixedY) ? person.fixedY
+    : person.road ? pedestrianGround(world, person.road, p) : 0.17;
+  const surface = world.groundAt?.(p.x, p.z, reference);
+  return Number.isFinite(surface) ? surface : reference;
+}
 export function pedestrianSafe(world, p, park, walkwayRoad) {
   const bridge =
     walkwayRoad &&
@@ -159,6 +167,7 @@ export class PedestrianLife {
         point.z,
       );
       mesh.rotation.y = random() * Math.PI * 2;
+      mesh.position.y = pedestrianSurface(world, {mesh,...extra});
       world.scene.add(mesh);
       this.people.push({
         type: "pedestrian",
@@ -400,6 +409,17 @@ export class PedestrianLife {
           underBridgePromenade: true,
         });
         this.people.at(-1).mesh.position.y = yVal;
+        // A second lane of strollers, with room in the centre for players.
+        if (idx < 13) {
+          const length = Math.hypot(wB.x-wA.x,wB.z-wA.z) || 1;
+          const offset = { x: -(wB.z-wA.z)/length*0.8, z: (wB.x-wA.x)/length*0.8 };
+          const start = { x:wB.x+offset.x, z:wB.z+offset.z };
+          const end = { x:wA.x+offset.x, z:wA.z+offset.z };
+          if (safeWalkSeg(start,end,yVal)) {
+            add(start,"walk",{start,end,side:-1,fixedY:yVal,underBridgePromenade:true});
+            this.people.at(-1).mesh.position.y=yVal;
+          }
+        }
       });
       const shoreCenterAtLx = (lx) => {
         const hits = [];
@@ -470,14 +490,6 @@ export class PedestrianLife {
           (person.end.z - person.start.z) * direction,
         );
         animateWalker(mesh, time * 3.5 + phase);
-        if (person.road)
-          mesh.position.y = pedestrianGround(
-            this.world,
-            person.road,
-            mesh.position,
-          );
-        else if (Number.isFinite(person.fixedY))
-          mesh.position.y = person.fixedY;
       } else if (person.mode === "play") {
         const p = {
           x: origin.x + Math.sin(time * 0.8 + phase) * 0.7,
@@ -488,11 +500,11 @@ export class PedestrianLife {
           mesh.position.z = p.z;
         }
         animateWalker(mesh, time * 5 + phase);
-        mesh.position.y = 0.17 + Math.max(0, Math.sin(time * 2 + phase)) * 0.1;
       } else {
         for (const [i, arm] of mesh.userData.limbs.arms.entries())
           arm.rotation.x = Math.sin(time * 1.6 + phase + i) * 0.22 - 0.2;
       }
+      mesh.position.y = pedestrianSurface(this.world, person);
     }
   }
 }

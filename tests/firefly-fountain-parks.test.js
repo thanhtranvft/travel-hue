@@ -67,6 +67,11 @@ test("FireflyTreePark aligns opposite Hai Ba Trung gate and animates wish ribbon
     assert.ok(fireflyPark.group.getObjectByName("cay-dom-dom-wishing-tree"));
     assert.ok(fireflyPark.group.getObjectByName("wish-ribbons"));
     assert.ok(fireflyPark.group.getObjectByName("firefly-lights"));
+    for (const crowd of fireflyPark.group.children.filter(c => c.name.startsWith("river-lawn-"))) {
+      const p = biaPark.toWorld(crowd.position.x, crowd.position.z);
+      assert.equal(fireflyPark.canRide(p.x,p.z),true, crowd.name+" must stay clear of park structures");
+      assert.ok(Math.abs(fireflyPark.groundAt(p.x,p.z,0.13)-crowd.position.y)<0.02,crowd.name+" must sit on grass");
+    }
 
     // Tree center aligns directly with Hai Ba Trung front gate lx
     const gateLocal = biaPark.toLocal(hbtGate.x, hbtGate.z);
@@ -120,6 +125,11 @@ test("FountainPark aligns opposite UBND Hue and animates water jets & pedal boat
     });
 
     assert.ok(fountainPark.group.getObjectByName("fountain-water-jets"));
+    for (const crowd of fountainPark.group.children.filter(c => c.name.startsWith("river-lawn-"))) {
+      const p = biaPark.toWorld(crowd.position.x, crowd.position.z);
+      assert.equal(fountainPark.canRide(p.x,p.z),true,crowd.name+" must stay clear of fountain and structures");
+      assert.ok(Math.abs(fountainPark.groundAt(p.x,p.z,0.13)-crowd.position.y)<0.02,crowd.name+" must sit on grass");
+    }
 
     const ubndLocal = biaPark.toLocal(ubndSite.center.x, ubndSite.center.z);
     assert.ok(

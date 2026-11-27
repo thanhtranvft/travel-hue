@@ -1,0 +1,20 @@
+[
+  {
+    "mode": "background",
+    "requestedDuration": 60,
+    "reportedDuration": 60,
+    "metadata": {
+      "duration": 60.014
+    },
+    "mime": "video/webm;codecs=vp8,opus",
+    "hasAudio": true,
+    "bytes": 1801998,
+    "decoded": {
+      "duration": 60.0135,
+      "channels": 2,
+      "rms": 0.013538956134481656,
+      "peak": 0.0702090710401535
+    },
+    "context": "running"
+  }
+]

@@ -5,6 +5,7 @@ import { AreaPresenter } from "../modules/areas/AreaPresenter.js";
 import { createAreaView } from "../modules/areas/AreaView.js";
 import * as THREE from "three";
 import { InputController } from "../core/input/InputController.js";
+import { bindMultiTouchAction } from "../core/input/TouchControls.js";
 import { TouringBike } from "../core/vehicle/TouringBike.js";
 import { geoDistricts as districts } from "../modules/areas/AreaModel.js";
 import { damp, wrapAngle } from "../core/vehicle/BicycleMotion.js";
@@ -153,6 +154,8 @@ export class GamePresenter {
     this.speedAura = new SpeedAuraEffect();
     this.speedAura.attachTo(this.bike);
     this.riverActivities = new RiverActivities(this);
+    const jumpButton=document.querySelector("#touch-jump");
+    if(jumpButton)bindMultiTouchAction(jumpButton,()=>this.jump());
     this.travelTo(this.world.region.id);
     addEventListener("resize", () => this.resize());
     this.ready = Promise.allSettled([this.bike.loadDetailedModel()]).then(
@@ -188,7 +191,7 @@ export class GamePresenter {
         if (this.riverActivities?.handleKeyG?.()) e.preventDefault();
       }
       if (e.code === "Space" || key === " ") {
-        if (this.riverActivities?.handleSpaceAction?.()) e.preventDefault();
+        if (this.riverActivities?.handleSpaceAction?.() || this.jump()) e.preventDefault();
       }
       if (key === "escape") this.riverActivities?.handleEscape?.();
       if (key === "1") this.useCharm("10");
@@ -409,6 +412,11 @@ export class GamePresenter {
   start() {
     this.renderer.setAnimationLoop(() => this.frame());
   }
+  jump() {
+    if(this.bike.transportMode !== "foot" || this.sessionActive === false || this.isLoadingRegion || this.stun > 0 || this.riverActivities?.isActive?.() || (this.online && !this.online.canMove))return false;
+    this.auto=false;
+    return Boolean(this.bike.jump());
+  }
   step(dt) {
     if (this.sessionActive === false) return;
     this.collisionCooldown = Math.max(0, this.collisionCooldown - dt);
@@ -423,7 +431,7 @@ export class GamePresenter {
     }
     let throttle = this.input.throttle,
       steer = this.input.steer,
-      brake = this.input.brake,
+      brake = this.bike.transportMode === "foot" ? false : this.input.brake,
       sprint = this.input.sprint;
     const touchVec = this.input.touchVector;
     if (touchVec?.active) {

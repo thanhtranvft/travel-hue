@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { addTraditionalOutfit, animateTraditionalOutfit } from "./TraditionalOutfit.js";
 import { AVATAR_CATALOG, cleanAvatarId } from "../network/protocol.js";
 import { markSharedResource } from "../shared/resources/sceneResources.js";
 import { createRiverFishMesh } from "../world/RiverFish.js";
@@ -566,7 +567,8 @@ function buildFishingRod() {
 }
 
 function buildHumanRig(avatarId, { includeFishingRod = true } = {}) {
-  const isGirl = avatarId === "girl";
+  const isGirl = avatarId === "girl" || avatarId === "ao-dai-woman";
+  const traditional = avatarId === "scholar" || avatarId === "ao-dai-woman";
   const root = new THREE.Group();
   root.name = `chibi-${avatarId}`;
 
@@ -600,7 +602,7 @@ function buildHumanRig(avatarId, { includeFishingRod = true } = {}) {
     0.72,
     0.88,
   );
-  if (isGirl) {
+  if (isGirl && !traditional) {
     // Flared cute pleated schoolgirl skirt
     addPart(
       bodyPivot,
@@ -701,7 +703,7 @@ function buildHumanRig(avatarId, { includeFishingRod = true } = {}) {
   addPart(headPivot, new THREE.CylinderGeometry(0.06, 0.075, 0.09, 12), skinMat, 0, 0.02, 0);
 
   // Big Chibi Head with high-detail face CanvasTexture
-  const faceTex = createChibiFaceTexture(avatarId);
+  const faceTex = createChibiFaceTexture(isGirl ? "girl" : "boy");
   const headMat = faceTex
     ? getSharedMat("#ffffff", 0.62, 0.02, `face:${avatarId}`, () => ({ map: faceTex }))
     : skinMat;
@@ -1193,6 +1195,7 @@ export function buildChibiActor(
     meta.kind === "human"
       ? buildHumanRig(id, { includeFishingRod })
       : buildAnimalRig(id, { includeFishingRod });
+  if (id === "scholar" || id === "ao-dai-woman") addTraditionalOutfit(character,id === "ao-dai-woman");
   const bike = includeBike ? buildChibiBicycle(meta.bikeColor) : null;
   if (bike) {
     bike.group.visible = false;
@@ -1227,6 +1230,7 @@ export function animateChibiActor(
 ) {
   if (!rig || !rig.character) return;
   const char = rig.character;
+  animateTraditionalOutfit(char,{stance,speed,phase,idleTime});
   const bike = rig.bike;
   const isBike = Boolean(bike) && stance === "bike";
   const isFish = stance === "fish";

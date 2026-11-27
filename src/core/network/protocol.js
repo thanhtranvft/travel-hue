@@ -12,7 +12,7 @@ export const PLAYER_COLORS = [
   "#868936",
   "#bd713f",
 ];
-export const AVATAR_IDS = ["boy", "girl", "dog", "cat", "cow", "buffalo"];
+export const AVATAR_IDS = ["boy", "girl", "dog", "cat", "cow", "buffalo", "scholar", "ao-dai-woman"];
 export const DEFAULT_AVATAR_ID = "boy";
 export const STANCE_IDS = ["idle", "walk", "run", "bike", "fish", "boat", "cruise"];
 export const PEDAL_BOAT_COUNT = 6;
@@ -67,6 +67,8 @@ export const AVATAR_CATALOG = [
     accent: "#485463",
     bikeColor: "#2d70b3",
   },
+  {id:"scholar",label:"Thầy đồ",subtitle:"Áo dài đen · Kính tròn · Gậy gỗ",kind:"human",accent:"#464753",bikeColor:"#24384a"},
+  {id:"ao-dai-woman",label:"Nữ sinh áo dài",subtitle:"Áo dài trắng · Nón lá · Tóc dài",kind:"human",accent:"#dfdacb",bikeColor:"#8ca5a5"},
 ];
 
 export function cleanAvatarId(value) {

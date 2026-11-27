@@ -210,6 +210,7 @@ export class OnlineSession {
       lean: m.lean,
       avatar: game.bike.avatarId,
       stance: game.bike.stance,
+      jumpHeight: m.jumpHeight || 0,
       boatIndex: game.bike.stance === "boat" ? game.bike.boatIndex : -1,
     });
   }

@@ -14,3 +14,13 @@
   .ride-panel .status{display:none}
 }
 
+/* Right thumb action, independent of the left movement stick. */
+.touch-jump-action {
+  position: fixed; right: max(24px, env(safe-area-inset-right)); bottom: max(125px, calc(env(safe-area-inset-bottom) + 100px));
+  width: 76px; height: 76px; border-radius: 50%; border: 2px solid #f6d59b90;
+  background: #214b43de; color: #fff3ce; font-size: 32px; display: grid; place-content: center;
+  touch-action: none; user-select: none; -webkit-user-select: none; pointer-events: auto;
+}
+.touch-jump-action small { font-size: 10px; font-weight: 700; }
+.touch-jump-action[hidden] { display: none !important; }
+.touch-jump-action:active { background: #47795c; }

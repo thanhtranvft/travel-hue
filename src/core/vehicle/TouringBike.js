@@ -95,6 +95,7 @@ export class TouringBike extends THREE.Group {
     return this.boatIndex;
   }
   setActivityStance(stance, options = {}) {
+    this.motion.resetJump();
     if (stance === "fish" || stance === "boat" || stance === "cruise") {
       this.activityStance = stance;
       this.motion.stance = stance;
@@ -198,6 +199,9 @@ export class TouringBike extends THREE.Group {
   }
   async loadDetailedModel() {
     return Promise.resolve();
+  }
+  jump() {
+    return !this.activityStance && this.transportMode === "foot" && this.motion.jump();
   }
   reset(x, z, heading) {
     this.position.set(x, 0, z);
@@ -304,5 +308,14 @@ export class TouringBike extends THREE.Group {
       steer: this.motion.steering,
       fishState: options?.fishState ?? this.fishState,
     });
+    const jumpHeight = this.activityStance || !["idle","walk","run"].includes(stance) ? 0 : Math.max(0,Math.min(1.85,options.jumpHeight ?? this.motion.jumpHeight ?? 0));
+    if(!this.activityStance) this.rig.actor.position.y = jumpHeight;
+    if(jumpHeight > .03){
+      const character=this.rig.character;
+      if(character.kind === "human"){
+        character.leftArm.rotation.x=-.7;character.rightArm.rotation.x=-.7;
+        character.leftLeg.rotation.x=-.35;character.rightLeg.rotation.x=.25;
+      }
+    }
   }
 }

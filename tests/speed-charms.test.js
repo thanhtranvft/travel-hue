@@ -82,7 +82,12 @@ test("BicycleMotion scales top speed on bike and foot and smoothly slows down af
 
   const boostedFoot = new BicycleMotion("foot");
   for (let i = 0; i < 180; i++) boostedFoot.step(1 / 30, 1, 0, false, true, 2.0);
-  assert.ok(boostedFoot.speed > 10.5 && boostedFoot.speed <= 11.25);
+  assert.ok(Math.abs(boostedFoot.speed * 3.6 - 40) < 0.01);
+  const beforeJump = boostedFoot.speed;
+  assert.equal(boostedFoot.jump(), true);
+  assert.ok(boostedFoot.speed >= beforeJump, "jump must not discard charm speed");
+  for (let i = 0; i < 180; i++) boostedFoot.step(1 / 30, 1, 0, false, true, 1);
+  assert.ok(Math.abs(boostedFoot.speed * 3.6 - 20) < 0.01);
 });
 
 test("Room validates charm pickup, inventory stacks, speed boost anti-cheat, and ~30s refresh", () => {

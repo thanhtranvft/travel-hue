@@ -390,6 +390,7 @@ export async function startClipRecording({
   }
 
   const preset = resolveVideoQuality(quality);
+  maxDurationSec = Math.min(Math.max(...CLIP_DURATION_OPTIONS), Math.max(1, Number(maxDurationSec) || 30));
 
   // A failed audio unlock must not silently turn into a successful silent clip.
   const recordingAudio = await prepareRecordingAudio(audio);
@@ -531,7 +532,6 @@ export async function startClipRecording({
       clearTimeout(stopTimeout);
       stopTimeout = null;
     }
-    window.removeEventListener("hue-webgl-lost", onContextLost);
     for (const track of audioTracks) track.removeEventListener("ended", onAudioEnded);
     recordingAudio.release();
     // Stop ONLY our video capture tracks; never stop shared CityAudio capture tracks.
@@ -585,10 +585,6 @@ export async function startClipRecording({
     finalize();
   };
 
-  const onContextLost = () => {
-    // The game recovers/replaces its WebGL canvas. drawFrame reads getCanvas
-    // each time, so keep this stable recording stream instead of ending early.
-  };
   const onAudioEnded = () => {
     if (finished) return;
     finished = true;
@@ -599,7 +595,6 @@ export async function startClipRecording({
     onError?.(new Error("Luồng âm thanh bị gián đoạn. Hãy bật tiếng và quay lại clip."));
   };
   for (const track of audioTracks) track.addEventListener("ended", onAudioEnded);
-  window.addEventListener("hue-webgl-lost", onContextLost);
 
   recorder.ondataavailable = (event) => {
     if (event.data && event.data.size > 0) chunks.push(event.data);

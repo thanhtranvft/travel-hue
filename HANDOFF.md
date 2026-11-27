@@ -1,5 +1,11 @@
 # Handoff
 
+## Thời lượng quay 1–2 phút — 2026-11-27
+
+Theo lỗi chọn 1 phút nhưng file ngắn và yêu cầu thêm 2 phút. Recorder dùng canvas trung gian ổn định kể cả khi tắt watermark, tiếp tục lấy canvas game mới sau phục hồi WebGL; bỏ nhánh dừng clip chỉ vì canvas cũ bị mất context. Đo thời gian bằng performance.now, giới hạn tối đa theo CLIP_DURATION_OPTIONS = 15/30/60/120 giây; UI có 1 phút và 2 phút.
+
+Đã quay thực trên Firefox: clip 60s, chủ động phát sự kiện mất context/thay canvas ở giây 10, xuất WebM dài 60,014s; clip 120s xuất WebM dài 120,021s. Giải mã PCM của cả hai có audio stereo, tương ứng 60,0135s và 120,0135s. Fixture dùng canvas kiểm thử với bộ âm thanh game thật, chưa chứng minh nguyên nhân mọi trường hợp clip ngắn trên máy người dùng. Kết quả/file tại tool/browser-test/capture-audio-check/firefox/60s-recovery và 120s. 12 kiểm thử capture qua, production build thành công.
+
 ## Quay có âm thanh và di chuyển sau khi lên bờ — 2026-11-27
 
 Theo báo lỗi video thiếu tiếng trên Firefox và kẹt sau đi thuyền. Luồng quay cũ bắt lỗi resume âm thanh rồi bỏ qua, vẫn có thể xuất video không audio. `prepareRecordingAudio` nay yêu cầu context running và track live, clone track riêng cho mỗi clip, giữ âm thanh chạy khi quay và hoàn nguyên chính sách sau đó. Track bị gián đoạn/recorder lỗi không còn được báo thành công; không dùng micro. Chưa tái hiện mất tiếng trên bản Firefox kiểm tra khi nguồn âm hoạt động bình thường; ba file WebM/Opus sau vá đã giải mã PCM stereo có tín hiệu thật (nhạc nền, Hò Đối Đáp, quay lặp). Artifacts tại `tool/browser-test/capture-audio-check/firefox/`.
