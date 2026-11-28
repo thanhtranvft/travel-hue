@@ -12,6 +12,7 @@ const STANCE_LABELS = {
   fish: "Đang ngồi câu cá",
   boat: "Đang đạp vịt trên sông",
   cruise: "Đang nghe Hò Đối Đáp trên thuyền rồng",
+  cafe: "Đang ngồi uống cà phê · Thưởng thơ Huế",
 };
 
 export class GameView {
@@ -51,7 +52,7 @@ export class GameView {
   syncMode(game) {
     const isBike = game.bike.transportMode === "bike";
     const jumpButton=document.querySelector("#touch-jump");
-    if(jumpButton)jumpButton.hidden=isBike || Boolean(game.riverActivities?.isActive?.());
+    if(jumpButton)jumpButton.hidden=isBike || Boolean(game.riverActivities?.isActive?.()) || Boolean(game.cafeLounge?.isActive?.());
     const stanceText = STANCE_LABELS[game.bike.stance] || "Đi bộ tự do";
     if (game.hud.mode) {
       game.hud.mode.textContent = stanceText;
@@ -119,11 +120,13 @@ export class GameView {
       soundLocation.textContent =
         game.audio.dragonCruiseMode && game.audio.activeCaHueBoat?.song
           ? `🐉 Thuyền rồng: ${game.audio.activeCaHueBoat.song.shortTitle}`
-          : game.audio.venueLevel > 0.07
-            ? `Nhạc ven quán · ${game.audio.nearbyVenue.title}`
-            : game.audio.caHueLevel > 0.03 && game.audio.activeCaHueBoat?.song
-              ? `🚤 Ca Huế: ${game.audio.activeCaHueBoat.song.shortTitle}`
-              : "Giai điệu bên sông Hương";
+          : game.audio.cafeMode
+            ? `☕ ${game.audio.activeCafeSpot?.title || "Nhạc quán Cà phê Huế"}`
+            : game.audio.venueLevel > 0.07
+              ? `Nhạc ven quán · ${game.audio.nearbyVenue.title}`
+              : game.audio.caHueLevel > 0.03 && game.audio.activeCaHueBoat?.song
+                ? `🚤 Ca Huế: ${game.audio.activeCaHueBoat.song.shortTitle}`
+                : "Giai điệu bên sông Hương";
     let near = null,
       distance = Infinity;
     for (const lm of game.world.landmarks.values()) {

@@ -5,6 +5,8 @@ import {
   restaurantMelody,
   countrysideFishingMelody,
   countrysideFishingBass,
+  cafeLoungeMelody,
+  cafeLoungeBass,
   pluck,
   flute,
   frequency,
@@ -40,6 +42,11 @@ export class CityAudio {
     this.nextFishingNote = 0;
     this.dragonCruiseMode = false;
     this.dragonCruiseSource = null;
+    this.cafeMode = false;
+    this.activeCafeSpot = null;
+    this.cafeStep = 0;
+    this.cafeStepSeconds = 0.68;
+    this.nextCafeNote = 0;
     this.captureDestination = null;
     this.keepAliveInBackground = false;
     this.onStatus = () => {};
@@ -88,13 +95,15 @@ export class CityAudio {
       return gain;
     };
     this.background = bus();
-    this.background.gain.value = this.musicEnabled
-      ? this.fishingMode
-        ? 0.04
-        : 0.65
-      : 0;
+    this.background.gain.value =
+      this.musicEnabled && !this.cafeMode && !this.dragonCruiseMode
+        ? this.fishingMode
+          ? 0.04
+          : 0.65
+        : 0;
     this.venue = ctx.createGain();
-    this.venue.gain.value = 0;
+    this.venue.gain.value =
+      this.musicEnabled && this.cafeMode && !this.dragonCruiseMode ? 0.68 : 0;
     this.venuePan = ctx.createStereoPanner();
     this.venue.connect(this.venuePan).connect(this.master);
     this.engineGain = ctx.createGain();
@@ -161,6 +170,7 @@ export class CityAudio {
     this.nextNote = ctx.currentTime + 0.08;
     this.nextCaHueNote = ctx.currentTime + 0.1;
     this.nextFishingNote = ctx.currentTime + 0.08;
+    this.nextCafeNote = ctx.currentTime + 0.08;
   }
   registerCaHueAudioUrl(songId, url) {
     if (!songId) return;
@@ -289,6 +299,7 @@ export class CityAudio {
       }
       this.nextNote = this.ctx.currentTime + 0.08;
       this.nextFishingNote = this.ctx.currentTime + 0.08;
+      this.nextCafeNote = this.ctx.currentTime + 0.08;
       this.onStatus("");
       this.onStateChange?.();
       this.schedule();
@@ -353,25 +364,91 @@ export class CityAudio {
     if (this.ctx) {
       const now = this.ctx.currentTime;
       this.background.gain.setTargetAtTime(
-        this.dragonCruiseMode ? 0 : enabled ? (this.fishingMode ? 0.04 : 0.65) : 0,
+        this.dragonCruiseMode || this.cafeMode
+          ? 0
+          : enabled
+            ? this.fishingMode
+              ? 0.04
+              : 0.65
+            : 0,
         now,
         0.05,
       );
       if (this.fishingBus) {
         this.fishingBus.gain.setTargetAtTime(
-          !this.dragonCruiseMode && enabled && this.fishingMode ? 0.78 : 0,
+          !this.dragonCruiseMode && !this.cafeMode && enabled && this.fishingMode
+            ? 0.78
+            : 0,
           now,
           0.08,
         );
       }
-      if (!enabled) this.venue.gain.setTargetAtTime(0, now, 0.05);
+      if (this.cafeMode && !this.dragonCruiseMode) {
+        this.venue.gain.setTargetAtTime(enabled ? 0.68 : 0, now, 0.08);
+      } else if (!enabled) {
+        this.venue.gain.setTargetAtTime(0, now, 0.05);
+      }
       if (!enabled && !this.dragonCruiseMode) {
         this.stopCaHueMedia(false);
       }
       this.nextNote = now + 0.08;
       this.nextFishingNote = now + 0.08;
+      this.nextCafeNote = now + 0.08;
     }
     return this.musicEnabled;
+  }
+  setCafeMode(enabled, spot = null) {
+    const next = Boolean(enabled);
+    const changed = this.cafeMode !== next;
+    this.cafeMode = next;
+    this.activeCafeSpot = next ? spot : null;
+    if (next) {
+      this.cafeStep = 0;
+      if (!this.dragonCruiseMode) {
+        this.stopCaHueMedia(false);
+        this.activeCaHueBoat = null;
+        this.caHueLevel = 0;
+      }
+    }
+    if (this.ctx) {
+      const now = this.ctx.currentTime;
+      this.nextCafeNote = now + 0.06;
+      this.background?.gain?.setTargetAtTime(
+        !this.musicEnabled || this.dragonCruiseMode || next
+          ? 0
+          : this.fishingMode
+            ? 0.04
+            : 0.65,
+        now,
+        0.18,
+      );
+      this.fishingBus?.gain?.setTargetAtTime(
+        this.musicEnabled && this.fishingMode && !this.dragonCruiseMode && !next
+          ? 0.78
+          : 0,
+        now,
+        0.18,
+      );
+      if (this.caHueBus) {
+        this.caHueBus.gain.setTargetAtTime(
+          this.dragonCruiseMode ? 0.86 : next ? 0 : this.caHueLevel,
+          now,
+          0.18,
+        );
+      }
+      this.venue?.gain?.setTargetAtTime(
+        this.musicEnabled && next && !this.dragonCruiseMode ? 0.68 : 0,
+        now,
+        0.2,
+      );
+      if (next && this.venuePan) {
+        this.venuePan.pan.setTargetAtTime(0, now, 0.15);
+      }
+    }
+    if (changed && next && this.enabled && this.ctx?.state === "running") {
+      this.schedule();
+    }
+    return this.cafeMode;
   }
   setDragonCruiseMode(enabled, cruiseSource = null) {
     const next = Boolean(enabled && cruiseSource?.song);
@@ -396,13 +473,23 @@ export class CityAudio {
     if (this.ctx) {
       const now = this.ctx.currentTime;
       this.background?.gain?.setTargetAtTime(
-        !this.musicEnabled || next ? 0 : this.fishingMode ? 0.04 : 0.65,
+        !this.musicEnabled || next || this.cafeMode
+          ? 0
+          : this.fishingMode
+            ? 0.04
+            : 0.65,
         now,
         0.18,
       );
-      this.venue?.gain?.setTargetAtTime(0, now, 0.15);
+      this.venue?.gain?.setTargetAtTime(
+        next ? 0 : this.musicEnabled && this.cafeMode ? 0.68 : 0,
+        now,
+        0.15,
+      );
       this.fishingBus?.gain?.setTargetAtTime(
-        this.musicEnabled && this.fishingMode && !next ? 0.78 : 0,
+        this.musicEnabled && this.fishingMode && !next && !this.cafeMode
+          ? 0.78
+          : 0,
         now,
         0.18,
       );
@@ -428,13 +515,19 @@ export class CityAudio {
       const now = this.ctx.currentTime;
       this.nextFishingNote = now + 0.06;
       this.background.gain.setTargetAtTime(
-        !this.musicEnabled || this.dragonCruiseMode ? 0 : next ? 0.04 : 0.65,
+        !this.musicEnabled || this.dragonCruiseMode || this.cafeMode
+          ? 0
+          : next
+            ? 0.04
+            : 0.65,
         now,
         0.25,
       );
       if (this.fishingBus) {
         this.fishingBus.gain.setTargetAtTime(
-          this.musicEnabled && next && !this.dragonCruiseMode ? 0.78 : 0,
+          this.musicEnabled && next && !this.dragonCruiseMode && !this.cafeMode
+            ? 0.78
+            : 0,
           now,
           0.28,
         );
@@ -459,7 +552,7 @@ export class CityAudio {
       old.gain.setTargetAtTime(0, now, 0.035);
       this.background = this.ctx.createGain();
       this.background.gain.value =
-        this.musicEnabled && !this.dragonCruiseMode
+        this.musicEnabled && !this.dragonCruiseMode && !this.cafeMode
           ? this.fishingMode
             ? 0.04
             : 0.65
@@ -480,7 +573,7 @@ export class CityAudio {
       return;
     const ctx = this.ctx,
       now = ctx.currentTime;
-    if (this.musicEnabled && !this.dragonCruiseMode && this.track) {
+    if (this.musicEnabled && !this.dragonCruiseMode && !this.cafeMode && this.track) {
       if (this.nextNote < now - 0.25) this.nextNote = now + 0.05;
     for (let count = 0; this.nextNote < now + 0.25 && count < 4; count++) {
       const index = this.step % this.track.melody.length,
@@ -511,7 +604,29 @@ export class CityAudio {
     }
     }
 
-    if (this.musicEnabled && !this.dragonCruiseMode && this.fishingMode && this.fishingBus) {
+    if (this.musicEnabled && !this.dragonCruiseMode && this.cafeMode && this.venue) {
+      if (this.nextCafeNote < now - 0.35) this.nextCafeNote = now + 0.05;
+      for (let count = 0; this.nextCafeNote < now + 0.25 && count < 4; count++) {
+        const idx = this.cafeStep % cafeLoungeMelody.length;
+        const note = cafeLoungeMelody[idx];
+        const t = this.nextCafeNote;
+        if (note !== null) {
+          pluck(ctx, this.venue, note, t, 0.14, 2.4);
+          if (idx % 4 === 0) {
+            flute(ctx, this.venue, note + 12, t + 0.07, 0.048, 2.1);
+          }
+        }
+        if (idx % 8 === 0) {
+          const bassNote =
+            cafeLoungeBass[Math.floor(idx / 8) % cafeLoungeBass.length];
+          pluck(ctx, this.venue, bassNote, t, 0.085, 3.6);
+        }
+        this.cafeStep++;
+        this.nextCafeNote += this.cafeStepSeconds;
+      }
+    }
+
+    if (this.musicEnabled && !this.dragonCruiseMode && !this.cafeMode && this.fishingMode && this.fishingBus) {
       if (this.nextFishingNote < now - 0.35) this.nextFishingNote = now + 0.05;
       for (let count = 0; this.nextFishingNote < now + 0.25 && count < 4; count++) {
         const idx = this.fishingStep % countrysideFishingMelody.length;
@@ -534,7 +649,7 @@ export class CityAudio {
     }
 
     const boatSong = this.activeCaHueBoat?.song;
-    if ((this.musicEnabled || this.dragonCruiseMode) && boatSong && this.caHueLevel > 0.015) {
+    if (!this.cafeMode && (this.musicEnabled || this.dragonCruiseMode) && boatSong && this.caHueLevel > 0.015) {
       const overrideUrl =
         boatSong.audioUrl || this.caHueAudioOverrides.get(boatSong.id);
       if (boatSong.id !== this.caHueLastSongId) {
@@ -603,6 +718,15 @@ export class CityAudio {
       this.venueLevel = 0;
       this.activeCaHueBoat = this.dragonCruiseSource;
       this.caHueLevel = 1;
+    } else if (this.cafeMode) {
+      this.nearbyVenue = {
+        title: this.activeCafeSpot?.title || "Quán Cà phê Huế",
+        x: bike.position.x,
+        z: bike.position.z,
+      };
+      this.venueLevel = 1;
+      this.activeCaHueBoat = null;
+      this.caHueLevel = 0;
     } else {
       nearby = nearestAudibleSource(
         bike.position,
@@ -621,7 +745,7 @@ export class CityAudio {
       t = ctx.currentTime,
       speed = Math.abs(bike.motion.speed);
     this.background.gain.setTargetAtTime(
-      !this.musicEnabled || !this.track || this.dragonCruiseMode
+      !this.musicEnabled || !this.track || this.dragonCruiseMode || this.cafeMode
         ? 0
         : this.fishingMode
           ? 0.04
@@ -634,7 +758,7 @@ export class CityAudio {
     );
     if (this.fishingBus) {
       this.fishingBus.gain.setTargetAtTime(
-        this.musicEnabled && this.fishingMode && !this.dragonCruiseMode
+        this.musicEnabled && this.fishingMode && !this.dragonCruiseMode && !this.cafeMode
           ? Math.max(0.28, 0.78 - this.caHueLevel * 0.44)
           : 0,
         t,
@@ -642,25 +766,31 @@ export class CityAudio {
       );
     }
     this.venue.gain.setTargetAtTime(
-      !this.musicEnabled || this.dragonCruiseMode ? 0 : this.venueLevel * 0.9,
+      !this.musicEnabled || this.dragonCruiseMode
+        ? 0
+        : this.cafeMode
+          ? 0.68
+          : this.venueLevel * 0.9,
       t,
       0.45,
     );
     this.venuePan.pan.setTargetAtTime(
-      nearby
-        ? sourcePan(
-            nearby.source.x - bike.position.x,
-            nearby.source.z - bike.position.z,
-            cameraHeading,
-          )
-        : 0,
+      this.cafeMode
+        ? 0
+        : nearby
+          ? sourcePan(
+              nearby.source.x - bike.position.x,
+              nearby.source.z - bike.position.z,
+              cameraHeading,
+            )
+          : 0,
       t,
       0.2,
     );
     if (this.caHueBus) {
       const riverGain = this.dragonCruiseMode
         ? 0.86
-        : !this.musicEnabled || this.caHueLevel <= 0
+        : this.cafeMode || !this.musicEnabled || this.caHueLevel <= 0
           ? 0
           : Math.min(0.75, Math.pow(this.caHueLevel, 0.72) * 0.72);
       this.caHueBus.gain.setTargetAtTime(riverGain, t, 0.35);
@@ -670,7 +800,7 @@ export class CityAudio {
         0.35,
       );
       this.caHuePan.pan.setTargetAtTime(
-        this.dragonCruiseMode
+        this.dragonCruiseMode || this.cafeMode
           ? 0
           : caHueHit
             ? sourcePan(

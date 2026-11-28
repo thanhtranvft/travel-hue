@@ -1236,6 +1236,7 @@ export function animateChibiActor(
   const isFish = stance === "fish";
   const isBoat = stance === "boat";
   const isCruise = stance === "cruise";
+  const isCafe = stance === "cafe";
   const isRun = stance === "run";
   const isWalk = stance === "walk";
   const absSpeed = Math.abs(speed);
@@ -1505,6 +1506,35 @@ export function animateChibiActor(
       return;
     }
 
+    if (isCafe) {
+      const sipCycle = Math.max(0, Math.sin(idleTime * 0.55));
+      const sway = Math.sin(idleTime * 1.15);
+      char.bodyPivot.position.set(0, 0.34, -0.01);
+      char.bodyPivot.rotation.set(0, 0, 0);
+      char.torsoPivot.rotation.set(0.05 + sipCycle * 0.04, sway * 0.05, 0);
+      char.headPivot.rotation.set(
+        -0.02 + Math.sin(idleTime * 0.9) * 0.03 + sipCycle * 0.06,
+        sway * 0.14,
+        0,
+      );
+
+      char.leftLeg.position.set(-0.105, -0.02, 0.03);
+      char.rightLeg.position.set(0.105, -0.02, 0.03);
+      char.leftLeg.rotation.set(-1.35, 0, 0.04);
+      char.rightLeg.rotation.set(-1.35, 0, -0.04);
+      char.leftLeg.shin.rotation.set(1.26, 0, 0);
+      char.rightLeg.shin.rotation.set(1.26, 0, 0);
+
+      char.leftArm.rotation.set(-0.56, 0.14, 0.06);
+      char.leftArm.forearm.rotation.set(-0.52, 0, 0);
+      char.rightArm.rotation.set(-0.62 - sipCycle * 0.52, -0.18, -0.06);
+      char.rightArm.forearm.rotation.set(-0.56 - sipCycle * 0.42, 0, 0);
+      const breathe = Math.sin(idleTime * 1.9) * 0.025;
+      char.scarfTailL.rotation.x = 0.09 + breathe;
+      char.scarfTailR.rotation.x = 0.09 - breathe;
+      return;
+    }
+
     // Reset hip X/Z & leg positions for ground standing/walking/running
     char.leftLeg.position.set(-0.095, -0.02, 0);
     char.rightLeg.position.set(0.095, -0.02, 0);
@@ -1675,6 +1705,30 @@ export function animateChibiActor(
     char.frontRightLeg.position.set(0.14, 0.14, 0.1);
     char.frontLeftLeg.rotation.set(-0.65, 0, -0.1);
     char.frontRightLeg.rotation.set(-0.65, 0, 0.1);
+    char.backLeftLeg.position.set(-0.12, -0.08, 0.06);
+    char.backRightLeg.position.set(0.12, -0.08, 0.06);
+    char.backLeftLeg.rotation.set(-1.18, 0, 0);
+    char.backRightLeg.rotation.set(-1.18, 0, 0);
+    return;
+  }
+
+  if (isCafe) {
+    const sway = Math.sin(idleTime * 1.1);
+    const sipCycle = Math.max(0, Math.sin(idleTime * 0.55));
+    char.bodyPivot.position.set(0, 0.35, 0);
+    char.bodyPivot.rotation.set(0, 0, 0);
+    char.spinePivot.rotation.set(-0.9, sway * 0.05, 0);
+    char.headPivot.rotation.set(
+      0.86 + Math.sin(idleTime * 1.2) * 0.03,
+      sway * 0.14,
+      0,
+    );
+    char.tailPivot.rotation.set(0.28, Math.sin(idleTime * 3.1) * 0.25, 0);
+
+    char.frontLeftLeg.position.set(-0.14, 0.14, 0.1);
+    char.frontRightLeg.position.set(0.14, 0.14, 0.1);
+    char.frontLeftLeg.rotation.set(-0.66, 0, -0.1);
+    char.frontRightLeg.rotation.set(-0.66 - sipCycle * 0.48, 0, 0.1);
     char.backLeftLeg.position.set(-0.12, -0.08, 0.06);
     char.backRightLeg.position.set(0.12, -0.08, 0.06);
     char.backLeftLeg.rotation.set(-1.18, 0, 0);

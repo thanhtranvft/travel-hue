@@ -20,6 +20,7 @@ import { ChurchBellController } from "../core/audio/ChurchBellController.js";
 import { sourcePan } from "../core/audio/spatial.js";
 import { GameModeController } from "../modules/game-modes/GameModeController.js";
 import { RiverActivities } from "../core/world/RiverActivities.js";
+import { CafeLounge } from "../core/world/CafeLounge.js";
 const getDistrict = (id) => districts.find((d) => d.id === id);
 
 export class GamePresenter {
@@ -154,6 +155,7 @@ export class GamePresenter {
     this.speedAura = new SpeedAuraEffect();
     this.speedAura.attachTo(this.bike);
     this.riverActivities = new RiverActivities(this);
+    this.cafeLounge = new CafeLounge(this);
     const jumpButton=document.querySelector("#touch-jump");
     if(jumpButton)bindMultiTouchAction(jumpButton,()=>this.jump());
     this.travelTo(this.world.region.id);
@@ -188,12 +190,14 @@ export class GamePresenter {
       }
       if (key === "r") this.reset();
       if (key === "g" || e.code === "KeyG") {
-        if (this.riverActivities?.handleKeyG?.()) e.preventDefault();
+        if (this.cafeLounge?.handleKeyG?.() || this.riverActivities?.handleKeyG?.()) e.preventDefault();
       }
       if (e.code === "Space" || key === " ") {
         if (this.riverActivities?.handleSpaceAction?.() || this.jump()) e.preventDefault();
       }
-      if (key === "escape") this.riverActivities?.handleEscape?.();
+      if (key === "escape") {
+        this.cafeLounge?.handleEscape?.() || this.riverActivities?.handleEscape?.();
+      }
       if (key === "1") this.useCharm("10");
       if (key === "2") this.useCharm("20");
       if (key === "3") this.useCharm("30");
@@ -301,6 +305,7 @@ export class GamePresenter {
     this.churchBellNoticeUntil = -Infinity;
     document.querySelector("#collision-toast").hidden = true;
     this.riverActivities?.reset?.();
+    this.cafeLounge?.reset?.();
     this.view?.resetLandmarkNotice?.();
     const { x, z, heading } = district.spawn;
     this.bike.reset(x, z, heading);
@@ -404,6 +409,9 @@ export class GamePresenter {
     if (this.riverActivities?.mode === "fishing") {
       this.riverActivities.exitFishing();
     }
+    if (this.cafeLounge?.isActive?.()) {
+      this.cafeLounge.exitSeat();
+    }
     const next = this.bike.toggleTransportMode();
     this.syncMode();
     this.updateHud();
@@ -413,7 +421,7 @@ export class GamePresenter {
     this.renderer.setAnimationLoop(() => this.frame());
   }
   jump() {
-    if(this.bike.transportMode !== "foot" || this.sessionActive === false || this.isLoadingRegion || this.stun > 0 || this.riverActivities?.isActive?.() || (this.online && !this.online.canMove))return false;
+    if(this.bike.transportMode !== "foot" || this.sessionActive === false || this.isLoadingRegion || this.stun > 0 || this.riverActivities?.isActive?.() || this.cafeLounge?.isActive?.() || (this.online && !this.online.canMove))return false;
     this.auto=false;
     return Boolean(this.bike.jump());
   }
@@ -480,6 +488,7 @@ export class GamePresenter {
     const speedMultiplier =
       (this.charms?.speedMultiplier || 1) * (this.gameMode?.speedMultiplier || 1);
     if (
+      this.cafeLounge?.stepPhysics?.(dt) ||
       this.riverActivities?.stepPhysics?.(dt, {
         throttle,
         steer,
@@ -615,6 +624,7 @@ export class GamePresenter {
     this.charms?.update(dt, this.elapsed);
     this.gameMode?.update(dt, this.elapsed);
     this.riverActivities?.update?.(dt, this.elapsed);
+    this.cafeLounge?.update?.(dt, this.elapsed);
     const activeBoost = this.charms?.activeBoost;
     this.speedAura?.update(this.elapsed, {
       active: Boolean(activeBoost && this.charms.speedMultiplier > 1),
@@ -738,9 +748,10 @@ export class GamePresenter {
       onBike = this.bike.stance === "bike",
       onBoat = this.bike.stance === "boat",
       onFish = this.bike.stance === "fish",
-      baseDist = onCruise ? 8.2 : onBoat ? 5.6 : onFish ? 4.35 : onBike ? 4.85 : 3.9,
-      camHeight = onCruise ? 3.2 : onBoat ? 2.35 : onFish ? 2.08 : onBike ? 1.9 : 1.68,
-      lookLift = onCruise ? 1.35 : onBoat ? 1.1 : onFish ? 0.68 : onBike ? 1.15 : 0.98,
+      onCafe = this.bike.stance === "cafe",
+      baseDist = onCruise ? 8.2 : onBoat ? 5.6 : onFish ? 4.35 : onCafe ? 4.2 : onBike ? 4.85 : 3.9,
+      camHeight = onCruise ? 3.2 : onBoat ? 2.35 : onFish ? 2.08 : onCafe ? 1.95 : onBike ? 1.9 : 1.68,
+      lookLift = onCruise ? 1.35 : onBoat ? 1.1 : onFish ? 0.68 : onCafe ? 1.0 : onBike ? 1.15 : 0.98,
       distance = baseDist + speed * 0.07,
       p = this.bike.position;
     if (!Number.isFinite(p.x) || !Number.isFinite(p.y) || !Number.isFinite(p.z))

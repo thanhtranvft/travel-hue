@@ -857,13 +857,45 @@ export class BenTrangCafe {
   buildOutdoorCafeAndTrees() {
     // Elevated River-View Open-Air Patio Seating & Beige Market Parasols
     const patioY = 1.68;
-    this.group.add(
-      createCafeTableSet(-7.8, patioY, 2.2, true, 0),
-      createCafeTableSet(-5.1, patioY, 2.8, true, 1),
-      createCafeTableSet(-2.8, patioY, 1.9, true, 2),
-      createCafeTableSet(-6.4, patioY, -2.2, false, 3),
-      createCafeTableSet(-3.2, patioY, -2.8, true, 0),
-    );
+    const tableDefs = [
+      [-7.8, patioY, 2.2, true, 0],
+      [-5.1, patioY, 2.8, true, 1],
+      [-2.8, patioY, 1.9, true, 2],
+      [-6.4, patioY, -2.2, false, 3],
+      [-3.2, patioY, -2.8, true, 0],
+    ];
+    for (const [tx, ty, tz, withPatron, seed] of tableDefs) {
+      this.group.add(createCafeTableSet(tx, ty, tz, withPatron, seed));
+      const tblWorld = this.toWorld(tx, tz);
+      for (const [idx, ox] of [
+        [0, -0.74],
+        [1, 0.74],
+      ]) {
+        if (withPatron && idx === seed % 2) continue;
+        const seatWorld = this.toWorld(tx + ox, tz);
+        const returnWorld = this.toWorld(tx + ox * 1.65, tz);
+        this.world?.cafeSpots?.push({
+          id: `ben-trang-seat-${tx}-${tz}-${idx}`,
+          venueId: "ben-trang-cafe",
+          title: "Bến Trăng Café & Bar",
+          x: seatWorld.x,
+          y: 1.66,
+          z: seatWorld.z,
+          heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+          returnPose: { x: returnWorld.x, y: 1.66, z: returnWorld.z },
+        });
+      }
+    }
+    if (
+      this.world?.venues &&
+      !this.world.venues.some((v) => v.id === "ben-trang-cafe")
+    ) {
+      this.world.venues.push({
+        id: "ben-trang-cafe",
+        title: "Bến Trăng Café & Bar",
+        ...this.entrance,
+      });
+    }
     this.group.add(
       createMarketParasol(-8.2, patioY, 2.0, "#b8a68e"),
       createMarketParasol(-4.8, patioY, 2.5, "#b3a087"),

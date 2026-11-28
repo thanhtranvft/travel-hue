@@ -1903,6 +1903,12 @@ export class QuangTrungCampus {
       );
     }
     if (roseGarden.update) this.cafeUpdaters.push(roseGarden.update);
+    if (roseGarden.cafeSpots?.length && this.world?.cafeSpots) {
+      this.world.cafeSpots.push(...roseGarden.cafeSpots);
+    }
+    if (roseGarden.venue && this.world?.venues) {
+      this.world.venues.push(roseGarden.venue);
+    }
 
     const cafeStrip = buildNguyenHueCafeStrip({
       toWorld: (s, f) => this.toWorld(s, f),
@@ -1914,6 +1920,12 @@ export class QuangTrungCampus {
     this.cafeLotBounds.push(...cafeStrip.lotBoundsList);
     this.outsideObstacles.push(...cafeStrip.obstacles);
     if (cafeStrip.update) this.cafeUpdaters.push(cafeStrip.update);
+    if (cafeStrip.cafeSpots?.length && this.world?.cafeSpots) {
+      this.world.cafeSpots.push(...cafeStrip.cafeSpots);
+    }
+    if (cafeStrip.venues?.length && this.world?.venues) {
+      this.world.venues.push(...cafeStrip.venues);
+    }
   }
 
   buildStudents() {
@@ -1973,9 +1985,11 @@ export class QuangTrungCampus {
   }
 
   groundAt(wx, wz, referenceY) {
-    if (!this.inCampus(wx, wz)) return null;
     if (Number.isFinite(referenceY) && referenceY > 1.8) return null;
-    return 0.3;
+    if (this.inCampus(wx, wz)) return 0.3;
+    if (this.roseGarden?.inLot(wx, wz)) return 0.31;
+    if (this.inCafeLot(wx, wz, 0)) return 0.3;
+    return null;
   }
 
   canRide(wx, wz) {

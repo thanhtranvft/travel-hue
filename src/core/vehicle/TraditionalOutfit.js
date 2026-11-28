@@ -82,7 +82,7 @@ export function addTraditionalOutfit(rig, female) {
 export function animateTraditionalOutfit(rig, {speed=0,phase=0,idleTime=0,stance="idle"}) {
   if(rig.traditionalCane)rig.traditionalCane.visible=["idle","walk","run"].includes(stance);
   for(const {pivot,panel,sign} of rig.traditionalPanels || []){
-    const seated=["bike","fish","boat","cruise"].includes(stance);
+    const seated=["bike","fish","boat","cruise","cafe"].includes(stance);
     pivot.rotation.x=seated?sign*.8:Math.sin(phase+sign)*Math.min(.15,Math.abs(speed)*.025);
     const pos=panel.geometry.attributes.position,base=panel.userData.basePositions;
     for(let i=0;i<pos.count;i++){

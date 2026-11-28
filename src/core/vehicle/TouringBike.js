@@ -96,7 +96,7 @@ export class TouringBike extends THREE.Group {
   }
   setActivityStance(stance, options = {}) {
     this.motion.resetJump();
-    if (stance === "fish" || stance === "boat" || stance === "cruise") {
+    if (stance === "fish" || stance === "boat" || stance === "cruise" || stance === "cafe") {
       this.activityStance = stance;
       this.motion.stance = stance;
       this.fishState = options.fishState ?? this.fishState;
@@ -130,6 +130,8 @@ export class TouringBike extends THREE.Group {
       if (this.boatHull) this.boatHull.visible = false;
       if (this.cruiseBoat) this.cruiseBoat.group.visible = false;
       this.syncCruiseSeatTransform(false);
+      this.rotation.x = 0;
+      this.rotation.z = 0;
       this.motion.speed = 0;
       this.motion.lean = 0;
       this.motion.stance = this.transportMode === "bike" ? "bike" : "idle";
@@ -239,7 +241,8 @@ export class TouringBike extends THREE.Group {
       options?.poseOnly ||
       forcedStance === "fish" ||
       forcedStance === "boat" ||
-      forcedStance === "cruise"
+      forcedStance === "cruise" ||
+      forcedStance === "cafe"
     ) {
       if (forcedStance) {
         this.motion.stance = forcedStance;

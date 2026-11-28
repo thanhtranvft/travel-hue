@@ -325,6 +325,7 @@ export class Room {
       boatIndex: -1,
       seq: -1,
       stamp: this.now(),
+      activeAt: this.now(),
       credit: 1.2,
       stunnedUntil: 0,
       immuneUntil: this.now() + 2000,
@@ -675,25 +676,30 @@ export class Room {
       p.region === "quoc-hoc" &&
       prevStance !== "cruise" &&
       nextStance === "cruise" &&
-      Math.hypot(p.x - DRAGON_DOCK_CENTER.x, p.z - DRAGON_DOCK_CENTER.z) <= 75 &&
-      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 75;
+      Math.hypot(p.x - DRAGON_DOCK_CENTER.x, p.z - DRAGON_DOCK_CENTER.z) <= 85 &&
+      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 85;
     const allowCruiseExit =
       p.region === "quoc-hoc" &&
       prevStance === "cruise" &&
       nextStance !== "cruise" &&
-      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 65;
+      Math.hypot(m.x - DRAGON_DOCK_CENTER.x, m.z - DRAGON_DOCK_CENTER.z) <= 85;
     const allowFishTransition =
       p.region === "quoc-hoc" &&
       ((prevStance !== "fish" && nextStance === "fish") ||
         (prevStance === "fish" && nextStance !== "fish")) &&
       distance <= 16 &&
       Math.hypot(m.x - BIA_DECK_CENTER.x, m.z - BIA_DECK_CENTER.z) <= 85;
+    const allowCafeTransition =
+      ((prevStance !== "cafe" && nextStance === "cafe") ||
+        (prevStance === "cafe" && nextStance !== "cafe")) &&
+      distance <= 12;
     const allowActivityTeleport =
       allowBoatBoard ||
       allowBoatExit ||
       allowCruiseBoard ||
       allowCruiseExit ||
-      allowFishTransition;
+      allowFishTransition ||
+      allowCafeTransition;
     if (
       now < p.stunnedUntil ||
       Math.abs(m.speed) > 9.1 * activeMult ||
@@ -709,6 +715,7 @@ export class Room {
       const nextHull = boatHull(m);
       const occupied = this.roomPlayers(pRoomKey, p).some(other =>
         other.send && other.ready && other.stance === "cruise" &&
+        !other.paused && now - other.activeAt <= 2000 &&
         boatHullsOverlap(nextHull, boatHull(other)) &&
         (prevStance !== "cruise" || !boatHullsOverlap(boatHull(p),boatHull(other)) ||
           Math.hypot(m.x-other.x,m.z-other.z)<=Math.hypot(p.x-other.x,p.z-other.z))

@@ -1193,7 +1193,7 @@ export function createPhuXuanParkWalk(world, biaSite, heading) {
   });
 
   // Small social groups on the river-facing lawns; keep the main paths open.
-  [[378,-3,"family"],[398,-4,"music"],[418,-4,"youth"],[455,-5,"kite"],[475,-3,"family"]].forEach(([x,z,activity],i)=>{
+  [[378,-3,"family"],[411,-1.6,"music"],[422,-2.2,"youth"],[455,-5,"kite"],[475,-3,"family"]].forEach(([x,z,activity],i)=>{
     const options={x,y:0.13,z,phase:i*0.83};
     const life=activity==='music'?createGuitarCircleGroup(options)
       :activity==='kite'?createKiteFlyingGroup(options)

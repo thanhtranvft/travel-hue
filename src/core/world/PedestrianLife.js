@@ -10,7 +10,14 @@ import {
   truongTienHeightAtPoint,
 } from "./roadSurface.js";
 import { roadsidePoint, onOtherCarriageway } from "./streetPlacement.js";
-import { makePerson, animateWalker, SOCIETY_PRESETS } from "./People.js";
+import {
+  makePerson,
+  animateWalker,
+  SOCIETY_PRESETS,
+  makeJogger,
+  animateJogger,
+  JOGGER_SPEED_MPS,
+} from "./People.js";
 import { hitsCampusWall } from "../shared/architecture/CampusWalls.js";
 import {
   PROMENADE_Y,
@@ -129,11 +136,127 @@ export function pedestrianSafe(world, p, park, walkwayRoad) {
       inside(p, b.points),
   );
 }
+
+export function buildWoodenRiversideJoggerPath(world) {
+  const raw = [];
+  if (world?.biaPark?.toWorld) {
+    const sampleParkShore = (lx) => {
+      const hits = [];
+      for (let lz = -54; lz <= -16; lz += 0.5) {
+        const wp = world.biaPark.toWorld(lx, lz);
+        const gy = world.quocHocPark?.groundAt?.(wp.x, wp.z, 0.36);
+        if (gy !== null && gy !== undefined && Math.abs(gy - 0.36) < 0.025) {
+          hits.push(lz);
+        }
+      }
+      if (!hits.length) return null;
+      const centerLz = (hits[0] + hits[hits.length - 1]) / 2;
+      const wp = world.biaPark.toWorld(lx, centerLz);
+      return { x: wp.x, y: 0.36, z: wp.z, lx, lz: centerLz };
+    };
+
+    for (let lx = -58; lx <= 286; lx += 4) {
+      const pt = sampleParkShore(lx);
+      if (pt) raw.push({ x: pt.x, y: 0.36, z: pt.z });
+    }
+    // Bridge smoothly across FountainPark central riverStair threshold (cx = 292)
+    for (const [lx, lz, y] of [
+      [287.2, -18.6, 0.34],
+      [292.0, -18.5, 0.25],
+      [296.8, -18.6, 0.34],
+    ]) {
+      const wp = world.biaPark.toWorld(lx, lz);
+      raw.push({ x: wp.x, y, z: wp.z });
+    }
+    for (let lx = 298; lx <= 430.4; lx += 4) {
+      const pt = sampleParkShore(lx);
+      if (pt) raw.push({ x: pt.x, y: 0.36, z: pt.z });
+    }
+    const baseAt430 = sampleParkShore(430.4)?.lz ?? -20.6;
+    for (const lx of [431.8, 433.6, 435.5, 437.38]) {
+      const u = Math.max(0, Math.min(1, (lx - 430.4) / (437.38 - 430.4)));
+      const lz = baseAt430 * (1 - u) + -20.4 * u;
+      const y = 0.36 + (BOARDWALK_Y + 0.004 - 0.36) * u;
+      const wp = world.biaPark.toWorld(lx, lz);
+      raw.push({ x: wp.x, y, z: wp.z });
+    }
+  }
+
+  const bwPts = world?.boardwalkView?.mainPoints;
+  if (bwPts?.length >= 2) {
+    let ordered = bwPts;
+    if (raw.length) {
+      const last = raw[raw.length - 1];
+      const dStart = Math.hypot(bwPts[0].x - last.x, bwPts[0].z - last.z);
+      const dEnd = Math.hypot(bwPts[bwPts.length - 1].x - last.x, bwPts[bwPts.length - 1].z - last.z);
+      if (dEnd < dStart) {
+        ordered = bwPts.slice().reverse();
+      }
+    }
+    for (const pt of ordered) {
+      raw.push({ x: pt.x, y: (pt.y ?? BOARDWALK_Y) + 0.008, z: pt.z });
+    }
+  }
+
+  const points = [];
+  for (const pt of raw) {
+    const prev = points[points.length - 1];
+    if (!prev || Math.hypot(pt.x - prev.x, pt.z - prev.z) >= 0.25) {
+      points.push(pt);
+    }
+  }
+  const arcs = [0];
+  for (let i = 1; i < points.length; i++) {
+    arcs.push(
+      arcs[i - 1] +
+        Math.hypot(points[i].x - points[i - 1].x, points[i].z - points[i - 1].z),
+    );
+  }
+  return {
+    points,
+    arcs,
+    totalLength: arcs[arcs.length - 1] || 0,
+  };
+}
+
+export function sampleJoggerPolyline(points, arcs, s) {
+  if (!points.length) {
+    return { x: 0, y: 0.36, z: 0, tx: 0, tz: 1, nx: 1, nz: 0 };
+  }
+  if (points.length === 1) {
+    return { ...points[0], tx: 0, tz: 1, nx: 1, nz: 0 };
+  }
+  const total = arcs[arcs.length - 1] || 0;
+  const clamped = Math.max(0, Math.min(total, s));
+  let idx = 1;
+  while (idx < arcs.length - 1 && arcs[idx] < clamped) idx++;
+  const a = points[idx - 1];
+  const b = points[idx];
+  const segLen = Math.max(1e-6, arcs[idx] - arcs[idx - 1]);
+  const t = (clamped - arcs[idx - 1]) / segLen;
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const len = Math.hypot(dx, dz) || 1;
+  const tx = dx / len;
+  const tz = dz / len;
+  return {
+    x: a.x + dx * t,
+    y: a.y + (b.y - a.y) * t,
+    z: a.z + dz * t,
+    tx,
+    tz,
+    nx: -tz,
+    nz: tx,
+  };
+}
+
 export class PedestrianLife {
   constructor(world) {
     this.world = world;
     this.people = [];
-    this.stats = { sidewalkLeft: 0, sidewalkRight: 0, parkPeople: 0, parks: 0 };
+    this.joggers = [];
+    this.prevTime = null;
+    this.stats = { sidewalkLeft: 0, sidewalkRight: 0, parkPeople: 0, parks: 0, joggers: 0 };
     this.templates = SOCIETY_PRESETS.map((preset) => makePerson(preset));
     let seed = 1021;
     const random = () => {
@@ -457,6 +580,47 @@ export class PedestrianLife {
         this.people.at(-1).mesh.position.y = 0.36;
       });
     }
+
+    // 10 sportswear joggers running at exact 12 km/h along the continuous wooden boardwalk & Cầu Gỗ Lim
+    this.joggerPath = buildWoodenRiversideJoggerPath(world);
+    if (this.joggerPath.points.length >= 2 && this.joggerPath.totalLength >= 20) {
+      const { points, arcs, totalLength } = this.joggerPath;
+      const joggerCount = 10;
+      for (let j = 0; j < joggerCount; j++) {
+        const mesh = makeJogger(j);
+        const dir = j % 2 === 0 ? 1 : -1;
+        const arcDist = totalLength * (0.04 + (j / joggerCount) * 0.92);
+        const phase = (j * 0.73) % (Math.PI * 2);
+        const laneOffset = dir > 0 ? -0.48 : 0.48;
+        const sample = sampleJoggerPolyline(points, arcs, arcDist);
+        const px = sample.x + sample.nx * laneOffset;
+        const pz = sample.z + sample.nz * laneOffset;
+        mesh.position.set(px, sample.y, pz);
+        mesh.rotation.y = Math.atan2(sample.tx * dir, sample.tz * dir);
+        world.scene.add(mesh);
+        const jogger = {
+          type: "pedestrian",
+          role: "jogger",
+          mode: "jog",
+          speed: JOGGER_SPEED_MPS,
+          speedKmh: 12,
+          dir,
+          arcDist,
+          laneOffset,
+          pause: 0,
+          mesh,
+          origin: { x: px, z: pz },
+          fixedY: sample.y,
+          phase,
+          pathPoints: points,
+          pathArcs: arcs,
+          pathLength: totalLength,
+        };
+        this.people.push(jogger);
+        this.joggers.push(jogger);
+        this.stats.joggers++;
+      }
+    }
   }
   update(time, bike) {
     if (
@@ -464,9 +628,47 @@ export class PedestrianLife {
       time - (this.lastUpdate ?? -Infinity) < 0.05
     )
       return;
+    const dt =
+      this.prevTime == null || time < this.prevTime
+        ? 0
+        : Math.min(0.15, time - this.prevTime);
+    this.prevTime = time;
     this.lastUpdate = time;
     for (const person of this.people) {
       const { mesh, origin, phase } = person;
+      if (person.mode === "jog") {
+        if (person.pause > 0) {
+          person.pause = Math.max(0, person.pause - dt);
+        } else if (dt > 0 && person.pathLength > 0) {
+          let nextDist = person.arcDist + person.speed * person.dir * dt;
+          if (nextDist >= person.pathLength) {
+            nextDist = person.pathLength - (nextDist - person.pathLength);
+            person.dir = -1;
+          } else if (nextDist <= 0) {
+            nextDist = -nextDist;
+            person.dir = 1;
+          }
+          person.arcDist = Math.max(0, Math.min(person.pathLength, nextDist));
+        }
+        const lane = person.dir > 0 ? -Math.abs(person.laneOffset) : Math.abs(person.laneOffset);
+        const sample = sampleJoggerPolyline(
+          person.pathPoints,
+          person.pathArcs,
+          person.arcDist,
+        );
+        mesh.position.x = sample.x + sample.nx * lane;
+        mesh.position.z = sample.z + sample.nz * lane;
+        person.fixedY = sample.y;
+        mesh.rotation.y = Math.atan2(sample.tx * person.dir, sample.tz * person.dir);
+        mesh.position.y = sample.y;
+        mesh.visible =
+          Math.hypot(mesh.position.x - bike.x, mesh.position.z - bike.z) <
+          (this.world.quality?.crowdDistance || config.visibleDistance);
+        if (mesh.visible && person.pause <= 0) {
+          animateJogger(mesh, person.arcDist * 2.1 + phase);
+        }
+        continue;
+      }
       mesh.visible =
         Math.hypot(origin.x - bike.x, origin.z - bike.z) <
         (this.world.quality?.crowdDistance || config.visibleDistance);

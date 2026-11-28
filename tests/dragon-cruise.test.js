@@ -231,3 +231,108 @@ test("all avatars board as seated tourists with the three requested performers",
     assert.equal(bike.cruiseBoat.group.visible, false);
   }
 });
+
+test("player can immediately re-board dragon boat after exiting without cooldown lockout", () => {
+  const activity = Object.create(RiverActivities.prototype);
+  const dock = {
+    vendorPos: { x: 570.96, z: -626.2, y: 0.36 },
+    pierReturnPos: { x: 570.96, z: -629.48, y: 0.36 },
+    dockWaterPos: { x: 568.91, z: -635.53, y: 0.03, heading: Math.PI / 2 },
+    setCruiseActive() {},
+  };
+  const bike = new TouringBike({ avatar: "girl", mode: "foot" });
+  bike.position.set(570.96, 0.36, -626.2);
+  activity.mode = null;
+  activity.declinedKind = null;
+  activity.declinedUntil = -Infinity;
+  activity.pendingPrompt = null;
+  activity.remoteCruisePoses = [];
+  activity.game = {
+    bike,
+    auto: false,
+    elapsed: 10,
+    input: { reset() {} },
+    audio: { playBoatBell() {}, setDragonCruiseMode() {}, tryUnlock: async () => true },
+    syncMode() {},
+    world: {
+      region: { id: "quoc-hoc" },
+      fireflyPark: { dragonDock: dock },
+      groundAt: () => 0.36,
+      canRide: () => true,
+      canCruiseAt: () => true,
+      riverSurfaceAt: () => 0.03,
+      caHueBoats: {
+        boats: [],
+        loop: { total: 400 },
+        sampleLoop: () => ({ x: 568.91, z: -635.53, tx: 1, tz: 0 }),
+        setExternalCruisePose() {},
+      },
+    },
+  };
+  activity.getCruiseAudioSource = () => ({ song: { id: "s1", shortTitle: "Hò" } });
+  activity.findClosestLoopDistance = () => 0;
+  activity.syncDockOccupancy = () => {};
+  activity.refreshPanels = () => {};
+
+  assert.equal(activity.enterCruise(), true);
+  assert.equal(activity.mode, "cruise");
+  assert.equal(bike.stance, "cruise");
+
+  assert.equal(activity.exitCruise(), true);
+  assert.equal(activity.mode, null);
+  assert.equal(activity.declinedKind, null);
+  assert.equal(bike.activityStance, null);
+
+  // Immediately re-board on next interaction (Handle G / enterCruise)
+  activity.game.elapsed = 10.05;
+  assert.equal(activity.handleKeyG(), true);
+  assert.equal(activity.mode, "cruise");
+  assert.equal(bike.stance, "cruise");
+});
+
+test("online server ignores stale or paused dragon boats when another player boards", () => {
+  let now = 5000;
+  const area = {
+    region: {
+      path: [
+        [500, -640],
+        [650, -640],
+      ],
+      radius: 200,
+    },
+    spawn: { x: 570.96, z: -629.48, heading: 0 },
+  };
+  const room = new Room(new Map([["quoc-hoc", area]]), { now: () => now });
+  const join = (name) =>
+    room.join(
+      {
+        version: PROTOCOL_VERSION,
+        name,
+        region: "quoc-hoc",
+        gameMode: "free-roam",
+      },
+      () => {},
+    ).player;
+
+  const stalePlayer = join("Cũ");
+  const rider = join("Mới");
+  const dockPose = {
+    region: "quoc-hoc",
+    seq: 1,
+    x: 568.91,
+    z: -635.53,
+    y: 0.03,
+    heading: Math.PI / 2,
+    speed: 0,
+    lean: 0,
+    stance: "cruise",
+  };
+  room.state(stalePlayer, dockPose);
+  assert.equal(stalePlayer.stance, "cruise");
+
+  // Advance clock past 2s staleness threshold without heartbeats from stalePlayer
+  now += 2500;
+  room.state(rider, { ...dockPose, seq: 1 });
+  assert.equal(rider.stance, "cruise");
+});
+

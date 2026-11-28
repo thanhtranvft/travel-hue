@@ -237,7 +237,7 @@ function buildParkLamp() {
   return g;
 }
 
-function buildRightSideCafe(animatedPatrons) {
+function buildRightSideCafe(animatedPatrons, onOpenSeat = null) {
   const cafeGroup = new THREE.Group();
   cafeGroup.name = "trang-tien-riverside-cafe";
 
@@ -366,12 +366,12 @@ function buildRightSideCafe(animatedPatrons) {
 
   cafeGroup.add(pav);
 
-  // 4 Riverside outdoor patio table sets + parasols + seated animated patrons
+  // 4 Riverside outdoor patio table sets + parasols + seated animated patrons + open player seats
   const patioSpots = [
-    { x: -4.4, z: 2.3, umbrella: "#2d6b4f", patrons: ["man", "woman"] },
+    { x: -4.4, z: 2.3, umbrella: "#2d6b4f", patrons: ["man", null] },
     { x: -1.4, z: 3.1, umbrella: "#c49445", patrons: ["woman", "man"] },
-    { x: 1.7, z: 3.1, umbrella: "#2d6b4f", patrons: ["man", "woman"] },
-    { x: 4.5, z: 2.2, umbrella: "#a64343", patrons: ["woman"] },
+    { x: 1.7, z: 3.1, umbrella: "#2d6b4f", patrons: [null, "woman"] },
+    { x: 4.5, z: 2.2, umbrella: "#a64343", patrons: ["woman", null] },
   ];
   patioSpots.forEach((spot, idx) => {
     const set = new THREE.Group();
@@ -408,11 +408,13 @@ function buildRightSideCafe(animatedPatrons) {
     set.add(tableBase, tableLeg, tableTop, pole, canopy);
 
     // Chairs & seated patrons
-    const angles = spot.patrons.length === 2 ? [-0.9, 2.2] : [0.4];
+    const angles = [-0.9, 2.2];
     spot.patrons.forEach((gender, pIdx) => {
       const ang = angles[pIdx];
+      const cx = Math.sin(ang) * 0.72;
+      const cz = Math.cos(ang) * 0.72;
       const chair = new THREE.Group();
-      chair.position.set(Math.sin(ang) * 0.72, 0, Math.cos(ang) * 0.72);
+      chair.position.set(cx, 0, cz);
       chair.rotation.y = ang + Math.PI;
       chair.add(
         box([0.4, 0.05, 0.38], "#7d5436", [0, 0.44, 0]),
@@ -420,15 +422,27 @@ function buildRightSideCafe(animatedPatrons) {
       );
       set.add(chair);
 
-      const patron = createSeatedCafePatron({
-        gender,
-        paletteIndex: idx + pIdx,
-        phase: idx * 1.4 + pIdx * 2.1,
-      });
-      patron.group.position.copy(chair.position);
-      patron.group.rotation.y = chair.rotation.y;
-      set.add(patron.group);
-      animatedPatrons.push(patron.animate);
+      if (gender) {
+        const patron = createSeatedCafePatron({
+          gender,
+          paletteIndex: idx + pIdx,
+          phase: idx * 1.4 + pIdx * 2.1,
+        });
+        patron.group.position.copy(chair.position);
+        patron.group.rotation.y = chair.rotation.y;
+        set.add(patron.group);
+        animatedPatrons.push(patron.animate);
+      } else if (onOpenSeat) {
+        onOpenSeat({
+          id: `trang-tien-seat-${idx}-${pIdx}`,
+          lx: spot.x + cx,
+          lz: spot.z + cz,
+          tableLx: spot.x,
+          tableLz: spot.z,
+          returnLx: spot.x + Math.sin(ang) * 1.25,
+          returnLz: spot.z + Math.cos(ang) * 1.25,
+        });
+      }
     });
 
     cafeGroup.add(set);
@@ -769,8 +783,31 @@ export class TruongTienSurroundings {
       PROMENADE_Y,
       TRANG_TIEN_CAFE_CENTER.z,
     );
-    cafeHolder.rotation.y = TRANG_TIEN_CAFE_CENTER.yaw;
-    cafeHolder.add(buildRightSideCafe(this.animated));
+    const cafeLocalToWorld = (lx, lz) => {
+      const c = Math.cos(TRANG_TIEN_CAFE_CENTER.yaw);
+      const s = Math.sin(TRANG_TIEN_CAFE_CENTER.yaw);
+      return {
+        x: TRANG_TIEN_CAFE_CENTER.x + lx * c + lz * s,
+        z: TRANG_TIEN_CAFE_CENTER.z - lx * s + lz * c,
+      };
+    };
+    cafeHolder.add(
+      buildRightSideCafe(this.animated, (seat) => {
+        const sWorld = cafeLocalToWorld(seat.lx, seat.lz);
+        const tWorld = cafeLocalToWorld(seat.tableLx, seat.tableLz);
+        const rWorld = cafeLocalToWorld(seat.returnLx, seat.returnLz);
+        world.cafeSpots?.push({
+          id: seat.id,
+          venueId: "trang-tien-riverside-cafe",
+          title: "Cà phê Tràng Tiền",
+          x: sWorld.x,
+          y: PROMENADE_Y,
+          z: sWorld.z,
+          heading: Math.atan2(tWorld.x - sWorld.x, tWorld.z - sWorld.z),
+          returnPose: { x: rWorld.x, y: PROMENADE_Y, z: rWorld.z },
+        });
+      }),
+    );
     this.group.add(cafeHolder);
 
     // Connector walkway linking riverside promenade seamlessly into right-side café terrace

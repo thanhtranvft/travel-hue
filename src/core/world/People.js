@@ -473,3 +473,183 @@ export function animateWalker(group, phase) {
     (arm, i) => (arm.rotation.x = -Math.sin(phase + i * Math.PI) * (stride * 0.72)),
   );
 }
+
+export const JOGGER_SPEED_KMH = 12;
+export const JOGGER_SPEED_MPS = JOGGER_SPEED_KMH / 3.6;
+
+export const JOGGER_PRESETS = [
+  { role: "man", shirt: "#1e88e5", stripe: "#ffe066", pants: "#1c2430", shoes: "#f4f7fa", sole: "#ff5a36", skin: "#dfb28e", hair: "#211a16", accessory: "headband", bandColor: "#ffe066" },
+  { role: "woman", shirt: "#e94e77", stripe: "#ffffff", pants: "#222938", shoes: "#ffffff", sole: "#4ee0b5", skin: "#ecc3a1", hair: "#241b16", hairStyle: "ponytail", accessory: "visor", bandColor: "#e94e77" },
+  { role: "man", shirt: "#28a97a", stripe: "#d9ff70", pants: "#1d2229", shoes: "#eef3f7", sole: "#28a97a", skin: "#d7a57f", hair: "#1c1815", accessory: "cap", bandColor: "#1d2229" },
+  { role: "woman", shirt: "#ff7f3f", stripe: "#fff3cc", pants: "#242c3d", shoes: "#f7f9fc", sole: "#ff7f3f", skin: "#e9be9b", hair: "#291e19", hairStyle: "ponytail", accessory: "headband", bandColor: "#ffffff" },
+  { role: "man", shirt: "#f5f7fa", stripe: "#d93644", pants: "#263245", shoes: "#1e242d", sole: "#d93644", skin: "#dfb28e", hair: "#241d19", accessory: "headband", bandColor: "#d93644" },
+  { role: "woman", shirt: "#3bb2b8", stripe: "#fefefe", pants: "#1c222b", shoes: "#f4f7fb", sole: "#ff6ea8", skin: "#f0c8a8", hair: "#221915", hairStyle: "bun", accessory: "visor", bandColor: "#3bb2b8" },
+  { role: "man", shirt: "#e0b326", stripe: "#1b2430", pants: "#1f2630", shoes: "#ffffff", sole: "#3a86ff", skin: "#d6a47e", hair: "#1f1a17", accessory: "cap", bandColor: "#264e86" },
+  { role: "woman", shirt: "#7b5cd6", stripe: "#ffd166", pants: "#202531", shoes: "#f5f7fa", sole: "#ffd166", skin: "#ecc19d", hair: "#261c18", hairStyle: "ponytail", accessory: "headband", bandColor: "#ffd166" },
+  { role: "man", shirt: "#243b55", stripe: "#56ccf2", pants: "#1b2028", shoes: "#f0f4f8", sole: "#56ccf2", skin: "#dfb28e", hair: "#261e19", accessory: "headband", bandColor: "#56ccf2" },
+  { role: "woman", shirt: "#45b649", stripe: "#ffffff", pants: "#232a36", shoes: "#ffffff", sole: "#f7b731", skin: "#ecc3a1", hair: "#231a16", hairStyle: "ponytail", accessory: "visor", bandColor: "#45b649" },
+];
+
+export function makeJogger(index = 0) {
+  const preset = JOGGER_PRESETS[Math.abs(index) % JOGGER_PRESETS.length];
+  const isFemale = preset.role === "woman";
+  const group = new THREE.Group();
+  group.name = `jogger-${index}`;
+  group.userData.role = preset.role;
+  group.userData.isJogger = true;
+
+  const skinMat = sharedMat(preset.skin, 0.72);
+  const jerseyMat = sharedMat(preset.shirt, 0.74);
+  const stripeMat = sharedMat(preset.stripe, 0.65);
+  const shortsMat = sharedMat(preset.pants, 0.82);
+  const hairMat = sharedMat(preset.hair, 0.82);
+  const shoeMat = sharedMat(preset.shoes, 0.55);
+  const soleMat = sharedMat(preset.sole, 0.65);
+  const sockMat = sharedMat("#f3f5f8", 0.76);
+  const bandMat = sharedMat(preset.bandColor || preset.stripe, 0.68);
+  const eyeWhiteMat = sharedMat("#f8fafc", 0.35);
+  const irisMat = sharedMat("#1f1612", 0.3);
+  const lipMat = sharedMat(isFemale ? "#c85d66" : "#a8645a", 0.65);
+
+  const bodyR = isFemale ? 0.142 : 0.162;
+  const shoulderX = isFemale ? 0.182 : 0.205;
+  const hipX = isFemale ? 0.088 : 0.098;
+  const headR = 0.138;
+
+  const bodyPivot = new THREE.Group();
+  bodyPivot.name = "jogger-body";
+  group.add(bodyPivot);
+
+  // Neck + Head
+  addMesh(bodyPivot, sharedCylGeo(0.052, 0.06, 0.12, 8), skinMat, [0, 1.39, 0]);
+  const headGroup = new THREE.Group();
+  headGroup.name = "head-group";
+  headGroup.position.set(0, 1.54, 0);
+  addMesh(headGroup, sharedSphereGeo(headR, 12, 10), skinMat, [0, 0, 0]);
+  for (const sx of [-1, 1]) {
+    addMesh(headGroup, sharedSphereGeo(headR * 0.21, 6, 6), skinMat, [sx * headR * 0.96, -0.01, -0.01]);
+    addMesh(headGroup, sharedSphereGeo(headR * 0.14, 8, 6), eyeWhiteMat, [sx * headR * 0.34, 0.015, headR * 0.88]);
+    addMesh(headGroup, sharedSphereGeo(headR * 0.095, 8, 6), irisMat, [sx * headR * 0.34, 0.014, headR * 0.945]);
+    addMesh(headGroup, sharedBoxGeo(headR * 0.24, 0.014, 0.018), hairMat, [sx * headR * 0.34, headR * 0.34, headR * 0.89], [0, 0, sx * -0.08]);
+  }
+  addMesh(headGroup, sharedSphereGeo(headR * 0.1, 6, 6), skinMat, [0, -0.015, headR * 0.98]);
+  addMesh(headGroup, sharedBoxGeo(headR * 0.32, 0.016, 0.02), lipMat, [0, -headR * 0.42, headR * 0.88]);
+  addMesh(headGroup, sharedSphereGeo(headR * 1.05, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.56), hairMat, [0, 0.016, -0.008]);
+
+  if (preset.hairStyle === "ponytail") {
+    addMesh(headGroup, sharedCapsuleGeo(headR * 0.34, 0.18, 4, 8), hairMat, [0, -0.03, -headR * 1.05], [0.42, 0, 0]);
+    addMesh(headGroup, sharedBoxGeo(0.055, 0.03, 0.03), bandMat, [0, 0.03, -headR * 0.98]);
+  } else if (preset.hairStyle === "bun") {
+    addMesh(headGroup, sharedSphereGeo(headR * 0.4, 8, 8), hairMat, [0, 0.03, -headR * 1.04]);
+  } else {
+    addMesh(headGroup, sharedBoxGeo(headR * 1.1, 0.035, 0.055), hairMat, [0, headR * 0.78, headR * 0.35]);
+  }
+
+  if (preset.accessory === "headband") {
+    addMesh(headGroup, sharedCylGeo(headR * 1.09, headR * 1.09, 0.038, 16), bandMat, [0, headR * 0.34, 0]);
+  } else if (preset.accessory === "visor") {
+    addMesh(headGroup, sharedCylGeo(headR * 1.09, headR * 1.09, 0.034, 16), bandMat, [0, headR * 0.36, 0]);
+    addMesh(headGroup, sharedBoxGeo(0.18, 0.018, 0.12), bandMat, [0, headR * 0.32, headR * 0.96], [0.14, 0, 0]);
+  } else if (preset.accessory === "cap") {
+    addMesh(headGroup, sharedSphereGeo(headR * 1.08, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.5), bandMat, [0, 0.025, 0]);
+    addMesh(headGroup, sharedBoxGeo(0.18, 0.02, 0.125), bandMat, [0, 0.052, headR * 0.92]);
+  }
+  bodyPivot.add(headGroup);
+
+  // Sporty athletic jersey + horizontal chest race stripe + shorts waistband
+  const torsoPivot = new THREE.Group();
+  torsoPivot.name = "torso-pivot";
+  torsoPivot.position.set(0, 0.94, 0);
+  addMesh(torsoPivot, sharedCapsuleGeo(bodyR, 0.35, 4, 10), jerseyMat, [0, 0.19, 0]);
+  addMesh(torsoPivot, sharedCylGeo(bodyR * 1.03, bodyR * 1.03, 0.07, 12), stripeMat, [0, 0.24, 0]);
+  addMesh(torsoPivot, sharedCylGeo(bodyR * 0.99, bodyR * 1.02, 0.06, 12), shortsMat, [0, -0.02, 0]);
+  bodyPivot.add(torsoPivot);
+
+  const legs = [];
+  const shins = [];
+  const arms = [];
+  const forearms = [];
+
+  for (const sx of [-1, 1]) {
+    // Articulated Thigh + Shin + Sport Running Shoe
+    const legPivot = new THREE.Group();
+    legPivot.name = "leg-pivot";
+    legPivot.position.set(sx * hipX, 0.85, 0);
+    addMesh(legPivot, sharedCapsuleGeo(0.066, 0.2, 3, 8), shortsMat, [0, -0.14, 0]);
+    addMesh(legPivot, sharedCapsuleGeo(0.052, 0.1, 3, 8), skinMat, [0, -0.28, 0]);
+
+    const shinPivot = new THREE.Group();
+    shinPivot.name = "shin-pivot";
+    shinPivot.position.set(0, -0.35, 0);
+    addMesh(shinPivot, sharedCapsuleGeo(0.048, 0.2, 3, 8), skinMat, [0, -0.13, 0]);
+    addMesh(shinPivot, sharedCylGeo(0.052, 0.048, 0.09, 8), sockMat, [0, -0.27, 0]);
+    // Cushioned athletic running shoe (upper + accent midsole + grip heel)
+    addMesh(shinPivot, sharedBoxGeo(0.125, 0.068, 0.235), shoeMat, [0, -0.34, 0.045]);
+    addMesh(shinPivot, sharedBoxGeo(0.13, 0.032, 0.245), soleMat, [0, -0.375, 0.045]);
+    legPivot.add(shinPivot);
+    bodyPivot.add(legPivot);
+    legs.push(legPivot);
+    shins.push(shinPivot);
+
+    // Articulated Athletic Arm + Forearm + Sweatband
+    const armPivot = new THREE.Group();
+    armPivot.name = "arm-pivot";
+    armPivot.position.set(sx * shoulderX, 1.32, 0);
+    addMesh(armPivot, sharedCapsuleGeo(0.05, 0.14, 3, 8), jerseyMat, [0, -0.08, 0]);
+    addMesh(armPivot, sharedCapsuleGeo(0.044, 0.1, 3, 8), skinMat, [0, -0.18, 0]);
+
+    const forearmPivot = new THREE.Group();
+    forearmPivot.name = "forearm-pivot";
+    forearmPivot.position.set(0, -0.24, 0);
+    addMesh(forearmPivot, sharedCapsuleGeo(0.04, 0.16, 3, 8), skinMat, [0, -0.1, 0]);
+    addMesh(forearmPivot, sharedCylGeo(0.046, 0.046, 0.045, 8), bandMat, [0, -0.17, 0]);
+    addMesh(forearmPivot, sharedSphereGeo(0.044, 6, 6), skinMat, [0, -0.21, 0]);
+    armPivot.add(forearmPivot);
+    bodyPivot.add(armPivot);
+    arms.push(armPivot);
+    forearms.push(forearmPivot);
+  }
+
+  if (isFemale) {
+    group.scale.setScalar(0.95);
+  }
+  group.userData.limbs = {
+    bodyPivot,
+    headGroup,
+    torsoPivot,
+    legs,
+    shins,
+    arms,
+    forearms,
+  };
+  return group;
+}
+
+export function animateJogger(group, phase) {
+  const {
+    bodyPivot,
+    headGroup,
+    torsoPivot,
+    legs = [],
+    shins = [],
+    arms = [],
+    forearms = [],
+  } = group.userData.limbs || {};
+  const s = Math.sin(phase);
+  const c = Math.cos(phase);
+  const bounce = Math.abs(s) * 0.068;
+
+  if (bodyPivot) bodyPivot.position.y = bounce;
+  if (torsoPivot) torsoPivot.rotation.set(0.16, s * 0.08, 0);
+  if (headGroup) headGroup.rotation.set(-0.08, -s * 0.05, 0);
+
+  if (legs[0]) legs[0].rotation.x = s * 0.76;
+  if (legs[1]) legs[1].rotation.x = -s * 0.76;
+  if (shins[0]) shins[0].rotation.x = Math.max(0.1, -c * 0.88 + 0.34);
+  if (shins[1]) shins[1].rotation.x = Math.max(0.1, c * 0.88 + 0.34);
+
+  if (arms[0]) arms[0].rotation.set(-s * 0.82, 0, 0.08);
+  if (arms[1]) arms[1].rotation.set(s * 0.82, 0, -0.08);
+  if (forearms[0]) forearms[0].rotation.x = -1.18 + Math.max(0, -s) * 0.25;
+  if (forearms[1]) forearms[1].rotation.x = -1.18 + Math.max(0, s) * 0.25;
+}

@@ -656,27 +656,44 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
   pond.add(pondRim, pondWater);
   group.add(pond);
 
-  // Outdoor patio tables with seated coffee patrons throughout front courtyard AND spacious rear sanctuary
+  // Outdoor patio tables with seated coffee patrons + open player seats throughout front courtyard AND spacious rear sanctuary
   const tableSpecs = [
     // Front rose courtyard (6 tables)
-    [-6.0, 14.5, "#b93d4c", ["man", "woman"]],
+    [-6.0, 14.5, "#b93d4c", ["man", null]],
     [6.0, 14.5, "#2f7556", ["woman", "man"]],
-    [-6.0, 20.5, "#2f7556", ["man", "woman"]],
+    [-6.0, 20.5, "#2f7556", [null, "woman"]],
     [6.0, 20.5, "#b93d4c", ["woman", "man"]],
-    [-6.0, 26.2, "#b93d4c", ["woman", "woman"]],
+    [-6.0, 26.2, "#b93d4c", ["woman", null]],
     [6.0, 26.2, "#2f7556", ["man", "man"]],
     // Rear garden sanctuary (6 tables)
-    [-6.4, -7.2, "#2f7556", ["man", "woman"]],
+    [-6.4, -7.2, "#2f7556", ["man", null]],
     [6.4, -7.2, "#b93d4c", ["woman", "man"]],
-    [-6.4, -14.8, "#b93d4c", ["woman", "man"]],
+    [-6.4, -14.8, "#b93d4c", [null, "man"]],
     [6.4, -14.8, "#2f7556", ["man", "woman"]],
-    [-6.4, -22.2, "#2f7556", ["man", "woman"]],
+    [-6.4, -22.2, "#2f7556", ["man", null]],
     [6.4, -22.2, "#b93d4c", ["woman", "man"]],
   ];
+  const cafeSpots = [];
   tableSpecs.forEach(([tx, tz, uColor, patrons], idx) => {
     const t = createPatioTableSet(uColor, true, patrons, animators, idx);
     t.position.set(tx, 0.08, tz);
     group.add(t);
+    const tblWorld = toWorld(centerSide + tx, centerFwd - tz);
+    [-0.66, 0.66].forEach((sx, cIdx) => {
+      if (patrons[cIdx]) return;
+      const seatWorld = toWorld(centerSide + tx + sx, centerFwd - tz);
+      const returnWorld = toWorld(centerSide + tx + sx * 1.8, centerFwd - tz);
+      cafeSpots.push({
+        id: `rose-garden-seat-${idx}-${cIdx}`,
+        venueId: "rose-garden-cafe",
+        title: "Rose Garden Coffee & Tea",
+        x: seatWorld.x,
+        y: 0.31,
+        z: seatWorld.z,
+        heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+        returnPose: { x: returnWorld.x, y: 0.31, z: returnWorld.z },
+      });
+    });
   });
 
   // Rose bushes bordering pathways
@@ -706,7 +723,7 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
     ...tableSpecs.map(([tx, tz]) => ({
       side: centerSide + tx,
       fwd: centerFwd - tz,
-      radius: 1.15,
+      radius: 0.5,
     })),
   ];
 
@@ -740,6 +757,13 @@ export function buildRoseGardenCafe({ toWorld, roadYaw, cameraObstacles = [] }) 
     obstacles,
     fenceSegments,
     lotBounds,
+    lotPoly,
+    cafeSpots,
+    venue: {
+      id: "rose-garden-cafe",
+      title: "Rose Garden Coffee & Tea",
+      ...toWorld(centerSide, centerFwd - hd),
+    },
     inLot,
     canRide,
     update: (time) => {
@@ -850,6 +874,8 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
   const buildingPolys = [];
   const obstacles = [];
   const lotBoundsList = [];
+  const cafeSpots = [];
+  const venues = [];
   let tableSeed = 10;
 
   for (const spec of cafeSpecs) {
@@ -922,9 +948,13 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     signMesh.position.set(0, 3.62, spec.d / 2 - 0.25);
     cafe.add(signMesh);
 
-    // Outdoor sidewalk patio seating tables with seated men & women drinking coffee
+    // Outdoor sidewalk patio seating tables with seated patrons & open player seats
+    const displayTitle = spec.title
+      .toLowerCase()
+      .replace(/(^|\s)\S/g, (m) => m.toUpperCase());
     spec.patioOffsets.forEach((tx, idx) => {
-      const patrons = idx % 2 === 0 ? ["man", "woman"] : ["woman", "man"];
+      const patrons = idx % 2 === 0 ? ["man", null] : [null, "woman"];
+      const tableZ = spec.d / 2 + 0.9;
       const table = createPatioTableSet(
         spec.umbrellaHex,
         true,
@@ -932,13 +962,36 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
         animators,
         tableSeed++,
       );
-      table.position.set(tx, 0.07, spec.d / 2 + 0.9);
+      table.position.set(tx, 0.07, tableZ);
       cafe.add(table);
+      const tblSide = spec.side - tx;
+      const tblFwd = spec.fwd + tableZ;
       obstacles.push({
-        side: spec.side - tx,
-        fwd: spec.fwd + (spec.d / 2 + 0.9),
-        radius: 0.95,
+        side: tblSide,
+        fwd: tblFwd,
+        radius: 0.5,
       });
+      const tblWorld = toWorld(tblSide, tblFwd);
+      [-0.66, 0.66].forEach((sx, cIdx) => {
+        if (patrons[cIdx]) return;
+        const seatWorld = toWorld(spec.side - (tx + sx), tblFwd);
+        const returnWorld = toWorld(spec.side - (tx + sx * 1.85), tblFwd);
+        cafeSpots.push({
+          id: `${spec.name}-seat-${idx}-${cIdx}`,
+          venueId: spec.name,
+          title: displayTitle,
+          x: seatWorld.x,
+          y: 0.3,
+          z: seatWorld.z,
+          heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+          returnPose: { x: returnWorld.x, y: 0.3, z: returnWorld.z },
+        });
+      });
+    });
+    venues.push({
+      id: spec.name,
+      title: displayTitle,
+      ...toWorld(spec.side, spec.fwd + spec.d / 2 + 1.0),
     });
 
     for (const px of [-spec.w / 2 + 0.45, spec.w / 2 - 0.45]) {
@@ -971,6 +1024,8 @@ export function buildNguyenHueCafeStrip({ toWorld, roadYaw, cameraObstacles = []
     buildingPolys,
     obstacles,
     lotBoundsList,
+    cafeSpots,
+    venues,
     update: (time) => {
       for (const fn of animators) fn(time);
     },

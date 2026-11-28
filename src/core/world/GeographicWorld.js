@@ -279,6 +279,7 @@ export class GeographicWorld {
     this.treePositions = [];
     this.buildingPolygons = [];
     this.areaLabels = [];
+    this.cafeSpots = [];
     this.venues = getFeatures()
       .filter(
         (f) =>
@@ -307,6 +308,7 @@ export class GeographicWorld {
 
     this.trail = [];
     this.staticMapCache = {};
+    this.cafeSpots = [];
     if (this.region) this.bounds = { ...this.region.bounds };
     this.loadedFeatureCount = activeFeatures.length;
     this.venues = activeFeatures

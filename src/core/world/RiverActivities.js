@@ -621,7 +621,7 @@ export class RiverActivities {
         pos.x - dragonDock.dockWaterPos.x,
         pos.z - dragonDock.dockWaterPos.z,
       );
-      if (distVendor <= 7.5 || distPier <= 5.8 || distBoat <= 8.5) {
+      if (distVendor <= 10.5 || distPier <= 8.5 || distBoat <= 11.5) {
         return { kind: "cruise" };
       }
     }
@@ -825,7 +825,8 @@ export class RiverActivities {
       const y = this.game.world?.groundAt?.(land.x, land.z, land.y) ?? land.y ?? 0.22;
       bike.position.set(land.x, y, land.z);
       bike.motion.heading = land.heading;
-      bike.rotation.y = land.heading;
+      bike.rotation.set(0, land.heading, 0);
+      bike.motion.lean = 0;
       bike.motion.speed = 0;
     }
     this.game.auto = false;
@@ -839,13 +840,80 @@ export class RiverActivities {
     return true;
   }
 
+  findSafeCruiseSpawn(dock) {
+    const world = this.game.world;
+    const caHue = world?.caHueBoats;
+    const base = dock.dockWaterPos;
+    const blockers = [
+      ...(caHue?.boats || []),
+      ...(this.remoteCruisePoses || []),
+    ];
+    const piers = [
+      ...(world?.phuXuanBridge?.piers || []),
+      ...(world?.truongTienBridge?.piers || []),
+    ];
+    const isClear = (cand) => {
+      if (!(world?.canCruiseAt?.(cand.x, cand.z) ?? world?.canBoat?.(cand.x, cand.z, -2) ?? true)) {
+        return false;
+      }
+      const hull = boatHull(cand);
+      if (blockers.some((other) => boatHullsOverlap(hull, boatHull(other)))) {
+        return false;
+      }
+      for (const pier of piers) {
+        if (
+          boatHullsOverlap(
+            hull,
+            boatHull(
+              { x: pier.x, z: pier.z, tx: pier.nx, tz: pier.nz },
+              pier.halfLen || 10,
+              pier.halfWidth || 2.5,
+            ),
+          )
+        ) {
+          return false;
+        }
+      }
+      return true;
+    };
+
+    const baseDist = caHue?.loop?.total
+      ? this.findClosestLoopDistance(base.x, base.z)
+      : 0;
+    const candidates = [{ ...base, loopDist: (baseDist + 12) % (caHue?.loop?.total || 1) }];
+    if (caHue?.loop?.total && typeof caHue.sampleLoop === "function") {
+      for (const offset of [0, 12, -12, 24, -24, 36, -36, 48]) {
+        const sample = caHue.sampleLoop(baseDist + offset);
+        candidates.push({
+          x: sample.x,
+          z: sample.z,
+          y: 0.03,
+          heading: Math.atan2(sample.tx, sample.tz),
+          loopDist: (baseDist + offset + 12 + caHue.loop.total) % caHue.loop.total,
+        });
+      }
+    }
+    for (const c of candidates) {
+      if (isClear(c)) return c;
+    }
+    // Only reject if another online player's cruise boat is occupying every nearby slot
+    const remoteOccupied = (this.remoteCruisePoses || []).some((other) =>
+      boatHullsOverlap(boatHull(base), boatHull(other)),
+    );
+    return remoteOccupied ? null : candidates[0];
+  }
+
   enterCruise() {
     const dock = this.game.world?.fireflyPark?.dragonDock;
     if (!dock) return false;
-    if ((this.remoteCruisePoses || []).some(other=>boatHullsOverlap(boatHull(dock.dockWaterPos),other))) {
+    const spawn = this.findSafeCruiseSpawn(dock);
+    if (!spawn) {
       this.showRewardToast("Thuyền trước đang rời bến, bạn chờ một chút nhé!");
       return false;
     }
+    this.declinedKind = null;
+    this.declinedUntil = 0;
+    this.pendingPrompt = null;
     this.returnLandPose = {
       ...dock.pierReturnPos,
       heading: this.game.bike.motion.heading,
@@ -854,10 +922,11 @@ export class RiverActivities {
     this.activeBoatIndex = -1;
     this.cruiseDistance = 0;
     this.nearReturnDock = false;
-    const spawn = dock.dockWaterPos;
     const loopTotal = this.game.world?.caHueBoats?.loop?.total || 1;
     this.cruiseLoopDist =
-      (this.findClosestLoopDistance(spawn.x, spawn.z) + 12) % loopTotal;
+      Number.isFinite(spawn.loopDist)
+        ? spawn.loopDist
+        : (this.findClosestLoopDistance(spawn.x, spawn.z) + 12) % loopTotal;
 
     const bike = this.game.bike;
     bike.position.set(
@@ -867,7 +936,7 @@ export class RiverActivities {
       spawn.z,
     );
     bike.motion.heading = spawn.heading;
-    bike.rotation.y = spawn.heading;
+    bike.rotation.set(0, spawn.heading, 0);
     bike.motion.speed = 2.8;
     bike.motion.lean = 0;
     dock.setCruiseActive?.(true);
@@ -908,14 +977,17 @@ export class RiverActivities {
         this.game.world?.groundAt?.(land.x, land.z, land.y) ?? land.y ?? 0.22;
       bike.position.set(land.x, y, land.z);
       bike.motion.heading = land.heading;
-      bike.rotation.y = land.heading;
+      bike.rotation.set(0, land.heading, 0);
+      bike.motion.lean = 0;
       bike.motion.speed = 0;
     }
     this.game.auto = false;
     this.game.input?.reset?.();
     this.game.cameraYaw = land.heading;
-    this.declinedKind = "cruise";
-    this.declinedUntil = (this.game.elapsed || 0) + 4;
+    this.declinedKind = null;
+    this.declinedUntil = 0;
+    this.pendingPrompt = null;
+    this.syncDockOccupancy();
     this.game.syncMode?.();
     this.refreshPanels();
     return true;
@@ -926,26 +998,60 @@ export class RiverActivities {
     const pier = dock?.pierReturnPos || this.returnLandPose;
     const shore = dock?.vendorPos || this.returnLandPose || pier;
     if (!shore || !pier) return null;
-    const heading = Math.atan2(shore.x-pier.x,shore.z-pier.z);
-    const hx = Math.sin(heading), hz = Math.cos(heading);
+    const heading = Math.atan2(shore.x - pier.x, shore.z - pier.z);
+    const hx = Math.sin(heading),
+      hz = Math.cos(heading);
     // Return to the promenade, with room to walk inland. The old pier point
     // faced back into the river and could strand the rider between railings.
-    for (const radius of [1.5,3,4.5,6,0]) {
-      for(let i=0;i<12;i++){
-        const angle=heading+i*Math.PI/6;
-        const x=shore.x+Math.sin(angle)*radius,z=shore.z+Math.cos(angle)*radius;
-        const y=world?.groundAt?.(x,z,shore.y) ?? shore.y ?? .36;
+    for (const radius of [1.5, 3, 4.5, 6, 0]) {
+      for (let i = 0; i < 12; i++) {
+        const angle = heading + (i * Math.PI) / 6;
+        const x = shore.x + Math.sin(angle) * radius,
+          z = shore.z + Math.cos(angle) * radius;
+        const y = world?.groundAt?.(x, z, shore.y) ?? shore.y ?? 0.36;
         if (!Number.isFinite(y)) continue;
-        const points=[[0,0],[.4,0],[-.4,0],[0,.4],[0,-.4],[hx*.8,hz*.8],[hx*1.5,hz*1.5]];
-        if(points.every(([dx,dz])=>world?.canRide?.(x+dx,z+dz,y) ?? true))return {x,z,y,heading};
+        const points = [
+          [0, 0],
+          [0.4, 0],
+          [-0.4, 0],
+          [0, 0.4],
+          [0, -0.4],
+          [hx * 0.8, hz * 0.8],
+          [hx * 1.5, hz * 1.5],
+        ];
+        if (points.every(([dx, dz]) => world?.canRide?.(x + dx, z + dz, y) ?? true))
+          return { x, z, y, heading };
       }
     }
-    return null;
+    for (const fallback of [
+      { x: shore.x + hx * 1.6, z: shore.z + hz * 1.6, refY: shore.y ?? 0.36 },
+      { x: shore.x, z: shore.z, refY: shore.y ?? 0.36 },
+      { x: pier.x, z: pier.z, refY: pier.y ?? 0.28 },
+    ]) {
+      const y = world?.groundAt?.(fallback.x, fallback.z, fallback.refY) ?? fallback.refY;
+      if (world?.canRide?.(fallback.x, fallback.z, y) !== false) {
+        return { x: fallback.x, z: fallback.z, y, heading };
+      }
+    }
+    return {
+      x: shore.x,
+      z: shore.z,
+      y: world?.groundAt?.(shore.x, shore.z, shore.y) ?? shore.y ?? 0.36,
+      heading,
+    };
   }
 
   handleKeyG() {
+    if (this.game.cafeLounge?.isActive?.()) return false;
     if (this.pendingPrompt) {
       return this.acceptPendingPrompt();
+    }
+    if (!this.mode) {
+      const near = this.detectNearbyRental();
+      if (near) {
+        this.pendingPrompt = near;
+        return this.acceptPendingPrompt();
+      }
     }
     if (this.mode === "boating" && this.nearReturnDock) {
       return this.exitBoat(true);
@@ -1378,7 +1484,7 @@ export class RiverActivities {
     }
 
     const near = this.detectNearbyRental();
-    if (!near && this.declinedKind && elapsed >= this.declinedUntil) {
+    if (this.declinedKind && elapsed >= this.declinedUntil) {
       this.declinedKind = null;
     }
     if (

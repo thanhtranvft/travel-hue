@@ -1271,7 +1271,36 @@ export class MuseumParkingAndCaySiCafe {
     ];
     for (const [tx, tz, parasol, patron, seed] of tableConfigs) {
       g.add(createCafeTableSet(tx, 0.28, tz, parasol, patron, seed));
-      this.obstacles.push({ type: "circle", cx: tx, cz: tz, r: 1.05 });
+      this.obstacles.push({ type: "circle", cx: tx, cz: tz, r: 0.54 });
+      const tblWorld = this.toWorld(tx, tz);
+      for (const [idx, ox] of [
+        [0, -0.74],
+        [1, 0.74],
+      ]) {
+        if (patron && idx === seed % 2) continue;
+        const seatWorld = this.toWorld(tx + ox, tz);
+        const returnWorld = this.toWorld(tx + ox * 1.65, tz);
+        this.world?.cafeSpots?.push({
+          id: `cay-si-seat-${seed}-${idx}`,
+          venueId: "cay-si-cafe",
+          title: "Quán Café Cây Si",
+          x: seatWorld.x,
+          y: 0.28,
+          z: seatWorld.z,
+          heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+          returnPose: { x: returnWorld.x, y: 0.28, z: returnWorld.z },
+        });
+      }
+    }
+    if (
+      this.world?.venues &&
+      !this.world.venues.some((v) => v.id === "cay-si-cafe")
+    ) {
+      this.world.venues.push({
+        id: "cay-si-cafe",
+        title: "Quán Café Cây Si",
+        ...this.cafeEntrance,
+      });
     }
 
     // 7. Decorative Stone Lotus Basin & Terracotta Planters

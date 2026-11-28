@@ -765,7 +765,7 @@ export class DongDaCorridor {
     straw.add(strawPole, strawRoof);
     cafe.add(straw);
 
-    // Outdoor sidewalk stools & animated seated patrons (matching photo!)
+    // Outdoor sidewalk stools, open opposite player seats & animated seated patrons
     for (const [idx, tx, tz, g] of [
       [0, -4.6, 5.2, "man"],
       [1, -1.8, 5.2, "woman"],
@@ -775,6 +775,7 @@ export class DongDaCorridor {
       tbl.position.set(tx, 0.08, tz);
       tbl.add(
         box([0.52, 0.42, 0.52], "#2b3036", [0, 0.21, 0]),
+        box([0.36, 0.32, 0.36], "#363c42", [-0.68, 0.16, 0]),
         box([0.36, 0.32, 0.36], "#363c42", [0.68, 0.16, 0]),
       );
       const patron = createSeatedCafePatron({ gender: g, paletteIndex: idx + 1, phase: idx * 1.4 });
@@ -783,6 +784,24 @@ export class DongDaCorridor {
       tbl.add(patron.group);
       this.animated.push(patron.animate);
       cafe.add(tbl);
+
+      const tblFwd = 73.5 + tx;
+      const tblRight = -28.0 + tz;
+      this.addBlockingBox(tblFwd - 0.34, tblFwd + 0.92, tblRight - 0.34, tblRight + 0.34);
+
+      const tblWorld = dongDaToWorld(tblFwd, tblRight);
+      const seatWorld = dongDaToWorld(tblFwd - 0.68, tblRight);
+      const returnWorld = dongDaToWorld(tblFwd - 0.68, tblRight + 1.15);
+      this.world.cafeSpots?.push({
+        id: `festival-cafe-seat-${idx}`,
+        venueId: "festival-cafe",
+        title: "Cafe Festival · La Porte",
+        x: seatWorld.x,
+        y: 0.31,
+        z: seatWorld.z,
+        heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+        returnPose: { x: returnWorld.x, y: 0.31, z: returnWorld.z },
+      });
     }
 
     // White garden picket divider & potted greenery
@@ -796,7 +815,8 @@ export class DongDaCorridor {
     }
 
     this.group.add(cafe);
-    this.addBlockingBox(63.5, 83.5, -36.5, -20.5);
+    // Block main Cafe Festival building behind its sidewalk table apron
+    this.addBlockingBox(63.5, 83.5, -36.5, -25.8);
 
     this.world.venues?.push({
       id: "festival-cafe",
@@ -1038,8 +1058,47 @@ export class DongDaCorridor {
     blueSign.position.set(10.2, 2.85, 3.3);
     gahi.add(blueSign);
 
+    // Ground-level sidewalk coffee tables + open seats in front of Gahi Cafe
+    for (const [idx, tx, tz, g] of [
+      [0, -8.8, 4.9, "man"],
+      [1, -0.2, 4.9, "woman"],
+    ]) {
+      const tbl = new THREE.Group();
+      tbl.position.set(tx, 0.08, tz);
+      tbl.add(
+        box([0.54, 0.44, 0.54], "#36322d", [0, 0.22, 0]),
+        box([0.36, 0.34, 0.36], "#5e432b", [-0.68, 0.17, 0]),
+        box([0.36, 0.34, 0.36], "#5e432b", [0.68, 0.17, 0]),
+      );
+      const patron = createSeatedCafePatron({ gender: g, paletteIndex: idx + 2, phase: idx * 1.5 });
+      patron.group.position.set(0.68, 0.0, 0.02);
+      patron.group.rotation.y = -Math.PI / 2;
+      tbl.add(patron.group);
+      this.animated.push(patron.animate);
+      gahi.add(tbl);
+
+      const tblFwd = 60.5 - tx;
+      const tblRight = 16.0 - tz;
+      this.addBlockingBox(tblFwd - 0.92, tblFwd + 0.34, tblRight - 0.34, tblRight + 0.34);
+
+      const tblWorld = dongDaToWorld(tblFwd, tblRight);
+      const seatWorld = dongDaToWorld(tblFwd + 0.68, tblRight);
+      const returnWorld = dongDaToWorld(tblFwd + 0.68, tblRight - 1.15);
+      this.world.cafeSpots?.push({
+        id: `gahi-cafe-seat-${idx}`,
+        venueId: "gahi-cafe",
+        title: "Gahi Cafe · 36 Đống Đa",
+        x: seatWorld.x,
+        y: 0.31,
+        z: seatWorld.z,
+        heading: Math.atan2(tblWorld.x - seatWorld.x, tblWorld.z - seatWorld.z),
+        returnPose: { x: returnWorld.x, y: 0.31, z: returnWorld.z },
+      });
+    }
+
     this.group.add(gahi);
-    this.addBlockingBox(45.5, 75.5, 9.2, 22.8);
+    // Block main Gahi Cafe building behind its sidewalk patio apron
+    this.addBlockingBox(45.5, 75.5, 12.6, 22.8);
 
     this.world.venues?.push({
       id: "gahi-cafe",
@@ -1444,6 +1503,12 @@ export class DongDaCorridor {
     ) {
       return 0.27;
     }
+    if (
+      (fwd >= 63.5 && fwd <= 83.5 && right > -25.8 && right <= -20.0) ||
+      (fwd >= 45.5 && fwd <= 75.5 && right >= 9.2 && right < 12.6)
+    ) {
+      return 0.31;
+    }
     return null;
   }
 
@@ -1479,6 +1544,12 @@ export class DongDaCorridor {
       if (fwd >= r.minFwd && fwd <= r.maxFwd && right >= r.minRight && right <= r.maxRight) {
         return true;
       }
+    }
+    if (
+      (fwd >= 63.5 && fwd <= 83.5 && right > -25.8 && right <= -20.0) ||
+      (fwd >= 45.5 && fwd <= 75.5 && right >= 9.2 && right < 12.6)
+    ) {
+      return true;
     }
     return null;
   }
